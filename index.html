@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Hệ thống quản lý thu giá dịch vụ vệ sinh môi trường</title>
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/app.css">
+  <link rel="stylesheet" href="assets/css/responsive.css">
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <header class="topbar">
+      <button id="menuToggle" class="icon-button menu-toggle" type="button" aria-label="Mở menu" aria-expanded="false">☰</button>
+      <a class="brand" href="#commune/dashboard" aria-label="Trang chủ hệ thống">
+        <span class="brand-seal" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><path d="M9 28c12 3 22-5 28-19 4 18-4 29-17 28-6 0-10-4-11-9Z" fill="currentColor"/><path d="M12 37c6-11 14-18 25-23" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/></svg>
+        </span>
+        <span class="brand-copy">
+          <strong>Quản lý thu giá dịch vụ vệ sinh môi trường</strong>
+          <small>UBND xã Đông Thạnh · Thành phố Hồ Chí Minh</small>
+        </span>
+      </a>
+
+      <div class="period-chip" aria-label="Kỳ thu hiện tại">
+        <span class="status-pulse" aria-hidden="true"></span>
+        <span><small>Kỳ hiện tại</small><strong>Tháng 09/2026 · Đang thu</strong></span>
+      </div>
+
+      <div class="top-actions">
+        <button class="notification-button" type="button" data-action="notifications" aria-label="Có 4 thông báo">
+          <span aria-hidden="true">●</span><b>4</b>
+        </button>
+        <label class="role-picker">
+          <span>Không gian làm việc</span>
+          <select id="roleSelect" aria-label="Chọn vai trò"></select>
+        </label>
+        <button class="avatar-button" type="button" data-action="profile" aria-label="Mở thông tin tài khoản">
+          <span id="avatarInitials">NT</span>
+        </button>
+      </div>
+    </header>
+
+    <aside id="sidebar" class="sidebar" aria-label="Điều hướng chức năng">
+      <div class="role-card">
+        <span class="role-kicker">Vai trò đang xem</span>
+        <strong id="roleName"></strong>
+        <p id="roleDescription"></p>
+      </div>
+      <nav id="roleNav" class="role-nav"></nav>
+      <div class="sidebar-foot">
+        <span class="scope-dot"></span>
+        <p><strong>Prototype nghiệp vụ v2.2</strong><br>Dữ liệu minh họa · Không kết nối dữ liệu thật</p>
+      </div>
+    </aside>
+
+    <main id="mainContent" class="main-content" tabindex="-1" aria-live="polite"></main>
+
+    <footer class="app-footer">
+      <span>Hệ thống số hóa quản lý và thu giá dịch vụ CTRSH</span>
+      <span>Phiên bản prototype 2.2 · Cập nhật 14/09/2026</span>
+    </footer>
+  </div>
+
+  <dialog id="appDialog" class="app-dialog" aria-labelledby="dialogTitle">
+    <form method="dialog" class="dialog-shell" id="dialogForm">
+      <header class="dialog-header">
+        <div>
+          <span id="dialogEyebrow" class="eyebrow">Biểu mẫu nghiệp vụ</span>
+          <h2 id="dialogTitle">Thao tác</h2>
+          <p id="dialogDescription"></p>
+        </div>
+        <button type="button" class="icon-button dialog-close" data-close-dialog aria-label="Đóng">×</button>
+      </header>
+      <div id="dialogBody" class="dialog-body"></div>
+      <footer class="dialog-footer">
+        <span class="demo-disclaimer">Dữ liệu minh họa · Thao tác không được lưu</span>
+        <div>
+          <button class="button button-secondary" type="button" data-close-dialog>Hủy</button>
+          <button id="dialogConfirm" class="button button-primary" type="submit">Xác nhận mô phỏng</button>
+        </div>
+      </footer>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
+
+  <script src="assets/js/config.js" defer></script>
+  <script src="assets/js/data.js" defer></script>
+  <script src="assets/js/dialogs.js" defer></script>
+  <script src="assets/js/views.js" defer></script>
+  <script src="assets/js/app.js" defer></script>
+</body>
+</html>
