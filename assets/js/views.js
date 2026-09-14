@@ -7,10 +7,11 @@ function escapeHtml(value) {
 function badge(status) {
   const value = String(status || "");
   let tone = "neutral";
-  if (/Đã khớp|Đã thu|Hoạt động|Đã nhập|Đã phát hành|Đã khóa|Tốt|Thành công|Đang áp dụng/.test(value)) tone = "success";
-  else if (/Quá hạn|Cảnh báo|Sai|Lỗi|Từ chối|Chênh|bắt buộc|chấm dứt|ngoài hệ thống|Không khuyến nghị/i.test(value)) tone = "danger";
-  else if (/Chờ|Theo dõi|Cần|Dự thảo|Vắng|Khiếu nại|Trong hạn/.test(value)) tone = "warning";
-  else if (/Đang|100%|xác nhận|UAT/.test(value)) tone = "info";
+  if (/Đã khớp|Đã thu|Đã phân công|Hoạt động|Đã nhập|Đã phát hành|Đã khóa|Tốt|Thành công|Đang áp dụng/.test(value)) tone = "success";
+  else if (/Quá hạn|Cảnh báo|Sai|Lỗi|Từ chối|Chênh|bắt buộc|chấm dứt|Khóa thu|ngoài hệ thống|Không khuyến nghị/i.test(value)) tone = "danger";
+  else if (/Chờ|Theo dõi|Cần|Đề nghị|Tạm ngưng|Dự thảo|Vắng|Khiếu nại|Trong hạn/.test(value)) tone = "warning";
+  else if (/Đang|Tuyến thu|100%|xác nhận|UAT/.test(value)) tone = "info";
+  else if (/Dùng chung/.test(value)) tone = "violet";
   return `<span class="badge ${tone}">${escapeHtml(value)}</span>`;
 }
 
@@ -71,9 +72,10 @@ function communeDashboard() {
 }
 
 function subjects() {
-  const rows = APP_DATA.subjects.map(s => `<tr><td><button class="link-button" data-action="genericDetail">${s.code}</button><span class="cell-subtitle">Attribute: ${s.type}</span></td><td><span class="cell-title">${s.name}</span><span class="cell-subtitle">${s.address}</span></td><td><span class="cell-title">${s.unit}</span><span class="cell-subtitle">Tuyến ${s.route}</span></td><td><span class="cell-title">${s.contract}</span><span class="cell-subtitle">${s.tariff}</span></td><td class="money">${formatMoney(s.amount)}</td><td>${badge(s.serviceStatus)}</td><td><button class="button button-small" data-action="classifyAssign">Phân loại</button></td></tr>`);
+  const rows = APP_DATA.subjects.map(s => `<tr><td><button class="link-button" data-action="genericDetail">${s.code}</button><span class="cell-subtitle">Attribute: ${s.type}</span></td><td><span class="cell-title">${s.name}</span><span class="cell-subtitle">${s.address}</span></td><td><span class="cell-title">${s.unit}</span><span class="cell-subtitle">Tuyến ${s.route}</span></td><td><span class="cell-title">${s.contract}</span><span class="cell-subtitle">${s.tariff}</span></td><td class="money">${formatMoney(s.amount)}</td><td>${badge(s.serviceStatus)}${s.suspensionRequest ? `<span class="cell-subtitle">Không tự động cắt dịch vụ</span>` : ""}</td><td><div class="table-actions">${s.suspensionRequest ? `<button class="button button-small button-primary" data-action="requestServiceSuspension">Xem yêu cầu</button>` : `<button class="button button-small" data-action="classifyAssign">Phân loại</button>`}</div></td></tr>`);
   return `${pageHeader("DM-01 · DM-10 · TH-01", "Đối tượng, phân loại và hợp đồng", "Xã tạo danh sách hộ trước; sau đó gán attribute type, đơn vị xử lý, tuyến, hợp đồng và trạng thái dịch vụ.", actionButton("Nhập dữ liệu", "importData") + actionButton("Thêm hộ/đối tượng", "addSubject", "primary", "+"))}
   <div class="callout"><span class="callout-icon">i</span><div><strong>Thứ tự dữ liệu bắt buộc</strong><p>Tạo mã hộ → phân loại attribute type → gán đơn vị/tuyến → lập hợp đồng → sinh khoản theo kỳ.</p></div></div>
+  <div class="callout warning"><span class="callout-icon">!</span><div><strong>Hộ đang nợ không bị tự động cắt dịch vụ</strong><p>Trường hợp DTH-H000662 đi theo luồng: ghi nhận nợ → cảnh báo → lập đề nghị → lãnh đạo duyệt tạm ngưng → thông báo nhà thầu.</p></div></div>
   ${toolbar("Mã, tên, địa chỉ, số điện thoại...", `<div class="toolbar-field"><label>Loại đối tượng</label><select class="control"><option>Tất cả</option><option>Hộ gia đình</option><option>Hộ kinh doanh</option><option>Doanh nghiệp</option></select></div><div class="toolbar-field"><label>Trạng thái</label><select class="control"><option>Tất cả</option><option>Đang hoạt động</option><option>Chờ xác minh</option><option>Tạm ngưng</option></select></div>`)}
   ${panel("50.284 đối tượng", "Trạng thái dịch vụ và phân công có thời gian hiệu lực, không ghi đè lịch sử", table(["Mã / attribute", "Đối tượng", "Đơn vị / tuyến", "Hợp đồng / nhóm giá", "Mức kỳ này", "Dịch vụ", "Thao tác"], rows), "<span class='badge info'>Xã quản lý danh sách gốc</span>")}`;
 }
@@ -105,29 +107,49 @@ function billing() {
 }
 
 function routes() {
-  const rows = APP_DATA.routes.map(r => `<tr><td><button class="link-button" data-action="genericDetail">${r.code}</button><span class="cell-subtitle">${r.name}</span></td><td>${r.area}</td><td><span class="cell-title">${r.unit}</span><span class="cell-subtitle">Quản lý: ${r.manager}</span></td><td><span class="cell-title">${r.collector}</span><span class="cell-subtitle">Tài khoản hiện trường do xã giao</span></td><td>${r.households.toLocaleString("vi-VN")}</td><td><div style="min-width:100px">${progressBar(r.progress, r.progress < 70 ? "warning" : "")}<span class="cell-subtitle">${r.progress}%</span></div></td><td><button class="button button-small" data-action="assignRoute">Phân công</button></td></tr>`);
-  const map = `<div class="route-map" role="img" aria-label="Bản đồ giản lược các tuyến thu gom tại Đông Thạnh, Thới Tam Thôn và Nhị Bình">
-    <div class="map-toolbar"><strong>Bản đồ tuyến hiện có</strong><span>Hiển thị 4 tuyến tiêu biểu / 11 công ty</span></div>
-    <svg viewBox="0 0 760 330" aria-hidden="true">
-      <rect width="760" height="330" class="map-ground"/>
-      <path class="map-water" d="M0 270 C120 238 185 286 295 253 S500 214 760 257 L760 330 L0 330Z"/>
-      <g class="map-roads"><path d="M20 72 L176 94 L315 74 L455 110 L735 77"/><path d="M86 18 L124 116 L98 229 L175 304"/><path d="M240 16 L260 105 L238 202 L322 310"/><path d="M472 12 L437 104 L512 188 L489 307"/><path d="M666 24 L622 121 L668 218 L625 300"/><path d="M32 190 L193 168 L346 199 L498 170 L724 199"/></g>
-      <g class="map-route route-green"><path d="M53 73 L176 94 L267 81 L315 74"/><circle cx="53" cy="73" r="6"/><circle cx="315" cy="74" r="7"/></g>
-      <g class="map-route route-blue"><path d="M240 24 L260 105 L238 202 L322 302"/><circle cx="240" cy="24" r="6"/><circle cx="322" cy="302" r="7"/></g>
-      <g class="map-route route-amber"><path d="M455 110 L512 188 L668 218 L718 199"/><circle cx="455" cy="110" r="6"/><circle cx="718" cy="199" r="7"/></g>
-      <g class="map-route route-red"><path d="M98 229 L175 304 L322 302"/><circle cx="98" cy="229" r="6"/><circle cx="322" cy="302" r="7"/></g>
-      <g class="map-labels"><text x="42" y="55">DTH-T07</text><text x="266" y="47">DTH-T04</text><text x="535" y="176">TTT-T11</text><text x="111" y="271">NB-T03</text><text x="533" y="43" class="area">THỚI TAM THÔN</text><text x="74" y="145" class="area">ĐÔNG THẠNH</text><text x="356" y="287" class="area">NHỊ BÌNH</text></g>
-    </svg>
-    <div class="map-legend"><span><i class="green"></i>DTH-T07</span><span><i class="blue"></i>DTH-T04</span><span><i class="amber"></i>TTT-T11</span><span><i class="red"></i>NB-T03</span><small>Bản đồ minh họa, không dùng để dẫn đường</small></div>
-  </div>`;
-  const focusRoutes = APP_DATA.routes.slice(0, 4).map(r => `<article class="map-route-item"><div><strong>${r.code}</strong><span>${r.name}</span></div><span>${badge(r.status)}</span><p>${r.unit}<br><b>${r.collector}</b> · ${r.households} hộ</p><div>${progressBar(r.progress, r.progress < 70 ? "warning" : "")}</div></article>`).join("");
-  return `${pageHeader("TH-01", "Bản đồ và phân tuyến thu gom", "Xã quản lý các tuyến đường đã có, gán mỗi tuyến cho một trong 11 công ty và giao trực tiếp người đi thu. Công ty là danh mục phối hợp, không bắt buộc đăng nhập hệ thống.", actionButton("Phân công tuyến", "assignRoute", "primary", "+"))}
-  <div class="callout"><span class="callout-icon">i</span><div><strong>Ranh giới trách nhiệm rõ ràng</strong><p>Công ty và người quản lý dùng để liên hệ/đốc thúc; quyền xem hộ được cấp trực tiếp cho người đi thu theo tuyến và thời hạn.</p></div></div>
-  ${kpiGrid([kpi("Công ty phối hợp", "11", "Không cần tài khoản hệ thống", "", "▦"), kpi("Tuyến đã có", "11", "Phủ 3 địa bàn", "success", "⌖"), kpi("Đã có người thu", "11/11", "Tài khoản do xã giao", "success", "✓"), kpi("Cần đôn đốc", "02", "Tiến độ dưới ngưỡng", "warning", "!")])}
-  <div class="route-planning-layout">${map}<aside class="route-map-list"><div class="route-map-list-head"><strong>Tuyến đang theo dõi</strong><span>Chọn tuyến trong bảng để đổi phân công</span></div>${focusRoutes}</aside></div>
+  const contractorOptions = APP_DATA.contractors.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
+  const rows = APP_DATA.routes.map((r, index) => {
+    const routeType = index % 3 === 0 ? "Tuyến thu gom" : index % 3 === 1 ? "Tuyến thu tiền" : "Dùng chung";
+    const searchable = `${r.code} ${r.name} ${r.coverage} ${r.unit}`.toLowerCase();
+    return `<tr data-route-row data-area="${escapeHtml(r.area)}" data-contractor="${escapeHtml(r.unit)}" data-route-type="${routeType}" data-status="${escapeHtml(r.status)}" data-search="${escapeHtml(searchable)}"><td><button class="link-button route-link" data-action="go:route-detail">${r.code}</button><span class="cell-subtitle">${r.name}</span></td><td>${badge(routeType)}</td><td><span class="cell-title">${r.coverage}</span><span class="cell-subtitle">Lịch: ${r.schedule}</span></td><td>${r.households.toLocaleString("vi-VN")}</td><td><span class="cell-title">${r.unit}</span><span class="cell-subtitle">Đầu mối: ${r.manager}</span></td><td>${r.effective}</td><td>${badge(r.status)}</td><td><button class="button button-small" data-action="editRoute">Sửa</button></td></tr>`;
+  });
+  const areas = [
+    { id: "all", name: "Toàn xã", routes: 82, subjects: 50284 },
+    { id: "Đông Thạnh", name: "Khu vực Đông Thạnh", routes: 29, subjects: 18942 },
+    { id: "Thới Tam Thôn", name: "Khu vực Thới Tam Thôn", routes: 27, subjects: 17416 },
+    { id: "Nhị Bình", name: "Khu vực Nhị Bình", routes: 26, subjects: 13926 }
+  ];
+  const areaCards = areas.map((a, index) => `<button class="area-route-card ${index === 0 ? "active" : ""}" type="button" data-route-area-filter="${a.id}"><span>${a.name}</span><strong>${a.routes} tuyến</strong><small>${a.subjects.toLocaleString("vi-VN")} hộ/chủ nguồn thải</small></button>`).join("");
+  return `${pageHeader("Quản lý khu vực → Quản lý tuyến", "Quản lý tuyến thu gom", "Các khu vực chứa nhiều tuyến; 11 nhà thầu được phân công phụ trách toàn bộ 82 tuyến. Mỗi tuyến có khoảng 400–800 hộ hoặc chủ nguồn thải.", actionButton("Phân công nhà thầu", "assignRoute", "primary", "+"))}
+  <section class="route-hierarchy"><div class="route-hierarchy-head"><div><strong>1. Chọn khu vực</strong><span>Sau đó lọc hoặc mở tuyến cần quản lý</span></div><span class="badge info">3 khu vực</span></div><div class="area-route-grid">${areaCards}</div></section>
+  ${kpiGrid([kpi("Tổng tuyến", "82", "48 thu gom · 34 thu tiền", "", "⌖"), kpi("Nhà thầu", "11", "Một nhà thầu phụ trách nhiều tuyến", "success", "▦"), kpi("Đã phân công", "80/82", "2 tuyến đang chờ gia hạn", "warning", "✓"), kpi("Quy mô tuyến", "400–800 hộ", "Có thể liên kết hai loại tuyến", "", "⌂")])}
+  <section data-route-list>
+    <div class="route-filterbar"><label class="route-search"><span>Tìm tuyến</span><input class="control" type="search" data-route-search placeholder="Mã tuyến, tên đường, phạm vi..."></label><label><span>Nhà thầu phụ trách</span><select class="control" data-route-contractor><option value="all">Tất cả 11 nhà thầu</option>${contractorOptions}</select></label><label><span>Loại tuyến</span><select class="control" data-route-type-filter><option value="all">Tất cả loại tuyến</option><option>Tuyến thu gom</option><option>Tuyến thu tiền</option><option>Dùng chung</option></select></label><label><span>Trạng thái phân công</span><select class="control" data-route-status><option value="all">Tất cả</option><option value="Đã phân công">Đã phân công</option><option value="Sắp hết hiệu lực">Sắp hết hiệu lực</option><option value="Chờ gia hạn">Chờ gia hạn</option></select></label></div>
+    <div class="list-result-line route-result-line"><strong data-route-count>${APP_DATA.routes.length} tuyến minh họa</strong><span>Bấm mã tuyến để xem danh sách hộ/chủ nguồn thải</span></div>
+    ${panel("2. Danh sách tuyến", "Tuyến thu gom và tuyến thu tiền được quản lý độc lập nhưng có thể liên kết; tuyến đã phân công có thao tác sửa", table(["Tuyến / trục đường", "Loại tuyến", "Phạm vi / lịch thu", "Số hộ", "Nhà thầu / đầu mối", "Hiệu lực", "Trạng thái", ""], rows), "<span class='badge info'>11 nhà thầu</span>")}
+    <div class="collection-empty" data-route-empty hidden>Không tìm thấy tuyến phù hợp với bộ lọc.</div>
+  </section>`;
+}
+
+function routeDetail() {
+  const rows = APP_DATA.routeHouseholds.map(h => `<tr><td><button class="link-button" data-action="genericDetail">${h.code}</button><span class="cell-subtitle">${h.type}</span></td><td><span class="cell-title">${h.name}</span><span class="cell-subtitle">${h.address}</span></td><td>${h.tariff}</td><td>${badge(h.service)}</td><td>${h.debt}</td><td class="money">${formatMoney(h.amount)}</td><td>${badge(h.collection)}</td></tr>`);
+  const map = `<div class="route-map route-detail-map" role="img" aria-label="Bản đồ giản lược tuyến DTH-T07 trên đường Đặng Thúc Vịnh"><div class="map-toolbar"><strong>Tuyến DTH-T07</strong><span>Điểm đầu → điểm cuối · 6,8 km</span></div><svg viewBox="0 0 760 330" aria-hidden="true"><rect width="760" height="330" class="map-ground"/><path class="map-water" d="M0 282 C144 238 262 298 386 260 S602 238 760 270 L760 330 L0 330Z"/><g class="map-roads"><path d="M35 72 L170 103 L296 80 L426 126 L710 84"/><path d="M88 28 L126 120 L106 236 L180 302"/><path d="M287 18 L300 106 L277 210 L358 306"/><path d="M520 20 L484 119 L546 204 L510 306"/><path d="M42 198 L205 172 L367 207 L531 176 L724 206"/></g><g class="map-route route-green focused"><path d="M52 72 L170 103 L296 80 L426 126 L531 176 L648 188"/><circle cx="52" cy="72" r="8"/><circle cx="648" cy="188" r="9"/></g><g class="map-labels"><text x="42" y="48">ĐIỂM ĐẦU</text><text x="608" y="168">ĐIỂM CUỐI</text><text x="290" y="105">ĐẶNG THÚC VỊNH</text><text x="78" y="158" class="area">ẤP 7 · ĐÔNG THẠNH</text></g></svg><div class="map-legend"><span><i class="green"></i>Đường đi tuyến DTH-T07</span><small>Bản đồ minh họa, cần dữ liệu GIS khi triển khai thật</small></div></div>`;
+  const summary = `<div class="route-detail-summary"><span class="eyebrow">Thông tin phân công</span><h2>DTH-T07 · Đặng Thúc Vịnh – ấp 7</h2><dl><div><dt>Loại tuyến</dt><dd>${badge("Tuyến thu gom")}</dd></div><div><dt>Nhà thầu</dt><dd>Công ty MTĐT Đông Thạnh</dd></div><div><dt>Đầu mối</dt><dd>Trần Hoàng Phúc · 0903 218 665</dd></div><div><dt>Phạm vi</dt><dd>Số 1–126 và các hẻm nhánh</dd></div><div><dt>Lịch thu</dt><dd>Thứ 2 · Thứ 4 · Thứ 6</dd></div><div><dt>Hiệu lực</dt><dd>01/09–31/12/2026</dd></div><div><dt>Trạng thái</dt><dd>${badge("Đã phân công")}</dd></div></dl></div>`;
+  const routeRelationship = `<div class="route-pair"><article><span>Tuyến thu gom</span><strong>DTH-T07</strong><small>Đặng Thúc Vịnh · Công ty MTĐT Đông Thạnh</small></article><span class="route-pair-link">Liên kết<br>không đồng nhất</span><article><span>Tuyến thu tiền</span><strong>DTH-THU-03</strong><small>Nhóm hộ ấp 7 · lịch thu theo kỳ</small></article></div><p class="panel-note">Hai tuyến có thể trùng phạm vi nhưng được cấu hình và thay đổi độc lập.</p>`;
+  const assignmentHistory = `<div class="timeline"><div class="timeline-item"><span class="timeline-dot">✓</span><div><h4>01/01–31/08/2026 · Công ty Môi trường An Phú</h4><p>Phân công cũ đã kết thúc, giữ nguyên để tra cứu.</p></div></div><div class="timeline-item"><span class="timeline-dot">✓</span><div><h4>01/09–31/12/2026 · Công ty MTĐT Đông Thạnh</h4><p>Phân công hiện tại, không ghi đè lịch sử Công ty A.</p></div></div><div class="timeline-item pending"><span class="timeline-dot">3</span><div><h4>Khi thay nhà thầu</h4><p>Kết thúc phân công hiện tại và tạo assignment mới từ ngày hiệu lực.</p></div></div></div>`;
+  const contractRules = `<div class="contract-rule-grid"><article><span>Nhà thầu chỉ được giao thực hiện/thu</span><strong>Giữ nguyên hợp đồng</strong><small>Chỉ thay assignment theo tuyến và hiệu lực.</small></article><article><span>Nhà thầu là bên ký hợp đồng dịch vụ</span><strong>Tạo hợp đồng mới</strong><small>Kết thúc hợp đồng cũ, không sửa/xóa lịch sử.</small></article></div>`;
+  return `${pageHeader("Quản lý tuyến → Chi tiết tuyến", "Chi tiết tuyến DTH-T07", "Xem phạm vi đường đi, nhà thầu được phân công và danh sách hộ/chủ nguồn thải thuộc tuyến.", actionButton("Quay lại danh sách", "go:routes") + actionButton("Sửa tuyến", "editRoute") + actionButton("Thay nhà thầu", "changeContractor", "primary"))}
+  ${kpiGrid([kpi("Hộ/chủ nguồn thải", "642", "8 bản ghi hiển thị minh họa", "", "▦"), kpi("Đang cung cấp", "637", "5 hồ sơ tạm ngưng/chấm dứt", "success", "✓"), kpi("Còn phải thu", "154 hộ", "24,72 triệu đồng", "warning", "₫"), kpi("Độ dài tuyến", "6,8 km", "Thu gom T2 · T4 · T6", "", "⌖")])}
+  <div class="route-detail-layout">${map}${summary}</div>
   <div style="height:16px"></div>
-  ${toolbar("Mã tuyến, tên đường, công ty hoặc người thu...", `<div class="toolbar-field"><label>Địa bàn</label><select class="control"><option>Toàn xã</option><option>Đông Thạnh</option><option>Thới Tam Thôn</option><option>Nhị Bình</option></select></div><div class="toolbar-field"><label>Trạng thái</label><select class="control"><option>Tất cả</option><option>Đang thực hiện</option><option>Cần đôn đốc</option></select></div>`)}
-  ${panel("Phân công 11 công ty theo tuyến", "Công ty không có quyền hệ thống; mỗi tuyến vẫn phải chỉ rõ người thu và quản lý liên hệ", table(["Tuyến / trục đường", "Địa bàn", "Công ty / quản lý", "Người đi thu", "Số hộ", "Tiến độ", ""], rows), "<span class='badge info'>11/11 đã phân công</span>")}`;
+  <div class="content-grid equal route-rule-panels">
+    ${panel("Tuyến thu gom và tuyến thu tiền", "Không mặc định là cùng một tuyến", routeRelationship)}
+    ${panel("Lịch sử phân công nhà thầu", "Công ty B thay Công ty A bằng assignment mới", assignmentHistory)}
+  </div>
+  ${panel("Quy tắc giữ hoặc tạo hợp đồng", "Vai trò pháp lý của nhà thầu quyết định cách xử lý", contractRules, actionButton("Xem quyết định", "contractDecision", "quiet"))}
+  <div style="height:16px"></div>
+  ${toolbar("Mã, tên hoặc địa chỉ hộ/chủ nguồn thải...", `<div class="toolbar-field"><label>Loại đối tượng</label><select class="control"><option>Tất cả</option><option>Hộ gia đình</option><option>Hộ kinh doanh</option><option>Cơ sở sản xuất</option></select></div><div class="toolbar-field"><label>Tình trạng thu</label><select class="control"><option>Tất cả</option><option>Chưa thu</option><option>Quá hạn</option><option>Đã thu</option><option>Khóa thu</option></select></div>`)}
+  ${panel("Danh sách hộ/chủ nguồn thải trong tuyến", "642 đối tượng · dữ liệu gốc do xã quản lý", table(["Mã / loại", "Đối tượng / địa chỉ", "Nhóm giá", "Dịch vụ", "Công nợ", "Còn phải thu", "Tình trạng thu"], rows), "<span class='badge info'>Tuyến DTH-T07</span>")}`;
 }
 
 function debts() {
@@ -141,15 +163,15 @@ function debts() {
 function collectionProgress() {
   const rows = APP_DATA.collectionProgress.map(x => `<tr><td><span class="cell-title">${x.collector}</span><span class="cell-subtitle">Cập nhật ${x.updated}</span></td><td><button class="link-button" data-action="genericDetail">${x.route}</button><span class="cell-subtitle">${x.company}</span></td><td><span class="cell-title">${x.visited}/${x.assigned} hộ đã ghé</span><span class="cell-subtitle">${x.paid} hộ đã thu hợp lệ</span></td><td><div style="min-width:120px">${progressBar(x.progress, x.progress < 70 ? "danger" : x.progress < 76 ? "warning" : "")}<span class="cell-subtitle">${x.progress}% hoàn thành</span></div></td><td><strong class="money">${x.debt} hộ</strong><span class="cell-subtitle">còn phải theo dõi</span></td><td>${badge(x.status)}</td><td><span class="cell-title">${x.manager.split(" · ")[0]}</span><span class="cell-subtitle">${x.manager.split(" · ")[1]}</span></td><td><button class="button button-small" data-action="urgeRouteManager">Đốc thúc</button></td></tr>`);
   return `${pageHeader("CN-01 · TH-01", "Tiến độ thu theo người và tuyến", "Xã theo dõi người đi thu đã được giao tuyến nào, đã tiếp cận bao nhiêu hộ và còn bao nhiêu công nợ. Khi chậm, xã đốc thúc người quản lý để làm việc với hộ dân.", actionButton("Xuất tiến độ", "exportData") + actionButton("Đốc thúc tuyến chậm", "urgeRouteManager", "primary"))}
-  ${kpiGrid([kpi("Người đang thực hiện", "11", "Tương ứng 11 tuyến", "", "♙"), kpi("Đã tiếp cận", "3.186 hộ", "78% danh sách đến hạn", "success", "✓"), kpi("Hộ còn công nợ", "664", "3 tuyến cần ưu tiên", "warning", "!"), kpi("Chậm cập nhật", "01", "Quá 1 ngày làm việc", "danger", "◷")])}
+  ${kpiGrid([kpi("Người đang thực hiện", "34", "Trên 82 tuyến theo ca được giao", "", "♙"), kpi("Đã tiếp cận", "3.186 hộ", "78% danh sách đến hạn", "success", "✓"), kpi("Hộ còn công nợ", "664", "3 tuyến cần ưu tiên", "warning", "!"), kpi("Chậm cập nhật", "01", "Quá 1 ngày làm việc", "danger", "◷")])}
   <div class="callout warning"><span class="callout-icon">!</span><div><strong>Ưu tiên liên hệ quản lý tuyến TTT-T08</strong><p>Tiến độ 56%, lần cập nhật gần nhất từ hôm qua. Xã không xử lý từng hộ tại màn này; người quản lý chịu trách nhiệm đôn đốc người thu và làm việc với hộ dân.</p></div></div>
   ${toolbar("Tên người thu, mã tuyến hoặc công ty...", `<div class="toolbar-field"><label>Tiến độ</label><select class="control"><option>Tất cả</option><option>Dưới 60%</option><option>60–75%</option><option>Trên 75%</option></select></div><div class="toolbar-field"><label>Trạng thái</label><select class="control"><option>Tất cả</option><option>Cần đôn đốc</option><option>Theo dõi</option><option>Đúng tiến độ</option></select></div>`)}
   ${panel("Người đi thu đang được xã giao", "Tổng hợp từ kết quả từng hộ; công ty chỉ là đầu mối phối hợp, không cần tham gia hệ thống", table(["Người đi thu", "Tuyến / công ty", "Tiếp cận", "Tiến độ", "Công nợ", "Tình trạng", "Quản lý liên hệ", ""], rows), "<span class='badge warning'>3 cần chú ý</span>")}`;
 }
 
 function requests() {
-  const rows = APP_DATA.requests.map(r => `<tr><td><button class="link-button" data-action="genericDetail">${r.code}</button></td><td>${badge(r.type)}</td><td><span class="cell-title">${r.subject}</span><span class="cell-subtitle">${r.reason}</span></td><td class="money">${formatMoney(r.amount)}</td><td>${r.createdBy}</td><td>${r.age}</td><td>${badge(r.status)}</td><td><button class="button button-small" data-action="genericDetail">Xem hồ sơ</button></td></tr>`);
-  return `${pageHeader("CN-04 · CN-06 · CN-07", "Đề nghị tài chính", "Cán bộ chỉ lập đề nghị; miễn giảm, hoàn, xóa nợ và hủy hóa đơn phải qua phê duyệt.", actionButton("Lập đề nghị", "createRequest", "primary", "+"))}
+  const rows = APP_DATA.requests.map(r => { const action = r.type === "Tạm ngưng DV" ? "requestServiceSuspension" : "genericDetail"; return `<tr><td><button class="link-button" data-action="${action}">${r.code}</button></td><td>${badge(r.type)}</td><td><span class="cell-title">${r.subject}</span><span class="cell-subtitle">${r.reason}</span></td><td class="money">${formatMoney(r.amount)}</td><td>${r.createdBy}</td><td>${r.age}</td><td>${badge(r.status)}</td><td><button class="button button-small" data-action="${action}">Xem hồ sơ</button></td></tr>`; });
+  return `${pageHeader("CN-04 · CN-06 · CN-07", "Đề nghị cần phê duyệt", "Tạm ngưng dịch vụ, miễn giảm, hoàn, xóa nợ và hủy hóa đơn đều phải có hồ sơ và người có thẩm quyền duyệt.", actionButton("Lập đề nghị", "createRequest", "primary", "+"))}
   <div class="callout warning"><span class="callout-icon">!</span><div><strong>Tách người lập và người duyệt</strong><p>Hệ thống chặn tự phê duyệt kể cả khi một tài khoản được gán nhiều vai trò.</p></div></div>
   ${panel("Hồ sơ đã lập", "Mọi quyết định giữ đầy đủ căn cứ, bằng chứng và lịch sử", table(["Mã", "Loại", "Đối tượng / lý do", "Ảnh hưởng", "Người lập", "Thời gian", "Trạng thái", ""], rows))}`;
 }
@@ -303,7 +325,7 @@ function leaderDashboard() {
 
 function leaderApprovals() {
   const rows = APP_DATA.requests.map(r => `<tr><td><button class="link-button" data-action="reviewApproval">${r.code}</button></td><td>${badge(r.type)}</td><td><span class="cell-title">${r.subject}</span><span class="cell-subtitle">${r.reason}</span></td><td class="money">${formatMoney(r.amount)}</td><td>${r.createdBy}</td><td>${r.age}</td><td>${badge(r.status)}</td><td><button class="button button-small" data-action="reviewApproval">Xem xét</button></td></tr>`);
-  return `${pageHeader("Quyết định về tiền", "Hàng chờ phê duyệt", "Lãnh đạo duyệt hoặc từ chối miễn giảm, hoàn tiền, xóa nợ và hủy/điều chỉnh hóa đơn.", actionButton("Xem quy chế", "policyPreview"))}
+  return `${pageHeader("Quyết định nghiệp vụ và tài chính", "Hàng chờ phê duyệt", "Lãnh đạo duyệt hoặc từ chối tạm ngưng dịch vụ, miễn giảm, hoàn tiền, xóa nợ và hủy/điều chỉnh hóa đơn.", actionButton("Xem quy chế", "policyPreview"))}
   <div class="callout"><span class="callout-icon">i</span><div><strong>Hệ thống kiểm tra tách bạch trước khi duyệt</strong><p>Không cho người lập tự duyệt hoặc áp dụng hồ sơ thiếu căn cứ bắt buộc.</p></div></div>
   ${panel("7 hồ sơ đang chờ", "Xếp theo tuổi hồ sơ và mức ảnh hưởng", table(["Mã", "Loại", "Đối tượng / lý do", "Ảnh hưởng", "Người lập", "Tuổi", "Trạng thái", ""], rows))}`;
 }
@@ -408,7 +430,7 @@ function audit() {
 }
 
 const VIEW_RENDERERS = {
-  communeDashboard, subjects, dataQuality, periods, billing, routes, debts, collectionProgress, requests,
+  communeDashboard, subjects, dataQuality, periods, billing, routes, routeDetail, debts, collectionProgress, requests,
   collectorToday, collectorRoute, collectorEntry, cashPending, shiftClose, collectorDebt,
   accountingDashboard, statements, unmatched, receipts, cashReconciliation, unitReconciliation, accountingReports,
   leaderDashboard, leaderApprovals, leaderAlerts, leaderReports, periodClose,

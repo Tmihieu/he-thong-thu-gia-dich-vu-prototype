@@ -56,6 +56,20 @@ const DIALOG_SPECS = {
       { type: "textarea", label: "Ghi chú", full: true }
     ]
   },
+  requestServiceSuspension: {
+    eyebrow: "Nợ → cảnh báo → phê duyệt", title: "Xem đề nghị tạm ngưng dịch vụ", description: "Nợ nhiều kỳ không làm dịch vụ tự động bị cắt. Chỉ tạm ngưng sau khi hồ sơ được phê duyệt và nhà thầu đã nhận thông báo.", confirm: "Gửi lãnh đạo duyệt",
+    summary: [["Hộ", "DTH-H000662"], ["Công nợ", "3 kỳ · 240.000đ"], ["Dịch vụ", "Vẫn đang cung cấp"]],
+    fields: [
+      { label: "Người đề nghị", value: "Phan Văn Thắng · Chủ hộ", readonly: true },
+      { type: "select", label: "Hướng xử lý", options: ["Đề nghị tạm ngưng có thời hạn", "Tiếp tục dịch vụ và lập lịch trả nợ", "Yêu cầu xác minh thực địa"], required: true },
+      { type: "date", label: "Ngày hiệu lực dự kiến", value: "2026-10-01", required: true },
+      { type: "date", label: "Ngày xem xét khôi phục", value: "2026-12-31" },
+      { type: "checkbox", label: "Xác nhận hệ thống không tự động cắt dịch vụ chỉ vì phát sinh nợ", checked: true, required: true, full: true },
+      { type: "checkbox", label: "Sau khi duyệt: khóa khoản mới/QR theo hiệu lực và thông báo nhà thầu", checked: true, required: true, full: true },
+      { type: "file", label: "Đơn đề nghị hoặc minh chứng", required: true },
+      { type: "textarea", label: "Ý kiến cán bộ xã", placeholder: "Kết quả rà soát công nợ, dịch vụ và đề xuất", required: true, full: true }
+    ]
+  },
   createContract: {
     eyebrow: "DM-10", title: "Tạo hợp đồng dịch vụ", description: "Liên kết đối tượng với dịch vụ, đơn vị cung cấp và phiên bản giá.", confirm: "Tạo hợp đồng mô phỏng",
     fields: [
@@ -137,16 +151,52 @@ const DIALOG_SPECS = {
     ]
   },
   assignRoute: {
-    eyebrow: "TH-01", title: "Phân công công ty và người đi thu", description: "Công ty là đầu mối phối hợp, không cần tài khoản hệ thống. Xã cấp quyền tuyến trực tiếp cho người đi thu trong thời gian hiệu lực.", confirm: "Lưu phân công mô phỏng",
+    eyebrow: "TH-01", title: "Phân công nhà thầu theo tuyến", description: "Chọn một tuyến đã có và nhà thầu chịu trách nhiệm. Một nhà thầu có thể phụ trách nhiều tuyến; thao tác này không tạo tài khoản hệ thống.", confirm: "Lưu phân công mô phỏng",
     fields: [
-      COMMON_PERIOD_FIELD,
       { type: "select", label: "Tuyến đường có sẵn", options: ["DTH-T07 · Đặng Thúc Vịnh – ấp 7", "DTH-T04 · Nguyễn Ảnh Thủ – ấp 4", "TTT-T11 · Trịnh Thị Miếng – ấp 3", "NB-T03 · Hà Huy Giáp – ấp 2"], required: true },
-      { type: "select", label: "Công ty phụ trách", options: ["Công ty MTĐT Đông Thạnh", "HTX Môi trường An Phú", "Công ty Dịch vụ Hóc Môn", "HTX Xanh Nhị Bình", "Công ty Môi trường Tân Tiến"], required: true, help: "Chỉ lưu để quản lý trách nhiệm và liên hệ; không tạo tài khoản cho công ty" },
-      { label: "Người quản lý công ty", placeholder: "Họ tên và số điện thoại liên hệ", required: true },
-      { type: "select", label: "Người đi thu được xã giao", options: ["Nguyễn Thành Long", "Phạm Minh Tuấn", "Võ Thị Lan", "Trần Quốc Huy", "Lương Thị Ngọc"], required: true },
+      { type: "select", label: "Nhà thầu phụ trách", options: APP_DATA.contractors, required: true, help: "Danh mục 11 nhà thầu; không cấp quyền đăng nhập từ form này" },
+      { label: "Đầu mối nhà thầu", placeholder: "Họ tên người quản lý", required: true },
+      { label: "Số điện thoại đầu mối", placeholder: "09xx xxx xxx", required: true },
       { type: "date", label: "Hiệu lực từ", value: "2026-09-01", required: true },
-      { type: "date", label: "Hiệu lực đến", value: "2026-09-30", required: true },
-      { type: "textarea", label: "Phạm vi tuyến / điểm đầu–cuối", placeholder: "Mô tả đoạn đường, hẻm và điểm bàn giao", required: true, full: true }
+      { type: "date", label: "Hiệu lực đến", value: "2026-12-31", required: true },
+      { type: "textarea", label: "Ghi chú phân công", placeholder: "Điều kiện bàn giao, lịch thu hoặc yêu cầu riêng", full: true }
+    ]
+  },
+  editRoute: {
+    eyebrow: "Quản lý tuyến", title: "Sửa thông tin tuyến", description: "Chỉ sửa dữ liệu mô tả tuyến. Thay đổi nhà thầu thực hiện qua chức năng phân công để giữ lịch sử hiệu lực.", confirm: "Lưu tuyến mô phỏng",
+    summary: [["Mã tuyến", "DTH-T07"], ["Quy mô", "642 hộ"], ["Trạng thái", "Đã phân công"]],
+    fields: [
+      { label: "Mã tuyến", value: "DTH-T07", readonly: true },
+      { label: "Tên tuyến / trục đường", value: "Đặng Thúc Vịnh – ấp 7", required: true },
+      { type: "textarea", label: "Phạm vi / điểm đầu–cuối", value: "Số 1–126 và các hẻm nhánh", required: true, full: true },
+      { type: "select", label: "Lịch thu", options: ["Hằng ngày", "T2 · T4 · T6", "T3 · T5 · T7"], value: "T2 · T4 · T6", required: true },
+      { type: "number", label: "Số hộ dự kiến", value: "642", min: 0, required: true },
+      { type: "select", label: "Trạng thái tuyến", options: ["Đang hoạt động", "Tạm ngưng", "Chờ rà soát"], required: true },
+      { type: "textarea", label: "Lý do cập nhật", placeholder: "Bắt buộc lưu vào lịch sử thay đổi tuyến", required: true, full: true }
+    ]
+  },
+  changeContractor: {
+    eyebrow: "Lịch sử assignment", title: "Thay nhà thầu phụ trách tuyến", description: "Không sửa hoặc xóa Công ty A. Hệ thống kết thúc assignment hiện tại và tạo assignment mới cho Công ty B từ ngày hiệu lực.", confirm: "Tạo phân công mới",
+    summary: [["Tuyến", "DTH-T07"], ["Hiện tại", "Công ty MTĐT Đông Thạnh"], ["Hết hiệu lực", "30/09/2026"]],
+    fields: [
+      { type: "select", label: "Nhà thầu mới", options: APP_DATA.contractors.filter(name => name !== "Công ty MTĐT Đông Thạnh"), required: true },
+      { type: "select", label: "Vai trò của nhà thầu mới", options: ["Chỉ được giao thực hiện/thu", "Là bên ký hợp đồng dịch vụ"], required: true, help: "Lựa chọn này quyết định giữ hợp đồng hay tạo hợp đồng mới" },
+      { type: "date", label: "Kết thúc phân công hiện tại", value: "2026-09-30", required: true },
+      { type: "date", label: "Phân công mới hiệu lực từ", value: "2026-10-01", required: true },
+      { label: "Đầu mối nhà thầu mới", placeholder: "Họ tên và số điện thoại", required: true },
+      { type: "checkbox", label: "Giữ nguyên lịch sử Công ty A và không cho chồng lấn hiệu lực", checked: true, required: true, full: true },
+      { type: "textarea", label: "Lý do thay đổi", placeholder: "Căn cứ quyết định hoặc biên bản bàn giao", required: true, full: true }
+    ]
+  },
+  contractDecision: {
+    eyebrow: "Quy tắc hợp đồng", title: "Xác định cách xử lý hợp đồng", description: "Hợp đồng chỉ thay đổi khi nhà thầu mới là bên ký hợp đồng dịch vụ; việc giao thực hiện/thu chỉ thay assignment.", confirm: "Xác nhận phương án mô phỏng",
+    fields: [
+      { type: "select", label: "Vai trò nhà thầu mới", options: ["Chỉ được giao thực hiện/thu", "Là bên ký hợp đồng dịch vụ"], required: true },
+      { label: "Hợp đồng hiện tại", value: "HĐ-DTH-0128 · còn hiệu lực", readonly: true },
+      { type: "select", label: "Phương án", options: ["Giữ hợp đồng, tạo assignment mới", "Kết thúc hợp đồng cũ và tạo hợp đồng mới"], required: true },
+      { type: "date", label: "Ngày áp dụng", value: "2026-10-01", required: true },
+      { type: "checkbox", label: "Không sửa/xóa lịch sử hợp đồng hoặc phân công cũ", checked: true, required: true, full: true },
+      { type: "textarea", label: "Căn cứ xác định vai trò pháp lý", placeholder: "Hợp đồng, quyết định giao nhiệm vụ hoặc văn bản liên quan", required: true, full: true }
     ]
   },
   urgeRouteManager: {
@@ -173,7 +223,7 @@ const DIALOG_SPECS = {
   createRequest: {
     eyebrow: "CN-04/06/07", title: "Lập đề nghị tài chính", description: "Người lập đề nghị không được tự phê duyệt hồ sơ này.", confirm: "Gửi lãnh đạo duyệt",
     fields: [
-      { type: "select", label: "Loại đề nghị", options: ["Miễn giảm", "Hoàn tiền", "Xóa nợ", "Hủy/điều chỉnh hóa đơn"], required: true },
+      { type: "select", label: "Loại đề nghị", options: ["Tạm ngưng dịch vụ", "Miễn giảm", "Hoàn tiền", "Xóa nợ", "Hủy/điều chỉnh hóa đơn"], required: true },
       { label: "Mã khoản/đối tượng", placeholder: "Nhập mã để tra cứu", required: true },
       { type: "number", label: "Số tiền ảnh hưởng", placeholder: "0", min: 0, required: true },
       { type: "select", label: "Căn cứ", options: ["Hộ chính sách", "Thu trùng/chuyển nhầm", "Đối tượng không còn tồn tại", "Sai dữ liệu/hợp đồng", "Khác"], required: true },
@@ -350,8 +400,8 @@ const DIALOG_SPECS = {
     ]
   },
   reviewApproval: {
-    eyebrow: "Phê duyệt bắt buộc", title: "Xem xét đề nghị tài chính", description: "Người duyệt chịu trách nhiệm về quyết định và không được là người lập hồ sơ.", confirm: "Phê duyệt mô phỏng",
-    summary: [["Hồ sơ", "YC-2609-018"], ["Loại", "Miễn giảm"], ["Ảnh hưởng", "80.000đ"]],
+    eyebrow: "Phê duyệt bắt buộc", title: "Xem xét đề nghị nghiệp vụ/tài chính", description: "Bao gồm tạm ngưng dịch vụ và các quyết định về tiền. Người duyệt chịu trách nhiệm và không được là người lập hồ sơ.", confirm: "Phê duyệt mô phỏng",
+    summary: [["Hồ sơ", "YC-2609-021"], ["Loại", "Tạm ngưng dịch vụ"], ["Công nợ", "3 kỳ · 240.000đ"]],
     fields: [
       { type: "select", label: "Quyết định", options: ["Phê duyệt", "Từ chối", "Yêu cầu bổ sung"], required: true },
       { type: "textarea", label: "Ý kiến lãnh đạo", placeholder: "Nhập căn cứ và ý kiến xử lý", required: true, full: true },

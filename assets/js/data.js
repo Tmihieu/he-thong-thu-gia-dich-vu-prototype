@@ -28,6 +28,7 @@ const APP_DATA = {
   subjects: [
     { code: "DTH-H000128", name: "Nguyễn Văn Minh", type: "Hộ gia đình", address: "12/5 Đặng Thúc Vịnh, ấp 7", people: 4, contract: "HĐ-DTH-0128", tariff: "HGĐ ≥ 3 người", amount: 80000, unit: "ĐV Đông Thạnh", route: "DTH-T07", serviceStatus: "Đang cung cấp", status: "Đang hoạt động" },
     { code: "DTH-H000305", name: "Trần Thị Hồng", type: "Hộ gia đình", address: "41/2 Nguyễn Ảnh Thủ, ấp 4", people: 2, contract: "HĐ-DTH-0305", tariff: "HGĐ ≤ 2 người", amount: 40000, unit: "ĐV Đông Thạnh", route: "DTH-T04", serviceStatus: "Đang cung cấp", status: "Đang hoạt động" },
+    { code: "DTH-H000662", name: "Phan Văn Thắng", type: "Hộ gia đình", address: "22/9 Đặng Thúc Vịnh, ấp 7", people: 4, contract: "HĐ-DTH-0662", tariff: "HGĐ ≥ 3 người", amount: 240000, unit: "Công ty MTĐT Đông Thạnh", route: "DTH-T07", serviceStatus: "Đề nghị tạm ngưng", status: "Nợ 3 kỳ", suspensionRequest: true },
     { code: "TTT-KD00142", name: "Tạp hóa Minh Châu", type: "Hộ kinh doanh", address: "96 Trịnh Thị Miếng", people: null, contract: "HĐ-TTT-142", tariff: "Chủ nguồn thải nhỏ", amount: 119000, unit: "Chưa phân công", route: "—", serviceStatus: "Chờ phân loại", status: "Chờ xác minh" },
     { code: "NB-DN00038", name: "Công ty TNHH Nam An", type: "Doanh nghiệp", address: "18 Hà Huy Giáp, ấp 2", people: null, contract: "HĐ-NB-0038", tariff: "Theo khối lượng", amount: 1266000, unit: "ĐV Nhị Bình", route: "NB-T03", serviceStatus: "Đang cung cấp", status: "Đang hoạt động" },
     { code: "DTH-H001152", name: "Lê Quốc Bảo", type: "Hộ gia đình", address: "7/11 Lê Văn Khương, ấp 6", people: 5, contract: "HĐ-DTH-1152", tariff: "HGĐ ≥ 3 người", amount: 80000, unit: "ĐV Đông Thạnh", route: "DTH-T06", serviceStatus: "Đã chấm dứt 31/08", status: "Tạm ngưng" }
@@ -61,18 +62,42 @@ const APP_DATA = {
     { code: "DOT-TTT-0926-01", area: "Thới Tam Thôn", count: 16987, value: "1,337 tỷ", errors: 12, issuedBy: "—", status: "Chờ phát hành" },
     { code: "DOT-NB-0926-01", area: "Nhị Bình", count: 13455, value: "1,031 tỷ", errors: 0, issuedBy: "Nguyễn Thu Hà", status: "Đã phát hành" }
   ],
+  contractors: [
+    "Công ty MTĐT Đông Thạnh", "HTX Môi trường An Phú", "Công ty Dịch vụ Hóc Môn", "HTX Xanh Nhị Bình", "Công ty Môi trường Tân Tiến", "Công ty Công ích Thành Phát", "Công ty Xanh Sài Gòn", "HTX Dịch vụ Phú Thành", "Công ty Môi trường Minh Tâm", "HTX Thu gom Hòa Bình", "Công ty Công ích Gia Định"
+  ],
   routes: [
-    { code: "DTH-T07", name: "Đặng Thúc Vịnh – ấp 7", area: "Đông Thạnh", collector: "Nguyễn Thành Long", unit: "Công ty MTĐT Đông Thạnh", manager: "Trần Hoàng Phúc", households: 426, progress: 78, status: "Đang thực hiện" },
-    { code: "DTH-T04", name: "Nguyễn Ảnh Thủ – ấp 4", area: "Đông Thạnh", collector: "Phạm Minh Tuấn", unit: "HTX Môi trường An Phú", manager: "Ngô Thị Thanh", households: 389, progress: 91, status: "Đang thực hiện" },
-    { code: "TTT-T11", name: "Trịnh Thị Miếng – ấp 3", area: "Thới Tam Thôn", collector: "Võ Thị Lan", unit: "Công ty Dịch vụ Hóc Môn", manager: "Lê Minh Hải", households: 512, progress: 69, status: "Cần đôn đốc" },
-    { code: "NB-T03", name: "Hà Huy Giáp – ấp 2", area: "Nhị Bình", collector: "Trần Quốc Huy", unit: "HTX Xanh Nhị Bình", manager: "Phạm Văn Tâm", households: 344, progress: 74, status: "Đang thực hiện" },
-    { code: "DTH-T02", name: "Lê Văn Khương – ấp 6", area: "Đông Thạnh", collector: "Đặng Minh Khoa", unit: "Công ty Môi trường Tân Tiến", manager: "Võ Thanh Bình", households: 318, progress: 75, status: "Đang thực hiện" },
-    { code: "TTT-T08", name: "Song Hành – ấp 5", area: "Thới Tam Thôn", collector: "Lương Thị Ngọc", unit: "Công ty Công ích Thành Phát", manager: "Nguyễn Quốc Dũng", households: 468, progress: 56, status: "Cần đôn đốc" },
-    { code: "NB-T06", name: "Bờ bao sông Sài Gòn", area: "Nhị Bình", collector: "Huỳnh Văn Sang", unit: "Công ty Xanh Sài Gòn", manager: "Trương Thị Mỹ", households: 291, progress: 72, status: "Đang thực hiện" },
-    { code: "DTH-T09", name: "Đông Thạnh 4 – ấp 8", area: "Đông Thạnh", collector: "Nguyễn Thị Yến", unit: "HTX Dịch vụ Phú Thành", manager: "Đỗ Quốc Việt", households: 357, progress: 81, status: "Đang thực hiện" },
-    { code: "TTT-T03", name: "Đặng Công Bỉnh – ấp 2", area: "Thới Tam Thôn", collector: "Phan Minh Trí", unit: "Công ty Môi trường Minh Tâm", manager: "Mai Thị Thu", households: 402, progress: 77, status: "Đang thực hiện" },
-    { code: "NB-T09", name: "Nguyễn Văn Bứa – ấp 4", area: "Nhị Bình", collector: "Bùi Thanh Tùng", unit: "HTX Thu gom Hòa Bình", manager: "Lý Thành Công", households: 329, progress: 64, status: "Theo dõi" },
-    { code: "TTT-T14", name: "Phan Văn Hớn – ấp 7", area: "Thới Tam Thôn", collector: "Trương Ngọc Ánh", unit: "Công ty Công ích Gia Định", manager: "Dương Văn Phú", households: 441, progress: 70, status: "Theo dõi" }
+    { code: "DTH-T07", name: "Đặng Thúc Vịnh – ấp 7", area: "Đông Thạnh", coverage: "Số 1–126 và các hẻm nhánh", schedule: "T2 · T4 · T6", unit: "Công ty MTĐT Đông Thạnh", manager: "Trần Hoàng Phúc", households: 642, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "DTH-T12", name: "Đông Thạnh 3 – ấp 5", area: "Đông Thạnh", coverage: "Đoạn cầu Rạch Tra đến UBND", schedule: "T3 · T5 · T7", unit: "Công ty MTĐT Đông Thạnh", manager: "Trần Hoàng Phúc", households: 518, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "DTH-T04", name: "Nguyễn Ảnh Thủ – ấp 4", area: "Đông Thạnh", coverage: "Số 312–566 và hẻm 421", schedule: "T2 · T4 · T6", unit: "HTX Môi trường An Phú", manager: "Ngô Thị Thanh", households: 571, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "NB-T12", name: "Đường ven rạch Cầu Dừa", area: "Nhị Bình", coverage: "Từ cầu Cầu Dừa đến bến đò", schedule: "T3 · T5 · T7", unit: "HTX Môi trường An Phú", manager: "Ngô Thị Thanh", households: 486, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "TTT-T11", name: "Trịnh Thị Miếng – ấp 3", area: "Thới Tam Thôn", coverage: "Số 12–288, gồm 9 hẻm", schedule: "T2 · T4 · T6", unit: "Công ty Dịch vụ Hóc Môn", manager: "Lê Minh Hải", households: 734, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "TTT-T15", name: "Dương Công Khi – ấp 6", area: "Thới Tam Thôn", coverage: "Đoạn Nguyễn Ảnh Thủ–Song Hành", schedule: "T3 · T5 · T7", unit: "Công ty Dịch vụ Hóc Môn", manager: "Lê Minh Hải", households: 612, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "NB-T03", name: "Hà Huy Giáp – ấp 2", area: "Nhị Bình", coverage: "Số 18–210 và khu dân cư ven sông", schedule: "Hằng ngày", unit: "HTX Xanh Nhị Bình", manager: "Phạm Văn Tâm", households: 608, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "NB-T07", name: "Nhị Bình 8 – ấp 1", area: "Nhị Bình", coverage: "Từ Hà Huy Giáp đến bờ bao", schedule: "T2 · T4 · T6", unit: "HTX Xanh Nhị Bình", manager: "Phạm Văn Tâm", households: 455, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "DTH-T02", name: "Lê Văn Khương – ấp 6", area: "Đông Thạnh", coverage: "Số 510–892 và 12 hẻm", schedule: "Hằng ngày", unit: "Công ty Môi trường Tân Tiến", manager: "Võ Thanh Bình", households: 796, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "DTH-T14", name: "Đường ĐT 5 – ấp 6", area: "Đông Thạnh", coverage: "Nhánh phía đông Lê Văn Khương", schedule: "T3 · T5 · T7", unit: "Công ty Môi trường Tân Tiến", manager: "Võ Thanh Bình", households: 533, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "TTT-T08", name: "Song Hành – ấp 5", area: "Thới Tam Thôn", coverage: "Đoạn QL22–Đặng Công Bỉnh", schedule: "Hằng ngày", unit: "Công ty Công ích Thành Phát", manager: "Nguyễn Quốc Dũng", households: 688, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "TTT-T17", name: "Tân Thới Nhất 17 – ấp 7", area: "Thới Tam Thôn", coverage: "Khu dân cư phía bắc Song Hành", schedule: "T2 · T4 · T6", unit: "Công ty Công ích Thành Phát", manager: "Nguyễn Quốc Dũng", households: 407, effective: "01/09–31/12/2026", status: "Sắp hết hiệu lực" },
+    { code: "NB-T06", name: "Bờ bao sông Sài Gòn", area: "Nhị Bình", coverage: "Từ bến đò đến rạch Trầu", schedule: "T3 · T5 · T7", unit: "Công ty Xanh Sài Gòn", manager: "Trương Thị Mỹ", households: 649, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "NB-T10", name: "Nhị Bình 15 – ấp 3", area: "Nhị Bình", coverage: "Khu dân cư ven rạch Trầu", schedule: "T2 · T4 · T6", unit: "Công ty Xanh Sài Gòn", manager: "Trương Thị Mỹ", households: 592, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "DTH-T09", name: "Đông Thạnh 4 – ấp 8", area: "Đông Thạnh", coverage: "Khu dân cư Đông Thạnh 4", schedule: "T3 · T5 · T7", unit: "HTX Dịch vụ Phú Thành", manager: "Đỗ Quốc Việt", households: 521, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "DTH-T16", name: "Rạch Tra – ấp 8", area: "Đông Thạnh", coverage: "Đường ven rạch và 6 hẻm nhánh", schedule: "T2 · T4 · T6", unit: "HTX Dịch vụ Phú Thành", manager: "Đỗ Quốc Việt", households: 478, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "TTT-T03", name: "Đặng Công Bỉnh – ấp 2", area: "Thới Tam Thôn", coverage: "Số 1–390 và hẻm 117", schedule: "Hằng ngày", unit: "Công ty Môi trường Minh Tâm", manager: "Mai Thị Thu", households: 754, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "TTT-T13", name: "Bùi Công Trừng – ấp 4", area: "Thới Tam Thôn", coverage: "Đoạn Trịnh Thị Miếng–QL22", schedule: "T3 · T5 · T7", unit: "Công ty Môi trường Minh Tâm", manager: "Mai Thị Thu", households: 569, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "NB-T09", name: "Nguyễn Văn Bứa – ấp 4", area: "Nhị Bình", coverage: "Số 820–1150 và hẻm nhánh", schedule: "T2 · T4 · T6", unit: "HTX Thu gom Hòa Bình", manager: "Lý Thành Công", households: 677, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "NB-T15", name: "Bờ bao Rạch Tra – ấp 5", area: "Nhị Bình", coverage: "Từ cầu sắt đến giáp An Phú Đông", schedule: "T3 · T5 · T7", unit: "HTX Thu gom Hòa Bình", manager: "Lý Thành Công", households: 438, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "TTT-T14", name: "Phan Văn Hớn – ấp 7", area: "Thới Tam Thôn", coverage: "Số 401–795 và 8 hẻm", schedule: "Hằng ngày", unit: "Công ty Công ích Gia Định", manager: "Dương Văn Phú", households: 615, effective: "01/09–31/12/2026", status: "Đã phân công" },
+    { code: "DTH-T18", name: "Đông Thạnh 2 – ấp 3", area: "Đông Thạnh", coverage: "Khu vực giáp Thới Tam Thôn", schedule: "T2 · T4 · T6", unit: "Công ty Công ích Gia Định", manager: "Dương Văn Phú", households: 502, effective: "01/09–31/12/2026", status: "Chờ gia hạn" }
+  ],
+  routeHouseholds: [
+    { code: "DTH-H000128", name: "Nguyễn Văn Minh", type: "Hộ gia đình", address: "12/5 Đặng Thúc Vịnh", tariff: "HGĐ ≥ 3 người", amount: 80000, debt: "1 kỳ", service: "Đang cung cấp", collection: "Chưa thu" },
+    { code: "DTH-H000131", name: "Trần Thị Ánh", type: "Hộ gia đình", address: "12/8 Đặng Thúc Vịnh", tariff: "HGĐ ≥ 3 người", amount: 160000, debt: "2 kỳ", service: "Đang cung cấp", collection: "Quá hạn" },
+    { code: "DTH-KD00024", name: "Tạp hóa Thanh Bình", type: "Hộ kinh doanh", address: "13 Đặng Thúc Vịnh", tariff: "Chủ nguồn thải nhỏ", amount: 119000, debt: "1 kỳ", service: "Đang cung cấp", collection: "Chưa thu" },
+    { code: "DTH-H000136", name: "Lê Hoàng Nam", type: "Hộ gia đình", address: "14/1 Đặng Thúc Vịnh", tariff: "HGĐ ≥ 3 người", amount: 80000, debt: "1 kỳ", service: "Đang cung cấp", collection: "Vắng nhà" },
+    { code: "DTH-H000142", name: "Phạm Thị Lan", type: "Hộ gia đình", address: "14/7 Đặng Thúc Vịnh", tariff: "HGĐ ≤ 2 người", amount: 0, debt: "0 kỳ", service: "Đang cung cấp", collection: "Đã thu" },
+    { code: "DTH-CS00017", name: "Cơ sở may Minh Anh", type: "Cơ sở sản xuất", address: "15/2 Đặng Thúc Vịnh", tariff: "Theo khối lượng", amount: 1266000, debt: "1 kỳ", service: "Đang cung cấp", collection: "Chờ xác minh" },
+    { code: "DTH-H000149", name: "Võ Quốc Khánh", type: "Hộ gia đình", address: "16/2 Đặng Thúc Vịnh", tariff: "HGĐ ≥ 3 người", amount: 0, debt: "0 kỳ", service: "Đang cung cấp", collection: "Đã thu tiền mặt" },
+    { code: "DTH-H001152", name: "Lê Quốc Bảo", type: "Hộ gia đình", address: "17/11 Đặng Thúc Vịnh", tariff: "HGĐ ≥ 3 người", amount: 0, debt: "0 kỳ", service: "Đã chấm dứt 31/08", collection: "Khóa thu" }
   ],
   debts: [
     { code: "DTH-H000662", name: "Phan Văn Thắng", area: "Đông Thạnh", periods: 3, age: 72, amount: 240000, contact: "10/09 · Không nghe máy", status: "Quá hạn 60 ngày" },
@@ -81,6 +106,7 @@ const APP_DATA = {
     { code: "DTH-KD00077", name: "Quán ăn Hương Việt", area: "Đông Thạnh", periods: 2, age: 43, amount: 238000, contact: "09/09 · Tranh chấp giá", status: "Có khiếu nại" }
   ],
   requests: [
+    { code: "YC-2609-021", type: "Tạm ngưng DV", subject: "DTH-H000662 · Phan Văn Thắng", amount: 0, reason: "Hộ đề nghị ngưng · đang nợ 3 kỳ", createdBy: "Nguyễn Thu Hà", age: "3 giờ", status: "Chờ duyệt" },
     { code: "YC-2609-018", type: "Miễn giảm", subject: "DTH-H000884 · Nguyễn Thị Sáu", amount: 80000, reason: "Hộ chính sách", createdBy: "Nguyễn Thu Hà", age: "1 ngày", status: "Chờ duyệt" },
     { code: "YC-2609-015", type: "Hoàn tiền", subject: "TTT-H001221 · Lê Minh Hoàng", amount: 80000, reason: "Chuyển khoản trùng", createdBy: "Trần Mỹ Duyên", age: "2 ngày", status: "Chờ duyệt" },
     { code: "YC-2609-011", type: "Xóa nợ", subject: "NB-H000482 · Trần Quốc Phúc", amount: 400000, reason: "Chuyển đi không xác định", createdBy: "Vũ Hoàng Anh", age: "4 ngày", status: "Cần bổ sung" },

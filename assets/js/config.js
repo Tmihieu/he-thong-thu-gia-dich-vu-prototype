@@ -12,9 +12,10 @@ const ROLE_CONFIG = {
       { id: "data-quality", group: "Dữ liệu nền", label: "Nhập & chuẩn hóa", caption: "Import, chống trùng, ánh xạ", icon: "⇩", view: "dataQuality", count: 23 },
       { id: "periods", group: "Lập khoản", label: "Kỳ & đợt thu", caption: "Mở kỳ, kiểm tra đầu vào", icon: "◫", view: "periods" },
       { id: "billing", group: "Lập khoản", label: "Khoản & hóa đơn", caption: "Sinh, phát hành, khoản lẻ", icon: "₫", view: "billing", count: 18 },
-      { id: "routes", group: "Tổ chức thu", label: "Bản đồ & phân tuyến", caption: "11 công ty, tuyến và người thu", icon: "⌖", view: "routes" },
+      { id: "routes", group: "Tổ chức thu", label: "Quản lý tuyến", caption: "Khu vực, tuyến và nhà thầu", icon: "⌖", view: "routes" },
+      { id: "route-detail", group: "Tổ chức thu", label: "Chi tiết tuyến", caption: "Hộ và chủ nguồn thải", icon: "▦", view: "routeDetail", hiddenInNav: true, parentScreen: "routes" },
       { id: "debts", group: "Tổ chức thu", label: "Tiến độ người đi thu", caption: "Theo người, tuyến và công nợ hộ", icon: "!", view: "collectionProgress", count: 3 },
-      { id: "requests", group: "Quyết định tiền", label: "Đề nghị tài chính", caption: "Miễn giảm, hoàn, xóa nợ", icon: "✓", view: "requests", count: 7 }
+      { id: "requests", group: "Phê duyệt", label: "Đề nghị cần duyệt", caption: "Tạm ngưng, miễn giảm, hoàn", icon: "✓", view: "requests", count: 8 }
     ]
   },
   collector: {

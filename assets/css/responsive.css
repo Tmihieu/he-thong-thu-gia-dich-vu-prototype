@@ -8,6 +8,10 @@
   .kpi-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .content-grid.three { grid-template-columns: 1fr; }
   .route-planning-layout { grid-template-columns: 1fr; }
+  .route-detail-layout { grid-template-columns: 1fr; }
+  .area-route-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .route-filterbar { grid-template-columns: minmax(220px,1fr) minmax(200px,280px); }
+  .route-filterbar label:last-child { grid-column: 1 / -1; }
   .route-map-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
   .route-map-list-head { grid-column: 1 / -1; }
   .map-route-item:nth-child(2n) { border-right: 1px solid var(--gray-100); }
@@ -68,11 +72,18 @@
   .steps { grid-template-columns: 1fr 1fr; }
   .qr-card { grid-template-columns: 1fr; justify-items: center; text-align: center; }
   .collector-filterbar { grid-template-columns: 1fr 1fr; }
+  .route-filterbar { grid-template-columns: 1fr 1fr; }
+  .route-search { grid-column: 1 / -1; }
+  .route-filterbar label:last-child { grid-column: auto; }
   .collector-search { grid-column: 1 / -1; }
   .collection-chips { grid-column: 1 / -1; }
   .collection-list-head { align-items: flex-start; }
   .mini-progress { width: 38%; }
   .route-actions .button { flex-basis: calc(50% - 7px); }
+  .route-pair { grid-template-columns: 1fr; }
+  .route-pair-link { padding: 5px 0; }
+  .route-pair-link::before, .route-pair-link::after { display: none; }
+  .contract-rule-grid { grid-template-columns: 1fr; }
   .dialog-header, .dialog-body { padding-inline: 16px; }
   .dialog-footer { align-items: stretch; flex-direction: column; padding-inline: 16px; }
   .dialog-footer > div { display: grid; grid-template-columns: 1fr 1fr; }
@@ -89,6 +100,9 @@
   .brand-copy { display: none; }
   .top-actions { margin-left: auto; }
   .route-map-list { grid-template-columns: 1fr; }
+  .area-route-grid { grid-template-columns: 1fr; }
+  .route-filterbar { grid-template-columns: 1fr; }
+  .route-search, .route-filterbar label:last-child { grid-column: auto; }
   .map-route-item:nth-child(2n) { border-right: 0; }
   .map-toolbar { align-items: flex-start; flex-direction: column; gap: 3px; }
   .map-legend small { width: 100%; margin-left: 0; }

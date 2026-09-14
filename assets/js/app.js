@@ -54,17 +54,20 @@ function renderRoleOptions() {
 
 function renderNavigation() {
   const role = ROLE_CONFIG[currentRole];
+  const currentConfig = role.screens.find(screen => screen.id === currentScreen);
   document.getElementById("roleName").textContent = role.label;
   document.getElementById("roleDescription").textContent = role.description;
   document.getElementById("avatarInitials").textContent = role.initials;
   let group = "";
   const html = [];
   role.screens.forEach(screen => {
+    if (screen.hiddenInNav) return;
     if (screen.group !== group) {
       group = screen.group;
       html.push(`<div class="nav-group-label">${group}</div>`);
     }
-    html.push(`<button type="button" class="nav-item ${screen.id === currentScreen ? "active" : ""}" data-screen="${screen.id}" ${screen.id === currentScreen ? 'aria-current="page"' : ""}>
+    const active = screen.id === currentScreen || currentConfig?.parentScreen === screen.id;
+    html.push(`<button type="button" class="nav-item ${active ? "active" : ""}" data-screen="${screen.id}" ${active ? 'aria-current="page"' : ""}>
       <span class="nav-icon" aria-hidden="true">${screen.icon}</span>
       <span class="nav-copy"><strong>${screen.label}</strong><small>${screen.caption}</small></span>
       ${screen.count ? `<span class="nav-count">${screen.count}</span>` : ""}
@@ -193,6 +196,31 @@ function setCollectorStatusFilter(button) {
   applyCollectorListFilters(container);
 }
 
+function applyRouteListFilters() {
+  const container = document.querySelector("[data-route-list]");
+  if (!container) return;
+  const query = (container.querySelector("[data-route-search]")?.value || "").trim().toLowerCase();
+  const contractor = container.querySelector("[data-route-contractor]")?.value || "all";
+  const routeType = container.querySelector("[data-route-type-filter]")?.value || "all";
+  const status = container.querySelector("[data-route-status]")?.value || "all";
+  const activeArea = document.querySelector("[data-route-area-filter].active")?.dataset.routeAreaFilter || "all";
+  const rows = [...container.querySelectorAll("[data-route-row]")];
+  let visible = 0;
+  rows.forEach(row => {
+    const matchesText = !query || (row.dataset.search || "").includes(query);
+    const matchesContractor = contractor === "all" || row.dataset.contractor === contractor;
+    const matchesRouteType = routeType === "all" || row.dataset.routeType === routeType;
+    const matchesStatus = status === "all" || row.dataset.status === status;
+    const matchesArea = activeArea === "all" || row.dataset.area === activeArea;
+    row.hidden = !(matchesText && matchesContractor && matchesRouteType && matchesStatus && matchesArea);
+    if (!row.hidden) visible++;
+  });
+  const count = container.querySelector("[data-route-count]");
+  if (count) count.textContent = `${visible} tuyến phù hợp`;
+  const empty = container.querySelector("[data-route-empty]");
+  if (empty) empty.hidden = visible !== 0;
+}
+
 function openSidebar() {
   document.getElementById("sidebar").classList.add("open");
   document.getElementById("sidebarBackdrop").classList.add("show");
@@ -212,6 +240,12 @@ function bindAppEvents() {
     if (button) showScreen(button.dataset.screen);
   });
   document.getElementById("mainContent").addEventListener("click", event => {
+    const areaFilter = event.target.closest("[data-route-area-filter]");
+    if (areaFilter) {
+      document.querySelectorAll("[data-route-area-filter]").forEach(item => item.classList.toggle("active", item === areaFilter));
+      applyRouteListFilters();
+      return;
+    }
     const collectorStatus = event.target.closest("[data-list-filter-status]");
     if (collectorStatus) {
       setCollectorStatusFilter(collectorStatus);
@@ -228,8 +262,13 @@ function bindAppEvents() {
   });
   document.getElementById("mainContent").addEventListener("input", event => {
     if (event.target.matches("[data-list-search]")) applyCollectorListFilters(event.target.closest("[data-collector-list]"));
+    if (event.target.matches("[data-route-search]")) applyRouteListFilters();
   });
   document.getElementById("mainContent").addEventListener("change", event => {
+    if (event.target.matches("[data-route-contractor], [data-route-type-filter], [data-route-status]")) {
+      applyRouteListFilters();
+      return;
+    }
     if (!event.target.matches("[data-list-status]")) return;
     const container = event.target.closest("[data-collector-list]");
     container.querySelectorAll("[data-list-filter-status]").forEach(item => item.classList.toggle("active", item.dataset.listFilterStatus === event.target.value));
