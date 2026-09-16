@@ -68,7 +68,7 @@ function renderNavigation() {
     }
     const active = screen.id === currentScreen || currentConfig?.parentScreen === screen.id;
     html.push(`<button type="button" class="nav-item ${active ? "active" : ""}" data-screen="${screen.id}" ${active ? 'aria-current="page"' : ""}>
-      <span class="nav-icon" aria-hidden="true">${screen.icon}</span>
+      <span class="nav-icon">${icon(screen.icon)}</span>
       <span class="nav-copy"><strong>${screen.label}</strong><small>${screen.caption}</small></span>
       ${screen.count ? `<span class="nav-count">${screen.count}</span>` : ""}
     </button>`);
@@ -76,16 +76,33 @@ function renderNavigation() {
   document.getElementById("roleNav").innerHTML = html.join("");
 }
 
-function renderCurrentView() {
+function renderCurrentView(options = {}) {
   const screen = SCREEN_INDEX[`${currentRole}:${currentScreen}`];
   const renderer = screen && VIEW_RENDERERS[screen.view];
+  const main = document.getElementById("mainContent");
   if (!renderer) {
-    document.getElementById("mainContent").innerHTML = pageHeader("Không tìm thấy", "Màn hình chưa sẵn sàng", "Không có bộ dựng giao diện cho chức năng này.");
+    main.innerHTML = pageHeader("Không tìm thấy", "Màn hình chưa sẵn sàng", "Không có bộ dựng giao diện cho chức năng này.");
     return;
   }
   document.title = `${screen.label} · Hệ thống thu giá CTRSH`;
-  document.getElementById("mainContent").innerHTML = renderer();
-  document.getElementById("mainContent").focus({ preventScroll: true });
+  const restore = options.keepFocus && document.activeElement && main.contains(document.activeElement)
+    ? { selector: focusSelector(document.activeElement), scrollY: window.scrollY }
+    : null;
+  main.innerHTML = renderer();
+  main.querySelectorAll("[data-table-filter]").forEach(applyTableFilter);
+  if (restore) {
+    const target = restore.selector && main.querySelector(restore.selector);
+    if (target) target.focus({ preventScroll: true });
+    window.scrollTo(0, restore.scrollY);
+    return;
+  }
+  main.focus({ preventScroll: true });
+}
+
+function focusSelector(el) {
+  if (el.id) return `#${el.id}`;
+  const attr = [...el.attributes].find(a => a.name.startsWith("data-") && a.name !== "data-id");
+  return attr ? `[${attr.name}="${attr.value}"]` : null;
 }
 
 function renderApp() {
@@ -101,9 +118,11 @@ function renderApp() {
 }
 
 function openDemoModal(actionId) {
+  document.getElementById("dialogConfirm").hidden = false;
+  document.getElementById("dialogConfirm").disabled = false;
   const spec = DIALOG_SPECS[actionId];
   if (!spec) {
-    showDemoNotice(actionId === "applyFilter" ? "Đã áp dụng bộ lọc minh họa." : "Chức năng đang được mô phỏng, không phát sinh thay đổi dữ liệu.");
+    showDemoNotice("Chức năng đang được mô phỏng, không phát sinh thay đổi dữ liệu.");
     return false;
   }
   activeDialogAction = actionId;
@@ -145,6 +164,7 @@ function renderQrPattern() {
 
 function handleAction(action, target) {
   if (!action) return;
+  if (action === "importData" && currentRole === "commune") { showScreen("data-quality"); return; }
   if (action.startsWith("go:")) {
     showScreen(action.slice(3));
     return;
@@ -158,8 +178,7 @@ function handleAction(action, target) {
     printList: "Đã mô phỏng gửi danh sách tới máy in.",
     rerunMatch: "Đã mô phỏng chạy lại bộ khớp giao dịch.",
     policyPreview: "Đã mở mô phỏng quy chế phê duyệt và hạn mức.",
-    permissionAudit: "Không phát hiện quyền tự đề nghị–tự duyệt trong cấu hình mẫu.",
-    applyFilter: "Đã áp dụng bộ lọc minh họa."
+    permissionAudit: "Không phát hiện quyền tự đề nghị–tự duyệt trong cấu hình mẫu."
   };
   if (simpleNotices[action]) {
     showDemoNotice(simpleNotices[action]);
@@ -196,28 +215,33 @@ function setCollectorStatusFilter(button) {
   applyCollectorListFilters(container);
 }
 
-function applyRouteListFilters() {
-  const container = document.querySelector("[data-route-list]");
+function applyTableFilter(container) {
   if (!container) return;
-  const query = (container.querySelector("[data-route-search]")?.value || "").trim().toLowerCase();
-  const contractor = container.querySelector("[data-route-contractor]")?.value || "all";
-  const routeType = container.querySelector("[data-route-type-filter]")?.value || "all";
-  const status = container.querySelector("[data-route-status]")?.value || "all";
-  const activeArea = document.querySelector("[data-route-area-filter].active")?.dataset.routeAreaFilter || "all";
-  const rows = [...container.querySelectorAll("[data-route-row]")];
+  const query = (container.querySelector("[data-table-search]")?.value || "").trim().toLowerCase();
+  const selects = [...container.querySelectorAll("[data-table-key]")];
+  const activeChip = container.querySelector("[data-table-chip].active");
+  const chipKey = container.dataset.chipKey || "group";
+  const chipValue = activeChip ? activeChip.dataset.tableChip : "all";
+  const rows = [...container.querySelectorAll("[data-row]")];
+  const counts = {};
   let visible = 0;
   rows.forEach(row => {
-    const matchesText = !query || (row.dataset.search || "").includes(query);
-    const matchesContractor = contractor === "all" || row.dataset.contractor === contractor;
-    const matchesRouteType = routeType === "all" || row.dataset.routeType === routeType;
-    const matchesStatus = status === "all" || row.dataset.status === status;
-    const matchesArea = activeArea === "all" || row.dataset.area === activeArea;
-    row.hidden = !(matchesText && matchesContractor && matchesRouteType && matchesStatus && matchesArea);
+    const matchesText = !query || (row.dataset.search || "").toLowerCase().includes(query);
+    const matchesSelects = selects.every(select => select.value === "all" || row.dataset[select.dataset.tableKey] === select.value);
+    const group = row.dataset[chipKey] || "";
+    if (matchesText && matchesSelects) counts[group] = (counts[group] || 0) + 1;
+    const matchesChip = chipValue === "all" || group === chipValue;
+    row.hidden = !(matchesText && matchesSelects && matchesChip);
     if (!row.hidden) visible++;
   });
-  const count = container.querySelector("[data-route-count]");
-  if (count) count.textContent = `${visible} tuyến phù hợp`;
-  const empty = container.querySelector("[data-route-empty]");
+  container.querySelectorAll("[data-table-chip]").forEach(chip => {
+    const b = chip.querySelector("b");
+    const value = chip.dataset.tableChip;
+    if (b) b.textContent = value === "all" ? Object.values(counts).reduce((a, c) => a + c, 0) : counts[value] || 0;
+  });
+  const count = container.querySelector("[data-table-count]");
+  if (count) count.textContent = `${visible} ${container.dataset.countLabel || "dòng"} phù hợp`;
+  const empty = container.querySelector("[data-table-empty]");
   if (empty) empty.hidden = visible !== 0;
 }
 
@@ -240,10 +264,11 @@ function bindAppEvents() {
     if (button) showScreen(button.dataset.screen);
   });
   document.getElementById("mainContent").addEventListener("click", event => {
-    const areaFilter = event.target.closest("[data-route-area-filter]");
-    if (areaFilter) {
-      document.querySelectorAll("[data-route-area-filter]").forEach(item => item.classList.toggle("active", item === areaFilter));
-      applyRouteListFilters();
+    const chip = event.target.closest("[data-table-chip]");
+    if (chip) {
+      const container = chip.closest("[data-table-filter]");
+      container.querySelectorAll("[data-table-chip]").forEach(item => item.classList.toggle("active", item === chip));
+      applyTableFilter(container);
       return;
     }
     const collectorStatus = event.target.closest("[data-list-filter-status]");
@@ -251,22 +276,16 @@ function bindAppEvents() {
       setCollectorStatusFilter(collectorStatus);
       return;
     }
-    const filter = event.target.closest("[data-filter]");
-    if (filter) {
-      filter.parentElement.querySelectorAll("button").forEach(button => button.classList.toggle("active", button === filter));
-      showDemoNotice(`Đang hiển thị nhóm “${filter.textContent.trim()}”.`);
-      return;
-    }
     const action = event.target.closest("[data-action]");
     if (action) handleAction(action.dataset.action, action);
   });
   document.getElementById("mainContent").addEventListener("input", event => {
     if (event.target.matches("[data-list-search]")) applyCollectorListFilters(event.target.closest("[data-collector-list]"));
-    if (event.target.matches("[data-route-search]")) applyRouteListFilters();
+    if (event.target.matches("[data-table-search]")) applyTableFilter(event.target.closest("[data-table-filter]"));
   });
   document.getElementById("mainContent").addEventListener("change", event => {
-    if (event.target.matches("[data-route-contractor], [data-route-type-filter], [data-route-status]")) {
-      applyRouteListFilters();
+    if (event.target.matches("[data-table-key]")) {
+      applyTableFilter(event.target.closest("[data-table-filter]"));
       return;
     }
     if (!event.target.matches("[data-list-status]")) return;
@@ -278,14 +297,103 @@ function bindAppEvents() {
     const action = event.target.closest("[data-action]");
     if (action) handleAction(action.dataset.action, action);
   });
+function generateBatchDraftExcel() {
+  const form = document.getElementById("dialogForm");
+  let periodVal = "09/2026";
+  let neighborhoodVal = "Tất cả tổ dân phố";
+
+  form.querySelectorAll(".form-field").forEach(field => {
+    const labelText = field.querySelector("label")?.textContent || "";
+    const sel = field.querySelector("select");
+    if (!sel) return;
+    if (labelText.includes("Kỳ thu")) periodVal = sel.value;
+    else if (labelText.includes("Tổ dân phố")) neighborhoodVal = sel.value;
+  });
+
+  const baseHouseholds = [
+    { code: "DTH-H000128", name: "Nguyễn Văn Minh", address: "12/5 Đặng Thúc Vịnh", to: "Tổ 7", people: 4, type: "Hộ gia đình", contract: "HĐ-DTH-0128", tariff: "HGĐ ≥ 3 người", fee: 80000 },
+    { code: "DTH-H000131", name: "Trần Thị Ánh", address: "12/8 Đặng Thúc Vịnh", to: "Tổ 7", people: 2, type: "Hộ gia đình", contract: "HĐ-DTH-0131", tariff: "HGĐ ≤ 2 người", fee: 40000 },
+    { code: "DTH-H000136", name: "Lê Hoàng Nam", address: "14/1 Đặng Thúc Vịnh", to: "Tổ 7", people: 3, type: "Hộ gia đình", contract: "HĐ-DTH-0136", tariff: "HGĐ ≥ 3 người", fee: 80000 },
+    { code: "DTH-H000142", name: "Phạm Thị Lan", address: "14/7 Đặng Thúc Vịnh", to: "Tổ 7", people: 2, type: "Hộ gia đình", contract: "HĐ-DTH-0142", tariff: "HGĐ ≤ 2 người", fee: 40000 },
+    { code: "DTH-H000149", name: "Võ Quốc Khánh", address: "16/2 Đặng Thúc Vịnh", to: "Tổ 7", people: 4, type: "Hộ gia đình", contract: "HĐ-DTH-0149", tariff: "HGĐ ≥ 3 người", fee: 80000 },
+    { code: "DTH-H000157", name: "Đỗ Thị Hạnh", address: "18/3 Đặng Thúc Vịnh", to: "Tổ 7", people: 4, type: "Hộ gia đình", contract: "HĐ-DTH-0157", tariff: "HGĐ ≥ 3 người", fee: 80000 },
+    { code: "DTH-H000163", name: "Nguyễn Quốc Tuấn", address: "20 Đặng Thúc Vịnh", to: "Tổ 7", people: 4, type: "Hộ gia đình", contract: "HĐ-DTH-0163", tariff: "HGĐ ≥ 3 người", fee: 80000 },
+    { code: "DTH-H000171", name: "Trương Thị Kim", address: "22/6 Đặng Thúc Vịnh", to: "Tổ 7", people: 4, type: "Hộ gia đình", contract: "HĐ-DTH-0171", tariff: "HGĐ ≥ 3 người", fee: 80000 },
+    { code: "DTH-H000305", name: "Trần Thị Hồng", address: "41/2 Nguyễn Ảnh Thủ", to: "Tổ 4", people: 2, type: "Hộ gia đình", contract: "HĐ-DTH-0305", tariff: "HGĐ ≤ 2 người", fee: 40000 },
+    { code: "DTH-H000312", name: "Lê Văn Cường", address: "45/3 Nguyễn Ảnh Thủ", to: "Tổ 4", people: 5, type: "Hộ gia đình", contract: "HĐ-DTH-0312", tariff: "HGĐ ≥ 3 người", fee: 80000 },
+    { code: "DTH-H000320", name: "Hoàng Thị Mai", address: "48/6 Nguyễn Ảnh Thủ", to: "Tổ 4", people: 3, type: "Hộ gia đình", contract: "HĐ-DTH-0320", tariff: "HGĐ ≥ 3 người", fee: 80000 },
+    { code: "DTH-H000662", name: "Phan Văn Thắng", address: "22/9 Đặng Thúc Vịnh", to: "Tổ 7", people: 4, type: "Hộ gia đình", contract: "HĐ-DTH-0662", tariff: "HGĐ ≥ 3 người", fee: 80000 },
+    { code: "DTH-H001152", name: "Lê Quốc Bảo", address: "7/11 Lê Văn Khương", to: "Tổ 6", people: 5, type: "Hộ gia đình", contract: "HĐ-DTH-1152", tariff: "HGĐ ≥ 3 người", fee: 80000 },
+    { code: "TTT-H000210", name: "Vũ Đình Trọng", address: "15/3 Tô Ký", to: "Tổ 2", people: 3, type: "Hộ gia đình", contract: "HĐ-TTT-0210", tariff: "HGĐ ≥ 3 người", fee: 80000 },
+    { code: "TTT-H000215", name: "Bùi Thị Yến", address: "19/8 Tô Ký", to: "Tổ 2", people: 2, type: "Hộ gia đình", contract: "HĐ-TTT-0215", tariff: "HGĐ ≤ 2 người", fee: 40000 },
+    { code: "NB-H000108", name: "Nguyễn Công Định", address: "8 Hà Huy Giáp", to: "Tổ 3", people: 4, type: "Hộ gia đình", contract: "HĐ-NB-0108", tariff: "HGĐ ≥ 3 người", fee: 80000 }
+  ];
+
+  let filtered = baseHouseholds;
+  if (neighborhoodVal !== "Tất cả tổ dân phố") {
+    filtered = baseHouseholds.filter(h => h.to === neighborhoodVal);
+    if (!filtered.length) {
+      const num = neighborhoodVal.replace(/\D/g, "") || "1";
+      filtered = [1, 2, 3, 4, 5, 6].map(idx => ({
+        code: `DTH-H${num.padStart(2, "0")}${String(idx).padStart(3, "0")}`,
+        name: `Chủ hộ ${neighborhoodVal} - Số ${idx}`,
+        address: `${12 + idx}/3 Tuyến dân cư, ${neighborhoodVal}`,
+        to: neighborhoodVal,
+        people: idx % 2 === 0 ? 2 : 4,
+        type: "Hộ gia đình",
+        contract: `HĐ-T${num}-${String(idx).padStart(3, "0")}`,
+        tariff: idx % 2 === 0 ? "HGĐ ≤ 2 người" : "HGĐ ≥ 3 người",
+        fee: idx % 2 === 0 ? 40000 : 80000
+      }));
+    }
+  }
+
+  const headers = ["STT", "Mã hộ/đối tượng", "Tên chủ hộ", "Địa chỉ", "Tổ dân phố", "Số nhân khẩu", "Loại đối tượng", "Mã hợp đồng", "Biểu giá áp dụng", "Kỳ thu", "Khoản phải thu (VNĐ)", "Trạng thái"];
+  const rows = filtered.map((h, i) => [
+    i + 1,
+    `"${h.code}"`,
+    `"${h.name}"`,
+    `"${h.address}"`,
+    `"${h.to}"`,
+    h.people,
+    `"${h.type}"`,
+    `"${h.contract}"`,
+    `"${h.tariff}"`,
+    `"${periodVal}"`,
+    h.fee,
+    `"Bản nháp dự thảo"`
+  ]);
+
+  const csv = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const safeName = neighborhoodVal.toLowerCase().replace(/[^a-z0-9]/g, "-");
+  a.href = url;
+  a.download = `ban-nhap-khoan-thu-ho-gia-dinh-${safeName}-${periodVal.replace(/\//g, "-")}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
   document.querySelectorAll("[data-close-dialog]").forEach(button => button.addEventListener("click", closeDemoModal));
   document.getElementById("appDialog").addEventListener("click", event => {
     if (event.target === event.currentTarget) closeDemoModal();
   });
   document.getElementById("dialogForm").addEventListener("submit", event => {
     event.preventDefault();
+    if (activeDialogAction === "intake" && submitIntakeDialog()) return;
+    if (activeDialogAction === "management" && handleReviewSubmit()) return;
+    if (activeDialogAction === "management" && managementDialog?.kind === "assign" && !validateManagementAssignment()) return;
     if (!event.currentTarget.reportValidity()) return;
     const spec = DIALOG_SPECS[activeDialogAction] || {};
+    if (activeDialogAction === "generateBatch") {
+      generateBatchDraftExcel();
+      closeDemoModal();
+      showDemoNotice("Đã sinh bản nháp đợt và xuất file Excel danh sách hộ gia đình & khoản thu thành công!");
+      return;
+    }
     closeDemoModal();
     showDemoNotice(`${spec.confirm || "Thao tác"} thành công ở chế độ mô phỏng; dữ liệu không được lưu.`);
   });

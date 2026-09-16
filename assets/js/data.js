@@ -26,12 +26,12 @@ const APP_DATA = {
     { name: "Nhị Bình", subjects: 13926, rate: 68, debt: "331,4 triệu", risk: "Cảnh báo" }
   ],
   subjects: [
-    { code: "DTH-H000128", name: "Nguyễn Văn Minh", type: "Hộ gia đình", address: "12/5 Đặng Thúc Vịnh, ấp 7", people: 4, contract: "HĐ-DTH-0128", tariff: "HGĐ ≥ 3 người", amount: 80000, unit: "ĐV Đông Thạnh", route: "DTH-T07", serviceStatus: "Đang cung cấp", status: "Đang hoạt động" },
-    { code: "DTH-H000305", name: "Trần Thị Hồng", type: "Hộ gia đình", address: "41/2 Nguyễn Ảnh Thủ, ấp 4", people: 2, contract: "HĐ-DTH-0305", tariff: "HGĐ ≤ 2 người", amount: 40000, unit: "ĐV Đông Thạnh", route: "DTH-T04", serviceStatus: "Đang cung cấp", status: "Đang hoạt động" },
-    { code: "DTH-H000662", name: "Phan Văn Thắng", type: "Hộ gia đình", address: "22/9 Đặng Thúc Vịnh, ấp 7", people: 4, contract: "HĐ-DTH-0662", tariff: "HGĐ ≥ 3 người", amount: 240000, unit: "Công ty MTĐT Đông Thạnh", route: "DTH-T07", serviceStatus: "Đề nghị tạm ngưng", status: "Nợ 3 kỳ", suspensionRequest: true },
-    { code: "TTT-KD00142", name: "Tạp hóa Minh Châu", type: "Hộ kinh doanh", address: "96 Trịnh Thị Miếng", people: null, contract: "HĐ-TTT-142", tariff: "Chủ nguồn thải nhỏ", amount: 119000, unit: "Chưa phân công", route: "—", serviceStatus: "Chờ phân loại", status: "Chờ xác minh" },
-    { code: "NB-DN00038", name: "Công ty TNHH Nam An", type: "Doanh nghiệp", address: "18 Hà Huy Giáp, ấp 2", people: null, contract: "HĐ-NB-0038", tariff: "Theo khối lượng", amount: 1266000, unit: "ĐV Nhị Bình", route: "NB-T03", serviceStatus: "Đang cung cấp", status: "Đang hoạt động" },
-    { code: "DTH-H001152", name: "Lê Quốc Bảo", type: "Hộ gia đình", address: "7/11 Lê Văn Khương, ấp 6", people: 5, contract: "HĐ-DTH-1152", tariff: "HGĐ ≥ 3 người", amount: 80000, unit: "ĐV Đông Thạnh", route: "DTH-T06", serviceStatus: "Đã chấm dứt 31/08", status: "Tạm ngưng" }
+    { code: "DTH-H000128", name: "Nguyễn Văn Minh", type: "Hộ gia đình", address: "12/5 Đặng Thúc Vịnh, ấp 7", people: 4, contract: "HĐ-DTH-0128", tariff: "HGĐ ≥ 3 người", amount: 80000, unit: "Công ty MTĐT Đông Thạnh", area: "Tổ 7 · Đông Thạnh", serviceStatus: "Đang cung cấp", status: "Đang hoạt động" },
+    { code: "DTH-H000305", name: "Trần Thị Hồng", type: "Hộ gia đình", address: "41/2 Nguyễn Ảnh Thủ, ấp 4", people: 2, contract: "HĐ-DTH-0305", tariff: "HGĐ ≤ 2 người", amount: 40000, unit: "Công ty MTĐT Đông Thạnh", area: "Tổ 4 · Đông Thạnh", serviceStatus: "Đang cung cấp", status: "Đang hoạt động" },
+    { code: "DTH-H000662", name: "Phan Văn Thắng", type: "Hộ gia đình", address: "22/9 Đặng Thúc Vịnh, ấp 7", people: 4, contract: "HĐ-DTH-0662", tariff: "HGĐ ≥ 3 người", amount: 240000, unit: "Công ty MTĐT Đông Thạnh", area: "Tổ 7 · Đông Thạnh", serviceStatus: "Đề nghị tạm ngưng", status: "Nợ 3 kỳ", suspensionRequest: true },
+    { code: "TTT-KD00142", name: "Tạp hóa Minh Châu", type: "Hộ kinh doanh", address: "96 Trịnh Thị Miếng", people: null, contract: "HĐ-TTT-142", tariff: "Chủ nguồn thải nhỏ", amount: 119000, unit: "Chưa có công ty phụ trách", area: "Tổ 2 · Thới Tam Thôn", serviceStatus: "Chờ phân loại", status: "Chờ xác minh" },
+    { code: "NB-DN00038", name: "Công ty TNHH Nam An", type: "Doanh nghiệp", address: "18 Hà Huy Giáp, ấp 2", people: null, contract: "HĐ-NB-0038", tariff: "Theo khối lượng", amount: 1266000, unit: "HTX Xanh Nhị Bình", area: "Tổ 3 · Nhị Bình", serviceStatus: "Đang cung cấp", status: "Đang hoạt động" },
+    { code: "DTH-H001152", name: "Lê Quốc Bảo", type: "Hộ gia đình", address: "7/11 Lê Văn Khương, ấp 6", people: 5, contract: "HĐ-DTH-1152", tariff: "HGĐ ≥ 3 người", amount: 80000, unit: "Công ty MTĐT Đông Thạnh", area: "Tổ 6 · Đông Thạnh", serviceStatus: "Đã chấm dứt 31/08", status: "Tạm ngưng" }
   ],
   collectionProgress: [
     { collector: "Nguyễn Thành Long", route: "DTH-T07", company: "Công ty MTĐT Đông Thạnh", manager: "Trần Hoàng Phúc · 0903 218 665", assigned: 426, visited: 349, paid: 332, debt: 94, progress: 78, updated: "10:24 hôm nay", status: "Đúng tiến độ" },
@@ -63,7 +63,7 @@ const APP_DATA = {
     { code: "DOT-NB-0926-01", area: "Nhị Bình", count: 13455, value: "1,031 tỷ", errors: 0, issuedBy: "Nguyễn Thu Hà", status: "Đã phát hành" }
   ],
   contractors: [
-    "Công ty MTĐT Đông Thạnh", "HTX Môi trường An Phú", "Công ty Dịch vụ Hóc Môn", "HTX Xanh Nhị Bình", "Công ty Môi trường Tân Tiến", "Công ty Công ích Thành Phát", "Công ty Xanh Sài Gòn", "HTX Dịch vụ Phú Thành", "Công ty Môi trường Minh Tâm", "HTX Thu gom Hòa Bình", "Công ty Công ích Gia Định"
+    "Công ty MTĐT Đông Thạnh", "HTX Môi trường An Phú", "Công ty Dịch vụ Hóc Môn", "HTX Xanh Nhị Bình", "Công ty Môi trường Tân Tiến", "Công ty Công ích Thành Phát", "Công ty Xanh Sài Gòn", "HTX Dịch vụ Phú Thành", "Công ty Môi trường Minh Tâm", "HTX Thu gom Hòa Bình", "Trung tâm Cung ứng dịch vụ công xã"
   ],
   routes: [
     { code: "DTH-T07", name: "Đặng Thúc Vịnh – ấp 7", area: "Đông Thạnh", coverage: "Số 1–126 và các hẻm nhánh", schedule: "T2 · T4 · T6", unit: "Công ty MTĐT Đông Thạnh", manager: "Trần Hoàng Phúc", households: 642, effective: "01/09–31/12/2026", status: "Đã phân công" },
@@ -132,15 +132,15 @@ const APP_DATA = {
     { code: "KQT-1109-11", method: "Excel", source: "ket-qua-tuyen-TTT-T11.xlsx", rows: 38, accepted: 38, blocked: 0, createdAt: "11/09 · 17:20", status: "Đã ghi nhận" }
   ],
   assignedHouseholds: [
-    { order: 18, code: "DTH-H000128", name: "Nguyễn Văn Minh", phone: "090•••3128", address: "12/5 Đặng Thúc Vịnh", route: "DTH-T07", debt: "09/2026", periods: 1, amount: 80000, dueDate: "30/09/2026", result: "Chưa thu", category: "unpaid", debtState: "Còn trong hạn", note: "Cách vị trí hiện tại 120 m" },
-    { order: 19, code: "DTH-H000131", name: "Trần Thị Ánh", phone: "093•••9021", address: "12/8 Đặng Thúc Vịnh", route: "DTH-T07", debt: "08–09/2026", periods: 2, amount: 160000, dueDate: "Quá hạn 18 ngày", result: "Quá hạn", category: "overdue", debtState: "Quá hạn 2 kỳ", note: "Đã hẹn thu lại hôm nay" },
-    { order: 20, code: "DTH-H000136", name: "Lê Hoàng Nam", phone: "091•••6784", address: "14/1 Đặng Thúc Vịnh", route: "DTH-T07", debt: "09/2026", periods: 1, amount: 80000, dueDate: "30/09/2026", result: "Vắng nhà", category: "absent", debtState: "Đã ghé 1 lần", note: "Để giấy báo lúc 09:15 · quay lại 15/09" },
-    { order: 21, code: "DTH-H000142", name: "Phạm Thị Lan", phone: "098•••1136", address: "14/7 Đặng Thúc Vịnh", route: "DTH-T07", debt: "09/2026", periods: 0, amount: 40000, dueDate: "Đã hoàn tất", result: "Đã thu", category: "paid", debtState: "Hết nợ", note: "Chuyển khoản · 09:32" },
-    { order: 22, code: "DTH-H000149", name: "Võ Quốc Khánh", phone: "090•••7712", address: "16/2 Đặng Thúc Vịnh", route: "DTH-T07", debt: "09/2026", periods: 0, amount: 80000, dueDate: "Chờ nộp 17:00", result: "Đã thu tiền mặt", category: "paid", debtState: "Chờ nộp tiền", note: "Nhận tiền mặt · 09:41" },
-    { order: 23, code: "DTH-H001152", name: "Lê Quốc Bảo", phone: "097•••4582", address: "7/11 Lê Văn Khương", route: "DTH-T07", debt: "—", periods: 0, amount: 0, dueDate: "Chấm dứt 31/08", result: "Đã chấm dứt", category: "ended", debtState: "Khóa thu", note: "Phát hiện vẫn thu ngoài hệ thống" },
-    { order: 24, code: "DTH-H000157", name: "Đỗ Thị Hạnh", phone: "096•••2034", address: "18/3 Đặng Thúc Vịnh", route: "DTH-T07", debt: "07–09/2026", periods: 3, amount: 240000, dueDate: "Quá hạn 49 ngày", result: "Quá hạn", category: "overdue", debtState: "Quá hạn 3 kỳ", note: "Gọi 2 lần chưa liên hệ được" },
-    { order: 25, code: "DTH-H000163", name: "Nguyễn Quốc Tuấn", phone: "091•••8840", address: "20 Đặng Thúc Vịnh", route: "DTH-T07", debt: "08–09/2026", periods: 2, amount: 160000, dueDate: "Hẹn 16/09", result: "Đã hẹn", category: "appointment", debtState: "Đã cam kết ngày trả", note: "Hộ đề nghị quay lại sau 18:00" },
-    { order: 26, code: "DTH-H000171", name: "Trương Thị Kim", phone: "098•••7319", address: "22/6 Đặng Thúc Vịnh", route: "DTH-T07", debt: "09/2026", periods: 1, amount: 80000, dueDate: "30/09/2026", result: "Chưa thu", category: "unpaid", debtState: "Chưa tiếp cận", note: "Điểm cuối tuyến · cách 1,2 km" }
+    { order: 18, code: "DTH-H000128", name: "Nguyễn Văn Minh", phone: "090•••3128", address: "12/5 Đặng Thúc Vịnh", route: "Tổ 7 · Đông Thạnh", debt: "09/2026", periods: 1, amount: 80000, dueDate: "30/09/2026", result: "Chưa thu", category: "unpaid", debtState: "Còn trong hạn", note: "Cách vị trí hiện tại 120 m" },
+    { order: 19, code: "DTH-H000131", name: "Trần Thị Ánh", phone: "093•••9021", address: "12/8 Đặng Thúc Vịnh", route: "Tổ 7 · Đông Thạnh", debt: "08–09/2026", periods: 2, amount: 160000, dueDate: "Quá hạn 18 ngày", result: "Quá hạn", category: "overdue", debtState: "Quá hạn 2 kỳ", note: "Đã hẹn thu lại hôm nay" },
+    { order: 20, code: "DTH-H000136", name: "Lê Hoàng Nam", phone: "091•••6784", address: "14/1 Đặng Thúc Vịnh", route: "Tổ 7 · Đông Thạnh", debt: "09/2026", periods: 1, amount: 80000, dueDate: "30/09/2026", result: "Vắng nhà", category: "absent", debtState: "Đã ghé 1 lần", note: "Để giấy báo lúc 09:15 · quay lại 15/09" },
+    { order: 21, code: "DTH-H000142", name: "Phạm Thị Lan", phone: "098•••1136", address: "14/7 Đặng Thúc Vịnh", route: "Tổ 7 · Đông Thạnh", debt: "09/2026", periods: 0, amount: 40000, dueDate: "Đã hoàn tất", result: "Đã thu", category: "paid", debtState: "Hết nợ", note: "Chuyển khoản · 09:32" },
+    { order: 22, code: "DTH-H000149", name: "Võ Quốc Khánh", phone: "090•••7712", address: "16/2 Đặng Thúc Vịnh", route: "Tổ 7 · Đông Thạnh", debt: "09/2026", periods: 0, amount: 80000, dueDate: "Chờ nộp 17:00", result: "Đã thu tiền mặt", category: "paid", debtState: "Chờ nộp tiền", note: "Nhận tiền mặt · 09:41" },
+    { order: 23, code: "DTH-H001152", name: "Lê Quốc Bảo", phone: "097•••4582", address: "7/11 Lê Văn Khương", route: "Tổ 7 · Đông Thạnh", debt: "—", periods: 0, amount: 0, dueDate: "Chấm dứt 31/08", result: "Đã chấm dứt", category: "ended", debtState: "Khóa thu", note: "Phát hiện vẫn thu ngoài hệ thống" },
+    { order: 24, code: "DTH-H000157", name: "Đỗ Thị Hạnh", phone: "096•••2034", address: "18/3 Đặng Thúc Vịnh", route: "Tổ 7 · Đông Thạnh", debt: "07–09/2026", periods: 3, amount: 240000, dueDate: "Quá hạn 49 ngày", result: "Quá hạn", category: "overdue", debtState: "Quá hạn 3 kỳ", note: "Gọi 2 lần chưa liên hệ được" },
+    { order: 25, code: "DTH-H000163", name: "Nguyễn Quốc Tuấn", phone: "091•••8840", address: "20 Đặng Thúc Vịnh", route: "Tổ 7 · Đông Thạnh", debt: "08–09/2026", periods: 2, amount: 160000, dueDate: "Hẹn 16/09", result: "Đã hẹn", category: "appointment", debtState: "Đã cam kết ngày trả", note: "Hộ đề nghị quay lại sau 18:00" },
+    { order: 26, code: "DTH-H000171", name: "Trương Thị Kim", phone: "098•••7319", address: "22/6 Đặng Thúc Vịnh", route: "Tổ 7 · Đông Thạnh", debt: "09/2026", periods: 1, amount: 80000, dueDate: "30/09/2026", result: "Chưa thu", category: "unpaid", debtState: "Chưa tiếp cận", note: "Điểm cuối tuyến · cách 1,2 km" }
   ],
   cashCollections: [
     { code: "TM-1209-019", charge: "DTH-0926-H000149", subject: "Võ Quốc Khánh", collectedAt: "12/09 · 09:41", amount: 80000, due: "12/09 · 17:00", age: "48 phút", status: "Chờ nộp" },
@@ -199,7 +199,7 @@ const APP_DATA = {
   ],
   users: [
     { username: "nguyenthuha", name: "Nguyễn Thu Hà", organization: "Phòng Kinh tế", roles: "Cán bộ xã", lastLogin: "12/09 · 09:55", status: "Hoạt động" },
-    { username: "nguyenthanhlong", name: "Nguyễn Thành Long", organization: "Tổ thu 03", roles: "Người thu hộ", lastLogin: "12/09 · 07:12", status: "Hoạt động" },
+    { username: "nguyenthanhlong", name: "Nguyễn Thành Long", organization: "Công ty MTĐT Đông Thạnh", roles: "Nhân viên thu của công ty", lastLogin: "12/09 · 07:12", status: "Hoạt động" },
     { username: "tranmyduyen", name: "Trần Mỹ Duyên", organization: "Phòng Kinh tế", roles: "Kế toán", lastLogin: "12/09 · 08:03", status: "Hoạt động" },
     { username: "levanphuong", name: "Lê Văn Phương", organization: "UBND xã", roles: "Lãnh đạo", lastLogin: "11/09 · 16:42", status: "Hoạt động" },
     { username: "admin.trienkhai", name: "Quản trị triển khai", organization: "Đơn vị triển khai", roles: "Quản trị", lastLogin: "12/09 · 06:30", status: "Bắt buộc 2FA" }
@@ -216,10 +216,10 @@ const APP_DATA = {
     { name: "Kho bạc Nhà nước", purpose: "Hạch toán", environment: "Giai đoạn mở rộng", lastSync: "—", latency: "—", status: "Chưa triển khai" }
   ],
   audit: [
-    { time: "12/09 · 10:24:18", actor: "tranmyduyen", role: "Kế toán", action: "Gán dòng treo", object: "VCB2609128419", result: "Mở biểu mẫu" },
-    { time: "12/09 · 10:19:02", actor: "system", role: "Hệ thống", action: "Đồng bộ sao kê", object: "VCB · 31 giao dịch", result: "27 khớp · 4 treo" },
+    { time: "12/09 · 10:24:18", actor: "tranmyduyen", role: "Kế toán", action: "Xác minh khoản nộp chưa rõ", object: "VCB2609128419", result: "Mở biểu mẫu" },
+    { time: "12/09 · 10:19:02", actor: "system", role: "Hệ thống", action: "Đồng bộ sao kê tài khoản xã", object: "VCB · 31 giao dịch", result: "27 khớp · 4 chưa rõ" },
     { time: "12/09 · 09:56:40", actor: "nguyenthuha", role: "Cán bộ xã", action: "Phát hành đợt", object: "DOT-DTH-0926-01", result: "Thành công" },
-    { time: "12/09 · 09:42:11", actor: "nguyenthanhlong", role: "Người thu hộ", action: "Nhận tiền mặt", object: "TM-1209-019", result: "Chờ nộp" },
+    { time: "12/09 · 09:42:11", actor: "nguyenthanhlong", role: "Nhân viên thu công ty", action: "Cập nhật kết quả thu", object: "KQ-1209-019", result: "Chờ công ty xác nhận" },
     { time: "12/09 · 08:30:00", actor: "backup-service", role: "Hệ thống", action: "Sao lưu tự động", object: "backup-20260912-0830", result: "Thành công" }
   ]
 };

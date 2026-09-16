@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="assets/css/tokens.css">
   <link rel="stylesheet" href="assets/css/app.css">
   <link rel="stylesheet" href="assets/css/responsive.css">
+  <link rel="stylesheet" href="assets/css/mobile-preview.css">
 </head>
 <body>
   <div id="app" class="app-shell">
@@ -32,6 +33,9 @@
         <button class="notification-button" type="button" data-action="notifications" aria-label="Có 4 thông báo">
           <span aria-hidden="true">●</span><b>4</b>
         </button>
+        <button id="citizenPreviewTrigger" class="citizen-preview-trigger" type="button">
+          <span aria-hidden="true">▢</span> Ứng dụng người dân
+        </button>
         <label class="role-picker">
           <span>Không gian làm việc</span>
           <select id="roleSelect" aria-label="Chọn vai trò"></select>
@@ -51,15 +55,15 @@
       <nav id="roleNav" class="role-nav"></nav>
       <div class="sidebar-foot">
         <span class="scope-dot"></span>
-        <p><strong>Prototype nghiệp vụ v2.4</strong><br>Dữ liệu minh họa · Không kết nối dữ liệu thật</p>
+        <p><strong>Prototype nghiệp vụ v3.0</strong><br>Dữ liệu minh họa · Không kết nối dữ liệu thật</p>
       </div>
     </aside>
 
-    <main id="mainContent" class="main-content" tabindex="-1" aria-live="polite"></main>
+    <main id="mainContent" class="main-content" tabindex="-1"></main>
 
     <footer class="app-footer">
       <span>Hệ thống số hóa quản lý và thu giá dịch vụ CTRSH</span>
-      <span>Phiên bản prototype 2.4 · Cập nhật 14/09/2026</span>
+      <span>Phiên bản prototype 3.0 · Cập nhật 16/09/2026</span>
     </footer>
   </div>
 
@@ -87,10 +91,36 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
+  <div id="citizenPreviewBackdrop" class="citizen-preview-backdrop" aria-hidden="true">
+    <div class="citizen-preview-bar">
+      <div>
+        <strong>Xem trước ứng dụng người dân</strong>
+        <small>Minh họa giai đoạn 2 · Không kết nối dữ liệu thật</small>
+      </div>
+      <button id="citizenPreviewClose" class="citizen-preview-close" type="button">Đóng</button>
+    </div>
+    <div class="phone-frame">
+      <div class="phone-screen">
+        <div class="phone-notch" aria-hidden="true"></div>
+        <div class="phone-statusbar"><span>9:41</span><span>▮▮▮ ▯</span></div>
+        <main id="citizenPhoneContent" class="phone-content" tabindex="-1" aria-live="polite"></main>
+        <nav id="citizenTabbar" class="phone-tabbar" aria-label="Điều hướng ứng dụng người dân"></nav>
+      </div>
+    </div>
+  </div>
+
   <script src="assets/js/config.js" defer></script>
+  <script src="assets/js/icons.js" defer></script>
   <script src="assets/js/data.js" defer></script>
   <script src="assets/js/dialogs.js" defer></script>
   <script src="assets/js/views.js" defer></script>
+  <script src="assets/js/commune-management.js" defer></script>
+  <script src="assets/js/commune-review.js" defer></script>
+  <script src="assets/js/data-intake.js" defer></script>
+  <script src="assets/js/single-unit-area.js" defer></script>
+  <script src="assets/js/spec-alignment.js" defer></script>
+  <script src="assets/js/accounting.js" defer></script>
+  <script src="assets/js/citizen-mobile.js" defer></script>
   <script src="assets/js/app.js" defer></script>
 </body>
 </html>
