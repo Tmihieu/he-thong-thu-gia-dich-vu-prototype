@@ -64,7 +64,7 @@ function renderNavigation() {
     if (screen.hiddenInNav) return;
     if (screen.group !== group) {
       group = screen.group;
-      html.push(`<div class="nav-group-label">${group}</div>`);
+      if (group) html.push(`<div class="nav-group-label">${group}</div>`);
     }
     const active = screen.id === currentScreen || currentConfig?.parentScreen === screen.id;
     html.push(`<button type="button" class="nav-item ${active ? "active" : ""}" data-screen="${screen.id}" ${active ? 'aria-current="page"' : ""}>
@@ -383,6 +383,7 @@ function generateBatchDraftExcel() {
   });
   document.getElementById("dialogForm").addEventListener("submit", event => {
     event.preventDefault();
+    if (typeof handleCommuneSimpleSubmit === "function" && handleCommuneSimpleSubmit()) return;
     if (activeDialogAction === "intake" && submitIntakeDialog()) return;
     if (activeDialogAction === "management" && handleReviewSubmit()) return;
     if (activeDialogAction === "routing" && handleRoutingSubmit()) return;
