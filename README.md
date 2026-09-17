@@ -4,6 +4,7 @@ Spec hiện hành: `SPEC-TONG-HOP.md`, phiên bản 2.9, cập nhật ngày 15/0
 
 ## Cập nhật 3.0 — đối soát yêu cầu mới, sửa mô hình và làm lại hệ thống thị giác
 
+- Không gian công ty (17/09/2026): “Hộ được giao” đổi thành bảng khoản phải thu xã đã xuất (mỗi dòng = hộ × kỳ, có mã khoản và số hóa đơn; lọc theo kỳ thu, khu vực, loại hộ, số kỳ nợ và chip trạng thái). Bỏ hai trang “Cập nhật kết quả thu” và “Biên lai đã phát”. Thêm trang “Phân tuyến nhân viên” (`assets/js/company-routing.js`): chọn kỳ thu, tìm nhân viên, dải thống kê tổng tuyến / đã phân công / chưa có người nhận, bảng nhân viên với số tuyến và tổng hộ, modal chọn nhiều tuyến (kèm tổ, số hộ), thẻ cảnh báo tuyến trống và tuyến của người đang nghỉ, chuyển tuyến nhanh giữa hai nhân viên. Phân công chỉ đổi trong bộ nhớ phiên xem.
 - Quyết định đã chốt (16/09/2026): Phòng Kinh tế chính là vai trò “Cán bộ xã”; Trung tâm Cung ứng dịch vụ công là một đơn vị thu gom trong danh mục; thanh toán trên ứng dụng người dân đưa vào phạm vi hiện tại, tiền vào tài khoản công ty hoặc mã nhân viên thu, công ty phát biên lai; CSDL hộ và nguồn số tiền hiển thị cho dân vẫn là P0 mở.
 - Sửa lỗi so với spec 2.9: bỏ hết mô hình “tuyến”, tên đơn vị không có trong danh mục, cảnh báo xã đối soát tiền mặt từng nhân viên, cột “Kế toán xác nhận” trên tiền hộ (đổi thành “Đã có chứng từ”), số đề nghị/badge menu mâu thuẫn với màn hình, popup khóa sổ nói 3/4 trong khi màn nói 0/4; xóa 24 renderer và 19 dialog chết còn mang mô hình cũ.
 - Bộ lọc thật thay cho nút “Lọc dữ liệu” giả: tìm kiếm + select + chip có số đếm trên Đối tượng, Đề nghị, Hàng chờ phê duyệt, Nhật ký, Báo cáo tiến độ thu tiền, Đối soát phần xử lý; lọc tại chỗ, giữ focus và vị trí cuộn, có empty state thống nhất.
@@ -135,6 +136,7 @@ prototype-v2/
         ├── data-intake.js
         ├── single-unit-area.js
         ├── spec-alignment.js
+        ├── company-routing.js
         └── app.js
 ```
 

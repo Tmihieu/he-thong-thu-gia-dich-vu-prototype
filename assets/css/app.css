@@ -538,6 +538,28 @@ textarea.control { min-height: 88px; padding-top: 9px; resize: vertical; }
 .chip.warning.active b { color: var(--amber-700); }
 .chip.success.active { border-color: var(--green-700); background: var(--green-700); }
 .chip.success.active b { color: var(--green-700); }
+.chip.danger.active { border-color: var(--red-700); background: var(--red-700); }
+.chip.danger.active b { color: var(--red-700); }
+
+/* Company route assignment */
+.route-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.route-tags .badge { max-width: none; }
+.routing-warning { margin-bottom: 14px; border-color: var(--red-200); }
+.routing-empty-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.routing-empty-chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px 6px 6px; border: 1px solid var(--red-200); border-radius: 999px; color: var(--gray-800); background: var(--red-50); font-size: var(--text-xs); text-align: left; cursor: pointer; }
+.routing-empty-chip.warning { border-color: var(--amber-200); background: var(--amber-50); }
+.routing-empty-chip:hover { border-color: var(--navy-800); }
+.routing-empty-chip strong { color: var(--navy-950); }
+.routing-empty-chip > span:last-child { color: var(--gray-600); }
+.routing-pick { margin: 10px 0 14px; border: 1px solid var(--gray-200); border-radius: var(--radius-sm); overflow: hidden; }
+.routing-pick .table-wrap { max-height: 320px; overflow: auto; }
+.routing-pick .data-table { min-width: 0; }
+.routing-pick td:first-child, .routing-pick th:first-child { width: 36px; padding-right: 0; }
+.routing-pick input[type="checkbox"] { width: 16px; height: 16px; }
+.routing-pick-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 12px; font-size: var(--text-xs); }
+.routing-pick-tools label { display: inline-flex; align-items: center; gap: 6px; color: var(--gray-700); font-weight: 700; white-space: nowrap; }
+.routing-live { margin: 12px 0 0; padding: 10px 12px; border-radius: var(--radius-sm); color: var(--green-800); background: var(--green-50); font-size: var(--text-xs); font-weight: 700; }
+.routing-live.is-error { color: var(--red-700); background: var(--red-50); }
 .chip-bar .result-line { margin-left: auto; color: var(--gray-600); font-size: var(--text-xs); }
 
 .delta { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; text-align: right; }

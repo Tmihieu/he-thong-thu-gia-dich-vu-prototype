@@ -27,21 +27,81 @@ function companyOperationsDashboard() {
   ])}
   ${rules(`Không lấy file công ty làm danh sách hộ chính thức`, [`Dữ liệu công ty gửi là một nguồn đối chiếu. Chỉ hộ đã được xã xác minh và gắn phân công khu vực còn hiệu lực mới đi vào số hộ tính nghĩa vụ.`], "warning")}
   <div class="content-grid equal">
-    ${panel("Việc cần làm", "Theo đúng phạm vi của công ty", `<div class="task-list"><article class="task-item"><span class="task-icon">1</span><div><h4>Bổ sung ${issueRows.length} dòng dữ liệu</h4><p>Xem yêu cầu của xã, không thấy nguồn của công ty khác.</p></div>${actionButton("Mở yêu cầu", "go:data-requests", "small")}</article><article class="task-item"><span class="task-icon">2</span><div><h4>Cập nhật kết quả thu</h4><p>Chỉ trên danh sách hộ đã được giao và xác minh.</p></div>${actionButton("Nhập kết quả", "go:collection-entry", "small")}</article><article class="task-item"><span class="task-icon">3</span><div><h4>Kê khai khoản nộp về xã</h4><p>Nhập mã giao dịch, kỳ và chứng từ để kế toán đối soát.</p></div>${actionButton("Tạo kê khai", "submitProcessingRemittance", "small")}</article></div>`)}
+    ${panel("Việc cần làm", "Theo đúng phạm vi của công ty", `<div class="task-list"><article class="task-item"><span class="task-icon">1</span><div><h4>Bổ sung ${issueRows.length} dòng dữ liệu</h4><p>Xem yêu cầu của xã, không thấy nguồn của công ty khác.</p></div>${actionButton("Mở yêu cầu", "go:data-requests", "small")}</article><article class="task-item"><span class="task-icon">2</span><div><h4>Phân tuyến cho nhân viên</h4><p>Gán tuyến, tổ cho nhân viên thu; xử lý tuyến trống khi có người nghỉ.</p></div>${actionButton("Mở phân tuyến", "go:route-assignment", "small")}</article><article class="task-item"><span class="task-icon">3</span><div><h4>Kê khai khoản nộp về xã</h4><p>Nhập mã giao dịch, kỳ và chứng từ để kế toán đối soát.</p></div>${actionButton("Tạo kê khai", "submitProcessingRemittance", "small")}</article></div>`)}
     ${panel("Ranh giới trách nhiệm", "Tránh nhập nhằng dòng tiền", `<div class="alert-list"><article class="task-item"><span class="task-icon">✓</span><div><h4>Tiền của hộ</h4><p>Vào tài khoản pháp nhân công ty hoặc được công ty quản lý; xã không nhận trực tiếp trong quy trình hiện tại.</p></div></article><article class="task-item"><span class="task-icon">✓</span><div><h4>Tiền phần xử lý</h4><p>Công ty nộp về tài khoản xã và kế toán xã đối soát theo kỳ.</p></div></article><article class="alert-item danger"><span class="alert-icon">!</span><div><h4>Không dùng tài khoản cá nhân</h4><p>Kê khai chỉ chấp nhận tài khoản pháp nhân/cấu hình được duyệt trong hệ thống thật.</p></div></article></div>`)}
   </div>`;
 }
 
-function companyAssignedHouseholds() {
-  const cards = companyScopeHouseholds().map((home, index) => {
-    const allowed = index < 3;
-    const searchable = `${home.code} ${home.name} ${home.address}`.toLowerCase();
-    return `<article class="route-card" data-collection-card data-category="${allowed ? "assigned" : "pending"}" data-search="${escapeHtml(searchable)}"><div class="route-card-head"><div><span class="eyebrow">${home.code}</span><h4>${home.name}</h4></div>${badge(allowed ? "Đã xác minh phạm vi" : "Chờ xác minh")}</div><div class="route-address"><strong>${home.address}</strong><span>${home.phone} · ${home.route}</span></div><div class="route-actions">${allowed ? actionButton("Cập nhật kết quả", "manualCollectionEntry", "primary") : '<button class="button button-small" disabled>Chưa được ghi nhận thu</button>'}${actionButton("Xem hồ sơ", "genericDetail")}</div></article>`;
-  }).join("");
-  return `${pageHeader("Phạm vi công ty", "Hộ được giao", "Danh sách vận hành chỉ lấy từ hồ sơ đã được xã xác minh và phân công cho công ty; dữ liệu Excel nguồn không tự động xuất hiện tại đây.", actionButton("Cập nhật kết quả", "go:collection-entry", "primary"))}
-  <section class="collection-workspace" data-collector-list><div class="collector-filterbar"><label class="collector-search"><span>Tìm hộ</span><input class="control" type="search" data-list-search placeholder="Mã hộ, tên hoặc địa chỉ"></label><label><span>Trạng thái dữ liệu</span><select class="control" data-list-status><option value="all">Tất cả</option><option value="assigned">Đã xác minh phạm vi</option><option value="pending">Chờ xác minh</option></select></label></div><div class="list-result-line"><strong data-list-count>6 hộ minh họa</strong><span>3 hộ đang bị khóa do chưa xác minh</span></div><div class="collection-card-grid">${cards}</div><div class="collection-empty" data-list-empty hidden>Không có hộ phù hợp.</div></section>`;
+// Receivables the commune has issued (khoản phải thu + hóa đơn) for households in the
+// company's scope. One row per household–period so the company can filter by kỳ thu.
+const RECEIVABLE_STATUS = {
+  unpaid: ["Chưa thu", "neutral"], overdue: ["Quá hạn", "danger"], appointment: ["Đã hẹn", "info"], absent: ["Vắng nhà", "warning"], paid: ["Đã thu", "success"]
+};
+
+function companyReceivables() {
+  const extra = [
+    { code: "DTH-H000212", name: "Huỳnh Văn Đức", phone: "090•••5521", address: "3/2 Tô Ký", route: "Tổ 9 · Đông Thạnh", debt: "09/2026", amount: 80000, category: "unpaid", note: "" },
+    { code: "DTH-H000218", name: "Mai Thị Thu", phone: "093•••0187", address: "3/9 Tô Ký", route: "Tổ 9 · Đông Thạnh", debt: "08–09/2026", amount: 160000, category: "overdue", note: "Gọi 1 lần chưa nghe máy" },
+    { code: "DTH-H000224", name: "Bùi Quang Vinh", phone: "097•••6630", address: "5/1 Tô Ký", route: "Tổ 9 · Đông Thạnh", debt: "09/2026", amount: 80000, category: "paid", note: "Chuyển khoản · 11/09" },
+    { code: "DTH-KD00077", name: "Quán ăn Hương Việt", phone: "090•••4410", address: "21 Đặng Thúc Vịnh", route: "Tổ 7 · Đông Thạnh", debt: "09/2026", amount: 119000, category: "paid", kind: "business", note: "Chuyển khoản · 12/09" },
+    { code: "DTH-KD00081", name: "Tiệm tạp hóa Ngọc Hà", phone: "091•••2276", address: "8 Tô Ký", route: "Tổ 9 · Đông Thạnh", debt: "09/2026", amount: 119000, category: "unpaid", kind: "business", note: "" }
+  ];
+  const homes = [...APP_DATA.assignedHouseholds.filter(home => home.category !== "ended"), ...extra];
+  const rows = [];
+  homes.forEach((home, homeIndex) => {
+    const [first, last] = home.debt.replace("–", "-").split("-").map(part => part.trim());
+    const year = (last || first).slice(-4);
+    const startMonth = Number(first.slice(0, 2));
+    const endMonth = Number((last || first).slice(0, 2));
+    const monthCount = endMonth - startMonth + 1;
+    const perPeriod = Math.round(home.amount / monthCount);
+    for (let month = startMonth; month <= endMonth; month++) {
+      const mm = String(month).padStart(2, "0");
+      const period = `${mm}/${year}`;
+      const dueDate = `${new Date(Number(year), month, 0).getDate()}/${mm}/${year}`;
+      const isPast = month < 9;
+      const status = home.category === "paid" ? "paid" : ["appointment", "absent"].includes(home.category) ? home.category : isPast ? "overdue" : "unpaid";
+      rows.push({
+        code: home.code, name: home.name, phone: home.phone, address: home.address,
+        area: home.route.split(" · ")[0], kind: home.kind || "household",
+        period, dueDate, amount: perPeriod, status, note: home.note,
+        debtPeriods: monthCount >= 2 ? "2plus" : "1",
+        charge: `DTH-${mm}${year.slice(-2)}-${home.code.split("-")[1]}`,
+        invoice: `HĐ-${mm}${year.slice(-2)}-${String(homeIndex * 3 + month).padStart(6, "0")}`
+      });
+    }
+  });
+  return rows;
 }
 
+function companyAssignedHouseholds() {
+  const rows = companyReceivables();
+  const periods = [...new Set(rows.map(row => row.period))].sort((a, b) => b.localeCompare(a));
+  const areas = [...new Set(rows.map(row => row.area))].sort();
+  const open = rows.filter(row => row.status !== "paid");
+  const overdue = rows.filter(row => row.status === "overdue");
+  const paid = rows.filter(row => row.status === "paid");
+  const sum = list => list.reduce((total, row) => total + row.amount, 0);
+  const tableRows = rows.map(row => `<tr data-row data-group="${row.status}" data-period="${row.period}" data-area="${escapeHtml(row.area)}" data-kind="${row.kind}" data-debt="${row.debtPeriods}" data-search="${escapeHtml(`${row.code} ${row.charge} ${row.invoice} ${row.name} ${row.phone} ${row.address} ${row.area}`.toLowerCase())}" class="${row.status === "overdue" ? "is-attention" : ""}">
+    <td><span class="cell-title">${row.code}</span><span class="cell-subtitle">${row.charge}</span></td>
+    <td><span class="cell-title">${escapeHtml(row.name)}</span><span class="cell-subtitle">${escapeHtml(row.address)} · ${escapeHtml(row.area)}${row.kind === "business" ? " · Hộ KD" : ""}</span></td>
+    <td>${row.phone}</td>
+    <td><span class="cell-title">${row.period}</span><span class="cell-subtitle">${row.invoice}</span></td>
+    <td>${row.dueDate}</td>
+    <td class="money">${formatMoney(row.amount)}</td>
+    <td>${badge(...RECEIVABLE_STATUS[row.status])}${row.note ? `<span class="cell-subtitle">${escapeHtml(row.note)}</span>` : ""}</td>
+    <td><div class="table-actions">${row.status === "paid" ? actionButton("Xem biên lai", "genericDetail", "small") : actionButton("Cập nhật kết quả", "manualCollectionEntry", "small button-primary")}${actionButton("Chi tiết", "genericDetail", "small")}</div></td></tr>`);
+  return `${pageHeader("Phạm vi công ty", "Khoản cần thu của hộ được giao", "Danh sách khoản phải thu và hóa đơn xã đã xuất cho các hộ thuộc phạm vi công ty. Mỗi dòng là một hộ trong một kỳ thu; công ty cập nhật kết quả thu trên chính dòng đó.", actionButton("Xuất Excel", "exportData") + actionButton("Nhập kết quả theo lô", "importCollectionResults") + actionButton("Cập nhật kết quả", "manualCollectionEntry", "primary"))}
+  ${summaryStrip([["Khoản cần thu", String(open.length), `${formatMoney(sum(open))} · ${new Set(open.map(row => row.code)).size} hộ`], ["Quá hạn", String(overdue.length), `${formatMoney(sum(overdue))} · kỳ trước 09/2026`], ["Đã thu", String(paid.length), `${formatMoney(sum(paid))} · công ty khai`], ["Kỳ hiện tại", "09/2026", `Hạn nộp 30/09/2026 · ${rows.filter(row => row.period === "09/2026").length} khoản`]])}
+  ${rules(`Chỉ hiển thị khoản xã đã xuất`, [`Hộ chưa được xã xác minh phạm vi hoặc chưa có khoản phải thu trong kỳ sẽ không xuất hiện ở đây. Kết quả công ty cập nhật là dữ liệu công ty khai, không phải xác nhận tiền đã về xã.`])}
+  <section data-table-filter data-chip-key="group" data-count-label="khoản">
+    ${filterBar(filterField("Kỳ thu", filterSelect("period", [["all", "Tất cả kỳ"], ...periods.map(period => [period, `Kỳ ${period}`])])) + filterField("Khu vực", filterSelect("area", [["all", "Tất cả khu vực"], ...areas.map(area => [area, area])])) + filterField("Loại hộ", filterSelect("kind", [["all", "Tất cả"], ["household", "Hộ gia đình"], ["business", "Hộ kinh doanh"]])) + filterField("Số kỳ còn nợ", filterSelect("debt", [["all", "Tất cả"], ["1", "1 kỳ"], ["2plus", "Từ 2 kỳ"]])), "Mã hộ, mã khoản, số hóa đơn, tên, SĐT, địa chỉ...")}
+    ${chipBar([["all", "Tất cả"], ["unpaid", "Chưa thu", "warning"], ["overdue", "Quá hạn", "danger"], ["appointment", "Đã hẹn", "warning"], ["absent", "Vắng nhà", "warning"], ["paid", "Đã thu", "success"]], "khoản")}
+    ${panel("Danh sách khoản phải thu", "Dữ liệu minh họa · Công ty MTĐT Đông Thạnh", table(["Mã hộ / Mã khoản", "Tên hộ / Địa chỉ", "SĐT", "Kỳ thu / Hóa đơn", "Hạn nộp", { label: "Số tiền", num: true }, "Trạng thái", "Thao tác"], tableRows, { empty: "Không có khoản phù hợp với bộ lọc." }))}
+  </section>`;
+}
+
+// Kept for the collector role (collectorEntry); no longer a company screen.
 function companyCollectionEntry() {
   return `${pageHeader("Cập nhật của công ty", "Ghi nhận kết quả thu tiền hộ", "Công ty cập nhật theo từng hộ trên web hoặc theo lô Excel. Đây là kết quả công ty khai, không phải bằng chứng tiền đã về tài khoản xã.", actionButton("Tải mẫu", "downloadTemplate") + actionButton("Nhập Excel", "importCollectionResults", "primary"))}
   ${rules(`Chỉ nhận hộ đã được giao`, [`Khóa hộ–kỳ–dịch vụ phải tồn tại trong danh sách đã xác minh. Hộ chờ xác minh hoặc đã chấm dứt bị chặn và chuyển thành ngoại lệ.`])}
@@ -50,12 +110,6 @@ function companyCollectionEntry() {
     ${panel("Nhập theo lô Excel", "Phù hợp dữ liệu nhiều hộ", `<p>Tệp đi qua vùng kiểm tra; dòng sai mã, trùng hoặc ngoài phạm vi không được ghi nhận.</p>${actionButton("Mở form import", "importCollectionResults", "primary")}`)}
   </div>
   ${panel("Lô cập nhật gần đây", "Dữ liệu minh họa", table(["Mã lô", "Hình thức", "Số dòng", "Hợp lệ", "Bị chặn", "Trạng thái"], APP_DATA.collectionImports.map(row => `<tr><td>${row.code}</td><td>${row.method}</td><td>${row.rows}</td><td>${row.accepted}</td><td>${row.blocked}</td><td>${badge(row.status)}</td></tr>`)))}`;
-}
-
-function companyReceipts() {
-  return `${pageHeader("Chứng từ của công ty", "Biên lai đã phát cho hộ", "Theo quy trình hiện tại, công ty trực tiếp thu tiền và chịu trách nhiệm phát biên lai cho dân; xã chỉ nhận dữ liệu tham chiếu để giám sát.", actionButton("Ghi nhận biên lai", "companyIssueReceipt", "primary"))}
-  ${rules(`Chưa chốt chuẩn biên lai điện tử`, [`Mẫu, số/ký hiệu và quy tắc đồng bộ cần được từng công ty và BA xác nhận. Prototype không phát hành chứng từ pháp lý.`], "warning")}
-  ${panel("Bảng kê công ty đã cung cấp", "Dữ liệu minh họa thuộc công ty đang đăng nhập", table(["Số biên lai", "Hộ / mã khoản", "Số tiền", "Ngày thu", "Trạng thái"], APP_DATA.receipts.slice(0, 3).map(row => `<tr><td>${row.number}</td><td>${row.subject}<span class="cell-subtitle">${row.charge}</span></td><td class="money">${formatMoney(row.amount)}</td><td>${row.issued}</td><td>${badge("Công ty khai báo")}</td></tr>`)))}`;
 }
 
 function companyProcessingObligation() {
@@ -247,8 +301,6 @@ Object.assign(DIALOG_SPECS, {
 Object.assign(VIEW_RENDERERS, {
   companyOperationsDashboard,
   companyAssignedHouseholds,
-  companyCollectionEntry,
-  companyReceipts,
   companyProcessingObligation,
   companyProcessingRemittance,
   collectorToday: companyStaffToday,

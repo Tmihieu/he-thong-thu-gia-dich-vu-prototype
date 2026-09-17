@@ -385,6 +385,7 @@ function generateBatchDraftExcel() {
     event.preventDefault();
     if (activeDialogAction === "intake" && submitIntakeDialog()) return;
     if (activeDialogAction === "management" && handleReviewSubmit()) return;
+    if (activeDialogAction === "routing" && handleRoutingSubmit()) return;
     if (activeDialogAction === "management" && managementDialog?.kind === "assign" && !validateManagementAssignment()) return;
     if (!event.currentTarget.reportValidity()) return;
     const spec = DIALOG_SPECS[activeDialogAction] || {};

@@ -27,9 +27,8 @@ const ROLE_CONFIG = {
     defaultScreen: "company-dashboard",
     screens: [
       { id: "company-dashboard", group: "Điều hành", label: "Tổng quan công ty", caption: "Khu vực, dữ liệu và nghĩa vụ", icon: "home", view: "companyOperationsDashboard" },
-      { id: "assigned-households", group: "Thu tiền hộ", label: "Hộ được giao", caption: "Phạm vi đã được xã xác minh", icon: "households", view: "companyAssignedHouseholds" },
-      { id: "collection-entry", group: "Thu tiền hộ", label: "Cập nhật kết quả thu", caption: "Nhập web hoặc Excel", icon: "edit", view: "companyCollectionEntry" },
-      { id: "company-receipts", group: "Thu tiền hộ", label: "Biên lai đã phát", caption: "Chứng từ do công ty phát hành", icon: "receipt", view: "companyReceipts" },
+      { id: "assigned-households", group: "Thu tiền hộ", label: "Hộ được giao", caption: "Khoản phải thu xã đã xuất", icon: "households", view: "companyAssignedHouseholds" },
+      { id: "route-assignment", group: "Thu tiền hộ", label: "Phân tuyến nhân viên", caption: "Gán tuyến, tổ cho nhân viên thu", icon: "map", view: "companyRouteAssignment" },
       { id: "processing-obligation", group: "Nộp phần xử lý", label: "Nghĩa vụ phải nộp", caption: "Số hộ × đơn giá xử lý", icon: "coins", view: "companyProcessingObligation" },
       { id: "processing-remittance", group: "Nộp phần xử lý", label: "Kê khai tiền đã nộp", caption: "Giao dịch nộp về xã", icon: "send", view: "companyProcessingRemittance" },
       { id: "submitted-data", group: "Dữ liệu công ty", label: "Danh sách đã cung cấp", caption: "Nguồn do xã tiếp nhận", icon: "list", view: "companyIntake" },
