@@ -82,7 +82,6 @@ const csSubject = code => CS_SUBJECTS.find(s => s.code === code);
 const csPeriodLabel = id => `${id.slice(5)}/${id.slice(0, 4)}`;
 const csAreaName = id => csArea(id)?.name.replace("Tổ dân phố", "Tổ") || "—";
 const csCompanyOf = areaId => csUnit(csArea(areaId)?.unit);
-const csShortMoney = n => n >= 1e9 ? `${(n / 1e9).toLocaleString("vi-VN", { maximumFractionDigits: 2 })} tỷ` : n >= 1e6 ? `${(n / 1e6).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} triệu` : formatMoney(n);
 const csLink = (label, action, id) => `<button type="button" class="link-button" data-cs="${action}" data-id="${id}">${escapeHtml(label)}</button>`;
 const csBtn = (label, action, id = "", tone = "secondary", small = false) => `<button type="button" class="button button-${tone}${small ? " button-small" : ""}" data-cs="${action}"${id ? ` data-id="${id}"` : ""}>${label}</button>`;
 const csHeader = (title, actions = "", meta = "") => `<header class="page-header"><div><h1 class="page-title">${title}</h1>${meta ? `<p class="page-description">${meta}</p>` : ""}</div><div class="page-actions">${actions}</div></header>`;
@@ -93,13 +92,28 @@ const csFormValue = id => document.getElementById(id)?.value?.trim() || "";
 const csCompanyOptions = () => MANAGEMENT_UNITS.filter(u => u.status !== "inactive").map(u => [u.id, u.name]);
 const csAreaOptions = () => MANAGEMENT_AREAS.map(a => [a.id, csAreaName(a.id)]);
 const csIsoToVi = iso => iso ? iso.split("-").reverse().join("/") : "";
+const csIsQuarter = id => String(id).includes("-Q");
+const csQuarterMonths = id => { const [y, q] = id.split("-Q").map(Number); return [0, 1, 2].map(i => `${y}-${String((q - 1) * 3 + 1 + i).padStart(2, "0")}`); };
+const csQuarterLabel = id => { const [y, q] = id.split("-Q").map(Number); return `Quý ${q}/${y} · tháng ${(q - 1) * 3 + 1}–${q * 3}`; };
+const csLastDay = (y, m) => `${y}-${String(m).padStart(2, "0")}-${new Date(y, m, 0).getDate()}`;
+const csPeriodDue = id => csIsQuarter(id) ? csLastDay(Number(id.slice(0, 4)), Number(id.split("-Q")[1]) * 3) : csLastDay(Number(id.slice(0, 4)), Number(id.slice(5, 7)));
+const csMonthPeriods = () => CS_PERIODS.filter(p => !csIsQuarter(p.id));
+function csQuarterOptions() {
+  let y = Number(csState.period.slice(0, 4));
+  let q = csIsQuarter(csState.period) ? Number(csState.period.split("-Q")[1]) : Math.ceil(Number(csState.period.slice(5, 7)) / 3);
+  return Array.from({ length: 5 }, () => { const id = `${y}-Q${q}`; if (q === 4) { q = 1; y++; } else q++; return [id, csQuarterLabel(id)]; });
+}
+const csScopeOptions = () => [["all", "Toàn xã"], ...MANAGEMENT_UNITS.map(u => [`unit:${u.id}`, `Công ty · ${u.name}`]), ...MANAGEMENT_AREAS.map(a => [`area:${a.id}`, `Khu vực · ${csAreaName(a.id)}`])];
+const csScopeMatch = (subject, scope) => !scope || scope === "all" ? true : scope.startsWith("unit:") ? csArea(subject.area)?.unit === scope.slice(5) : subject.area === scope.replace("area:", "");
+const csChargeAmount = (subject, period) => CS_TARIFFS[subject.tariff] * (csIsQuarter(period) ? 3 : 1);
 
 // Tiến độ thu theo khu vực (tỷ lệ minh họa cố định theo thứ tự tổ).
 function csAreaProgress(areaId, period) {
   const area = csArea(areaId);
   const index = MANAGEMENT_AREAS.indexOf(area);
   const rate = period === "2026-08" ? [95, 100, 86, 92, 98, 80, 96, 100, 90, 97, 94][index % 11] : [58, 64, 29, 51, 62, 34, 49, 68, 32, 57, 46][index % 11];
-  const due = area.households * 80000;
+  // Kỳ quý gộp ba tháng nên phải thu gấp ba.
+  const due = area.households * 80000 * (csIsQuarter(period) ? 3 : 1);
   const paid = area.unit ? Math.round(due * rate / 100) : 0;
   const unitIndex = MANAGEMENT_UNITS.findIndex(u => u.id === area.unit);
   const confirmedRate = [1, .94, 1, .9, 1, .97, 1, 1, .92, 1, 1][Math.max(unitIndex, 0) % 11];
@@ -224,7 +238,7 @@ function csCompanyDetail() {
   });
   const complaints = CS_COMPLAINTS.filter(c => csArea(c.area)?.unit === u.id && c.status !== "done").length;
   return `${csHeader(escapeHtml(u.name), csBtn("← Danh sách công ty", "back") + csBtn("Sửa thông tin", "editCompany", u.id) + csBtn("+ Phân công khu vực", "assignAreas", u.id, "primary"), `${u.id} · Đầu mối: ${escapeHtml(u.contact)} · ${escapeHtml(u.phone)} · ${u.status === "inactive" ? "Tạm ngưng" : "Hoạt động"}`)}
-  ${summaryStrip([["Khu vực phụ trách", String(areas.length), `${areas.reduce((t, a) => t + a.households, 0).toLocaleString("vi-VN")} hộ`], ["Phải thu kỳ 09/2026", csShortMoney(due), ""], ["Đã thu", csShortMoney(paid), due ? `${(paid / due * 100).toFixed(0)}% phải thu` : ""], ["Khiếu nại đang mở", String(complaints), complaints ? "Xem tại Danh sách khiếu nại" : ""]])}
+  ${summaryStrip([["Khu vực phụ trách", String(areas.length), `${areas.reduce((t, a) => t + a.households, 0).toLocaleString("vi-VN")} hộ`], ["Phải thu kỳ 09/2026", formatMoney(due), ""], ["Đã thu", formatMoney(paid), due ? `${(paid / due * 100).toFixed(0)}% phải thu` : ""], ["Khiếu nại đang mở", String(complaints), complaints ? "Xem tại Danh sách khiếu nại" : ""]])}
   ${panel("Khu vực phụ trách", areas.length ? "Một khu vực chỉ có một công ty phụ trách trong cùng thời gian hiệu lực." : "", areas.length ? table(["Khu vực", { label: "Số hộ", num: true }, "Hiệu lực", { label: "Phải thu 09/2026", num: true }, { label: "Đã thu", num: true }, "Tiến độ", ""], rows, { static: true }) : `<div class="empty-state"><strong>Chưa được giao khu vực</strong><p>Bấm “Phân công khu vực” để chọn tổ dân phố cho công ty này.</p></div>`)}`;
 }
 
@@ -240,7 +254,7 @@ function csProgress() {
     : visible.flatMap(g => g.rows.map(r => `<tr><td><span class="cell-title">${csAreaName(r.area.id)}</span><span class="cell-subtitle">${r.area.households.toLocaleString("vi-VN")} hộ</span></td><td class="money">${formatMoney(r.due)}</td><td class="money">${formatMoney(r.paid)}</td><td class="money">${formatMoney(r.due - r.paid)}</td><td>${progressCell(r.paid, r.due)}</td><td></td></tr>`));
   return `${csHeader("Báo cáo tiến độ thu tiền", actionButton("Xuất Excel", "exportData"))}
   <div class="filter-bar">${filterField("Kỳ thu", csSelect('data-cs-filter="period"', CS_PERIODS.map(p => [p.id, p.label]), csState.period))}${filterField("Công ty", csSelect('data-cs-filter="company"', [["all", "Tất cả công ty"], ["none", "Chưa phân công"], ...MANAGEMENT_UNITS.map(u => [u.id, u.name])], csState.company))}</div>
-  ${summaryStrip([["Phải thu", csShortMoney(due), `${visible.reduce((t, g) => t + g.households, 0).toLocaleString("vi-VN")} hộ`], ["Đã thu", csShortMoney(paid), "Theo công ty báo cáo"], ["Còn phải thu", csShortMoney(due - paid), ""], ["Tỷ lệ thu", due ? `${(paid / due * 100).toFixed(1)}%` : "—", `Hạn thu ${CS_PERIODS.find(p => p.id === csState.period)?.due || ""}`]])}
+  ${summaryStrip([["Phải thu", formatMoney(due), `${visible.reduce((t, g) => t + g.households, 0).toLocaleString("vi-VN")} hộ`], ["Đã thu", formatMoney(paid), "Theo công ty báo cáo"], ["Còn phải thu", formatMoney(due - paid), ""], ["Tỷ lệ thu", due ? `${(paid / due * 100).toFixed(1)}%` : "—", `Hạn thu ${CS_PERIODS.find(p => p.id === csState.period)?.due || ""}`]])}
   ${panel(csState.company === "all" ? "Theo công ty" : `Theo khu vực · ${csState.company === "none" ? "Chưa phân công" : escapeHtml(csUnit(csState.company)?.name || "")}`, "", rows.length ? table([csState.company === "all" ? "Công ty" : "Khu vực", { label: "Phải thu", num: true }, { label: "Đã thu", num: true }, { label: "Còn phải thu", num: true }, "Tiến độ", ""], rows, { static: true }) : '<p class="table-empty">Không có dữ liệu trong phạm vi đã chọn.</p>')}`;
 }
 
@@ -262,7 +276,7 @@ function csReconciliation() {
   });
   return `${csHeader("Đối soát tổng thể", actionButton("Xuất bảng đối soát", "exportData"))}
   <div class="filter-bar">${filterField("Kỳ thu", csSelect('data-cs-filter="period"', CS_PERIODS.map(p => [p.id, p.label]), csState.period))}</div>
-  ${summaryStrip([["Phải thu", csShortMoney(sum("due")), `${groups.length} công ty`], ["Công ty báo đã thu", csShortMoney(sum("paid")), ""], ["Đã có chứng từ", csShortMoney(sum("confirmed")), "Phiếu thu, biên lai, sao kê"], ["Chênh lệch", csShortMoney(sum("paid") - sum("confirmed")), `${groups.filter(g => g.paid !== g.confirmed).length} công ty lệch`]])}
+  ${summaryStrip([["Phải thu", formatMoney(sum("due")), `${groups.length} công ty`], ["Công ty báo đã thu", formatMoney(sum("paid")), ""], ["Đã có chứng từ", formatMoney(sum("confirmed")), "Phiếu thu, biên lai, sao kê"], ["Chênh lệch", formatMoney(sum("paid") - sum("confirmed")), `${groups.filter(g => g.paid !== g.confirmed).length} công ty lệch`]])}
   <section data-table-filter data-chip-key="group" data-count-label="công ty">
     ${filterBar("", "Tên công ty...")}
     ${chipBar([["all", "Tất cả"], ["mismatch", "Lệch", "danger"], ["matched", "Khớp", "success"]], "công ty")}
@@ -309,7 +323,7 @@ function csDialog(kind, id, title, body, confirm = "Lưu", description = "") {
 
 const CS_DIALOGS = {
   openPeriod() {
-    const last = CS_PERIODS.map(p => p.id).sort().pop();
+    const last = csMonthPeriods().map(p => p.id).sort().pop();
     const [y, m] = last.split("-").map(Number);
     const next = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
     const [ny, nm] = next.split("-").map(Number);
@@ -339,14 +353,22 @@ const CS_DIALOGS = {
     </div>`, code ? "Lưu thay đổi" : "Thêm đối tượng");
   },
   chargeRequest() {
-    const periods = CS_PERIODS.filter(p => p.status !== "Đã khóa");
+    const months = csMonthPeriods().filter(p => p.status !== "Đã khóa");
+    const quarters = csQuarterOptions();
+    const quarter = csIsQuarter(csState.period);
+    const monthValue = quarter ? (months[0] && months[0].id) || "" : csState.period;
+    // Mặc định chọn quý gần nhất còn đối tượng chưa được lập khoản.
+    const openQuarter = quarter ? csState.period : (quarters.find(([id]) => csRequestTargets(id, "all", "").length) || quarters[0])[0];
+    csState.reqDueFor = null;
     csDialog("chargeRequest", "", "Tạo phiếu yêu cầu thu", `<div class="form-grid">
-      ${csField("Kỳ thu *", csSelect('id="csReqPeriod"', periods.map(p => [p.id, p.label]), csState.period))}
-      ${csField("Hạn nộp *", csInput("csReqDue", `${csState.period}-30`, "date", "required"))}
-      ${csField("Phạm vi *", csSelect('id="csReqScope"', [["all", "Toàn xã"], ...csAreaOptions()], "all"))}
-      ${csField("Hoặc một đối tượng", csSelect('id="csReqSubject"', [["", "— Theo phạm vi —"], ...CS_SUBJECTS.filter(s => s.status === "active").map(s => [s.code, `${s.code} · ${s.name}`])], ""))}
+      ${csField("Chu kỳ thu *", csSelect('id="csReqCycle"', [["month", "Theo tháng"], ["quarter", "Theo quý · nộp 1 lần cho 3 tháng"]], quarter ? "quarter" : "month"))}
+      <div id="csReqMonthWrap"${quarter ? " hidden" : ""}>${csField("Kỳ thu *", csSelect('id="csReqPeriod"', months.map(p => [p.id, p.label]), monthValue))}</div>
+      <div id="csReqQuarterWrap"${quarter ? "" : " hidden"}>${csField("Quý thu *", csSelect('id="csReqQuarter"', quarters, openQuarter))}</div>
+      ${csField("Hạn nộp *", csInput("csReqDue", "", "date", "required"))}
+      ${csField("Phạm vi *", csSelect('id="csReqScope"', csScopeOptions(), "all"), true)}
+      ${csField("Hoặc một đối tượng", csSelect('id="csReqSubject"', [["", "— Theo phạm vi —"], ...CS_SUBJECTS.filter(s => s.status === "active").map(s => [s.code, `${s.code} · ${s.name}`])], ""), true)}
       ${csField("Ghi chú", `<textarea class="control" id="csReqNote" placeholder="Không bắt buộc"></textarea>`, true)}
-    </div><p class="muted" id="csReqPreview"></p>`, "Lập phiếu yêu cầu thu", "Mỗi đối tượng đang cung cấp dịch vụ trong phạm vi sẽ có một khoản thu theo nhóm giá của hợp đồng. Đối tượng đã có khoản trong kỳ không bị lập trùng.");
+    </div><p class="muted" id="csReqPreview"></p>`, "Lập phiếu yêu cầu thu", "Chọn toàn xã, một công ty phụ trách hoặc một khu vực. Thu theo quý gộp 3 tháng vào một khoản; đối tượng đã có khoản trong cùng khoảng thời gian không bị lập trùng.");
     csRequestPreview();
   },
   receipt(chargeId) {
@@ -409,7 +431,7 @@ const CS_DIALOGS = {
     if (!u) return;
     const g = csCompanyProgress(csState.period).find(x => x.unit.id === id);
     const rate = g && g.due ? (g.paid / g.due * 100).toFixed(1) : "0";
-    csDialog("notify", id, `Nhắc tiến độ · ${u.name}`, `<div class="dialog-summary"><div><span>Kỳ</span><strong>${csPeriodLabel(csState.period)}</strong></div><div><span>Tỷ lệ thu</span><strong>${rate}%</strong></div><div><span>Còn phải thu</span><strong>${g ? csShortMoney(g.due - g.paid) : "—"}</strong></div></div><div class="form-grid">
+    csDialog("notify", id, `Nhắc tiến độ · ${u.name}`, `<div class="dialog-summary"><div><span>Kỳ</span><strong>${csPeriodLabel(csState.period)}</strong></div><div><span>Tỷ lệ thu</span><strong>${rate}%</strong></div><div><span>Còn phải thu</span><strong>${g ? formatMoney(g.due - g.paid) : "—"}</strong></div></div><div class="form-grid">
       ${csField("Gửi tới", csInput("csNtTo", `${u.contact} · ${u.phone}`, "text", "readonly"), true)}
       ${csField("Nội dung *", `<textarea class="control" id="csNtContent" required>Đề nghị công ty rà soát tiến độ thu kỳ ${csPeriodLabel(csState.period)} (hiện ${rate}%), đôn đốc nội bộ và phản hồi kết quả về xã.</textarea>`, true)}
       ${csField("Hạn phản hồi *", csInput("csNtDue", "2026-09-22", "date", "required"))}
@@ -450,15 +472,32 @@ const CS_DIALOGS = {
   }
 };
 
+function csRequestCycle() {
+  const cycle = csFormValue("csReqCycle") || "month";
+  const monthWrap = document.getElementById("csReqMonthWrap");
+  const quarterWrap = document.getElementById("csReqQuarterWrap");
+  if (monthWrap) monthWrap.hidden = cycle !== "month";
+  if (quarterWrap) quarterWrap.hidden = cycle !== "quarter";
+  return { cycle, period: cycle === "quarter" ? csFormValue("csReqQuarter") : csFormValue("csReqPeriod") };
+}
 function csRequestPreview() {
   const preview = document.getElementById("csReqPreview");
   if (!preview) return;
-  const period = csFormValue("csReqPeriod"), scope = csFormValue("csReqScope"), single = csFormValue("csReqSubject");
-  const targets = csRequestTargets(period, scope, single);
-  preview.textContent = `${targets.length} đối tượng sẽ được lập khoản thu kỳ ${csPeriodLabel(period)} · tổng ${formatMoney(targets.reduce((t, s) => t + CS_TARIFFS[s.tariff], 0))}.`;
+  const { cycle, period } = csRequestCycle();
+  const due = document.getElementById("csReqDue");
+  if (due && csState.reqDueFor !== period) { csState.reqDueFor = period; due.value = csPeriodDue(period); }
+  const targets = csRequestTargets(period, csFormValue("csReqScope"), csFormValue("csReqSubject"));
+  const total = targets.reduce((sum, s) => sum + csChargeAmount(s, period), 0);
+  const label = cycle === "quarter" ? `quý ${csPeriodLabel(period)} · gộp 3 tháng mỗi khoản` : `kỳ ${csPeriodLabel(period)}`;
+  preview.textContent = targets.length
+    ? `${targets.length} đối tượng sẽ được lập khoản ${label} · tổng ${formatMoney(total)}.`
+    : `Không có đối tượng nào cần lập khoản ${label}; các đối tượng trong phạm vi đã có khoản thu.`;
 }
 function csRequestTargets(period, scope, single) {
-  return CS_SUBJECTS.filter(s => s.status === "active" && s.contract !== "—" && (single ? s.code === single : scope === "all" || s.area === scope) && !CS_CHARGES.some(c => c.subject === s.code && c.period === period));
+  const months = csIsQuarter(period) ? csQuarterMonths(period) : [period];
+  const overlaps = charge => charge.period === period || months.includes(charge.period) || (csIsQuarter(charge.period) && csQuarterMonths(charge.period).some(month => months.includes(month)));
+  const taken = new Set(CS_CHARGES.filter(overlaps).map(charge => charge.subject));
+  return CS_SUBJECTS.filter(s => s.status === "active" && s.contract !== "—" && (single ? s.code === single : csScopeMatch(s, scope)) && !taken.has(s.code));
 }
 function csAssignLive() {
   const checked = [...document.querySelectorAll("[data-cs-area]:checked")].map(i => i.dataset.csArea);
@@ -495,13 +534,18 @@ function handleCommuneSimpleSubmit() {
       message = `Đã thêm đối tượng ${code}.`;
     }
   } else if (kind === "chargeRequest") {
-    const period = csFormValue("csReqPeriod");
+    const { period } = csRequestCycle();
     const targets = csRequestTargets(period, csFormValue("csReqScope"), csFormValue("csReqSubject"));
     if (!targets.length) { showDemoNotice("Không có đối tượng nào cần lập khoản trong phạm vi đã chọn."); return true; }
-    const request = `YCT-${period.slice(5)}${period.slice(2, 4)}-${String(csState.seq.request++).padStart(2, "0")}`;
-    targets.forEach(s => CS_CHARGES.unshift({ id: `KT-${period.slice(5)}${period.slice(2, 4)}-${s.code.split("-")[1]}`, request, subject: s.code, period, due: csIsoToVi(csFormValue("csReqDue")), amount: CS_TARIFFS[s.tariff], status: "unpaid", receipt: "", paidAt: "", method: "" }));
+    const due = csIsoToVi(csFormValue("csReqDue"));
+    const tag = csIsQuarter(period) ? `Q${period.split("-Q")[1]}${period.slice(2, 4)}` : `${period.slice(5)}${period.slice(2, 4)}`;
+    const request = `YCT-${tag}-${String(csState.seq.request++).padStart(2, "0")}`;
+    if (csIsQuarter(period) && !CS_PERIODS.some(p => p.id === period)) {
+      CS_PERIODS.unshift({ id: period, label: csQuarterLabel(period), open: csIsoToVi(`${csQuarterMonths(period)[0]}-01`), due, legal: (csMonthPeriods()[0] || {}).legal || "QĐ 65/2026/QĐ-UBND", status: "Đang thu" });
+    }
+    targets.forEach(s => CS_CHARGES.unshift({ id: `KT-${tag}-${s.code.split("-")[1]}`, request, subject: s.code, period, due, amount: csChargeAmount(s, period), status: "unpaid", receipt: "", paidAt: "", method: "" }));
     csState.period = period;
-    message = `Đã lập phiếu yêu cầu thu ${request} cho ${targets.length} đối tượng.`;
+    message = `Đã lập phiếu ${request} cho ${targets.length} đối tượng · ${csIsQuarter(period) ? "thu theo quý" : "thu theo tháng"} ${csPeriodLabel(period)}.`;
   } else if (kind === "receipt") {
     const c = CS_CHARGES.find(x => x.id === csFormValue("csRcChargeId"));
     if (!c) return true;
