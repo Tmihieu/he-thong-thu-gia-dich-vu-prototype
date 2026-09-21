@@ -92,6 +92,30 @@ const CS_SUBJECTS = [
     ["DTH-KD00081", "Tiệm tạp hóa Ngọc Hà", "0912 002 276", "8 Tô Ký", "KV09", "Chủ nguồn thải nhỏ"]
   ].map(([code, name, phone, address, area, tariff]) => ({ code, name, type: code.includes("-KD") ? "Hộ kinh doanh" : "Hộ gia đình", address, phone, area, contract: `HĐ-DTH-${code.slice(-4)}`, contractFrom: "01/01/2026", tariff, status: "active" }))
 ];
+// Mỗi tổ có thêm 7–12 hộ sinh tự động (tên, địa chỉ, nhóm giá lặp có quy luật) để phải thu của công ty = tổng khoản thu của hộ.
+(function seedAreaSubjects() {
+  const ho = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Phan", "Vũ", "Võ", "Đặng", "Bùi", "Đỗ", "Hồ", "Ngô", "Dương", "Lý"];
+  const dem = ["Văn", "Thị", "Minh", "Hữu", "Thanh", "Ngọc", "Quang", "Thu", "Hồng", "Kim"];
+  const ten = ["An", "Bình", "Cường", "Dung", "Em", "Giang", "Hạnh", "Khoa", "Lan", "Mai", "Nam", "Oanh", "Phúc", "Quyên", "Sơn", "Tâm", "Uyên", "Vy", "Xuân", "Yến"];
+  const streets = ["Đặng Thúc Vịnh", "Tô Ký", "Lê Văn Khương", "Nguyễn Ảnh Thủ", "Hương Lộ 80B", "Trịnh Thị Miếng", "Song Hành", "Hà Huy Giáp", "Nguyễn Văn Bứa", "Bùi Công Trừng", "Đông Thạnh 5", "Đông Thạnh 8"];
+  const tariffs = ["HGĐ ≥ 3 người", "HGĐ ≥ 3 người", "HGĐ ≤ 2 người", "HGĐ ≥ 3 người", "HGĐ ≥ 3 người", "HGĐ ≤ 2 người", "HGĐ ≥ 3 người", "Chủ nguồn thải nhỏ"];
+  const shops = ["Tạp hóa", "Quán cà phê", "Tiệm sửa xe", "Quán ăn", "Tiệm giặt ủi", "Cửa hàng vật liệu"];
+  MANAGEMENT_AREAS.forEach((area, ai) => {
+    const prefix = ai < 8 ? "DTH" : ai < 16 ? "TTT" : "NB";
+    const target = 7 + (ai * 5) % 6;
+    const existing = CS_SUBJECTS.filter(s => s.area === area.id).length;
+    for (let i = existing; i < target; i++) {
+      const k = ai * 13 + i * 7;
+      const tariff = tariffs[k % tariffs.length];
+      const business = tariff === "Chủ nguồn thải nhỏ";
+      const name = business ? `${shops[k % shops.length]} ${ten[(k + 3) % ten.length]} ${ten[(k + 9) % ten.length]}` : `${ho[k % ho.length]} ${dem[(k >> 1) % dem.length]} ${ten[(k * 3) % ten.length]}`;
+      const code = `${prefix}-${business ? "KD" : "H"}1${String(ai + 1).padStart(2, "0")}${String(i + 1).padStart(2, "0")}`;
+      CS_SUBJECTS.push({ code, name, type: business ? "Hộ kinh doanh" : "Hộ gia đình", address: `${(k % 90) + 1}${i % 3 === 0 ? "/" + ((k % 7) + 1) : ""} ${streets[(ai + i) % streets.length]}`, phone: `09${String((k * 7919) % 100000000).padStart(8, "0").replace(/(\d{2})(\d{3})(\d{3})/, "$1 $2 $3")}`, area: area.id, contract: `HĐ-${prefix}-${String(ai + 1).padStart(2, "0")}${String(i + 1).padStart(2, "0")}`, contractFrom: "01/01/2026", tariff, status: "active", ...(k % 29 === 0 ? { exempt: true, exemptReason: "Hộ nghèo", note: "Diện chính sách miễn giảm 100%" } : {}) });
+    }
+  });
+  // Số hộ của tổ = số đối tượng đang cung cấp dịch vụ (cùng nguồn với danh sách đối tượng và khoản thu).
+  MANAGEMENT_AREAS.forEach(area => { area.households = CS_SUBJECTS.filter(s => s.area === area.id && s.status === "active").length; });
+})();
 const CS_SUBJECT_STATUS = { active: ["Đang cung cấp", "success"], pending: ["Chờ xử lý", "warning"], ended: ["Đã chấm dứt", "neutral"] };
 const CS_CHARGE_STATUS = { unpaid: ["Chưa thu", "warning"], overdue: ["Quá hạn", "danger"], paid: ["Đã thu", "success"], exempt: ["Miễn giảm (0đ)", "neutral"] };
 const CS_COMPLAINT_STATUS = { new: ["Mới tiếp nhận", "warning"], processing: ["Đang xử lý", "info"], done: ["Đã giải quyết", "success"] };
@@ -133,11 +157,13 @@ const CS_CHARGES = [];
     "NB-H002055": ["12/09/2026", "Chuyển khoản"],
     "DTH-H002277": ["16/09/2026", "Tiền mặt"]
   };
-  CS_SUBJECTS.filter(s => s.status !== "ended" && s.contract !== "—").forEach(s => {
+  CS_SUBJECTS.filter(s => s.status !== "ended" && s.contract !== "—").forEach((s, idx) => {
     const isExempt = Boolean(s.exempt);
     const amount = isExempt ? 0 : CS_TARIFFS[s.tariff];
     const suffix = s.code.split("-")[1];
-    const paid08 = !overdue08.includes(s.code);
+    const generated = /-(H|KD)1\d{4}$/.test(s.code);
+    const paid08 = generated ? idx % 11 !== 4 : !overdue08.includes(s.code);
+    if (generated && idx % 2 === 0 && !isExempt) paid09[s.code] = [`${String(10 + idx % 7).padStart(2, "0")}/09/2026`, idx % 3 ? "Tiền mặt" : "Chuyển khoản"];
     CS_CHARGES.push({
       id: `KT-0826-${suffix}`,
       request: "YCT-0826-01",
@@ -213,16 +239,14 @@ const csScopeMatch = (subject, scope) => !scope || scope === "all" ? true : scop
 const csChargeAmount = (subject, period, feeType = "env", price = null) => feeType === "env" ? CS_TARIFFS[subject.tariff] * (csIsQuarter(period) ? 3 : 1) : Number(price ?? csFeeType(feeType).price) || 0;
 
 // Tiến độ thu theo khu vực (tỷ lệ minh họa cố định theo thứ tự tổ).
+// Phải thu của tổ = tổng khoản thu của hộ trong tổ theo phiếu yêu cầu thu; đã thu = khoản hộ đã được người đi thu xác nhận.
+// Cùng một nguồn với danh sách khoản thu, không gian Công ty và Người đi thu.
 function csAreaProgress(areaId, period) {
   const area = csArea(areaId);
-  const index = MANAGEMENT_AREAS.indexOf(area);
-  const rate = period === "2026-08" ? [95, 100, 86, 92, 98, 80, 96, 100, 90, 97, 94][index % 11] : [58, 64, 29, 51, 62, 34, 49, 68, 32, 57, 46][index % 11];
-  // Kỳ quý gộp ba tháng nên phải thu gấp ba.
-  const due = area.households * 80000 * (csIsQuarter(period) ? 3 : 1);
-  const paid = area.unit ? Math.round(due * rate / 100) : 0;
-  const unitIndex = MANAGEMENT_UNITS.findIndex(u => u.id === area.unit);
-  const confirmedRate = [1, .94, 1, .9, 1, .97, 1, 1, .92, 1, 1][Math.max(unitIndex, 0) % 11];
-  return { area, due, paid, confirmed: Math.round(paid * confirmedRate) };
+  const charges = CS_CHARGES.filter(c => c.period === period && csSubject(c.subject)?.area === areaId);
+  const due = charges.reduce((t, c) => t + c.amount, 0);
+  const paid = charges.filter(c => c.status === "paid").reduce((t, c) => t + c.amount, 0);
+  return { area, due, paid, confirmed: paid, count: charges.length, paidCount: charges.filter(c => c.status === "paid").length };
 }
 function csCompanyProgress(period) {
   const groups = [...MANAGEMENT_UNITS, { id: null, name: "Chưa phân công" }].map(unit => {
@@ -234,8 +258,7 @@ function csCompanyProgress(period) {
 }
 
 // ---------- Công nợ công ty ----------
-// Một nguồn "phải thu" cấp công ty dùng chung cho Khoản thu, Tiến độ, Đối soát: số hộ của tổ × đơn giá.
-// Danh sách khoản thu của hộ (CS_SUBJECTS / CS_CHARGES) là dữ liệu mẫu để xem chi tiết, không cộng thành tổng.
+// Một nguồn "phải thu" cấp công ty dùng chung cho Khoản thu, Tiến độ, Đối soát, Công ty, Người đi thu: tổng khoản thu của hộ trong các tổ được giao.
 const csCompanyAreas = companyId => MANAGEMENT_AREAS.filter(a => (a.unit || null) === companyId);
 const csCompanyDue = (companyId, period) => csCompanyAreas(companyId).reduce((t, a) => t + csAreaProgress(a.id, period).due, 0);
 const csCompanyReceipts = (companyId, period) => CS_COMPANY_RECEIPTS.filter(r => r.companyId === companyId && r.period === period);
@@ -282,12 +305,13 @@ const CS_COMPANY_RECEIPTS = [];
   MANAGEMENT_UNITS.forEach((u, i) => {
     const due = csCompanyDue(u.id, "2026-08");
     if (!due) return;
-    const amount = u.id === "DV01" ? 65000000 : u.id === "DV06" ? Math.round(due * 0.9 / 1000) * 1000 : due;
+    const amount = u.id === "DV01" ? Math.round(due * 0.6 / 1000) * 1000 : u.id === "DV06" ? Math.round(due * 0.9 / 1000) * 1000 : due;
     push(u.id, "2026-08", amount, 25 + (i % 4), i % 3 === 2 ? "Tiền mặt" : "Chuyển khoản", `Nộp tiền thu gom rác kỳ 08/2026${amount < due ? " · đợt 1" : ""}`, i);
   });
-  push("DV01", "2026-09", 35000000, 15, "Chuyển khoản", "Nộp đợt 1 kỳ thu 09/2026", 20);
-  push("DV03", "2026-09", 28000000, 16, "Chuyển khoản", "Nộp đợt 1 kỳ thu 09/2026", 21);
-  push("DV04", "2026-09", 20000000, 17, "Tiền mặt", "Nộp trực tiếp tại thủ quỹ xã · đợt 1", 22);
+  const part = (id, ratio) => Math.round(csCompanyDue(id, "2026-09") * ratio / 1000) * 1000;
+  push("DV01", "2026-09", part("DV01", 0.35), 15, "Chuyển khoản", "Nộp đợt 1 kỳ thu 09/2026", 20);
+  push("DV03", "2026-09", part("DV03", 0.25), 16, "Chuyển khoản", "Nộp đợt 1 kỳ thu 09/2026", 21);
+  push("DV04", "2026-09", part("DV04", 0.2), 17, "Tiền mặt", "Nộp trực tiếp tại thủ quỹ xã · đợt 1", 22);
 })();
 
 // Đọc số tiền bằng chữ cho phiếu thu.
@@ -420,7 +444,7 @@ function csCharges() {
       ${panel("Phiếu thu đã lập", "Xã lập phiếu thu mỗi lần công ty nộp tiền; công ty xem được phiếu và báo sai sót nếu có.", table(["Mã phiếu thu", "Công ty nộp", "Kỳ", { label: "Số tiền", num: true }, "Hình thức / chứng từ", "Nội dung", ""], receiptRows, { empty: "Chưa có phiếu thu trong phạm vi đã chọn." }))}`
     : `${filterBar("", "Mã khoản, phiếu YC, tên, mã hộ, tổ, công ty...")}
       ${chipBar([["all", "Tất cả"], ["unpaid", "Chưa thu", "warning"], ["overdue", "Quá hạn", "danger"], ["paid", "Đã thu", "success"], ["exempt", "Miễn giảm", "neutral"]], "khoản")}
-      ${panel("Khoản phải thu của hộ", "Sinh từ phiếu yêu cầu thu; công ty phụ trách tổ đi thu và nộp về xã. Danh sách hộ là dữ liệu mẫu.", table(["Mã khoản / phiếu YC", "Đối tượng", "Kỳ · hạn nộp", { label: "Số tiền", num: true }, "Công ty phụ trách", "Trạng thái"], chargeRows, { empty: "Không có khoản thu phù hợp với bộ lọc." }))}`;
+      ${panel("Khoản phải thu của hộ", "Sinh từ phiếu yêu cầu thu; công ty phụ trách tổ đi thu và nộp về xã.", table(["Mã khoản / phiếu YC", "Đối tượng", "Kỳ · hạn nộp", { label: "Số tiền", num: true }, "Công ty phụ trách", "Trạng thái"], chargeRows, { empty: "Không có khoản thu phù hợp với bộ lọc." }))}`;
 
   return `${csHeader("Khoản thu", csBtn("Tạo phiếu yêu cầu thu", "chargeRequest") + csBtn("Lập phiếu thu cho công ty", "receipt", "", "primary"), "Phiếu yêu cầu thu → khoản phải thu của hộ → phiếu thu khi công ty nộp tiền về xã")}
   <div class="filter-bar">
@@ -502,7 +526,7 @@ function csProgress() {
   const ledger = csCompanyLedger(period);
   const visible = !isDrilldown ? ledger : ledger.filter(g => (g.unit.id || "none") === csState.company);
   const sumBy = key => visible.reduce((t, g) => t + g[key], 0);
-  // Công ty báo đã thu (theo tiến độ từng tổ) đặt cạnh số đã nộp về xã (phiếu thu) để thấy phần thu rồi chưa nộp.
+  // Đã thu (người đi thu xác nhận, cùng nguồn với khoản thu của hộ) đặt cạnh số đã nộp về xã (phiếu thu) để thấy phần thu rồi chưa nộp.
   const reported = g => g.unit.id ? csCompanyReported(g.unit.id, period) : 0;
   const due = sumBy("due"), received = sumBy("received"), collected = visible.reduce((t, g) => t + reported(g), 0);
   const selectedUnit = isDrilldown ? (csUnit(csState.company) || { name: csState.company === "none" ? "Chưa phân công" : "Công ty" }) : null;
@@ -523,7 +547,7 @@ function csProgress() {
         return `<tr class="${!g.unit.id || debt ? "is-attention" : ""}">
         <td>${g.unit.id ? csLink(g.unit.name, "progressCompany", g.unit.id) : "<strong>Chưa phân công</strong>"}<span class="cell-subtitle">${g.areas.length} tổ · ${g.households.toLocaleString("vi-VN")} hộ</span></td>
         <td class="money">${formatMoney(g.due)}</td>
-        <td class="money">${formatMoney(paid)}<span class="cell-subtitle">${g.due ? (paid / g.due * 100).toFixed(0) : 0}% · công ty báo</span></td>
+        <td class="money">${formatMoney(paid)}<span class="cell-subtitle">${g.due ? (paid / g.due * 100).toFixed(0) : 0}% · người thu xác nhận</span></td>
         <td class="money">${formatMoney(g.received)}<span class="cell-subtitle">${g.receipts} phiếu thu</span></td>
         <td class="money">${g.remaining < 0 ? `<span class="text-info">nộp vượt ${formatMoney(-g.remaining)}</span>` : formatMoney(g.remaining)}</td>
         <td class="money">${debts.filter(d => d.period !== period).length ? debts.filter(d => d.period !== period).map(d => `<span class="cell-subtitle text-danger">${d.label}: ${formatMoney(d.remaining)}</span>`).join("") : '<span class="muted">—</span>'}</td>
@@ -534,15 +558,14 @@ function csProgress() {
       })
     : visible.flatMap(g => g.areas.map(a => {
         const r = csAreaProgress(a.id, period);
-        const charges = CS_CHARGES.filter(c => c.period === period && csSubject(c.subject)?.area === a.id && c.status !== "exempt");
-        const paidCharges = charges.filter(c => c.status === "paid").length;
+
         return `<tr>
         <td>${csLink(csAreaName(a.id), "progressAreaCharges", `${g.unit.id || "none"}:${a.id}`)}<span class="cell-subtitle">${a.id} · ${a.households.toLocaleString("vi-VN")} hộ</span></td>
         <td class="money">${formatMoney(r.due)}</td>
         <td class="money">${formatMoney(r.paid)}</td>
         <td class="money">${formatMoney(r.due - r.paid)}</td>
         <td>${progressCell(r.paid, r.due)}</td>
-        <td class="num">${charges.length ? `${paidCharges}/${charges.length}<span class="cell-subtitle">khoản hộ mẫu đã thu</span>` : '<span class="muted">—</span>'}</td>
+        <td class="num">${r.count ? `${r.paidCount}/${r.count}<span class="cell-subtitle">hộ đã thu</span>` : '<span class="muted">chưa lập YCT</span>'}</td>
         <td>${csBtn("Xem khoản thu", "progressAreaCharges", `${g.unit.id || "none"}:${a.id}`, "primary", true)}</td>
       </tr>`;
       }));
@@ -550,7 +573,7 @@ function csProgress() {
   return `${csHeader(
     "Báo cáo tiến độ thu tiền",
     (isDrilldown ? csBtn("← Tất cả công ty", "progressResetCompany") : "") + actionButton("Xuất Excel", "exportData"),
-    isDrilldown ? `Tiến độ theo từng tổ của: <strong>${escapeHtml(selectedUnit?.name || "")}</strong>` : "Phải thu theo tổ được giao · công ty báo đã thu · đã nộp về xã theo phiếu thu"
+    isDrilldown ? `Tiến độ theo từng tổ của: <strong>${escapeHtml(selectedUnit?.name || "")}</strong>` : "Phải thu = tổng khoản thu của hộ theo phiếu YCT · đã thu theo xác nhận của người đi thu · đã nộp về xã theo phiếu thu"
   )}
   <div class="filter-bar">
     ${filterField("Kỳ thu", csSelect('data-cs-filter="period"', CS_PERIODS.map(p => [p.id, p.label]), period))}
@@ -566,7 +589,7 @@ function csProgress() {
   </div>` : ""}
   ${summaryStrip([
     ["Phải thu", formatMoney(due), `${sumBy("households").toLocaleString("vi-VN")} hộ · ${visible.reduce((t, g) => t + g.areas.length, 0)} tổ`],
-    ["Công ty báo đã thu", formatMoney(collected), due ? `${(collected / due * 100).toFixed(1)}% · theo báo cáo` : ""],
+    ["Đã thu (người thu xác nhận)", formatMoney(collected), due ? `${(collected / due * 100).toFixed(1)}% · chưa gồm phần chưa nộp về xã` : ""],
     ["Đã nộp về xã", formatMoney(received), `${sumBy("receipts")} phiếu thu · ${due ? (received / due * 100).toFixed(1) : 0}%`],
     ["Còn phải nộp", formatMoney(Math.max(due - received, 0)), `Hạn nộp ${CS_PERIODS.find(p => p.id === period)?.due || ""}${pastDue ? " · đã hết hạn" : ""}`]
   ])}
@@ -574,8 +597,8 @@ function csProgress() {
     !isDrilldown ? "Theo công ty" : `Theo tổ · ${escapeHtml(selectedUnit?.name || "")}`,
     !isDrilldown ? "Tiến độ = đã nộp về xã / phải thu của kỳ đang xem. Nợ kỳ trước liệt kê từng kỳ đã hết hạn chưa nộp đủ. Bấm tên công ty để xem từng tổ." : "Bấm tên tổ hoặc “Xem khoản thu” để mở danh sách khoản thu của tổ.",
     rows.length ? table(!isDrilldown
-      ? ["Công ty", { label: "Phải thu", num: true }, { label: "Công ty báo đã thu", num: true }, { label: "Đã nộp về xã", num: true }, { label: "Còn phải nộp", num: true }, { label: "Nợ kỳ trước", num: true }, "Tiến độ nộp", "Trạng thái", ""]
-      : ["Tổ / Khu vực", { label: "Phải thu", num: true }, { label: "Công ty báo đã thu", num: true }, { label: "Còn phải thu", num: true }, "Tiến độ", { label: "Hộ mẫu", num: true }, ""], rows, { static: true }) : '<p class="table-empty">Không có dữ liệu trong phạm vi đã chọn.</p>'
+      ? ["Công ty", { label: "Phải thu", num: true }, { label: "Đã thu", num: true }, { label: "Đã nộp về xã", num: true }, { label: "Còn phải nộp", num: true }, { label: "Nợ kỳ trước", num: true }, "Tiến độ nộp", "Trạng thái", ""]
+      : ["Tổ / Khu vực", { label: "Phải thu", num: true }, { label: "Đã thu", num: true }, { label: "Còn phải thu", num: true }, "Tiến độ", { label: "Hộ", num: true }, ""], rows, { static: true }) : '<p class="table-empty">Không có dữ liệu trong phạm vi đã chọn.</p>'
   )}`;
 }
 
@@ -604,18 +627,18 @@ function csReconciliation() {
       <td class="num">${complaints || "—"}</td>
       <td>${badge(state === "mismatch" ? "Lệch" : state === "pending" ? "Đang nộp" : "Khớp", state === "mismatch" ? "danger" : state === "pending" ? "warning" : "success")}</td>
       <td>${csBtn("Chi tiết", "reconDetail", g.unit.id, "secondary", true)}</td></tr>`);
-  return `${csHeader("Đối soát tổng thể", actionButton("Xuất bảng đối soát", "exportData"), "Phải thu theo tổ được giao · công ty báo đã thu · phiếu thu xã đã lập · nợ các kỳ trước")}
+  return `${csHeader("Đối soát tổng thể", actionButton("Xuất bảng đối soát", "exportData"), "Phải thu = tổng khoản thu của hộ · đã thu theo biên lai người đi thu · phiếu thu xã đã lập · nợ các kỳ trước")}
   <div class="filter-bar">${filterField("Kỳ thu", csSelect('data-cs-filter="period"', CS_PERIODS.map(p => [p.id, p.label]), period))}</div>
   ${summaryStrip([
     ["Phải thu", formatMoney(sum(r => r.g.due)), `${groups.length} công ty · kỳ ${csPeriodLabel(period)}`],
-    ["Công ty báo đã thu", formatMoney(sum(r => r.reported)), "Theo báo cáo từng tổ"],
+    ["Đã thu", formatMoney(sum(r => r.reported)), "Người đi thu xác nhận, biên lai điện tử"],
     ["Đã nộp về xã", formatMoney(sum(r => r.g.received)), `${sum(r => r.g.receipts)} phiếu thu`],
     ["Thu rồi chưa nộp", formatMoney(Math.max(0, sum(r => Math.max(0, -r.gap)))), `${rows.filter(r => r.gap < 0).length} công ty · nợ kỳ trước ${formatMoney(sum(r => r.debts.reduce((t, d) => t + d.remaining, 0)))}`]
   ])}
   <section data-table-filter data-chip-key="group" data-count-label="công ty">
     ${filterBar("", "Tên công ty...")}
     ${chipBar([["all", "Tất cả"], ["mismatch", "Lệch", "danger"], ["pending", "Đang nộp", "warning"], ["matched", "Khớp", "success"]], "công ty")}
-    ${panel("Đối soát theo công ty", "Chênh lệch = đã nộp về xã − công ty báo đã thu; âm là tiền công ty đã thu của hộ nhưng chưa nộp. Trong kỳ: Đang nộp; hết hạn còn chưa nộp hoặc nợ kỳ trước: Lệch.", table(["Công ty", { label: "Phải thu", num: true }, { label: "Báo đã thu", num: true }, { label: "Đã nộp về xã", num: true }, { label: "Chênh lệch", num: true }, { label: "Nợ kỳ trước", num: true }, { label: "Khiếu nại mở", num: true }, "Kết quả", ""], tableRows, { empty: "Không có công ty phù hợp." }))}
+    ${panel("Đối soát theo công ty", "Chênh lệch = đã nộp về xã − đã thu của hộ; âm là tiền công ty đã thu nhưng chưa nộp. Trong kỳ: Đang nộp; hết hạn còn chưa nộp hoặc nợ kỳ trước: Lệch.", table(["Công ty", { label: "Phải thu", num: true }, { label: "Đã thu", num: true }, { label: "Đã nộp về xã", num: true }, { label: "Chênh lệch", num: true }, { label: "Nợ kỳ trước", num: true }, { label: "Khiếu nại mở", num: true }, "Kết quả", ""], tableRows, { empty: "Không có công ty phù hợp." }))}
   </section>`;
 }
 
@@ -832,7 +855,7 @@ const CS_DIALOGS = {
     const areaRows = csCompanyAreas(id).map(a => { const r = csAreaProgress(a.id, period); return `<tr><td>${csAreaName(a.id)}<span class="cell-subtitle">${a.households.toLocaleString("vi-VN")} hộ</span></td><td class="money">${formatMoney(r.due)}</td><td class="money">${formatMoney(r.paid)}</td><td class="num">${r.due ? (r.paid / r.due * 100).toFixed(0) : 0}%</td></tr>`; });
     const dueRows = dues.map(d => `<tr class="${d.remaining > 0 && d.pastDue ? "is-attention" : ""}"><td>${d.label}<span class="cell-subtitle">hạn ${d.due}${d.pastDue ? " · đã hết hạn" : ""}</span></td><td class="money">${formatMoney(d.dueAmount)}</td><td class="money">${formatMoney(d.received)}</td><td class="money ${d.remaining > 0 ? "text-danger" : ""}">${formatMoney(Math.max(d.remaining, 0))}</td><td>${badge(d.remaining <= 0 ? "Đã nộp đủ" : d.pastDue ? "Quá hạn" : "Đang thu", d.remaining <= 0 ? "success" : d.pastDue ? "danger" : "warning")}</td></tr>`);
     csDialog("reconDetail", id, `Đối soát · ${u.name}`, `<div class="dialog-summary"><div><span>Kỳ ${csPeriodLabel(period)} · báo đã thu</span><strong>${formatMoney(reported)}</strong></div><div><span>Đã nộp về xã</span><strong>${formatMoney(received)}</strong></div><div><span>Chênh lệch</span><strong class="${gap < 0 ? "text-danger" : ""}">${formatMoney(gap)}</strong></div></div>
-    ${table(["Tổ", { label: "Phải thu", num: true }, { label: "Báo đã thu", num: true }, { label: "Tỷ lệ", num: true }], areaRows, { static: true })}
+    ${table(["Tổ", { label: "Phải thu", num: true }, { label: "Đã thu", num: true }, { label: "Tỷ lệ", num: true }], areaRows, { static: true })}
     <div class="stack-gap"></div>
     ${table(["Kỳ", { label: "Phải thu", num: true }, { label: "Đã nộp về xã", num: true }, { label: "Còn nộp", num: true }, "Trạng thái"], dueRows, { static: true })}
     ${gap < 0 ? `<div class="form-grid" style="margin-top:14px">${csField("Yêu cầu giải trình *", `<textarea class="control" id="csRdContent" required>Đề nghị công ty nộp về ngân sách xã số tiền ${formatMoney(-gap)} đã thu của hộ kỳ ${csPeriodLabel(period)} hoặc giải trình chênh lệch trong 3 ngày làm việc.</textarea>`, true)}</div>` : ""}`, gap < 0 ? "Gửi yêu cầu giải trình" : "", "Mỗi kỳ một phiếu thu; công ty nộp kỳ nào thì xã lập phiếu thu cho kỳ đó, không gộp nhiều kỳ vào một phiếu.");
