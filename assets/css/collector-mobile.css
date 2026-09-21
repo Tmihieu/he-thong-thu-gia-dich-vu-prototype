@@ -1,0 +1,113 @@
+/* Ứng dụng người đi thu — web app responsive, dựng theo mẫu GRAC. Dùng chung token --gr-* và khung .phone-* của mobile-preview.css. */
+
+.clm-stage { display: flex; align-items: flex-start; justify-content: center; gap: 34px; }
+.clm-frame { flex: 0 0 auto; height: min(844px, calc(100vh - var(--topbar-height) - 60px)); }
+.clm-side { max-width: 320px; padding-top: 12px; color: var(--gray-700); font-size: var(--text-sm); }
+.clm-side h2 { margin: 0 0 8px; color: var(--navy-950); font-size: var(--text-lg); }
+.clm-side p { margin: 0 0 10px; line-height: 1.5; }
+.clm-side ul { margin: 0 0 12px; padding-left: 18px; line-height: 1.5; }
+.clm-side li { margin-bottom: 4px; }
+.clm-content { background: var(--gr-page); }
+
+/* Header xanh */
+.clm-hero { padding: 6px 14px 12px; background: var(--gr-800); color: #fff; }
+.clm-brand { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 2px 4px; }
+.clm-brand strong { display: inline-flex; align-items: center; gap: 6px; font-size: 17px; font-weight: 800; }
+.clm-brand strong .icon { width: 20px; height: 20px; }
+.clm-brand .gr-chip { height: 30px; padding: 0 10px; }
+.clm-brand .gr-chip .icon { width: 15px; height: 15px; }
+.clm-search { margin-top: 8px; height: 40px; }
+.clm-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; color: var(--gr-ink); font-size: 13px; font-family: inherit; outline: none; }
+.clm-stats-toggle { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 34px; margin-top: 10px; border: 0; border-radius: 9px; background: #fff; color: var(--gr-900); font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; font-family: inherit; cursor: pointer; }
+.clm-stats-toggle .icon { width: 14px; height: 14px; stroke-width: 2.4; transform: rotate(90deg); }
+.clm-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 8px; }
+.clm-stats div { padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.12); line-height: 1.25; }
+.clm-stats small { display: block; font-size: 10.5px; color: #cfe9da; text-transform: uppercase; letter-spacing: .03em; }
+.clm-stats strong { display: block; margin-top: 2px; font-size: 17px; font-weight: 800; }
+.clm-stats span { display: block; font-size: 11px; color: #d9efe2; }
+.clm-filters { display: flex; gap: 8px; margin-top: 10px; }
+.clm-filters label { flex: 1; min-width: 0; display: grid; gap: 3px; font-size: 11px; font-weight: 700; color: #d9efe2; }
+.clm-select { width: 100%; height: 34px; padding: 0 28px 0 10px; border: 0; border-radius: 9px; background: #fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230b4d2c' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>") no-repeat right 8px center / 14px; color: var(--gr-900); font-size: 13px; font-weight: 800; font-family: inherit; appearance: none; }
+
+/* Chip trạng thái */
+.clm-chips { display: flex; gap: 6px; padding: 10px 14px 4px; overflow-x: auto; scrollbar-width: none; background: var(--gr-page); }
+.clm-chips::-webkit-scrollbar { display: none; }
+.clm-chip { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 11px; border: 1px solid #cfdad3; border-radius: 999px; background: #fff; color: #3f4d46; font-size: 12px; font-weight: 700; font-family: inherit; white-space: nowrap; cursor: pointer; }
+.clm-chip b { min-width: 18px; padding: 0 5px; border-radius: 999px; background: var(--gr-icon-bg); color: #5d6b63; font-size: 11px; line-height: 18px; text-align: center; }
+.clm-chip.active { border-color: var(--gr-800); background: var(--gr-800); color: #fff; }
+.clm-chip.active b { background: rgba(255,255,255,.2); color: #fff; }
+
+/* Thẻ hộ */
+.clm-list { padding-top: 10px; border-radius: 0; }
+.clm-card { margin-bottom: 12px; border: 1px solid #e3ebe6; border-radius: 14px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.04); overflow: hidden; }
+.clm-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--gr-line); }
+.clm-card-head strong { flex: 1; min-width: 0; color: var(--gr-800); font-size: 13.5px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.clm-card-body { padding: 10px 14px 12px; }
+.clm-card-body p { margin: 3px 0; color: #3f4d46; font-size: 12.5px; line-height: 1.45; }
+.clm-card-body p b { color: var(--gr-muted); font-weight: 700; }
+.clm-label { display: block; color: var(--gr-muted); font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.clm-name { margin: 2px 0 6px; color: var(--gr-800); font-size: 15px; font-weight: 800; text-transform: uppercase; }
+.clm-kv { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.clm-kv small { color: var(--gr-muted); font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.clm-kv span { color: var(--gr-700); font-size: 12.5px; font-weight: 700; text-align: right; }
+.clm-amount { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--gr-line); }
+.clm-amount small { color: var(--gr-muted); font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.clm-amount strong { color: var(--gr-900); font-size: 20px; font-weight: 800; }
+.clm-result { display: flex; align-items: flex-start; gap: 8px; margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: #fff6e5; color: #8a5a00; font-size: 12px; line-height: 1.4; }
+.clm-result .icon { width: 16px; height: 16px; flex: 0 0 auto; margin-top: 1px; }
+.clm-result small { display: block; color: inherit; opacity: .8; }
+.clm-result.success { background: var(--gr-100); color: var(--gr-800); }
+.clm-result.danger { background: #fdecea; color: #a12622; }
+.clm-note { width: 100%; min-height: 40px; margin-top: 10px; padding: 8px 12px; border: 1px solid #cfdad3; border-radius: 10px; background: var(--gr-50); color: var(--gr-ink); font-size: 12.5px; font-family: inherit; }
+.clm-note:focus { outline: 2px solid var(--gr-500); outline-offset: 1px; }
+.clm-actions { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.clm-actions .gr-btn { flex: 1; min-height: 42px; font-size: 13px; }
+.clm-actions .gr-btn .icon { width: 17px; height: 17px; }
+.clm-iconbtn { width: 42px; height: 42px; flex: 0 0 auto; display: grid; place-items: center; border: 1.5px solid var(--gr-900); border-radius: 12px; background: #fff; color: var(--gr-900); font-size: 18px; font-weight: 800; font-family: inherit; cursor: pointer; }
+.clm-iconbtn .icon { width: 18px; height: 18px; }
+.clm-iconbtn:active { background: var(--gr-100); }
+.clm-menu { display: grid; gap: 4px; margin-top: 8px; padding: 6px; border: 1px solid var(--gr-line); border-radius: 12px; background: var(--gr-50); }
+.clm-menu button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 38px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--gr-ink); font-size: 12.5px; font-weight: 700; font-family: inherit; text-align: left; cursor: pointer; }
+.clm-menu button:hover { background: #fff; }
+.clm-menu button .icon { width: 16px; height: 16px; color: var(--gr-800); }
+
+/* Tab Tiền mặt / Tài khoản / Biên lai */
+.clm-topbar { padding: 6px 16px 14px; }
+.clm-topbar h1 { font-size: 16px; }
+.clm-cash-summary small { display: block; color: var(--gr-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.clm-row-amount { flex: 0 0 auto; color: var(--gr-900); font-size: 13px; font-weight: 800; }
+.gr-row.static { cursor: default; }
+.gr-row.static small { margin: 0 0 1px; }
+.clm-profile { text-align: center; }
+.clm-profile h3 { margin: 4px 0 0; }
+.clm-content .gr-line { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px solid var(--gr-line); font-size: 12.5px; }
+.clm-content .gr-line span { color: var(--gr-muted); }
+.clm-content .gr-line strong { text-align: right; }
+
+/* Bottom sheet cập nhật kết quả */
+.clm-sheet-backdrop { position: absolute; inset: 0; z-index: 5; display: flex; align-items: flex-end; background: rgba(7,58,33,.45); }
+.clm-sheet { width: 100%; max-height: 92%; padding: 8px 16px 18px; border-radius: 22px 22px 0 0; background: #fff; overflow-y: auto; animation: clm-up .2s ease-out; }
+@keyframes clm-up { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+.clm-sheet-handle { display: block; width: 40px; height: 4px; margin: 0 auto 10px; border-radius: 2px; background: #cfdad3; }
+.clm-sheet h3 { margin: 0; color: var(--gr-ink); font-size: 16px; font-weight: 800; }
+.clm-sheet .muted { margin: 2px 0 12px; color: var(--gr-muted); font-size: 12.5px; }
+.clm-sheet .muted b { color: var(--gr-900); }
+.clm-result-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 14px; }
+.clm-result-btn { display: flex; align-items: center; gap: 8px; min-height: 46px; padding: 6px 10px; border: 1.5px solid #cfdad3; border-radius: 12px; background: #fff; color: var(--gr-ink); font-size: 12.5px; font-weight: 700; font-family: inherit; text-align: left; cursor: pointer; }
+.clm-result-btn .icon { width: 18px; height: 18px; flex: 0 0 auto; color: var(--gr-800); }
+.clm-result-btn.active { border-color: var(--gr-800); background: var(--gr-100); color: var(--gr-900); }
+.clm-result-btn:last-child { grid-column: 1 / -1; }
+.clm-sheet .gr-field { margin-bottom: 10px; }
+.clm-sheet .gr-field .gr-input { min-height: 44px; }
+.clm-sheet-actions { display: flex; gap: 8px; margin-top: 4px; }
+.clm-sheet-actions .gr-btn { min-height: 46px; }
+.clm-sheet-actions .gr-btn.ghost { flex: 0 0 34%; }
+
+/* Toàn màn hình trên điện thoại thật */
+@media (max-width: 600px) {
+  .clm-stage { display: block; margin: -14px -16px -40px; }
+  .clm-side { display: none; }
+  .clm-frame { width: 100%; height: calc(100vh - var(--topbar-height)); padding: 0; border-radius: 0; box-shadow: none; background: var(--gr-800); }
+  .clm-frame .phone-screen { border-radius: 0; }
+  .clm-frame .phone-notch, .clm-frame .phone-statusbar { display: none; }
+}
