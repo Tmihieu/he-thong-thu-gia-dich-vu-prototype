@@ -38,19 +38,69 @@ Object.assign(ROLE_CONFIG, {
 });
 
 // ---------- Dữ liệu ----------
-const RS_COMPANY = MANAGEMENT_UNITS[0];
+var rsCurrentCompanyId = "DV01";
+var RS_COMPANY = MANAGEMENT_UNITS[0];
 const RS_STATUS = { unpaid: ["Chưa thu", "warning"], overdue: ["Quá hạn", "danger"], appointment: ["Đã hẹn", "info"], absent: ["Vắng nhà", "warning"], paid: ["Đã thu", "success"] };
 const rsSum = list => list.reduce((t, r) => t + r.amount, 0);
 const rsDateKey = d => (d || "").split("/").reverse().join("");
 const rsTag = period => `${period.slice(0, 2)}${period.slice(-2)}`;
 // Tài khoản người đi thu của công ty; mỗi khu vực một tài khoản phụ trách.
-const RS_COLLECTORS = [
+var RS_COLLECTORS = [
   { username: "nguyenthanhlong", name: "Nguyễn Thành Long", area: "Tổ 07", phone: "0903 218 665" },
   { username: "levantai", name: "Lê Văn Tài", area: "Tổ 09", phone: "0908 331 774" }
 ];
-const RS_COMPANY_ACCOUNT = { username: "congty.dongthanh", name: "Trần Hoàng Phúc" };
+var RS_COMPANY_ACCOUNT = { username: "congty.dongthanh", name: "Trần Hoàng Phúc" };
 const rsCollector = username => RS_COLLECTORS.find(c => c.username === username) || (username === RS_COMPANY_ACCOUNT.username ? { ...RS_COMPANY_ACCOUNT, area: "Công ty" } : null);
 const rsCollectorOf = area => RS_COLLECTORS.find(c => c.area === area) || RS_COLLECTORS[0];
+
+function rsUpdateCollectorsForCompany(company) {
+  const areas = csCompanyAreas(company.id);
+  if (company.id === "DV01") {
+    RS_COLLECTORS = [
+      { username: "nguyenthanhlong", name: "Nguyễn Thành Long", area: "Tổ 07", phone: "0903 218 665" },
+      { username: "levantai", name: "Lê Văn Tài", area: "Tổ 09", phone: "0908 331 774" }
+    ];
+    RS_ME = RS_COLLECTORS[0];
+    return;
+  }
+  const collectorNames = ["Trần Văn Nam", "Nguyễn Văn Hùng", "Lê Thị Thảo", "Võ Minh Trí", "Phạm Quốc Dũng", "Hoàng Kim Ngân"];
+  if (!areas.length) {
+    RS_COLLECTORS = [{
+      username: `nvthu_${company.id.toLowerCase()}_1`,
+      name: `Nhân viên thu · ${company.contact?.split(" ").pop() || "Phụ trách"}`,
+      area: "Chưa phân tổ",
+      phone: company.phone || "0900 000 000"
+    }];
+  } else {
+    RS_COLLECTORS = areas.map((a, idx) => ({
+      username: `nvthu_${company.id.toLowerCase()}_${idx + 1}`,
+      name: collectorNames[idx % collectorNames.length],
+      area: csAreaName(a.id),
+      phone: `090${String(company.id.slice(-2))}${String(idx + 1).padStart(2, "0")} 888`
+    }));
+  }
+  RS_ME = RS_COLLECTORS[0];
+}
+
+function rsSetCompany(id) {
+  const u = csUnit(id) || MANAGEMENT_UNITS.find(x => x.id === id) || MANAGEMENT_UNITS[0];
+  rsCurrentCompanyId = u.id;
+  RS_COMPANY = u;
+  if (ROLE_CONFIG.company) {
+    ROLE_CONFIG.company.description = `${u.name} · thu tiền hộ và nộp về xã`;
+  }
+  const userAcc = RS_USERS.find(x => x.roles === "Công ty môi trường" && x.organization === u.name);
+  if (userAcc) {
+    RS_COMPANY_ACCOUNT = { username: userAcc.username, name: userAcc.name };
+  } else {
+    RS_COMPANY_ACCOUNT = { username: `congty.${u.id.toLowerCase()}`, name: u.contact || "Đại diện công ty" };
+  }
+  rsUpdateCollectorsForCompany(u);
+  if (ROLE_CONFIG.collector) {
+    ROLE_CONFIG.collector.description = `${RS_ME.name} · ${u.name}`;
+  }
+  RS_ROW_CACHE.clear();
+}
 // Kết quả đã xác nhận thu: tài khoản nào xác nhận, hình thức, ngày — khóa theo mã hộ|kỳ.
 const RS_CONFIRMED = {
   "DTH-H000142|09/2026": ["nguyenthanhlong", "Chuyển khoản", "12/09/2026"],
@@ -132,7 +182,7 @@ CS_COMPLAINTS.push(
 );
 CS_COMPLAINTS.sort((a, b) => rsDateKey(b.date).localeCompare(rsDateKey(a.date)) || b.id.localeCompare(a.id));
 const rsCompanyComplaintList = () => CS_COMPLAINTS.filter(c => c.forwardedTo === RS_COMPANY.id || csArea(c.area)?.unit === RS_COMPANY.id);
-const RS_ME = RS_COLLECTORS[0]; // Tài khoản người đi thu đang đăng nhập trong prototype.
+var RS_ME = RS_COLLECTORS[0]; // Tài khoản người đi thu đang đăng nhập trong prototype.
 const RS_USERS = [
   ...APP_DATA.users.map(u => ({ ...u })),
   { username: "levantai", name: "Lê Văn Tài", organization: "Công ty MTĐT Đông Thạnh", roles: "Người đi thu", lastLogin: "16/09 · 07:05", status: "Hoạt động" },
@@ -573,6 +623,10 @@ const RS_SUBMIT = {
   clReceipt(chargeId) { return `Đã mô phỏng gửi lại biên lai ${rsRows().find(x => x.charge === chargeId)?.receipt || ""} cho hộ qua Zalo/SMS.`; },
   userEdit(id) {
     const data = { name: csFormValue("rsUsName"), organization: csFormValue("rsUsOrg"), roles: csFormValue("rsUsRole"), status: csFormValue("rsUsStatus") };
+    if (data.roles === "Công ty môi trường") {
+      const comp = MANAGEMENT_UNITS.find(m => m.name === data.organization);
+      if (comp) rsSetCompany(comp.id);
+    }
     const u = RS_USERS.find(x => x.username === id);
     if (u) { Object.assign(u, data); return `Đã cập nhật tài khoản ${id}.`; }
     const username = csFormValue("rsUsUsername");

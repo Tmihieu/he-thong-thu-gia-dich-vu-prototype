@@ -50,6 +50,18 @@ function renderRoleOptions() {
   const select = document.getElementById("roleSelect");
   select.innerHTML = ROLE_ORDER.map(id => `<option value="${id}">${ROLE_CONFIG[id].label}</option>`).join("");
   select.value = currentRole;
+
+  const compPicker = document.getElementById("companyPicker");
+  const compSelect = document.getElementById("companySelect");
+  if (compPicker && compSelect) {
+    if (currentRole === "company" && typeof MANAGEMENT_UNITS !== "undefined") {
+      compPicker.style.display = "grid";
+      compSelect.innerHTML = MANAGEMENT_UNITS.map(u => `<option value="${u.id}">${escapeHtml(u.name)}</option>`).join("");
+      compSelect.value = typeof rsCurrentCompanyId !== "undefined" ? rsCurrentCompanyId : (typeof RS_COMPANY !== "undefined" ? RS_COMPANY.id : MANAGEMENT_UNITS[0].id);
+    } else {
+      compPicker.style.display = "none";
+    }
+  }
 }
 
 function renderNavigation() {
@@ -58,6 +70,39 @@ function renderNavigation() {
   document.getElementById("roleName").textContent = role.label;
   document.getElementById("roleDescription").textContent = role.description;
   document.getElementById("avatarInitials").textContent = role.initials;
+
+  const roleCard = document.querySelector(".role-card");
+  const existingSwitch = document.getElementById("sidebarCompanySwitch");
+  if (currentRole === "company" && typeof MANAGEMENT_UNITS !== "undefined" && roleCard) {
+    const activeCompId = typeof rsCurrentCompanyId !== "undefined" ? rsCurrentCompanyId : (typeof RS_COMPANY !== "undefined" ? RS_COMPANY.id : MANAGEMENT_UNITS[0].id);
+    if (!existingSwitch) {
+      const switchDiv = document.createElement("div");
+      switchDiv.id = "sidebarCompanySwitch";
+      switchDiv.style.marginTop = "8px";
+      switchDiv.style.paddingTop = "8px";
+      switchDiv.style.borderTop = "1px solid rgba(255,255,255,.15)";
+      switchDiv.innerHTML = `
+        <label style="font-size:11px;color:var(--navy-200,rgba(255,255,255,.7));display:block;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Đổi công ty đang đóng vai:</label>
+        <select class="control" style="font-size:12px;padding:4px 8px;height:32px;width:100%;border-radius:4px;background:#fff;color:#111;font-weight:600;">
+          ${MANAGEMENT_UNITS.map(u => `<option value="${u.id}" ${u.id === activeCompId ? "selected" : ""}>${escapeHtml(u.name)}</option>`).join("")}
+        </select>
+      `;
+      switchDiv.querySelector("select").addEventListener("change", e => {
+        if (typeof rsSetCompany === "function") {
+          rsSetCompany(e.target.value);
+          renderApp();
+          showDemoNotice(`Đã chuyển actor sang ${RS_COMPANY.name}`);
+        }
+      });
+      roleCard.appendChild(switchDiv);
+    } else {
+      const sel = existingSwitch.querySelector("select");
+      if (sel) sel.value = activeCompId;
+    }
+  } else if (existingSwitch) {
+    existingSwitch.remove();
+  }
+
   let group = "";
   const html = [];
   role.screens.forEach(screen => {
@@ -259,6 +304,13 @@ function closeSidebar() {
 
 function bindAppEvents() {
   document.getElementById("roleSelect").addEventListener("change", event => selectRole(event.target.value));
+  document.getElementById("companySelect")?.addEventListener("change", event => {
+    if (typeof rsSetCompany === "function") {
+      rsSetCompany(event.target.value);
+      renderApp();
+      showDemoNotice(`Đã chuyển actor sang ${RS_COMPANY.name}`);
+    }
+  });
   document.getElementById("roleNav").addEventListener("click", event => {
     const button = event.target.closest("[data-screen]");
     if (button) showScreen(button.dataset.screen);

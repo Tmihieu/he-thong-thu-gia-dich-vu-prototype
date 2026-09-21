@@ -514,7 +514,7 @@ function csCompanyDetail() {
     return `<tr><td><span class="cell-title">${csAreaName(area.id)}</span><span class="cell-subtitle">${area.id}</span></td><td class="num">${area.households.toLocaleString("vi-VN")}</td><td>${csIsoToVi(area.start)} → ${csIsoToVi(area.end)}</td><td class="money">${formatMoney(due)}</td><td class="money">${formatMoney(paid)}</td><td><div class="cell-progress">${progressBar(rate, rate < 45 ? "warning" : "")}<span class="num">${rate.toFixed(0)}%</span></div></td><td>${csBtn("Bỏ phân công", "unassign", area.id, "secondary", true)}</td></tr>`;
   });
   const complaints = CS_COMPLAINTS.filter(c => csArea(c.area)?.unit === u.id && c.status !== "done").length;
-  return `${csHeader(escapeHtml(u.name), csBtn("← Danh sách công ty", "back") + csBtn("Sửa thông tin", "editCompany", u.id) + csBtn("+ Phân công khu vực", "assignAreas", u.id, "primary"), `${u.id} · Đầu mối: ${escapeHtml(u.contact)} · ${escapeHtml(u.phone)} · Hiệu lực: ${csIsoToVi(u.start || "2026-01-01")} → ${csIsoToVi(u.end || "2026-12-31")} · ${u.status === "inactive" ? "Tạm ngưng" : "Hoạt động"}`)}
+  return `${csHeader(escapeHtml(u.name), csBtn("← Danh sách công ty", "back") + csBtn("Đóng vai công ty này →", "impersonateCompany", u.id, "primary") + csBtn("Sửa thông tin", "editCompany", u.id) + csBtn("+ Phân công khu vực", "assignAreas", u.id), `${u.id} · Đầu mối: ${escapeHtml(u.contact)} · ${escapeHtml(u.phone)} · Hiệu lực: ${csIsoToVi(u.start || "2026-01-01")} → ${csIsoToVi(u.end || "2026-12-31")} · ${u.status === "inactive" ? "Tạm ngưng" : "Hoạt động"}`)}
   ${summaryStrip([["Khu vực phụ trách", String(areas.length), `${areas.reduce((t, a) => t + a.households, 0).toLocaleString("vi-VN")} hộ`], ["Phải thu kỳ 09/2026", formatMoney(due), ""], ["Đã thu", formatMoney(paid), due ? `${(paid / due * 100).toFixed(0)}% phải thu` : ""], ["Khiếu nại đang mở", String(complaints), complaints ? "Xem tại Danh sách khiếu nại" : ""]])}
   ${panel("Khu vực phụ trách", areas.length ? "Một khu vực chỉ có một công ty phụ trách trong cùng thời gian hiệu lực." : "", areas.length ? table(["Khu vực", { label: "Số hộ", num: true }, "Hiệu lực", { label: "Phải thu 09/2026", num: true }, { label: "Đã thu", num: true }, "Tiến độ", ""], rows, { static: true }) : `<div class="empty-state"><strong>Chưa được giao khu vực</strong><p>Bấm “Phân công khu vực” để chọn tổ dân phố cho công ty này.</p></div>`)}`;
 }
@@ -611,20 +611,18 @@ function csReconciliation() {
     const reported = csCompanyReported(g.unit.id, period);
     const gap = g.received - reported; // âm: công ty báo đã thu nhưng chưa nộp về xã
     const debts = csCompanyDebts(g.unit.id).filter(d => d.period !== period);
-    const complaints = CS_COMPLAINTS.filter(c => (c.forwardedTo === g.unit.id || csArea(c.area)?.unit === g.unit.id) && c.status !== "done").length;
     // Trong kỳ, thu rồi chưa nộp là bình thường (Đang nộp); hết hạn mà còn chưa nộp hoặc nợ kỳ trước mới là Lệch.
     const state = debts.length || (pastDue && (gap < 0 || g.remaining > 0)) ? "mismatch" : gap < 0 || g.remaining > 0 ? "pending" : "matched";
-    return { g, reported, gap, debts, complaints, state };
+    return { g, reported, gap, debts, state };
   });
   const sum = fn => rows.reduce((t, r) => t + fn(r), 0);
-  const tableRows = rows.map(({ g, reported, gap, debts, complaints, state }) => `<tr data-row data-group="${state}" data-search="${escapeHtml(g.unit.name.toLowerCase())}" class="${state === "mismatch" ? "is-attention" : ""}">
+  const tableRows = rows.map(({ g, reported, gap, debts, state }) => `<tr data-row data-group="${state}" data-search="${escapeHtml(g.unit.name.toLowerCase())}" class="${state === "mismatch" ? "is-attention" : ""}">
       <td>${csLink(g.unit.name, "company", g.unit.id)}<span class="cell-subtitle">${g.areas.length} tổ · ${g.households.toLocaleString("vi-VN")} hộ</span></td>
       <td class="money">${formatMoney(g.due)}</td>
       <td class="money">${formatMoney(reported)}<span class="cell-subtitle">${g.due ? (reported / g.due * 100).toFixed(0) : 0}%</span></td>
       <td class="money">${formatMoney(g.received)}<span class="cell-subtitle">${g.receipts} phiếu thu</span></td>
       <td>${delta(gap, gap < 0 ? "thu rồi chưa nộp" : gap > 0 ? "nộp nhiều hơn báo thu" : "", formatMoney)}</td>
       <td class="money">${debts.length ? debts.map(d => `<span class="cell-subtitle text-danger">${d.label}: ${formatMoney(d.remaining)}</span>`).join("") : '<span class="muted">—</span>'}</td>
-      <td class="num">${complaints || "—"}</td>
       <td>${badge(state === "mismatch" ? "Lệch" : state === "pending" ? "Đang nộp" : "Khớp", state === "mismatch" ? "danger" : state === "pending" ? "warning" : "success")}</td>
       <td>${csBtn("Chi tiết", "reconDetail", g.unit.id, "secondary", true)}</td></tr>`);
   return `${csHeader("Đối soát tổng thể", actionButton("Xuất bảng đối soát", "exportData"), "Phải thu = tổng khoản thu của hộ · đã thu theo biên lai người đi thu · phiếu thu xã đã lập · nợ các kỳ trước")}
@@ -638,7 +636,7 @@ function csReconciliation() {
   <section data-table-filter data-chip-key="group" data-count-label="công ty">
     ${filterBar("", "Tên công ty...")}
     ${chipBar([["all", "Tất cả"], ["mismatch", "Lệch", "danger"], ["pending", "Đang nộp", "warning"], ["matched", "Khớp", "success"]], "công ty")}
-    ${panel("Đối soát theo công ty", "Chênh lệch = đã nộp về xã − đã thu của hộ; âm là tiền công ty đã thu nhưng chưa nộp. Trong kỳ: Đang nộp; hết hạn còn chưa nộp hoặc nợ kỳ trước: Lệch.", table(["Công ty", { label: "Phải thu", num: true }, { label: "Đã thu", num: true }, { label: "Đã nộp về xã", num: true }, { label: "Chênh lệch", num: true }, { label: "Nợ kỳ trước", num: true }, { label: "Khiếu nại mở", num: true }, "Kết quả", ""], tableRows, { empty: "Không có công ty phù hợp." }))}
+    ${panel("Đối soát theo công ty", "Chênh lệch = đã nộp về xã − đã thu của hộ; âm là tiền công ty đã thu nhưng chưa nộp. Trong kỳ: Đang nộp; hết hạn còn chưa nộp hoặc nợ kỳ trước: Lệch.", table(["Công ty", { label: "Phải thu", num: true }, { label: "Đã thu", num: true }, { label: "Đã nộp về xã", num: true }, { label: "Chênh lệch", num: true }, { label: "Nợ kỳ trước", num: true }, "Kết quả", ""], tableRows, { empty: "Không có công ty phù hợp." }))}
   </section>`;
 }
 
@@ -1147,6 +1145,12 @@ document.addEventListener("click", event => {
     const { cs: action, id } = button.dataset;
     if (action === "switchChargesTab") { csState.chargesTab = button.dataset.tab; renderCurrentView(); return; }
     if (action === "company") { csState.companyId = id; closeDemoModal(); showScreen("company-detail"); return; }
+    if (action === "impersonateCompany") {
+      if (typeof rsSetCompany === "function") rsSetCompany(id);
+      if (typeof selectRole === "function") selectRole("company");
+      if (typeof showDemoNotice === "function") showDemoNotice(`Đã chuyển actor sang ${csUnit(id)?.name || id}`);
+      return;
+    }
     if (action === "back" || action === "goCompanies") { closeDemoModal(); showScreen("companies"); return; }
     if (action === "progressCompany") { csState.company = id; renderCurrentView(); return; }
     if (action === "progressResetCompany") { csState.company = "all"; renderCurrentView(); return; }
