@@ -217,6 +217,18 @@ function citizenComplaintNew() {
   </div>`;
 }
 
+// Phản ánh của người dân đi vào danh sách khiếu nại của xã (hộ DTH-H000128, Tổ 07) và báo cho xã lẫn công ty phụ trách.
+function citizenSubmitComplaint(form) {
+  const type = form.querySelector("select")?.value || "Phản ánh";
+  const detail = form.querySelector("textarea")?.value.trim() || "";
+  const subject = csSubject("DTH-H000128");
+  const id = `KN-2609-${String(csState.seq.complaint++).padStart(3, "0")}`;
+  const complaint = { id, date: csIsoToVi(CS_TODAY), name: CITIZEN_PROFILE.name, subject: subject?.code || "—", phone: CITIZEN_PROFILE.phone, area: subject?.area || "KV07", channel: "Ứng dụng người dân", content: `${type}: ${detail}`, status: "new", result: "" };
+  CS_COMPLAINTS.unshift(complaint);
+  csNotifyComplaint(complaint);
+  CITIZEN_COMPLAINTS.unshift({ id: id.replace("KN", "PA"), type, summary: detail.slice(0, 60), date: csIsoToVi(CS_TODAY), status: "Đã gửi", tone: "info", detail, timeline: [[`${csIsoToVi(CS_TODAY).slice(0, 5)} ${notifNow().slice(0, 5)}`, "Bạn gửi phản ánh kèm vị trí tự động"]] });
+}
+
 function citizenComplaintDetail(id) {
   const item = CITIZEN_COMPLAINTS.find(row => row.id === id) || CITIZEN_COMPLAINTS[0];
   return `${grTopbar("Chi tiết phản ánh", "complaints")}<div class="gr-body">
@@ -337,7 +349,7 @@ const CITIZEN_SCREENS = {
 };
 
 const CITIZEN_FORM_NOTICES = {
-  complaint: "Đã gửi phản ánh tới xã và công ty thu gom (mô phỏng, dữ liệu không được lưu).",
+  complaint: "Đã gửi phản ánh tới UBND xã và công ty thu gom. Xã và công ty nhận được thông báo ngay.",
   market: "Đã đăng bài lên Chợ đồ cũ (mô phỏng, dữ liệu không được lưu).",
   comment: "Đã gửi bình luận (mô phỏng).",
   bulky: "Đã gửi đăng ký thu gom cồng kềnh; chờ công ty xác nhận phí (mô phỏng)."
@@ -396,6 +408,7 @@ function bindCitizenPreview() {
     event.preventDefault();
     if (!form.reportValidity()) return;
     const kind = form.dataset.citizenForm;
+    if (kind === "complaint") citizenSubmitComplaint(form);
     showDemoNotice(CITIZEN_FORM_NOTICES[kind] || "Thao tác đã được mô phỏng.");
     if (kind === "complaint") renderCitizenScreen("complaints");
     else if (kind === "market") renderCitizenScreen("market");

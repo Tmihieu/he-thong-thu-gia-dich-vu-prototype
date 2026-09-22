@@ -41,19 +41,20 @@
 .clm-list { padding-top: 10px; border-radius: 0; }
 .clm-card { margin-bottom: 12px; border: 1px solid #e3ebe6; border-radius: 14px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.04); overflow: hidden; }
 .clm-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--gr-line); }
-.clm-card-head strong { flex: 1; min-width: 0; color: var(--gr-800); font-size: 13.5px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.clm-card-head strong { flex: 1; min-width: 0; color: var(--gr-800); font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .clm-card-body { padding: 10px 14px 12px; }
-.clm-card-body p { margin: 3px 0; color: #3f4d46; font-size: 12.5px; line-height: 1.45; }
-.clm-card-body p b { color: var(--gr-muted); font-weight: 700; }
-.clm-label { display: block; color: var(--gr-muted); font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
-.clm-name { margin: 2px 0 6px; color: var(--gr-800); font-size: 15px; font-weight: 800; text-transform: uppercase; }
+/* Cỡ chữ cho điện thoại: thân 14px, nhãn 11px, tên hộ 16px; chỉ tên hộ và số tiền in đậm, còn lại vừa phải. */
+.clm-card-body p { margin: 4px 0; color: #2f3b35; font-size: 14px; font-weight: 500; line-height: 1.45; }
+.clm-card-body p b { color: var(--gr-muted); font-weight: 600; }
+.clm-label { display: block; color: var(--gr-muted); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.clm-name { margin: 2px 0 6px; color: var(--gr-800); font-size: 16px; font-weight: 800; }
 .clm-kv { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 8px; }
-.clm-kv small { color: var(--gr-muted); font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
-.clm-kv span { color: var(--gr-700); font-size: 12.5px; font-weight: 700; text-align: right; }
+.clm-kv small { color: var(--gr-muted); font-size: 11px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; }
+.clm-kv span { color: var(--gr-700); font-size: 13.5px; font-weight: 600; text-align: right; }
 .clm-amount { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--gr-line); }
-.clm-amount small { color: var(--gr-muted); font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
-.clm-amount strong { color: var(--gr-900); font-size: 20px; font-weight: 800; }
-.clm-result { display: flex; align-items: flex-start; gap: 8px; margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: #fff6e5; color: #8a5a00; font-size: 12px; line-height: 1.4; }
+.clm-amount small { color: var(--gr-muted); font-size: 11px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; }
+.clm-amount strong { color: var(--gr-900); font-size: 22px; font-weight: 800; }
+.clm-result { display: flex; align-items: flex-start; gap: 8px; margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: #fff6e5; color: #8a5a00; font-size: 13px; font-weight: 500; line-height: 1.4; }
 .clm-result .icon { width: 16px; height: 16px; flex: 0 0 auto; margin-top: 1px; }
 .clm-result small { display: block; color: inherit; opacity: .8; }
 .clm-result.success { background: var(--gr-100); color: var(--gr-800); }
@@ -63,8 +64,9 @@
 .clm-actions { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
 .clm-actions .gr-btn { flex: 1; min-height: 42px; font-size: 13px; }
 .clm-actions .gr-btn .icon { width: 17px; height: 17px; }
-.clm-iconbtn { width: 42px; height: 42px; flex: 0 0 auto; display: grid; place-items: center; border: 1.5px solid var(--gr-900); border-radius: 12px; background: #fff; color: var(--gr-900); font-size: 18px; font-weight: 800; font-family: inherit; cursor: pointer; }
-.clm-iconbtn .icon { width: 18px; height: 18px; }
+.clm-iconbtn { width: 44px; height: 44px; flex: 0 0 auto; display: grid; place-items: center; border: 1.5px solid var(--gr-900); border-radius: 12px; background: #fff; color: var(--gr-900); font-size: 18px; font-weight: 800; font-family: inherit; cursor: pointer; }
+.clm-iconbtn .icon { width: 20px; height: 20px; stroke-width: 2; }
+.clm-iconbtn.warn { border-color: #c47a00; color: #a86600; }
 .clm-iconbtn:active { background: var(--gr-100); }
 .clm-menu { display: grid; gap: 4px; margin-top: 8px; padding: 6px; border: 1px solid var(--gr-line); border-radius: 12px; background: var(--gr-50); }
 .clm-menu button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 38px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--gr-ink); font-size: 12.5px; font-weight: 700; font-family: inherit; text-align: left; cursor: pointer; }
@@ -111,3 +113,10 @@
   .clm-frame .phone-screen { border-radius: 0; }
   .clm-frame .phone-notch, .clm-frame .phone-statusbar { display: none; }
 }
+
+/* Sheet lịch sử nộp các kỳ */
+.clm-history { display: grid; gap: 6px; margin-bottom: 12px; }
+.clm-history-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--gr-line); border-radius: 10px; background: var(--gr-50); }
+.clm-history-row strong { display: block; color: var(--gr-ink); font-size: 14px; font-weight: 700; }
+.clm-history-row small { display: block; margin-top: 2px; color: var(--gr-muted); font-size: 12px; }
+.clm-history-row b { color: var(--gr-900); font-size: 14px; font-weight: 800; }

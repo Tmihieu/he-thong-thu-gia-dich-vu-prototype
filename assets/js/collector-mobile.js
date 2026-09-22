@@ -25,7 +25,7 @@ function clmCard(r) {
   const title = subject?.contract && subject.contract !== "—" ? `Hợp đồng · ${subject.contract}` : `Khoản thu · ${r.charge}`;
   const result = paid
     ? `<div class="clm-result success">${icon("check")}<span>Đã thu ${r.method.toLowerCase()} · ${r.confirmedAt}<small>Biên lai ${r.receipt} đã gửi hộ</small></span></div>`
-    : r.note ? `<div class="clm-result ${r.status === "overdue" ? "danger" : ""}">${icon(r.status === "appointment" ? "calendar" : "alert")}<span>${escapeHtml(r.note)}</span></div>` : "";
+    : r.note && !rsIsRouteNote(r.note) ? `<div class="clm-result ${r.status === "overdue" ? "danger" : ""}">${icon(r.status === "appointment" ? "calendar" : "alert")}<span>${escapeHtml(r.note)}</span></div>` : "";
   return `<article class="clm-card" data-clm-card data-status="${r.status}" data-street="${escapeHtml(rsStreet(r.address))}" data-search="${escapeHtml(`${r.code} ${r.name} ${r.address} ${r.phone} ${r.charge} ${r.request} ${r.receipt} ${r.note}`.toLowerCase())}">
     <header class="clm-card-head"><strong>${escapeHtml(title)}</strong>${badge(label, tone)}</header>
     <div class="clm-card-body">
@@ -38,18 +38,12 @@ function clmCard(r) {
       <div class="clm-kv"><small>Nhân viên thu gom</small><span>${escapeHtml(rsCollector(r.confirmedBy || r.collector)?.name || "")}</span></div>
       <div class="clm-amount"><small>Số tiền phải thu · kỳ ${r.period}</small><strong>${formatMoney(r.amount)}</strong></div>
       ${result}
-      ${paid ? "" : `<input class="clm-note" type="text" data-clm-note="${r.charge}" value="${escapeHtml(r.customerNote || "")}" placeholder="Ghi chú cho khách hàng...">`}
       <div class="clm-actions">
         ${paid ? clmBtn("Xem biên lai", "receipt", r.charge, "ghost", "receipt") : clmBtn("Cập nhật kết quả", "update", r.charge, "", "edit")}
-        <button type="button" class="clm-iconbtn" data-clm="call" data-id="${r.charge}" aria-label="Gọi hộ">${icon("phone")}</button>
-        <button type="button" class="clm-iconbtn" data-clm="map" data-id="${r.charge}" aria-label="Chỉ đường">${icon("pin")}</button>
-        <button type="button" class="clm-iconbtn" data-clm="menu" data-id="${r.charge}" aria-label="Thêm">⋯</button>
+        <button type="button" class="clm-iconbtn" data-clm="call" data-id="${r.charge}" aria-label="Gọi điện" title="Gọi điện">${icon("call")}</button>
+        <button type="button" class="clm-iconbtn" data-clm="history" data-id="${r.charge}" aria-label="Lịch sử nộp các kỳ" title="Lịch sử nộp các kỳ">${icon("clock")}</button>
+        <button type="button" class="clm-iconbtn warn" data-clm="moved" data-id="${r.charge}" aria-label="Báo sai thông tin / chuyển đi" title="Báo sai thông tin / chuyển đi">${icon("alert")}</button>
       </div>
-      ${clmState.menu === r.charge ? `<div class="clm-menu">
-        ${paid ? `<button type="button" data-clm="resend" data-id="${r.charge}">${icon("send")} Gửi lại biên lai qua Zalo/SMS</button>` : `<button type="button" data-clm="qr" data-id="${r.charge}">${icon("qr")} Hiện mã QR chuyển khoản</button>`}
-        <button type="button" data-clm="history" data-id="${r.charge}">${icon("clock")} Lịch sử nộp các kỳ</button>
-        <button type="button" data-clm="moved" data-id="${r.charge}">${icon("alert")} Báo hộ chuyển đi / sai thông tin</button>
-      </div>` : ""}
     </div>
   </article>`;
 }
@@ -167,6 +161,20 @@ function clmSheetResult(value) {
     : "<strong>Chưa thu:</strong> hộ giữ trạng thái chưa thu, ghi ngày quay lại để nhắc lịch.";
 }
 
+// ---------- Lịch sử nộp các kỳ của một hộ (bottom sheet) ----------
+function clmHistorySheet(charge) {
+  const r = clmRow(charge);
+  if (!r) return "";
+  const rows = clmMine().filter(x => x.code === r.code).sort((a, b) => b.iso.localeCompare(a.iso));
+  return `<div class="clm-sheet-backdrop" data-clm="closeSheet"><div class="clm-sheet">
+      <span class="clm-sheet-handle"></span>
+      <h3>Lịch sử nộp các kỳ</h3>
+      <p class="muted">${escapeHtml(r.name)} · ${r.code}</p>
+      <div class="clm-history">${rows.map(x => { const [label, tone] = RS_STATUS[x.status]; return `<div class="clm-history-row"><div><strong>Kỳ ${x.period}</strong><small>${x.status === "paid" ? `${x.method} · ${x.confirmedAt} · ${x.receipt}` : `hạn ${x.dueDate}`}</small></div><b>${formatMoney(x.amount)}</b>${badge(label, tone)}</div>`; }).join("")}</div>
+      <div class="clm-sheet-actions">${clmBtn("Đóng", "closeSheet", "", "ghost")}</div>
+    </div></div>`;
+}
+
 // ---------- Ghép màn hình ----------
 function rsCollectorList() {
   const screen = clmState.receipt ? clmReceiptScreen(clmState.receipt) : clmState.tab === "cash" ? clmCashScreen() : clmState.tab === "account" ? clmAccountScreen() : clmListScreen();
@@ -178,14 +186,14 @@ function rsCollectorList() {
       <div class="phone-statusbar"><span>05:23</span><span>▮▮▮ ▯</span></div>
       <main class="phone-content clm-content">${screen}</main>
       <nav class="phone-tabbar">${tabs.map(([id, label, ic]) => `<button type="button" class="phone-tab-item${clmState.tab === id && !clmState.receipt ? " active" : ""}" data-clm="tab" data-tab="${id}"><span class="phone-tab-icon">${icon(ic)}</span>${label}${id === "list" && open ? `<b class="dot">${open}</b>` : ""}</button>`).join("")}</nav>
-      ${clmState.sheet ? clmSheet(clmState.sheet) : ""}
+      ${clmState.sheet ? clmSheet(clmState.sheet) : clmState.history ? clmHistorySheet(clmState.history) : ""}
     </div></div>
     <aside class="clm-side">
       <h2>Ứng dụng người đi thu</h2>
       <p>Web app responsive dùng trên điện thoại: mở trong trình duyệt hoặc cài lên màn hình chính. Thu nhỏ cửa sổ dưới 600px để xem ở chế độ toàn màn hình.</p>
       <ul>
         <li>Danh sách hộ theo phiếu yêu cầu thu của xã, lọc theo kỳ, đường, trạng thái.</li>
-        <li>Mỗi thẻ hộ: cập nhật kết quả, gọi điện, chỉ đường, ghi chú, QR chuyển khoản.</li>
+        <li>Mỗi thẻ hộ: cập nhật kết quả, gọi điện, lịch sử nộp các kỳ, báo sai thông tin / chuyển đi.</li>
         <li>Đã thu → biên lai điện tử xuất ngay, gửi hộ qua Zalo/SMS.</li>
         <li>Tab Tiền mặt: số tiền đang giữ phải bàn giao về công ty.</li>
       </ul>
@@ -227,7 +235,7 @@ document.addEventListener("click", event => {
     tab() { Object.assign(clmState, { tab: el.dataset.tab, receipt: null, menu: null }); clmRender(); },
     stats() { clmState.statsOpen = !clmState.statsOpen; clmRender(); },
     update() { clmState.sheet = id; clmState.menu = null; clmRender(); setTimeout(() => document.getElementById("rsClAmount")?.focus(), 50); },
-    closeSheet() { clmState.sheet = null; clmRender(); },
+    closeSheet() { clmState.sheet = null; clmState.history = null; clmRender(); },
     receipt() { clmState.receipt = id; clmState.menu = null; clmRender(); },
     back() { clmState.receipt = null; clmRender(); },
     menu() { clmState.menu = clmState.menu === id ? null : id; clmRender(); },
@@ -235,8 +243,16 @@ document.addEventListener("click", event => {
     map() { showDemoNotice(`Mở bản đồ chỉ đường tới ${r?.address}, ${r?.area} (mô phỏng).`); },
     resend() { showDemoNotice(RS_SUBMIT.clReceipt(id)); },
     qr() { showDemoNotice(`Hiện mã QR chuyển khoản ${formatMoney(r?.amount || 0)} · nội dung ${id} (mô phỏng).`); },
-    history() { showDemoNotice(`${r?.name}: ${clmMine().filter(x => x.code === r?.code).map(x => `${x.period} ${RS_STATUS[x.status][0].toLowerCase()}`).join(" · ")}.`); },
-    moved() { clmState.menu = null; showDemoNotice(`Đã gửi báo cáo hộ ${r?.name} chuyển đi / sai thông tin về công ty và xã.`); clmRender(); },
+    history() { clmState.history = id; clmRender(); },
+    moved() {
+      clmState.menu = null;
+      // Báo về công ty và xã qua trung tâm thông báo.
+      const note = { kind: "info", title: `Người đi thu báo hộ ${r?.name} (${r?.code}) sai thông tin / chuyển đi`, body: `${RS_ME.name} · ${r?.address}, ${r?.area}` };
+      pushNotification({ ...note, roles: ["company"], companyId: RS_COMPANY.id, link: { role: "company", screen: "assigned", companyId: RS_COMPANY.id, label: "Hộ được giao" } });
+      pushNotification({ ...note, roles: ["commune"], link: { role: "commune", screen: "subjects", label: "Đối tượng & hợp đồng" } });
+      showDemoNotice(`Đã gửi báo cáo hộ ${r?.name} chuyển đi / sai thông tin về công ty và xã.`);
+      clmRender();
+    },
     handover() { showDemoNotice("Đã gửi yêu cầu xác nhận bàn giao tiền mặt tới công ty."); },
     notice() { showDemoNotice(el.dataset.msg || "Đã đăng xuất (mô phỏng)."); }
   };
@@ -264,5 +280,4 @@ document.addEventListener("input", event => {
 document.addEventListener("change", event => {
   if (currentRole !== "collector") return;
   if (event.target.id === "clmStreet") { clmApplyFilters(); return; }
-  if (event.target.matches("[data-clm-note]")) { const r = clmRow(event.target.dataset.clmNote); if (r) r.customerNote = event.target.value.trim(); }
 });

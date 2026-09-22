@@ -3,7 +3,6 @@
   .topbar { gap: 12px; padding-inline: 18px; }
   .brand { min-width: 290px; }
   .brand-copy strong { font-size: 14px; }
-  .period-chip { display: none; }
   .main-content { padding-inline: 22px; }
   .kpi-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .content-grid.three { grid-template-columns: 1fr; }
@@ -23,7 +22,8 @@
   :root { --topbar-height: 66px; }
   .app-shell { grid-template-columns: 1fr; grid-template-rows: var(--topbar-height) auto 44px; grid-template-areas: "topbar" "main" "footer"; }
   .topbar { padding: 0 13px; }
-  .menu-toggle { display: grid; width: 38px; height: 38px; place-items: center; flex: 0 0 auto; }
+  /* Dưới 860px sidebar là ngăn kéo trượt; trạng thái thu gọn của màn rộng không áp dụng. */
+  .app-shell.sidebar-collapsed .sidebar { display: flex; }
   .brand { min-width: 0; }
   .brand-seal { width: 38px; height: 38px; flex-basis: 38px; }
   .brand-seal svg { width: 25px; height: 25px; }
@@ -42,6 +42,10 @@
   .content-grid, .content-grid.equal { grid-template-columns: 1fr; }
   .collection-card-grid { grid-template-columns: 1fr; }
   .summary-strip { grid-template-columns: repeat(2,1fr); }
+  .overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .overview-card { padding: 12px 14px; gap: 12px; }
+  .overview-card strong { font-size: 17px; }
+  .ring { --size: 72px; }
   .summary-item:nth-child(2) { border-right: 0; }
   .summary-item:nth-child(-n+2) { border-bottom: 1px solid var(--gray-200); }
   .app-footer { padding-inline: 16px; }
@@ -57,6 +61,8 @@
   .page-title { font-size: 21px; }
   .page-description { font-size: 12px; }
   .kpi-grid { grid-template-columns: 1fr 1fr; gap: 9px; }
+  .overview-grid { grid-template-columns: 1fr; }
+  .period-ring { max-width: none; }
   .kpi-card { min-height: 109px; padding: 13px; }
   .kpi-value { font-size: 20px; }
   .kpi-note { font-size: 9px; }

@@ -345,8 +345,8 @@ function csSubjects() {
     return `<tr data-row data-group="${s.status}" data-type="${escapeHtml(s.type)}" data-area="${s.area}" data-search="${escapeHtml(`${s.code} ${s.name} ${s.address} ${s.phone} ${s.contract}`.toLowerCase())}" class="${s.status === "pending" ? "is-attention" : ""}">
       <td><span class="cell-title">${s.code}</span><span class="cell-subtitle">${s.type}</span></td>
       <td><span class="cell-title">${escapeHtml(s.name)}</span><span class="cell-subtitle">${escapeHtml(s.address)} · ${escapeHtml(s.phone)}</span></td>
-      <td><span class="cell-title">${csAreaName(s.area)}</span><span class="cell-subtitle">${company ? escapeHtml(company.name) : "Chưa có công ty"}</span></td>
-      <td><span class="cell-title">${s.contract}</span><span class="cell-subtitle">${s.contract === "—" ? "Chưa lập hợp đồng" : `${s.tariff} · từ ${s.contractFrom}`}</span></td>
+      <td><span class="cell-title">${csAreaName(s.area)}</span></td>
+      <td><span class="cell-title">${s.contract}</span><span class="cell-subtitle">${s.contract === "—" ? "Chưa lập hợp đồng" : s.tariff}</span></td>
       <td class="money">${formatMoney(CS_TARIFFS[s.tariff])}</td>
       <td>${badge(label, tone)}${s.note ? `<span class="cell-subtitle">${escapeHtml(s.note)}</span>` : ""}</td>
       <td>${csBtn("Sửa", "editSubject", s.code, "secondary", true)}</td></tr>`;
@@ -355,7 +355,7 @@ function csSubjects() {
   <section data-table-filter data-chip-key="group" data-count-label="đối tượng">
     ${filterBar(filterField("Loại", filterSelect("type", [["all", "Tất cả loại"], ["Hộ gia đình", "Hộ gia đình"], ["Hộ kinh doanh", "Hộ kinh doanh"], ["Doanh nghiệp", "Doanh nghiệp"]])) + filterField("Khu vực", filterSelect("area", [["all", "Tất cả khu vực"], ...areas.map(a => [a, csAreaName(a)])])), "Mã, tên, địa chỉ, điện thoại, số hợp đồng...")}
     ${chipBar([["all", "Tất cả"], ["active", "Đang cung cấp", "success"], ["pending", "Chờ xử lý", "warning"], ["ended", "Đã chấm dứt"]], "đối tượng")}
-    ${panel("Danh sách đối tượng", "", table(["Mã", "Đối tượng", "Khu vực · công ty", "Hợp đồng", { label: "Mức / kỳ", num: true }, "Trạng thái", ""], rows, { empty: "Không có đối tượng phù hợp." }))}
+    ${panel("Danh sách đối tượng", "", table(["Mã", "Đối tượng", "Khu vực", "Hợp đồng", { label: "Mức / kỳ", num: true }, "Trạng thái", ""], rows, { empty: "Không có đối tượng phù hợp." }))}
   </section>`;
 }
 
@@ -391,11 +391,11 @@ function csCharges() {
     const company = csCompanyOf(s.area);
     const [label, tone] = CS_CHARGE_STATUS[c.status] || CS_CHARGE_STATUS.unpaid;
     return `<tr data-row data-group="${c.status}" data-search="${escapeHtml(`${c.id} ${c.request} ${c.subject} ${s.name} ${s.address} ${csAreaName(s.area)} ${company?.name || ""}`.toLowerCase())}" class="${c.status === "overdue" ? "is-attention" : ""}">
-      <td><span class="cell-title">${c.id}</span><span class="cell-subtitle">${c.request} · ${csFeeTypeName(c.feeType)}</span></td>
+      <td><span class="cell-title">${c.id}</span><span class="cell-subtitle">${c.request}</span></td>
       <td><span class="cell-title">${escapeHtml(s.name)}</span><span class="cell-subtitle">${c.subject} · ${csAreaName(s.area)}</span></td>
-      <td>${csPeriodLabel(c.period)}<span class="cell-subtitle">hạn ${c.due}</span></td>
+      <td>${csPeriodLabel(c.period)}</td>
       <td class="money">${c.status === "exempt" ? `0đ<span class="cell-subtitle">${escapeHtml(s.exemptReason || "Miễn giảm")}</span>` : formatMoney(c.amount)}</td>
-      <td>${company ? `<span class="cell-title">${escapeHtml(company.name)}</span><span class="cell-subtitle">${company.id} · ${escapeHtml(company.contact || "")}</span>` : badge("Chưa phân công", "danger")}</td>
+      <td>${company ? `<span class="cell-title">${escapeHtml(company.name)}</span>` : badge("Chưa phân công", "danger")}</td>
       <td>${badge(label, tone)}</td></tr>`;
   });
 
@@ -418,19 +418,7 @@ function csCharges() {
       <td class="money">${g.remaining < 0 ? `<span class="text-info">nộp vượt ${formatMoney(-g.remaining)}</span>` : formatMoney(g.remaining)}</td>
       <td class="money">${g.overdue ? `<span class="text-danger">${formatMoney(g.overdue)}</span>` : '<span class="muted">—</span>'}</td>
       <td>${badge(label, tone)}${reminder ? `<span class="cell-subtitle">Đã nhắc ${reminder.date} · hạn ${reminder.due}</span>` : ""}</td>
-      <td class="table-actions">${g.unit.id ? csBtn("Lập phiếu thu", "receipt", g.unit.id, g.remaining > 0 ? "primary" : "secondary", true) : csBtn("Phân công", "goCompanies", "", "secondary", true)}</td></tr>`;
-  });
-
-  const receiptRows = receipts.map(r => {
-    const u = csUnit(r.companyId);
-    return `<tr data-row data-search="${escapeHtml(`${r.id} ${r.companyId} ${u?.name || ""} ${r.payer} ${r.bankRef} ${r.note}`.toLowerCase())}">
-      <td><span class="cell-title">${r.id}</span><span class="cell-subtitle">Lập ${r.date}</span></td>
-      <td><span class="cell-title">${escapeHtml(u?.name || r.companyId)}</span><span class="cell-subtitle">${r.companyId} · ${escapeHtml(r.payer)}</span></td>
-      <td>${csPeriodLabel(r.period)}</td>
-      <td class="money">${formatMoney(r.amount)}</td>
-      <td>${r.method}<span class="cell-subtitle">${escapeHtml(r.bankRef)}</span></td>
-      <td>${escapeHtml(r.note || "—")}</td>
-      <td>${csBtn("Xem / In", "viewCompanyReceipt", r.id, "secondary", true)}</td></tr>`;
+      <td class="table-actions">${g.unit.id ? `${csBtn("Lập phiếu thu", "receipt", g.unit.id, g.remaining > 0 ? "primary" : "secondary", true)}${csBtn("Lịch sử", "receiptHistory", g.unit.id, "secondary", true)}` : csBtn("Phân công", "goCompanies", "", "secondary", true)}</td></tr>`;
   });
 
   const tabs = [["receivables", "Khoản phải thu của hộ", charges.length], ["requests", "Phiếu yêu cầu thu", requests.length], ["receipts", "Phiếu thu công ty", receipts.length]];
@@ -438,13 +426,10 @@ function csCharges() {
     ? `${filterBar("", "Mã phiếu, phạm vi, loại phí...")}
       ${panel("Phiếu yêu cầu thu đã phát hành", "Mỗi phiếu lập khoản thu cho các hộ trong phạm vi chưa có khoản cùng kỳ, cùng loại phí.", table(["Mã phiếu", "Kỳ thu", "Loại phí", "Phạm vi", { label: "Đối tượng", num: true }, { label: "Tổng tiền", num: true }, "Ghi chú"], requestRows, { empty: "Chưa có phiếu yêu cầu thu trong kỳ đã chọn." }), csBtn("Tạo phiếu yêu cầu thu", "chargeRequest", "", "primary", true))}`
     : tab === "receipts"
-    ? `${panel(`Công nợ theo công ty · kỳ ${csPeriodLabel(period)}`, "Phải thu = số hộ × đơn giá theo tổ được giao. Quá hạn = phần chưa nộp của các kỳ đã hết hạn.", table(["Công ty", { label: "Phải thu", num: true }, { label: "Đã nhận", num: true }, { label: "Còn phải thu", num: true }, { label: "Quá hạn kỳ trước", num: true }, "Trạng thái", ""], ledgerRows, { static: true }))}
-      <div class="stack-gap"></div>
-      ${filterBar("", "Mã phiếu thu, công ty, người nộp, chứng từ...")}
-      ${panel("Phiếu thu đã lập", "Xã lập phiếu thu mỗi lần công ty nộp tiền; công ty xem được phiếu và báo sai sót nếu có.", table(["Mã phiếu thu", "Công ty nộp", "Kỳ", { label: "Số tiền", num: true }, "Hình thức / chứng từ", "Nội dung", ""], receiptRows, { empty: "Chưa có phiếu thu trong phạm vi đã chọn." }))}`
+    ? panel(`Công nợ theo công ty · kỳ ${csPeriodLabel(period)}`, "Phải thu = tổng khoản thu của hộ trong các tổ được giao. Quá hạn = phần chưa nộp của các kỳ đã hết hạn. Bấm “Lịch sử” để xem toàn bộ phiếu thu đã lập cho công ty theo từng kỳ.", table(["Công ty", { label: "Phải thu", num: true }, { label: "Đã nhận", num: true }, { label: "Còn phải thu", num: true }, { label: "Quá hạn kỳ trước", num: true }, "Trạng thái", ""], ledgerRows, { static: true }))
     : `${filterBar("", "Mã khoản, phiếu YC, tên, mã hộ, tổ, công ty...")}
       ${chipBar([["all", "Tất cả"], ["unpaid", "Chưa thu", "warning"], ["overdue", "Quá hạn", "danger"], ["paid", "Đã thu", "success"], ["exempt", "Miễn giảm", "neutral"]], "khoản")}
-      ${panel("Khoản phải thu của hộ", "Sinh từ phiếu yêu cầu thu; công ty phụ trách tổ đi thu và nộp về xã.", table(["Mã khoản / phiếu YC", "Đối tượng", "Kỳ · hạn nộp", { label: "Số tiền", num: true }, "Công ty phụ trách", "Trạng thái"], chargeRows, { empty: "Không có khoản thu phù hợp với bộ lọc." }))}`;
+      ${panel("Khoản phải thu của hộ", "Sinh từ phiếu yêu cầu thu; công ty phụ trách tổ đi thu và nộp về xã.", table(["Mã khoản / phiếu YC", "Đối tượng", "Kỳ", { label: "Số tiền", num: true }, "Công ty phụ trách", "Trạng thái"], chargeRows, { empty: "Không có khoản thu phù hợp với bộ lọc." }))}`;
 
   return `${csHeader("Khoản thu", csBtn("Tạo phiếu yêu cầu thu", "chargeRequest") + csBtn("Lập phiếu thu cho công ty", "receipt", "", "primary"), "Phiếu yêu cầu thu → khoản phải thu của hộ → phiếu thu khi công ty nộp tiền về xã")}
   <div class="filter-bar">
@@ -489,17 +474,16 @@ function csAreas() {
 function csCompanies() {
   const rows = MANAGEMENT_UNITS.map(u => {
     return `<tr data-row data-group="${u.status === "inactive" ? "inactive" : "active"}" data-search="${escapeHtml(`${u.id} ${u.name} ${u.contact} ${u.phone}`.toLowerCase())}">
-      <td>${csLink(u.name, "company", u.id)}<span class="cell-subtitle">${u.id}</span></td>
+      <td>${csLink(u.name, "company", u.id)}</td>
       <td><span class="cell-title">${escapeHtml(u.contact)}</span><span class="cell-subtitle">${escapeHtml(u.phone)}</span></td>
       <td>${csIsoToVi(u.start || "2026-01-01")} → ${csIsoToVi(u.end || "2026-12-31")}</td>
-      <td>${badge(u.status === "inactive" ? "Tạm ngưng" : "Hoạt động", u.status === "inactive" ? "neutral" : "success")}</td>
-      <td>${csBtn("Chi tiết", "company", u.id, "secondary", true)}</td></tr>`;
+      <td>${badge(u.status === "inactive" ? "Tạm ngưng" : "Hoạt động", u.status === "inactive" ? "neutral" : "success")}</td></tr>`;
   });
   return `${csHeader("Công ty môi trường", csBtn("+ Thêm công ty", "addCompany", "", "primary"))}
   <section data-table-filter data-chip-key="group" data-count-label="công ty">
     ${filterBar("", "Tên công ty, đầu mối, điện thoại...")}
     ${chipBar([["all", "Tất cả"], ["active", "Hoạt động", "success"], ["inactive", "Tạm ngưng"]], "công ty")}
-    ${panel("Danh sách công ty", "", table(["Công ty", "Đầu mối", "Hiệu lực", "Trạng thái", ""], rows, { empty: "Không có công ty phù hợp." }))}
+    ${panel("Danh sách công ty", "", table(["Công ty", "Đầu mối", "Hiệu lực", "Trạng thái"], rows, { empty: "Không có công ty phù hợp." }))}
   </section>`;
 }
 
@@ -514,10 +498,21 @@ function csCompanyDetail() {
     return `<tr><td><span class="cell-title">${csAreaName(area.id)}</span><span class="cell-subtitle">${area.id}</span></td><td class="num">${area.households.toLocaleString("vi-VN")}</td><td>${csIsoToVi(area.start)} → ${csIsoToVi(area.end)}</td><td class="money">${formatMoney(due)}</td><td class="money">${formatMoney(paid)}</td><td><div class="cell-progress">${progressBar(rate, rate < 45 ? "warning" : "")}<span class="num">${rate.toFixed(0)}%</span></div></td><td>${csBtn("Bỏ phân công", "unassign", area.id, "secondary", true)}</td></tr>`;
   });
   const complaints = CS_COMPLAINTS.filter(c => csArea(c.area)?.unit === u.id && c.status !== "done").length;
-  return `${csHeader(escapeHtml(u.name), csBtn("← Danh sách công ty", "back") + csBtn("Đóng vai công ty này →", "impersonateCompany", u.id, "primary") + csBtn("Sửa thông tin", "editCompany", u.id) + csBtn("+ Phân công khu vực", "assignAreas", u.id), `${u.id} · Đầu mối: ${escapeHtml(u.contact)} · ${escapeHtml(u.phone)} · Hiệu lực: ${csIsoToVi(u.start || "2026-01-01")} → ${csIsoToVi(u.end || "2026-12-31")} · ${u.status === "inactive" ? "Tạm ngưng" : "Hoạt động"}`)}
+  return `${csHeader(escapeHtml(u.name), csBtn("← Danh sách công ty", "back") + csBtn("Đóng vai công ty này →", "impersonateCompany", u.id, "primary") + csBtn("Lịch sử phiếu thu", "receiptHistory", u.id) + csBtn("Sửa thông tin", "editCompany", u.id) + csBtn("+ Phân công khu vực", "assignAreas", u.id), `${u.id} · Đầu mối: ${escapeHtml(u.contact)} · ${escapeHtml(u.phone)} · Hiệu lực: ${csIsoToVi(u.start || "2026-01-01")} → ${csIsoToVi(u.end || "2026-12-31")} · ${u.status === "inactive" ? "Tạm ngưng" : "Hoạt động"}`)}
   ${summaryStrip([["Khu vực phụ trách", String(areas.length), `${areas.reduce((t, a) => t + a.households, 0).toLocaleString("vi-VN")} hộ`], ["Phải thu kỳ 09/2026", formatMoney(due), ""], ["Đã thu", formatMoney(paid), due ? `${(paid / due * 100).toFixed(0)}% phải thu` : ""], ["Khiếu nại đang mở", String(complaints), complaints ? "Xem tại Danh sách khiếu nại" : ""]])}
   ${panel("Khu vực phụ trách", areas.length ? "Một khu vực chỉ có một công ty phụ trách trong cùng thời gian hiệu lực." : "", areas.length ? table(["Khu vực", { label: "Số hộ", num: true }, "Hiệu lực", { label: "Phải thu 09/2026", num: true }, { label: "Đã thu", num: true }, "Tiến độ", ""], rows, { static: true }) : `<div class="empty-state"><strong>Chưa được giao khu vực</strong><p>Bấm “Phân công khu vực” để chọn tổ dân phố cho công ty này.</p></div>`)}`;
 }
+
+// Gửi nhắc nộp: ghi nhật ký nhắc nhở và đẩy thông báo tới không gian của công ty.
+function csSendReminder(companyId, debts, due, content = "") {
+  const u = csUnit(companyId);
+  const total = debts.reduce((t, d) => t + d.remaining, 0);
+  const text = content || `UBND xã đề nghị ${u?.name || companyId} nộp số tiền thu gom rác còn nợ ${formatMoney(total)} (${debts.map(d => d.label).join(", ")}) về ngân sách xã trước ngày ${due}.`;
+  CS_REMINDERS.unshift({ id: `NN-${String(CS_REMINDERS.length + 1).padStart(3, "0")}`, companyId, date: csIsoToVi(CS_TODAY), due, periods: debts.map(d => d.label), amount: total, content: text });
+  pushNotification({ roles: ["company"], companyId, kind: "reminder", title: `Xã nhắc nộp ${formatMoney(total)} · hạn ${due}`, body: text, link: { role: "company", screen: "assigned", companyId, label: "Hộ được giao" } });
+}
+// Công ty còn nợ kỳ đã hết hạn nộp, kèm nhắc nhở đang hiệu lực (nếu có).
+const csDebtors = () => MANAGEMENT_UNITS.map(unit => ({ unit, debts: csCompanyDebts(unit.id), reminder: csActiveReminder(unit.id) })).filter(d => d.debts.length);
 
 // ---------- 5. Báo cáo tiến độ thu tiền ----------
 function csProgress() {
@@ -534,8 +529,7 @@ function csProgress() {
   const pastDue = csPeriodDue(period) < CS_TODAY;
 
   // Công ty còn nợ kỳ đã hết hạn nộp: nhắc ngay đầu trang.
-  const debtors = MANAGEMENT_UNITS.map(unit => ({ unit, debts: csCompanyDebts(unit.id), reminder: csActiveReminder(unit.id) })).filter(d => d.debts.length);
-  const debtTotal = debtors.reduce((t, d) => t + d.debts.reduce((x, y) => x + y.remaining, 0), 0);
+  const debtors = csDebtors();
 
   const rows = !isDrilldown
     ? visible.map(g => {
@@ -578,15 +572,8 @@ function csProgress() {
   <div class="filter-bar">
     ${filterField("Kỳ thu", csSelect('data-cs-filter="period"', CS_PERIODS.map(p => [p.id, p.label]), period))}
     ${filterField("Công ty", csSelect('data-cs-filter="company"', [["all", "Tất cả công ty"], ["none", "Chưa phân công"], ...MANAGEMENT_UNITS.map(u => [u.id, u.name])], csState.company))}
+    ${debtors.length ? `<div class="filter-actions inline">${csBtn(`Nhắc nộp <b class="button-count danger">${debtors.length}</b>`, "debtPopup", "", "secondary")}</div>` : ""}
   </div>
-  ${debtors.length && !isDrilldown ? `<div class="callout danger debt-callout">
-    <div>
-      <strong>${debtors.length} công ty chưa nộp đủ kỳ đã hết hạn · còn ${formatMoney(debtTotal)}</strong>
-      <p>Kỳ mới đã mở nhưng kỳ cũ chưa khóa được cho tới khi công ty nộp đủ. Nhắc nộp để công ty thấy ngay trong không gian của mình.</p>
-      <ul class="debt-list">${debtors.map(d => `<li><span>${escapeHtml(d.unit.name)}</span><small>${d.debts.map(x => `${x.label}: ${formatMoney(x.remaining)}`).join(" · ")}${d.reminder ? ` · đã nhắc ${d.reminder.date}` : ""}</small>${csBtn(d.reminder ? "Nhắc lại" : "Nhắc nộp", "remindDebt", d.unit.id, "danger", true)}</li>`).join("")}</ul>
-    </div>
-    <div class="debt-actions">${csBtn("Nhắc tất cả", "remindAll", "", "danger", true)}</div>
-  </div>` : ""}
   ${summaryStrip([
     ["Phải thu", formatMoney(due), `${sumBy("households").toLocaleString("vi-VN")} hộ · ${visible.reduce((t, g) => t + g.areas.length, 0)} tổ`],
     ["Đã thu (người thu xác nhận)", formatMoney(collected), due ? `${(collected / due * 100).toFixed(1)}% · chưa gồm phần chưa nộp về xã` : ""],
@@ -737,13 +724,39 @@ const CS_DIALOGS = {
     </div>`, "Lập phiếu thu", "Phiếu thu ghi nhận tiền công ty nộp về ngân sách xã. Có thể nộp nhiều đợt; mỗi đợt không vượt số còn phải nộp của kỳ.");
     csRcUpdateBalance();
   },
+  // Lịch sử nộp tiền của một công ty: từng kỳ phải thu / đã nộp / còn nộp, toàn bộ phiếu thu và nhắc nộp đã gửi.
+  receiptHistory(companyId) {
+    const u = csUnit(companyId);
+    if (!u) return;
+    const dues = csCompanyDues(companyId);
+    const receipts = CS_COMPANY_RECEIPTS.filter(r => r.companyId === companyId).sort((a, b) => b.date.split("/").reverse().join("").localeCompare(a.date.split("/").reverse().join("")) || b.id.localeCompare(a.id));
+    const reminders = CS_REMINDERS.filter(r => r.companyId === companyId);
+    const totalDue = dues.reduce((t, d) => t + d.dueAmount, 0), totalReceived = dues.reduce((t, d) => t + d.received, 0);
+    const owing = dues.filter(d => d.remaining > 0);
+    const dueRows = dues.map(d => {
+      const count = csCompanyReceipts(companyId, d.period).length;
+      const [label, tone] = d.remaining <= 0 ? ["Đã nộp đủ", "success"] : d.pastDue ? ["Quá hạn", "danger"] : d.received ? ["Nộp một phần", "warning"] : ["Chưa nộp", "neutral"];
+      return `<tr class="${d.remaining > 0 && d.pastDue ? "is-attention" : ""}"><td>${d.label}<span class="cell-subtitle">hạn ${d.due}${d.pastDue ? " · đã hết hạn" : ""}</span></td><td class="money">${formatMoney(d.dueAmount)}</td><td class="money">${formatMoney(d.received)}<span class="cell-subtitle">${count} phiếu thu</span></td><td class="money ${d.remaining > 0 ? "text-danger" : ""}">${d.remaining < 0 ? `<span class="text-info">nộp vượt ${formatMoney(-d.remaining)}</span>` : formatMoney(d.remaining)}</td><td>${badge(label, tone)}</td></tr>`;
+    });
+    const receiptRows = receipts.map(r => `<tr><td><span class="cell-title">${r.id}</span><span class="cell-subtitle">Lập ${r.date}</span></td><td>${csPeriodLabel(r.period)}</td><td class="money">${formatMoney(r.amount)}</td><td>${r.method}<span class="cell-subtitle">${escapeHtml(r.bankRef)} · ${escapeHtml(r.payer)}</span></td><td>${escapeHtml(r.note || "—")}</td><td>${csBtn("Xem / In", "viewCompanyReceipt", r.id, "secondary", true)}</td></tr>`);
+    csDialog("receiptHistory", companyId, `Lịch sử phiếu thu · ${u.name}`, `<div class="dialog-summary">
+        <div><span>Phải thu các kỳ chưa khóa</span><strong>${formatMoney(totalDue)}</strong><small>${dues.length} kỳ</small></div>
+        <div><span>Đã nộp về xã</span><strong class="text-success">${formatMoney(totalReceived)}</strong><small>${receipts.length} phiếu thu</small></div>
+        <div><span>Còn phải nộp</span><strong class="${owing.length ? "text-danger" : ""}">${formatMoney(Math.max(totalDue - totalReceived, 0))}</strong><small>${owing.length ? `${owing.length} kỳ chưa đủ` : "Đã nộp đủ"}</small></div>
+      </div>
+      ${table(["Kỳ", { label: "Phải thu", num: true }, { label: "Đã nộp", num: true }, { label: "Còn nộp", num: true }, "Trạng thái"], dueRows, { static: true })}
+      <div class="stack-gap"></div>
+      ${receiptRows.length ? table(["Mã phiếu thu", "Kỳ", { label: "Số tiền", num: true }, "Hình thức / chứng từ", "Nội dung", ""], receiptRows, { static: true }) : '<p class="table-empty">Xã chưa lập phiếu thu nào cho công ty này.</p>'}
+      ${reminders.length ? `<div class="stack-gap"></div>${table(["Nhắc nộp", "Kỳ", { label: "Số tiền", num: true }, "Hạn nộp"], reminders.map(n => `<tr><td>${n.id}<span class="cell-subtitle">gửi ${n.date}</span></td><td>${n.periods.join(", ")}</td><td class="money">${formatMoney(n.amount)}</td><td>${n.due}</td></tr>`), { static: true })}` : ""}`,
+      u.status === "inactive" ? "" : "Lập phiếu thu", `${u.id} · Đầu mối: ${u.contact} · ${u.phone}. Mỗi kỳ một phiếu thu riêng, có thể nộp nhiều đợt.`);
+  },
   viewCompanyReceipt(receiptId) {
     const r = CS_COMPANY_RECEIPTS.find(x => x.id === receiptId);
     if (!r) return;
     const u = csUnit(r.companyId);
     const due = csCompanyDue(r.companyId, r.period);
     const upTo = csCompanyReceipts(r.companyId, r.period).filter(x => x.id <= r.id).reduce((t, x) => t + x.amount, 0);
-    csDialog("viewReceipt", receiptId, `Phiếu thu ${r.id}`, `<div class="invoice-preview">
+    csDialog("viewReceipt", receiptId, `Phiếu thu ${r.id}`, `<p>${csBtn("← Lịch sử phiếu thu của công ty", "receiptHistory", r.companyId, "quiet", true)}</p><div class="invoice-preview">
       <div class="invoice-brand"><div><h3>UBND xã Đông Thạnh</h3><p>Phòng Kinh tế · Bộ phận Tài chính – Thu</p></div><div class="invoice-number"><h3>${r.id}</h3><p>Ngày ${r.date}</p></div></div>
       <div class="invoice-title"><h2>Phiếu thu</h2><p>Tiền dịch vụ thu gom, vận chuyển chất thải rắn sinh hoạt công ty nộp ngân sách xã</p></div>
       <p><strong>Đơn vị nộp:</strong> ${escapeHtml(u?.name || r.companyId)} (${r.companyId})<br><strong>Người nộp:</strong> ${escapeHtml(r.payer)}<br><strong>Hình thức:</strong> ${escapeHtml(r.method)}${r.bankRef && r.bankRef !== "—" ? ` · chứng từ ${escapeHtml(r.bankRef)}` : ""}<br><strong>Nội dung:</strong> ${escapeHtml(r.note || "Nộp tiền thu gom rác sinh hoạt")}</p>
@@ -815,6 +828,25 @@ const CS_DIALOGS = {
       </div>
     `, "Xác nhận phân công", "Chỉ định công ty môi trường chịu trách nhiệm thu gom rác và thu tiền cho khu vực này.");
   },
+  // Pop-up các công ty chưa nộp đủ kỳ đã hết hạn: nhắc từng công ty hoặc nhắc tất cả.
+  debtPopup() {
+    const debtors = csDebtors();
+    if (!debtors.length) { showDemoNotice("Không còn công ty nào nợ kỳ đã hết hạn."); return; }
+    const total = debtors.reduce((t, d) => t + d.debts.reduce((x, y) => x + y.remaining, 0), 0);
+    const rows = debtors.map(d => `<tr class="is-attention">
+      <td>${csLink(d.unit.name, "company", d.unit.id)}<span class="cell-subtitle">${escapeHtml(d.unit.contact)} · ${escapeHtml(d.unit.phone)}</span></td>
+      <td>${d.debts.map(x => `<span class="cell-subtitle text-danger">${x.label}: ${formatMoney(x.remaining)}</span>`).join("")}</td>
+      <td class="money text-danger">${formatMoney(d.debts.reduce((t, x) => t + x.remaining, 0))}</td>
+      <td>${d.reminder ? `Đã nhắc ${d.reminder.date}<span class="cell-subtitle">hạn ${d.reminder.due}</span>` : '<span class="muted">Chưa nhắc</span>'}</td>
+      <td>${csBtn(d.reminder ? "Nhắc lại" : "Nhắc nộp", "remindDebt", d.unit.id, "danger", true)}</td></tr>`);
+    csDialog("debtPopup", "", "Nhắc nộp tiền về xã", `<div class="dialog-summary">
+        <div><span>Công ty chưa nộp đủ</span><strong class="text-danger">${debtors.length}</strong></div>
+        <div><span>Còn phải nộp</span><strong class="text-danger">${formatMoney(total)}</strong></div>
+        <div><span>Đã nhắc</span><strong>${debtors.filter(d => d.reminder).length}/${debtors.length}</strong></div>
+      </div>
+      ${table(["Công ty", "Kỳ còn nợ", { label: "Còn nộp", num: true }, "Nhắc nhở", ""], rows, { static: true })}`,
+      "Nhắc tất cả", "Kỳ cũ chưa khóa được cho tới khi công ty nộp đủ. Nhắc nộp hiện ngay trong không gian của công ty và ghi vào nhật ký đối soát.");
+  },
   remindDebt(id) {
     const u = csUnit(id);
     if (!u) return;
@@ -883,6 +915,13 @@ const CS_DIALOGS = {
     </div>`}`, done ? "" : "Cập nhật");
   }
 };
+
+// Khiếu nại mới (xã ghi nhận hoặc người dân gửi qua app): báo cho xã và công ty phụ trách khu vực.
+function csNotifyComplaint(c) {
+  const company = csCompanyOf(c.area);
+  pushNotification({ roles: ["commune"], kind: "complaint", title: `Khiếu nại mới ${c.id} · ${c.name}`, body: `${c.channel} · ${c.content}`, link: { role: "commune", screen: "complaints", label: "Danh sách khiếu nại" } });
+  if (company) pushNotification({ roles: ["company"], companyId: company.id, kind: "complaint", title: `Khiếu nại ${c.id} trong khu vực công ty · ${csAreaName(c.area)}`, body: `${c.channel} · ${c.content}`, link: { role: "company", screen: "complaints", companyId: company.id, label: "Giải quyết khiếu nại" } });
+}
 
 function csRequestCycle() { return { period: csFormValue("csReqPeriod") || csState.period }; }
 
@@ -1065,11 +1104,16 @@ function handleCommuneSimpleSubmit() {
       status: "completed"
     };
     CS_COMPANY_RECEIPTS.unshift(receipt);
+    pushNotification({ roles: ["company"], companyId, kind: "receipt", title: `Xã đã lập phiếu thu ${receipt.id} · ${formatMoney(amount)}`, body: `Kỳ ${csPeriodLabel(period)} · ${receipt.method} · ${receipt.note}`, link: { role: "company", screen: "assigned", companyId, label: "Hộ được giao" } });
     // Nộp đủ các kỳ đã hết hạn thì nhắc nhở hết hiệu lực.
     if (!csCompanyDebts(companyId).length) for (let i = CS_REMINDERS.length - 1; i >= 0; i--) if (CS_REMINDERS[i].companyId === companyId) CS_REMINDERS.splice(i, 1);
     Object.assign(csState, { chargePeriod: period, chargesTab: "receipts" });
     const left = remaining - amount;
     message = `Đã lập ${receipt.id}: ${csUnit(companyId)?.name || companyId} nộp ${formatMoney(amount)} kỳ ${csPeriodLabel(period)}${left > 0 ? `, còn phải nộp ${formatMoney(left)}` : ", đã nộp đủ"}.`;
+  } else if (kind === "receiptHistory") {
+    // Từ lịch sử chuyển thẳng sang lập phiếu thu cho đúng công ty.
+    CS_DIALOGS.receipt(id);
+    return true;
   } else if (kind === "viewReceipt") {
     message = "Đã mô phỏng gửi phiếu thu tới máy in.";
   } else if (kind === "company") {
@@ -1110,9 +1154,13 @@ function handleCommuneSimpleSubmit() {
     const newUnit = csUnit(newUnitId);
     Object.assign(csArea(id), { unit: newUnitId, waste: newUnitId, payment: newUnitId, start, end, conflict: false });
     message = `Đã bàn giao ${csAreaName(id)} (${csArea(id)?.households.toLocaleString("vi-VN")} hộ) từ ${oldUnit?.name || ""} sang ${newUnit?.name}.`;
+  } else if (kind === "debtPopup") {
+    const list = csDebtors();
+    list.forEach(({ unit: u, debts }) => csSendReminder(u.id, debts, csDaysAfter(CS_TODAY, 5)));
+    message = `Đã gửi nhắc nộp tới ${list.length} công ty còn nợ kỳ đã hết hạn.`;
   } else if (kind === "remindDebt") {
     const debts = csCompanyDebts(id);
-    CS_REMINDERS.unshift({ id: `NN-${String(CS_REMINDERS.length + 1).padStart(3, "0")}`, companyId: id, date: csIsoToVi(CS_TODAY), due: csIsoToVi(csFormValue("csRdDue")), periods: debts.map(d => d.label), amount: debts.reduce((t, d) => t + d.remaining, 0), content: csFormValue("csRdContent") });
+    csSendReminder(id, debts, csIsoToVi(csFormValue("csRdDue")), csFormValue("csRdContent"));
     message = `Đã gửi nhắc nộp ${formatMoney(debts.reduce((t, d) => t + d.remaining, 0))} tới ${csUnit(id)?.name}.`;
   } else if (kind === "notify") {
     message = `Đã gửi nhắc tiến độ tới ${csUnit(id)?.name}.`;
@@ -1120,7 +1168,9 @@ function handleCommuneSimpleSubmit() {
     message = `Đã gửi yêu cầu giải trình tới ${csUnit(id)?.name}.`;
   } else if (kind === "addComplaint") {
     const newId = `KN-2609-${String(csState.seq.complaint++).padStart(3, "0")}`;
-    CS_COMPLAINTS.unshift({ id: newId, date: csIsoToVi(csFormValue("csCpDate")) || "17/09/2026", name: csFormValue("csCpName"), subject: csFormValue("csCpSubject") || "—", phone: csFormValue("csCpPhone"), area: csFormValue("csCpArea"), channel: csFormValue("csCpChannel"), content: csFormValue("csCpContent"), status: "new", result: "" });
+    const complaint = { id: newId, date: csIsoToVi(csFormValue("csCpDate")) || "17/09/2026", name: csFormValue("csCpName"), subject: csFormValue("csCpSubject") || "—", phone: csFormValue("csCpPhone"), area: csFormValue("csCpArea"), channel: csFormValue("csCpChannel"), content: csFormValue("csCpContent"), status: "new", result: "" };
+    CS_COMPLAINTS.unshift(complaint);
+    csNotifyComplaint(complaint);
     message = `Đã ghi nhận khiếu nại ${newId}.`;
   } else if (kind === "handleComplaint") {
     const c = CS_COMPLAINTS.find(x => x.id === id);
@@ -1129,6 +1179,7 @@ function handleCommuneSimpleSubmit() {
       const company = csCompanyOf(c.area);
       // Chuyển công ty: gắn công ty tiếp nhận và hạn 3 ngày để trang Giải quyết khiếu nại của công ty nhận được.
       Object.assign(c, { status: csFormValue("csHcStatus"), result: `${forward ? `Chuyển ${company?.name} xử lý, hạn ${csDaysAfter(CS_TODAY, 3)}. ` : ""}${csFormValue("csHcResult")}` }, forward && company ? { forwardedTo: company.id, deadline: c.deadline || csDaysAfter(CS_TODAY, 3) } : {});
+      if (forward && company) pushNotification({ roles: ["company"], companyId: company.id, kind: "complaint", title: `Xã chuyển khiếu nại ${c.id} · hạn ${c.deadline}`, body: c.content, link: { role: "company", screen: "complaints", companyId: company.id, label: "Giải quyết khiếu nại" } });
       message = `Đã cập nhật ${c.id}: ${CS_COMPLAINT_STATUS[c.status][0].toLowerCase()}.`;
     }
   }
@@ -1162,8 +1213,8 @@ document.addEventListener("click", event => {
       return;
     }
     if (action === "remindAll") {
-      const list = MANAGEMENT_UNITS.map(u => ({ u, debts: csCompanyDebts(u.id) })).filter(d => d.debts.length);
-      list.forEach(({ u, debts }) => CS_REMINDERS.unshift({ id: `NN-${String(CS_REMINDERS.length + 1).padStart(3, "0")}`, companyId: u.id, date: csIsoToVi(CS_TODAY), due: csDaysAfter(CS_TODAY, 5), periods: debts.map(d => d.label), amount: debts.reduce((t, d) => t + d.remaining, 0), content: `UBND xã đề nghị ${u.name} nộp số tiền thu gom rác còn nợ ${formatMoney(debts.reduce((t, d) => t + d.remaining, 0))} (${debts.map(d => d.label).join(", ")}) về ngân sách xã trước ngày ${csDaysAfter(CS_TODAY, 5)}.` }));
+      const list = csDebtors();
+      list.forEach(({ unit: u, debts }) => csSendReminder(u.id, debts, csDaysAfter(CS_TODAY, 5)));
       renderCurrentView();
       showDemoNotice(`Đã gửi nhắc nộp tới ${list.length} công ty còn nợ kỳ đã hết hạn.`);
       return;

@@ -159,6 +159,7 @@ function renderApp() {
   renderRoleOptions();
   renderNavigation();
   renderCurrentView();
+  if (typeof renderNotificationBadge === "function") renderNotificationBadge();
   closeSidebar();
 }
 
@@ -209,6 +210,7 @@ function renderQrPattern() {
 
 function handleAction(action, target) {
   if (!action) return;
+  if (action === "notifications" && typeof openNotificationCenter === "function") { openNotificationCenter(); return; }
   if (action === "importData" && currentRole === "commune") { showScreen("data-quality"); return; }
   if (action.startsWith("go:")) {
     showScreen(action.slice(3));
@@ -290,16 +292,44 @@ function applyTableFilter(container) {
   if (empty) empty.hidden = visible !== 0;
 }
 
+// Nút ☰: màn rộng thu gọn / mở lại sidebar (nhớ trong trình duyệt); màn hẹp mở / đóng ngăn kéo.
+const SIDEBAR_COLLAPSED_KEY = "ctrsh.sidebarCollapsed";
+const isDrawerLayout = () => window.matchMedia("(max-width: 860px)").matches;
+
+function syncMenuToggle() {
+  const button = document.getElementById("menuToggle");
+  const expanded = isDrawerLayout()
+    ? document.getElementById("sidebar").classList.contains("open")
+    : !document.getElementById("app").classList.contains("sidebar-collapsed");
+  button.setAttribute("aria-expanded", String(expanded));
+  button.setAttribute("aria-label", expanded ? "Thu gọn menu" : "Mở menu");
+  button.title = expanded ? "Thu gọn menu" : "Mở menu";
+}
+
+function setSidebarCollapsed(collapsed) {
+  document.getElementById("app").classList.toggle("sidebar-collapsed", collapsed);
+  try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? "1" : "0"); } catch (_) { /* bộ nhớ trình duyệt bị chặn: chỉ giữ trong phiên */ }
+  syncMenuToggle();
+}
+
+function toggleSidebar() {
+  if (isDrawerLayout()) {
+    if (document.getElementById("sidebar").classList.contains("open")) closeSidebar(); else openSidebar();
+    return;
+  }
+  setSidebarCollapsed(!document.getElementById("app").classList.contains("sidebar-collapsed"));
+}
+
 function openSidebar() {
   document.getElementById("sidebar").classList.add("open");
   document.getElementById("sidebarBackdrop").classList.add("show");
-  document.getElementById("menuToggle").setAttribute("aria-expanded", "true");
+  syncMenuToggle();
 }
 
 function closeSidebar() {
   document.getElementById("sidebar").classList.remove("open");
   document.getElementById("sidebarBackdrop").classList.remove("show");
-  document.getElementById("menuToggle").setAttribute("aria-expanded", "false");
+  syncMenuToggle();
 }
 
 function bindAppEvents() {
@@ -435,6 +465,7 @@ function generateBatchDraftExcel() {
   });
   document.getElementById("dialogForm").addEventListener("submit", event => {
     event.preventDefault();
+    if (activeDialogAction === "notifications" && typeof markAllNotificationsRead === "function") { markAllNotificationsRead(); return; }
     if (typeof handleCommuneSimpleSubmit === "function" && handleCommuneSimpleSubmit()) return;
     if (activeDialogAction === "intake" && submitIntakeDialog()) return;
     if (activeDialogAction === "management" && handleReviewSubmit()) return;
@@ -451,9 +482,8 @@ function generateBatchDraftExcel() {
     closeDemoModal();
     showDemoNotice(`${spec.confirm || "Thao tác"} thành công ở chế độ mô phỏng; dữ liệu không được lưu.`);
   });
-  document.getElementById("menuToggle").addEventListener("click", () => {
-    if (document.getElementById("sidebar").classList.contains("open")) closeSidebar(); else openSidebar();
-  });
+  document.getElementById("menuToggle").addEventListener("click", toggleSidebar);
+  window.matchMedia("(max-width: 860px)").addEventListener("change", syncMenuToggle);
   document.getElementById("sidebarBackdrop").addEventListener("click", closeSidebar);
   window.addEventListener("hashchange", renderApp);
   window.addEventListener("keydown", event => {
@@ -463,5 +493,8 @@ function generateBatchDraftExcel() {
 
 document.addEventListener("DOMContentLoaded", () => {
   bindAppEvents();
+  let collapsed = false;
+  try { collapsed = localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1"; } catch (_) { collapsed = false; }
+  setSidebarCollapsed(collapsed);
   renderApp();
 });

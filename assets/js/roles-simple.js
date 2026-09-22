@@ -190,7 +190,7 @@ const RS_USERS = [
 ].map(u => ({ ...u, roles: u.roles === "Công ty thu gom" ? "Công ty môi trường" : u.roles === "Nhân viên thu của công ty" ? "Người đi thu" : u.roles === "Quản trị" ? "Quản trị hệ thống" : u.roles }));
 const RS_ROLES = [
   { name: "Cán bộ xã", scope: "Toàn xã", functions: "Đối tượng, khoản thu, khu vực, công ty, tiến độ, đối soát, khiếu nại", perms: { view: true, edit: true, approve: false, export: true } },
-  { name: "Công ty môi trường", scope: "Đúng một công ty", functions: "Hộ được giao, kết quả thu theo người thu, xem phiếu thu xã lập, giải quyết khiếu nại", perms: { view: true, edit: true, approve: false, export: true } },
+  { name: "Công ty môi trường", scope: "Đúng một công ty", functions: "Hộ được giao, tiến độ thu theo người thu, xem phiếu thu xã lập, giải quyết khiếu nại", perms: { view: true, edit: true, approve: false, export: true } },
   { name: "Người đi thu", scope: "Hộ công ty giao", functions: "Danh sách hộ đi thu, cập nhật kết quả", perms: { view: true, edit: true, approve: false, export: false } },
   { name: "Kế toán", scope: "Toàn xã", functions: "Sao kê, phiếu thu, đối soát, khóa sổ", perms: { view: true, edit: true, approve: false, export: true } },
   { name: "Lãnh đạo", scope: "Toàn xã", functions: "Dashboard, phê duyệt, xác nhận báo cáo", perms: { view: true, edit: false, approve: true, export: true } },
@@ -211,6 +211,33 @@ const rsState = { period: "09/2026", seq: { handover: 2, user: 1, tariff: 1, bac
 const rsBtn = (label, action, id = "", tone = "secondary", small = false) => `<button type="button" class="button button-${tone}${small ? " button-small" : ""}" data-rs="${action}"${id ? ` data-id="${id}"` : ""}>${label}</button>`;
 const rsToday = "17/09/2026";
 
+// Định dạng %: bỏ phần thập phân khi là số tròn (40% thay vì 40.0%), còn lại giữ một chữ số (38.5%).
+const rsPct = v => { const r = Math.round((Number(v) || 0) * 10) / 10; return Number.isInteger(r) ? String(r) : r.toFixed(1); };
+// Hình tròn tiến độ (SVG): mực đầy dần từ dưới lên theo %, số % ở giữa bằng màu chữ; màu theo ý nghĩa chỉ số.
+let rsRingSeq = 0;
+function rsRing(pct, tone = "collected", size = 72, hasData = true) {
+  const value = hasData ? Math.max(0, Math.min(100, Number(pct) || 0)) : 0;
+  const c = size / 2, r = c - 1.5, id = `ringClip${++rsRingSeq}`;
+  const fill = (size - 3) * value / 100, y = 1.5 + (size - 3) - fill;
+  return `<span class="ring ring-${tone}" style="--size:${size}px" role="img" aria-label="${hasData ? `${rsPct(value)}%` : "Chưa có dữ liệu"}">
+    <svg viewBox="0 0 ${size} ${size}" aria-hidden="true"><defs><clipPath id="${id}"><circle cx="${c}" cy="${c}" r="${r}"/></clipPath></defs>
+      <circle class="ring-track" cx="${c}" cy="${c}" r="${r}"/>
+      <rect class="ring-fill" clip-path="url(#${id})" x="0" y="${y.toFixed(2)}" width="${size}" height="${fill.toFixed(2)}"/>
+      ${value > 0 && value < 100 ? `<line class="ring-surface" clip-path="url(#${id})" x1="0" x2="${size}" y1="${y.toFixed(2)}" y2="${y.toFixed(2)}"/>` : ""}
+      <circle class="ring-outline" cx="${c}" cy="${c}" r="${r}"/></svg>
+    <b>${hasData ? `${rsPct(value)}%` : "—"}</b></span>`;
+}
+const rsRingCard = (tone, part, whole, label, value, note) => `<article class="overview-card">${rsRing(whole ? part / whole * 100 : 0, tone, 88, whole > 0)}<div><span>${label}</span><strong>${value}</strong>${note ? `<small>${note}</small>` : ""}</div></article>`;
+// Thanh tiến độ có số % ngay trên thanh: nằm trong phần đã tô khi đủ rộng, còn không thì đứng sát sau phần đã tô.
+function rsBarProgress(part, whole, tone = "") {
+  const value = whole ? Math.max(0, Math.min(100, part / whole * 100)) : 0;
+  const inside = value >= 32;
+  return `<div class="bar-progress ${tone}"><span class="bar-fill" style="width:${value.toFixed(1)}%"></span><b class="bar-label ${inside ? "inside" : ""}" style="${inside ? `right:calc(${(100 - value).toFixed(1)}% + 8px)` : `left:calc(${value.toFixed(1)}% + 8px)`}">${rsPct(value)}%</b></div>`;
+}
+
+// Ghi chú chỉ đường ("cách vị trí hiện tại 120 m", "điểm cuối tuyến") chỉ dành cho người đi thu, không hiện ở danh sách công ty.
+const rsIsRouteNote = note => /vị trí hiện tại|điểm cuối tuyến|cách [\d.,]+ ?k?m\b/i.test(note);
+
 // ---------- Công ty: Hộ được giao ----------
 function rsCompanyAssigned() {
   const periods = [...new Set(rsRows().map(r => r.period))].sort((a, b) => b.slice(3).localeCompare(a.slice(3)) || b.localeCompare(a));
@@ -222,53 +249,69 @@ function rsCompanyAssigned() {
   const companyAreas = csCompanyAreas(RS_COMPANY.id);
   const due = csCompanyDue(RS_COMPANY.id, isoPeriod), collected = companyAreas.reduce((t, a) => t + csAreaProgress(a.id, isoPeriod).paid, 0), remitted = rsSum(receipts);
   const areas = [...new Set(rsRows().map(r => r.area))].sort();
-  const rows = current.map(r => {
+  // Thứ tự: quá hạn trên cùng → chưa thu / vắng nhà / đã hẹn → hộ đã thu xuống cuối.
+  const statusOrder = { overdue: 0, unpaid: 1, absent: 2, appointment: 3, paid: 4 };
+  const rows = [...current].sort((a, b) => (statusOrder[a.status] ?? 1) - (statusOrder[b.status] ?? 1) || a.code.localeCompare(b.code)).map(r => {
     const [label, tone] = RS_STATUS[r.status];
     const who = rsCollector(r.confirmedBy || r.collector);
     return `<tr data-row data-group="${r.status}" data-area="${escapeHtml(r.area)}" data-collector="${r.confirmedBy || r.collector}" data-search="${escapeHtml(`${r.code} ${r.name} ${r.address} ${r.phone} ${r.charge} ${r.request} ${who?.name || ""} ${who?.username || ""}`.toLowerCase())}" class="${r.status === "overdue" ? "is-attention" : ""}">
       <td><span class="cell-title">${escapeHtml(r.name)}</span><span class="cell-subtitle">${r.code}${r.kind === "business" ? " · Hộ KD" : ""}</span></td>
       <td><span class="cell-title" style="font-weight:600">${escapeHtml(r.address)}</span><span class="cell-subtitle">${r.area} · ${r.phone}</span></td>
-      <td><span class="cell-title">${r.charge}</span><span class="cell-subtitle">${r.request} · hạn ${r.dueDate}</span></td>
       <td class="money">${formatMoney(r.amount)}</td>
-      <td>${badge(label, tone)}${r.status === "paid" ? `<span class="cell-subtitle">${r.method} · ${r.confirmedAt}</span>` : r.note ? `<span class="cell-subtitle">${escapeHtml(r.note)}</span>` : ""}</td>
-      <td>${who ? `<span class="cell-title">${escapeHtml(who.name)}</span><span class="cell-subtitle">${who.username} · ${r.status === "paid" ? "đã xác nhận thu" : "phụ trách"}</span>` : "—"}</td>
+      <td>${badge(label, tone)}${r.status !== "paid" && r.note && !rsIsRouteNote(r.note) ? `<span class="cell-subtitle">${escapeHtml(r.note)}</span>` : ""}</td>
+      <td>${who ? escapeHtml(who.name) : "—"}</td>
       <td>${r.status === "paid" ? "" : rsBtn("Cập nhật", "coUpdate", r.charge, "primary", true)}</td></tr>`;
   });
   // Theo tài khoản người đi thu: hộ nào đã xác nhận thu, tiền mặt đã nộp về công ty hay còn giữ.
+  // Theo tài khoản người đi thu: tiến độ = hộ đã xác nhận thu / hộ được giao trong kỳ; tiền mặt phải bàn giao về công ty.
   const collectorRows = RS_COLLECTORS.map(c => {
+    const assigned = current.filter(r => r.collector === c.username);
     const mine = paid.filter(r => r.confirmedBy === c.username);
     const cash = mine.filter(r => r.method === "Tiền mặt"), transfer = mine.length - cash.length;
     const handed = rsSum(RS_HANDOVERS.filter(h => h.collector === c.username && h.period === rsState.period));
     const held = rsSum(cash) - handed;
+    const overdue = assigned.filter(r => r.status === "overdue").length;
     const [label, tone] = held <= 0 ? ["Đã nộp đủ", "success"] : handed ? ["Còn giữ tiền mặt", "warning"] : ["Chưa nộp về công ty", "danger"];
     return `<tr class="${held > 0 && !handed ? "is-attention" : ""}">
-      <td><span class="cell-title">${escapeHtml(c.name)}</span><span class="cell-subtitle">${c.username} · ${c.area}</span></td>
-      <td class="num">${mine.length}<span class="cell-subtitle">${cash.length} tiền mặt · ${transfer} chuyển khoản</span></td>
-      <td class="money">${formatMoney(rsSum(mine))}<span class="cell-subtitle">tiền mặt ${formatMoney(rsSum(cash))}</span></td>
-      <td class="money">${formatMoney(handed)}</td>
-      <td class="money">${formatMoney(Math.max(held, 0))}</td>
-      <td>${badge(label, tone)}${held > 0 && !handed ? `<span class="cell-subtitle">${cash.length} hộ đã xác nhận thu, chưa bàn giao</span>` : ""}</td>
-      <td>${rsBtn("Xem hộ", "coFilterCollector", c.username, "secondary", true)}${held > 0 ? ` ${rsBtn("Xác nhận nhận tiền", "coHandover", c.username, "primary", true)}` : ""}</td></tr>`;
+      <td><span class="cell-title">${escapeHtml(c.name)}</span></td>
+      <td class="num">${assigned.length}<span class="cell-subtitle">${formatMoney(rsSum(assigned))}</span></td>
+      <td>${rsBarProgress(mine.length, assigned.length)}<span class="cell-subtitle">${mine.length} đã thu · ${assigned.length - mine.length} chưa thu${overdue ? ` · ${overdue} quá hạn` : ""}</span></td>
+      <td class="money">${formatMoney(rsSum(mine))}<span class="cell-subtitle">${cash.length} tiền mặt · ${transfer} chuyển khoản</span></td>
+      <td>${badge(label, tone)}</td>
+      <td>${held > 0 ? rsBtn("Nhận tiền mặt", "coHandover", c.username, "primary", true) : ""}</td></tr>`;
   });
-  const receiptRows = receipts.map(r => {
-    const [label, tone] = RS_RECEIPT_STATUS[r.status];
-    return `<tr class="${r.status === "issue" ? "is-attention" : ""}"><td><span class="cell-title">${r.id}</span><span class="cell-subtitle">Xã lập ${r.date} · ${escapeHtml(r.by)}</span></td><td>${r.method}<span class="cell-subtitle">${escapeHtml(r.ref)}</span></td><td class="money">${formatMoney(r.amount)}</td><td>${badge(label, tone)}${r.issue ? `<span class="cell-subtitle">${escapeHtml(r.issue)}</span>` : ""}</td><td>${r.status === "recorded" ? rsBtn("Báo sai sót", "coReceiptIssue", r.id, "secondary", true) : ""}</td></tr>`;
-  });
-  const reminders = CS_REMINDERS.filter(n => n.companyId === RS_COMPANY.id);
-  const debts = csCompanyDebts(RS_COMPANY.id);
-  return `${csHeader("Hộ được giao", rsBtn("Xác nhận nhận tiền mặt", "coHandover") + rsBtn("Cập nhật kết quả thu", "coUpdate", "", "primary"), `${escapeHtml(RS_COMPANY.name)} · ${MANAGEMENT_AREAS.filter(a => a.unit === RS_COMPANY.id).length} khu vực được giao · ${RS_COLLECTORS.length} tài khoản người đi thu`)}
-  ${debts.length ? `<div class="callout danger"><div><strong>Còn nợ xã ${formatMoney(debts.reduce((t, d) => t + d.remaining, 0))} · ${debts.map(d => d.label).join(", ")}</strong><p>${reminders.length ? `Xã đã nhắc ${reminders[0].date}, hạn nộp ${reminders[0].due}: ${escapeHtml(reminders[0].content)}` : "Kỳ đã hết hạn nộp; đề nghị nộp về ngân sách xã để xã lập phiếu thu."}</p></div></div>` : ""}
-  <div class="filter-bar">${filterField("Kỳ thu", csSelect('data-rs-filter="period"', periods.map(p => [p, rsPeriodTitle(p)]), rsState.period))}</div>
-  ${summaryStrip([["Phải thu kỳ này", formatMoney(due), `${companyAreas.length} tổ · ${companyAreas.reduce((t, a) => t + a.households, 0).toLocaleString("vi-VN")} hộ`], ["Đã thu", formatMoney(collected), `${due ? Math.round(collected / due * 100) : 0}% · người đi thu xác nhận`], ["Xã đã lập phiếu thu", formatMoney(remitted), `${receipts.length} phiếu thu`], ["Còn phải nộp về xã", formatMoney(Math.max(collected - remitted, 0)), collected - remitted > 0 ? "Đã thu chưa nộp" : "Đã nộp đủ"]])}
+  // Tổng quan kỳ: bốn vòng tròn tiến độ (hộ đã thu, tiền đã thu, đã nộp về xã, còn phải nộp) và các kỳ chưa khóa.
+  const pastDue = csPeriodDue(isoPeriod) < CS_TODAY;
+  const dueDate = CS_PERIODS.find(p => p.id === isoPeriod)?.due || csIsoToVi(csPeriodDue(isoPeriod));
+  const areaStats = companyAreas.reduce((t, a) => { const r = csAreaProgress(a.id, isoPeriod); return { count: t.count + r.count, paidCount: t.paidCount + r.paidCount }; }, { count: 0, paidCount: 0 });
+  const remaining = Math.max(due - remitted, 0);
+  const overview = `<section class="overview-grid">
+    ${rsRingCard("households", areaStats.paidCount, areaStats.count, "Hộ đã thu", `${areaStats.paidCount}/${areaStats.count} hộ`, `${companyAreas.length} tổ · phải thu ${formatMoney(due)}`)}
+    ${rsRingCard("collected", collected, due, "Đã thu", formatMoney(collected), `trên ${formatMoney(due)} phải thu`)}
+    ${rsRingCard("remitted", remitted, due, "Đã nộp về xã", formatMoney(remitted), `${receipts.length} phiếu thu`)}
+    ${rsRingCard(remaining && pastDue ? "overdue" : "remaining", remaining, due, "Còn phải nộp về xã", formatMoney(remaining), remaining ? `Hạn nộp ${dueDate}${pastDue ? " · đã hết hạn" : ""}` : "Đã nộp đủ kỳ này")}
+  </section>
+  <div class="period-rings">
+    <span class="period-rings-label">Tiến độ nộp về xã theo kỳ</span>
+    ${csCompanyDues(RS_COMPANY.id).sort((a, b) => csPeriodDue(b.period).localeCompare(csPeriodDue(a.period))).map(d => {
+      const label = csPeriodLabel(d.period);
+      const tone = d.remaining <= 0 ? "" : d.pastDue ? "danger" : "warning";
+      return `<button type="button" class="period-ring ${label === rsState.period ? "active" : ""}" data-rs="coPeriod" data-id="${label}" aria-pressed="${label === rsState.period}"><strong>${d.label}</strong><small>${d.remaining <= 0 ? "Đã nộp đủ" : d.pastDue ? `Quá hạn · còn ${formatMoney(d.remaining)}` : `Còn ${formatMoney(d.remaining)}`}</small>${rsBarProgress(d.received, d.dueAmount, tone)}</button>`;
+    }).join("")}
+  </div>`;
+  return `${csHeader("Hộ được giao", "", `${escapeHtml(RS_COMPANY.name)} · ${MANAGEMENT_AREAS.filter(a => a.unit === RS_COMPANY.id).length} khu vực được giao · ${RS_COLLECTORS.length} tài khoản người đi thu`)}
+  <div class="filter-bar">
+    ${filterField("Kỳ thu", csSelect('data-rs-filter="period"', periods.map(p => [p, rsPeriodTitle(p)]), rsState.period))}
+    <div class="filter-actions inline">${rsBtn(`Phiếu thu xã đã lập <b class="button-count">${receipts.length}</b>`, "coReceipts", "", "secondary")}</div>
+  </div>
+  ${overview}
+  ${panel(`Theo tài khoản người đi thu · kỳ ${rsState.period}`, "Tiến độ = hộ đã xác nhận thu / hộ được giao. Tiền mặt đã thu phải bàn giao về công ty; chuyển khoản vào thẳng tài khoản công ty.", table(["Tài khoản", { label: "Hộ được giao", num: true }, "Tiến độ thu", { label: "Đã thu", num: true }, "Trạng thái", ""], collectorRows, { static: true }))}
+  <div class="stack-gap"></div>
   <section data-table-filter data-chip-key="group" data-count-label="hộ">
     ${filterBar(filterField("Khu vực", filterSelect("area", [["all", "Tất cả khu vực"], ...areas.map(a => [a, a])])) + filterField("Người đi thu", filterSelect("collector", [["all", "Tất cả tài khoản"], ...RS_COLLECTORS.map(c => [c.username, `${c.name} · ${c.username}`])])), "Tên hộ, mã hộ, địa chỉ, SĐT, mã khoản, người thu...")}
     ${chipBar([["all", "Tất cả"], ["unpaid", "Chưa thu", "warning"], ["overdue", "Quá hạn", "danger"], ["appointment", "Đã hẹn"], ["absent", "Vắng nhà", "warning"], ["paid", "Đã thu", "success"]], "hộ")}
-    ${panel(`Danh sách hộ · kỳ ${rsState.period}`, "Mã khoản / phiếu yêu cầu thu do xã lập; kết quả thu gắn với tài khoản người đi thu đã xác nhận.", table(["Hộ", "Địa chỉ", "Mã khoản / phiếu YC", { label: "Số tiền", num: true }, "Kết quả thu", "Người đi thu", ""], rows, { empty: "Không có hộ phù hợp." }))}
-  </section>
-  <div class="stack-gap"></div>
-  ${panel(`Theo tài khoản người đi thu · kỳ ${rsState.period}`, "Tiền mặt người đi thu đã xác nhận thu phải bàn giao về công ty; chuyển khoản vào thẳng tài khoản công ty.", table(["Tài khoản", { label: "Hộ đã xác nhận thu", num: true }, { label: "Đã thu", num: true }, { label: "Đã nộp công ty", num: true }, { label: "Còn giữ", num: true }, "Trạng thái", ""], collectorRows, { static: true }))}
-  <div class="stack-gap"></div>
-  ${panel(`Phiếu thu xã đã lập cho công ty · kỳ ${rsState.period}`, "Xã lập phiếu thu mỗi lần công ty nộp tiền. Công ty chỉ xem, thấy sai thì báo lại xã.", receiptRows.length ? table(["Phiếu thu", "Hình thức / chứng từ", { label: "Số tiền", num: true }, "Trạng thái", ""], receiptRows, { static: true }) : '<p class="table-empty">Xã chưa lập phiếu thu nào cho công ty trong kỳ.</p>')}`;
+    ${panel(`Danh sách hộ · kỳ ${rsState.period}`, "Mã khoản / phiếu yêu cầu thu do xã lập; kết quả thu gắn với tài khoản người đi thu đã xác nhận.", table(["Hộ", "Địa chỉ", { label: "Số tiền", num: true }, "Kết quả thu", "Người đi thu", ""], rows, { empty: "Không có hộ phù hợp." }))}
+  </section>`;
 }
 
 // ---------- Công ty: Giải quyết khiếu nại ----------
@@ -444,6 +487,16 @@ const RS_DIALOGS = {
       ${csField("Ghi chú", csInput("rsHoNote", "", "text", 'placeholder="Cuối ca, bàn giao tại văn phòng..."'), true)}
     </div>`, "Xác nhận đã nhận", `Kỳ ${rsState.period}. Chỉ tính tiền mặt người đi thu đã xác nhận thu; chuyển khoản vào thẳng tài khoản công ty.`);
   },
+  // Phiếu thu xã đã lập cho công ty trong kỳ đang xem; công ty chỉ xem, thấy sai thì báo lại xã.
+  coReceipts() {
+    const receipts = rsReceipts().filter(r => r.period === rsState.period);
+    const rows = receipts.map(r => {
+      const [label, tone] = RS_RECEIPT_STATUS[r.status];
+      return `<tr class="${r.status === "issue" ? "is-attention" : ""}"><td><span class="cell-title">${r.id}</span><span class="cell-subtitle">Xã lập ${r.date} · ${escapeHtml(r.by)}</span></td><td>${r.method}<span class="cell-subtitle">${escapeHtml(r.ref)}</span></td><td class="money">${formatMoney(r.amount)}</td><td>${badge(label, tone)}${r.issue ? `<span class="cell-subtitle">${escapeHtml(r.issue)}</span>` : ""}</td><td>${r.status === "recorded" ? rsBtn("Báo sai sót", "coReceiptIssue", r.id, "secondary", true) : ""}</td></tr>`;
+    });
+    csDialog("coReceipts", "", `Phiếu thu xã đã lập · kỳ ${rsState.period}`, `<div class="dialog-summary"><div><span>Số phiếu thu</span><strong>${receipts.length}</strong></div><div><span>Tổng đã nộp về xã</span><strong>${formatMoney(rsSum(receipts))}</strong></div><div><span>Đã báo sai sót</span><strong>${receipts.filter(r => r.status === "issue").length}</strong></div></div>
+      ${rows.length ? table(["Phiếu thu", "Hình thức / chứng từ", { label: "Số tiền", num: true }, "Trạng thái", ""], rows, { static: true }) : '<p class="table-empty">Xã chưa lập phiếu thu nào cho công ty trong kỳ.</p>'}`, "", `${escapeHtml(RS_COMPANY.name)} · Xã lập phiếu thu mỗi lần công ty nộp tiền. Công ty chỉ xem, thấy sai thì báo lại xã.`);
+  },
   coReceiptIssue(id) {
     const r = rsReceipts().find(x => x.id === id);
     if (!r) return;
@@ -594,12 +647,14 @@ const RS_SUBMIT = {
     if (!r) return "";
     const correct = Number(csFormValue("rsRiAmount"));
     RS_RECEIPT_ISSUES[r.id] = `${csFormValue("rsRiType")}${correct && correct !== r.amount ? ` · số đúng ${formatMoney(correct)}` : ""} · ${csFormValue("rsRiNote")}`;
+    pushNotification({ roles: ["commune"], kind: "receipt", title: `${RS_COMPANY.name} báo sai sót phiếu thu ${r.id}`, body: RS_RECEIPT_ISSUES[r.id], link: { role: "commune", screen: "charges", label: "Khoản thu" } });
     return `Đã gửi báo sai sót ${r.id} về xã.`;
   },
   coComplaint(id) {
     const c = CS_COMPLAINTS.find(x => x.id === id);
     if (!c || c.status === "done") return "";
     Object.assign(c, { status: csFormValue("rsCpStatus"), result: `Công ty: ${csFormValue("rsCpReply")}`, reply: { by: csFormValue("rsCpBy"), date: rsToday } });
+    pushNotification({ roles: ["commune"], kind: "complaint", title: `${RS_COMPANY.name} phản hồi ${c.id} · ${RS_COMPLAINT_STATUS[c.status][0]}`, body: csFormValue("rsCpReply"), link: { role: "commune", screen: "complaints", label: "Danh sách khiếu nại" } });
     return `Đã gửi phản hồi ${c.id} về xã: ${RS_COMPLAINT_STATUS[c.status][0].toLowerCase()}.`;
   },
   clUpdate() {
@@ -711,6 +766,7 @@ document.addEventListener("click", event => {
   const button = event.target.closest("[data-rs]");
   if (!button || !["company", "collector", "administrator"].includes(currentRole)) return;
   const { rs: action, id } = button.dataset;
+  if (action === "coPeriod") { rsState.period = id; renderCurrentView(); return; }
   if (action === "coFilterCollector") {
     const select = document.querySelector('[data-table-key="collector"]');
     if (!select) return;
