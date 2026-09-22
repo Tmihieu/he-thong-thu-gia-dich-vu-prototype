@@ -61,7 +61,7 @@ const CITIZEN_NOTIFICATIONS = [
 const CITIZEN_TABS = [
   { id: "home", label: "Trang chủ", icon: "home" },
   { id: "market", label: "Chợ đồ cũ", icon: "refresh" },
-  { id: "notifications", label: "Thông báo", icon: "bell", dot: CITIZEN_NOTIFICATIONS.filter(n => n.unread).length },
+  { id: "notifications", label: "Thông báo", icon: "bell", dot: () => CITIZEN_NOTIFICATIONS.filter(n => n.unread).length },
   { id: "account", label: "Tài khoản", icon: "user" }
 ];
 
@@ -100,7 +100,7 @@ function citizenHome() {
     </div>
     <div class="gr-section"><span>Việc của bạn</span></div>
     <div class="gr-card clickable" data-citizen-go="complaints">
-      <div class="gr-card-top"><strong>Phản ánh đang xử lý</strong>${grTag("Đang xử lý", "info")}</div>
+      <div class="gr-card-top"><strong>Phản ánh gần nhất</strong>${grTag(CITIZEN_COMPLAINTS[0].status, CITIZEN_COMPLAINTS[0].tone === "info" ? "info" : "")}</div>
       <p>${escapeHtml(CITIZEN_COMPLAINTS[0].summary)}</p>
       <span class="muted">${CITIZEN_COMPLAINTS[0].id} · ${CITIZEN_COMPLAINTS[0].date}</span>
     </div>
@@ -121,11 +121,11 @@ function citizenHome() {
 
 function citizenNotifications() {
   const list = CITIZEN_NOTIFICATIONS.filter(n => citizenNotifSeg === "all" || n.group === citizenNotifSeg);
-  const items = list.map(n => `<div class="gr-notif ${n.unread ? "unread" : ""}" data-citizen-go="${n.group === "complaint" ? "complaints" : "payment"}"><span class="gr-ico">${icon(n.icon)}</span><div><strong>${escapeHtml(n.title)}<span>${escapeHtml(n.time)}</span></strong><p>${escapeHtml(n.text)}</p></div></div>`).join("");
+  const items = list.map((n, i) => `<div class="gr-notif ${n.unread ? "unread" : ""}" data-citizen-go="${n.go || (n.group === "complaint" ? "complaints" : "payment")}"${n.id ? ` data-citizen-id="${n.id}"` : ""} data-citizen-notif="${CITIZEN_NOTIFICATIONS.indexOf(n)}"><span class="gr-ico">${icon(n.icon)}</span><div><strong>${escapeHtml(n.title)}<span>${escapeHtml(n.time)}</span></strong><p>${escapeHtml(n.text)}</p></div></div>`).join("");
   return `<div class="gr-topbar" style="padding-bottom:10px"><h1>Thông báo</h1></div>
   <div class="gr-seg">${[["all", "Tất cả"], ["complaint", "Phản ánh"], ["transaction", "Giao dịch"]].map(([v, l]) => `<button type="button" class="${citizenNotifSeg === v ? "active" : ""}" data-citizen-seg="${v}">${l}</button>`).join("")}</div>
   <div class="gr-body flush">
-    <div class="gr-list-head"><span>${citizenNotifSeg === "all" ? "Tất cả thông báo" : citizenNotifSeg === "complaint" ? "Phản ánh, kiến nghị" : "Phí và giao dịch"}</span><button type="button" data-citizen-notice="Đã đánh dấu tất cả là đã đọc (mô phỏng).">${icon("check")} Đánh dấu đã đọc</button></div>
+    <div class="gr-list-head"><span>${citizenNotifSeg === "all" ? "Tất cả thông báo" : citizenNotifSeg === "complaint" ? "Phản ánh, kiến nghị" : "Phí và giao dịch"}</span><button type="button" data-citizen-read-all>${icon("check")} Đánh dấu đã đọc</button></div>
     <div class="gr-month">Tháng 09/2026</div>
     ${items || '<div class="gr-empty">Chưa có thông báo trong mục này.</div>'}
   </div>`;
@@ -226,7 +226,9 @@ function citizenSubmitComplaint(form) {
   const complaint = { id, date: csIsoToVi(CS_TODAY), name: CITIZEN_PROFILE.name, subject: subject?.code || "—", phone: CITIZEN_PROFILE.phone, area: subject?.area || "KV07", channel: "Ứng dụng người dân", content: `${type}: ${detail}`, status: "new", result: "" };
   CS_COMPLAINTS.unshift(complaint);
   csNotifyComplaint(complaint);
-  CITIZEN_COMPLAINTS.unshift({ id: id.replace("KN", "PA"), type, summary: detail.slice(0, 60), date: csIsoToVi(CS_TODAY), status: "Đã gửi", tone: "info", detail, timeline: [[`${csIsoToVi(CS_TODAY).slice(0, 5)} ${notifNow().slice(0, 5)}`, "Bạn gửi phản ánh kèm vị trí tự động"]] });
+  const paId = id.replace("KN", "PA");
+  CITIZEN_COMPLAINTS.unshift({ id: paId, csId: id, type, summary: detail.slice(0, 60), date: csIsoToVi(CS_TODAY), status: "Đã gửi", tone: "info", detail, timeline: [[citizenStamp().replace(" · ", " "), "Bạn gửi phản ánh kèm vị trí tự động"]] });
+  citizenNotify({ title: `Đã gửi phản ánh ${paId}`, text: `UBND xã Đông Thạnh và ${CITIZEN_PROFILE.company} đã nhận. Bạn sẽ được báo khi xã tiếp nhận và khi có kết quả.`, go: "complaintDetail", id: paId });
 }
 
 function citizenComplaintDetail(id) {
@@ -356,7 +358,37 @@ const CITIZEN_FORM_NOTICES = {
 };
 
 function renderCitizenTabbar(activeTab) {
-  document.getElementById("citizenTabbar").innerHTML = CITIZEN_TABS.map(tab => `<button type="button" class="phone-tab-item ${tab.id === activeTab ? "active" : ""}" data-citizen-go="${tab.id}"><span class="phone-tab-icon">${icon(tab.icon)}</span>${tab.label}${tab.dot ? `<b class="dot">${tab.dot}</b>` : ""}</button>`).join("");
+  document.getElementById("citizenTabbar").innerHTML = CITIZEN_TABS.map(tab => `<button type="button" class="phone-tab-item ${tab.id === activeTab ? "active" : ""}" data-citizen-go="${tab.id}"><span class="phone-tab-icon">${icon(tab.icon)}</span>${tab.label}${typeof tab.dot === "function" && tab.dot() ? `<b class="dot">${tab.dot()}</b>` : ""}</button>`).join("");
+  citizenUpdateTriggerBadge();
+}
+
+// Số thông báo chưa đọc của người dân hiện trên nút mở ứng dụng để cán bộ xem prototype thấy ngay phản hồi đã tới dân.
+function citizenUpdateTriggerBadge() {
+  const trigger = document.getElementById("citizenPreviewTrigger");
+  if (!trigger) return;
+  const unread = CITIZEN_NOTIFICATIONS.filter(n => n.unread).length;
+  let b = trigger.querySelector("b");
+  if (!b) { b = document.createElement("b"); trigger.appendChild(b); }
+  b.textContent = unread;
+  b.hidden = !unread;
+}
+
+// Thông báo tới người dân; bấm vào mở đúng phản ánh (go/id) nếu có.
+function citizenNotify({ group = "complaint", icon: ic = "message", title, text, go = "notifications", id = null }) {
+  CITIZEN_NOTIFICATIONS.unshift({ group, icon: ic, title, text, time: citizenStamp(), unread: true, go, id });
+  citizenUpdateTriggerBadge();
+}
+const citizenStamp = () => { const d = new Date(); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")} · ${csIsoToVi(CS_TODAY)}`; };
+const citizenComplaintStatus = c => c.status === "done" ? ["Đã xử lý", "success"] : c.status === "processing" ? ["Đang xử lý", "info"] : ["Đã gửi", "info"];
+
+// Xã / công ty cập nhật khiếu nại → phản ánh của người dân đổi trạng thái, thêm bước tiến trình và gửi thông báo.
+function citizenSyncComplaint(c, text) {
+  const item = CITIZEN_COMPLAINTS.find(x => x.csId === c.id);
+  if (!item) return;
+  const [status, tone] = citizenComplaintStatus(c);
+  Object.assign(item, { status, tone });
+  item.timeline.push([citizenStamp().replace(" · ", " "), text]);
+  citizenNotify({ icon: c.status === "done" ? "check" : "message", title: `Phản ánh ${item.id} · ${status}`, text, go: "complaintDetail", id: item.id });
 }
 
 function renderCitizenScreen(screenId, detailId) {
@@ -399,6 +431,9 @@ function bindCitizenPreview() {
     if (seg) { citizenNotifSeg = seg.dataset.citizenSeg; renderCitizenScreen("notifications"); return; }
     const notice = event.target.closest("[data-citizen-notice]");
     if (notice) { showDemoNotice(notice.dataset.citizenNotice); return; }
+    if (event.target.closest("[data-citizen-read-all]")) { CITIZEN_NOTIFICATIONS.forEach(n => { n.unread = false; }); renderCitizenScreen("notifications"); showDemoNotice("Đã đánh dấu tất cả thông báo là đã đọc."); return; }
+    const notif = event.target.closest("[data-citizen-notif]");
+    if (notif && CITIZEN_NOTIFICATIONS[Number(notif.dataset.citizenNotif)]) CITIZEN_NOTIFICATIONS[Number(notif.dataset.citizenNotif)].unread = false;
     const target = event.target.closest("[data-citizen-go]");
     if (target) renderCitizenScreen(target.dataset.citizenGo, target.dataset.citizenId);
   });
@@ -422,4 +457,4 @@ function bindCitizenPreview() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", bindCitizenPreview);
+document.addEventListener("DOMContentLoaded", () => { bindCitizenPreview(); citizenUpdateTriggerBadge(); });

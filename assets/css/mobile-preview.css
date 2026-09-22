@@ -34,6 +34,7 @@
   cursor: pointer;
 }
 .citizen-preview-trigger:hover { background: rgba(255,255,255,.18); }
+.citizen-preview-trigger b { min-width: 18px; margin-left: 4px; padding: 0 5px; border-radius: 999px; background: var(--red-700); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
 .citizen-preview-trigger svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 .citizen-preview-backdrop {

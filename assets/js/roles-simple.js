@@ -655,6 +655,7 @@ const RS_SUBMIT = {
     if (!c || c.status === "done") return "";
     Object.assign(c, { status: csFormValue("rsCpStatus"), result: `Công ty: ${csFormValue("rsCpReply")}`, reply: { by: csFormValue("rsCpBy"), date: rsToday } });
     pushNotification({ roles: ["commune"], kind: "complaint", title: `${RS_COMPANY.name} phản hồi ${c.id} · ${RS_COMPLAINT_STATUS[c.status][0]}`, body: csFormValue("rsCpReply"), link: { role: "commune", screen: "complaints", label: "Danh sách khiếu nại" } });
+    if (typeof citizenSyncComplaint === "function") citizenSyncComplaint(c, `${RS_COMPANY.name} ${c.status === "done" ? "đã giải quyết" : "đang xử lý"}: ${csFormValue("rsCpReply")}`);
     return `Đã gửi phản hồi ${c.id} về xã: ${RS_COMPLAINT_STATUS[c.status][0].toLowerCase()}.`;
   },
   clUpdate() {

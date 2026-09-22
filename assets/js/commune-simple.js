@@ -1180,6 +1180,8 @@ function handleCommuneSimpleSubmit() {
       // Chuyển công ty: gắn công ty tiếp nhận và hạn 3 ngày để trang Giải quyết khiếu nại của công ty nhận được.
       Object.assign(c, { status: csFormValue("csHcStatus"), result: `${forward ? `Chuyển ${company?.name} xử lý, hạn ${csDaysAfter(CS_TODAY, 3)}. ` : ""}${csFormValue("csHcResult")}` }, forward && company ? { forwardedTo: company.id, deadline: c.deadline || csDaysAfter(CS_TODAY, 3) } : {});
       if (forward && company) pushNotification({ roles: ["company"], companyId: company.id, kind: "complaint", title: `Xã chuyển khiếu nại ${c.id} · hạn ${c.deadline}`, body: c.content, link: { role: "company", screen: "complaints", companyId: company.id, label: "Giải quyết khiếu nại" } });
+      // Báo cho người dân (nếu khiếu nại gửi từ app) về việc xã tiếp nhận / chuyển / xử lý xong.
+      if (typeof citizenSyncComplaint === "function") citizenSyncComplaint(c, forward && company ? `Cán bộ xã tiếp nhận, chuyển ${company.name} xử lý, hạn ${c.deadline}` : c.status === "done" ? `Xã đã xử lý xong: ${csFormValue("csHcResult")}` : `Xã đang xử lý: ${csFormValue("csHcResult")}`);
       message = `Đã cập nhật ${c.id}: ${CS_COMPLAINT_STATUS[c.status][0].toLowerCase()}.`;
     }
   }
