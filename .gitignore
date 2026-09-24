@@ -4,3 +4,14 @@ Thumbs.db
 .vscode/
 .idea/
 .claude/
+
+# Bí mật môi trường
+.env
+.env.*
+!.env.example
+
+# Build / phụ thuộc
+backend/target/
+node_modules/
+dist/
+.expo/
