@@ -4,7 +4,7 @@
 **Trạng thái duyệt:**
 
 - Phần A (platform, master-data, billing, collection, remittance): **Đã duyệt Phần A — 24/09/2026** (H1)
-- Phần B (notifications, complaints, citizen-app, CollectionSchedule): **CHƯA DUYỆT** — H2, mục tiêu 02/10/2026. Các câu hỏi Phần B đã được trả lời 24/09/2026 và đã áp vào bảng
+- Phần B (notifications, complaints, citizen-app, CollectionSchedule): **Đã duyệt Phần B — 24/09/2026** (H2, người dùng xác nhận trong phiên làm việc)
 
 > Khi duyệt, ghi ở đây: `Đã duyệt Phần A — dd/mm/yyyy` / `Đã duyệt Phần B — dd/mm/yyyy`.
 > Chưa duyệt phần nào thì không task nào được tạo entity/migration của phần đó (SPEC §8, plan H1/H2).

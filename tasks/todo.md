@@ -314,7 +314,7 @@
   - **File dự kiến:** `MIG/V10__…sql`, `BE/collection/domain/{Payment,CollectionVisit}.java` (+ repo), `BE/collection/service/CollectionService.java`, `BE/collection/api/CollectionController.java`, `BT/collection/{CollectionServiceTest,CollectionApiIT}.java`
   - **Kích thước:** M
 
-- [ ] **H2 — [NGƯỜI DÙNG] Duyệt data dictionary Phần B** · mục tiêu 02/10
+- [x] **H2 — [NGƯỜI DÙNG] Duyệt data dictionary Phần B** · mục tiêu 02/10 · **đã duyệt 24/09/2026**
   - Duyệt notifications, complaints, citizen-app, CollectionSchedule; trả lời G6, G7, G12, xác nhận mặc định O1, O5, O6, O7.
   - **Chặn:** T23, T36, T38, T39, T45, T47.
   - **Phụ thuộc:** T01
