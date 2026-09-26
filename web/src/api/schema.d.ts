@@ -161,6 +161,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/collection/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ghi lượt ghé không thu được (vắng / hẹn / từ chối); không đổi trạng thái khoản */
+        post: operations["visit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/collection/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ghi nhận thanh toán (tiền mặt / chuyển khoản); gửi lại cùng clientRequestId trả kết quả cũ (200) */
+        post: operations["pay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/collection/collector-assignments": {
         parameters: {
             query?: never;
@@ -384,6 +418,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/collection/my-work": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Danh sách thu của người đi thu: khoản trong tổ được giao, kèm đã thu và lượt ghé mới nhất */
+        get: operations["myWork"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/collection/my-charges": {
         parameters: {
             query?: never;
@@ -427,6 +478,23 @@ export interface paths {
         };
         /** Người đi thu của công ty (quản lý công ty) */
         get: operations["collectors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/collection/charges/{id}/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lịch sử thu của một khoản: thanh toán và lượt ghé */
+        get: operations["activity"];
         put?: never;
         post?: never;
         delete?: never;
@@ -640,6 +708,76 @@ export interface components {
             validTo: string | null;
             note: string | null;
             decisionNo: string | null;
+        };
+        VisitRequest: {
+            /** Format: int64 */
+            chargeId: number;
+            /** @enum {string} */
+            result: "ABSENT" | "APPOINTMENT" | "REFUSED";
+            /**
+             * Format: date
+             * @description Bắt buộc khi hẹn lại
+             */
+            revisitDate?: string;
+            note?: string;
+            clientRequestId: string;
+        };
+        VisitDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            chargeId: number;
+            /** @enum {string} */
+            result: "ABSENT" | "APPOINTMENT" | "REFUSED";
+            /** Format: date-time */
+            visitedAt: string;
+            /** Format: date */
+            revisitDate: string | null;
+            note: string | null;
+        };
+        PaymentRequest: {
+            /** Format: int64 */
+            chargeId: number;
+            /** Format: int64 */
+            amount: number;
+            /** @enum {string} */
+            method: "CASH" | "TRANSFER" | "APP_SIMULATED";
+            /** @description UUID do client sinh, chống gửi trùng */
+            clientRequestId: string;
+            bankRef?: string;
+            note?: string;
+            /**
+             * Format: int64
+             * @description Bắt buộc khi quản lý công ty ghi thay: người đi thu đã nhận tiền
+             */
+            collectorId?: number;
+        };
+        PaymentDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example TT-1026-000123 */
+            code: string;
+            /** Format: int64 */
+            amount: number;
+            /** @enum {string} */
+            method: "CASH" | "TRANSFER" | "APP_SIMULATED";
+            /** Format: date-time */
+            paidAt: string;
+            /** Format: int64 */
+            collectorId: number | null;
+            note: string | null;
+        };
+        PaymentResultDto: {
+            payment: components["schemas"]["PaymentDto"];
+            chargeCode: string;
+            /** @enum {string} */
+            chargeStatus: "UNPAID" | "PAID" | "EXEMPT";
+            /** Format: int64 */
+            paidAmount: number;
+            /** Format: int64 */
+            remainingAmount: number;
+            /** @description true khi gửi lại cùng clientRequestId */
+            replayed: boolean;
         };
         AssignCollectorRequest: {
             /** Format: int64 */
@@ -860,6 +998,14 @@ export interface components {
             /** @description Chưa thu và đã qua hạn đóng */
             overdue: boolean;
         };
+        CollectorChargeDto: {
+            charge: components["schemas"]["ChargeDto"];
+            /** Format: int64 */
+            paidAmount: number;
+            /** Format: int64 */
+            remainingAmount: number;
+            lastVisit: components["schemas"]["VisitDto"];
+        };
         ChargePageDto: {
             items: components["schemas"]["ChargeDto"][];
             /** Format: int64 */
@@ -876,6 +1022,15 @@ export interface components {
             fullName: string;
             phone: string | null;
             active: boolean;
+        };
+        ActivityDto: {
+            charge: components["schemas"]["ChargeDto"];
+            /** Format: int64 */
+            paidAmount: number;
+            /** Format: int64 */
+            remainingAmount: number;
+            payments: components["schemas"]["PaymentDto"][];
+            visits: components["schemas"]["VisitDto"][];
         };
         ChargeRequestDto: {
             /** Format: int64 */
@@ -1226,6 +1381,54 @@ export interface operations {
             };
         };
     };
+    visit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisitRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["VisitDto"];
+                };
+            };
+        };
+    };
+    pay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PaymentResultDto"];
+                };
+            };
+        };
+    };
     assignments: {
         parameters: {
             query?: {
@@ -1556,6 +1759,31 @@ export interface operations {
             };
         };
     };
+    myWork: {
+        parameters: {
+            query?: {
+                periodId?: number;
+                status?: "UNPAID" | "PAID" | "EXEMPT";
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CollectorChargeDto"][];
+                };
+            };
+        };
+    };
     myCharges: {
         parameters: {
             query?: {
@@ -1619,6 +1847,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CollectorDto"][];
+                };
+            };
+        };
+    };
+    activity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ActivityDto"];
                 };
             };
         };

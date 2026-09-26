@@ -106,6 +106,15 @@ public class CollectionPeriod extends BaseEntity {
         status = PeriodStatus.COLLECTING;
     }
 
+    /** Phần kỳ trong mã chứng từ: tháng {@code MMYY} (1026), quý {@code Q{quý}{YY}} (Q426) (G11). */
+    public String documentToken() {
+        int yy = startDate.getYear() % 100;
+        if (periodType == PeriodType.QUARTER) {
+            return "Q%d%02d".formatted((startDate.getMonthValue() - 1) / 3 + 1, yy);
+        }
+        return "%02d%02d".formatted(startDate.getMonthValue(), yy);
+    }
+
     public boolean covers(LocalDate date) {
         return !date.isBefore(startDate) && !date.isAfter(endDate);
     }

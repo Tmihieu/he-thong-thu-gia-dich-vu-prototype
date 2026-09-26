@@ -114,6 +114,15 @@ public class Charge extends BaseEntity {
         return c;
     }
 
+    /** Đã thu đủ: chuyển sang Đã thu. Chỉ gọi khi tổng thanh toán bằng số tiền khoản (G4). */
+    public void markPaid(OffsetDateTime at) {
+        if (status != ChargeStatus.UNPAID) {
+            throw new IllegalStateException("Khoản " + code + " không ở trạng thái chưa thu");
+        }
+        status = ChargeStatus.PAID;
+        paidAt = at;
+    }
+
     /** Quá hạn: chưa thu và đã qua hạn đóng (không lưu, tính khi đọc). */
     public boolean isOverdue(LocalDate today) {
         return status == ChargeStatus.UNPAID && dueDate.isBefore(today);

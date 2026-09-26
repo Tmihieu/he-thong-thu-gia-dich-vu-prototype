@@ -39,7 +39,6 @@ import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.masterdata.domain.CompanyRepository;
 import vn.dongthanh.vsmt.masterdata.domain.FeeType;
 import vn.dongthanh.vsmt.masterdata.domain.FeeTypeRepository;
-import vn.dongthanh.vsmt.masterdata.domain.PeriodType;
 import vn.dongthanh.vsmt.masterdata.domain.PricingMode;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceContract;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceContractRepository;
@@ -114,7 +113,7 @@ public class ChargeRequestService {
             return plan.result(null);
         }
         CollectionPeriod period = plan.period();
-        String token = periodToken(period);
+        String token = period.documentToken();
         String code = "YCT-%s-%02d".formatted(token, requests.countByPeriodId(period.getId()) + 1);
         ChargeRequest request = requests.save(ChargeRequest.issue(code, period, plan.feeType(), cmd.scopeType(),
                 plan.scopeAreas(), plan.scopeCompany(), plan.issueDate(), cmd.dueDate(), plan.unitPrice(),
@@ -243,15 +242,6 @@ public class ChargeRequestService {
 
     public LocalDate today() {
         return LocalDate.now(clock);
-    }
-
-    /** Phần kỳ trong mã chứng từ: tháng {@code MMYY} (1026), quý {@code Q{quý}{YY}} (Q426) (G11). */
-    static String periodToken(CollectionPeriod p) {
-        int yy = p.getStartDate().getYear() % 100;
-        if (p.getPeriodType() == PeriodType.QUARTER) {
-            return "Q%d%02d".formatted((p.getStartDate().getMonthValue() - 1) / 3 + 1, yy);
-        }
-        return "%02d%02d".formatted(p.getStartDate().getMonthValue(), yy);
     }
 
     private static Map<Long, List<ServiceContract>> group(Collection<ServiceContract> all) {

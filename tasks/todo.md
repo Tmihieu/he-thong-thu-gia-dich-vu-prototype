@@ -301,15 +301,15 @@
   - **File dự kiến:** `MIG/V9__…sql` + `SEED/V9_1__seed_collectors.sql`, `BE/collection/domain/CollectorAssignment.java` (+ repo), `BE/collection/service/CollectorAssignmentService.java`, `BE/collection/api/CollectionController.java` (+ DTO), `BT/collection/CollectorAssignmentIT.java`
   - **Kích thước:** M
 
-- [ ] **T21 — Ghi nhận kết quả thu: Payment, CollectionVisit, chống ghi trùng** · `collection` · M · P0 · **[TDD]** · **[cần hỏi trước: G4]**
+- [x] **T21 — Ghi nhận kết quả thu: Payment, CollectionVisit, chống ghi trùng** · `collection` · M · P0 · **[TDD]** · **xong 26/09/2026**: thu một phần, thu vượt → 422 (G4); phương thức theo DD là `APP_SIMULATED` (không phải `CITIZEN_APP`); quản lý ghi thay phải chọn người thu; thêm `/my-work` và `/charges/{id}/activity`
   - **Mô tả:** Tạo `MIG/V10__payments_visits.sql` và hai entity: `Payment` (khoản, số tiền, hình thức `CASH/TRANSFER/CITIZEN_APP`, thời điểm, người xác nhận, `requestId` duy nhất để chống trùng) và `CollectionVisit` (khoản, kết quả `ABSENT/APPOINTMENT/REFUSED`, ngày hẹn lại, ghi chú, người ghi). `CollectionService.recordPayment(...)`: khoản chuyển `PAID` khi Σ thanh toán ≥ số tiền; gửi lại cùng `requestId` trả kết quả cũ, không tạo thanh toán thứ hai; chặn khi kỳ đã khóa hoặc khoản đã miễn; người đi thu chỉ ghi cho khoản trong tổ mình, công ty ghi thay cho hộ của mình. Test viết trước cho từng quy tắc. Thanh toán một phần/thu thừa theo trả lời G4. Có ghi audit. Phương thức `CITIZEN_APP` để sẵn cho T40.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Test đơn vị: đủ tiền → PAID; gửi trùng `requestId` → 1 Payment; kỳ khóa → 422; khoản miễn → 422; vắng/hẹn/từ chối không đổi trạng thái khoản
-    - [ ] IT: ghi nhận qua API với token người đi thu; khoản ngoài tổ → 403/404
-    - [ ] Bản ghi audit có trước/sau trạng thái khoản
+    - [x] Test đơn vị: đủ tiền → PAID; gửi trùng `requestId` → 1 Payment; kỳ khóa → 422; khoản miễn → 422; vắng/hẹn/từ chối không đổi trạng thái khoản
+    - [x] IT: ghi nhận qua API với token người đi thu; khoản ngoài tổ → 403/404
+    - [x] Bản ghi audit có trước/sau trạng thái khoản
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=CollectionServiceTest,CollectionApiIT`
-    - [ ] `cd backend && ./mvnw verify`
+    - [x] `cd backend && ./mvnw test -Dtest=CollectionServiceTest,CollectionApiIT`
+    - [x] `cd backend && ./mvnw verify`
   - **Phụ thuộc:** T20
   - **File dự kiến:** `MIG/V10__…sql`, `BE/collection/domain/{Payment,CollectionVisit}.java` (+ repo), `BE/collection/service/CollectionService.java`, `BE/collection/api/CollectionController.java`, `BT/collection/{CollectionServiceTest,CollectionApiIT}.java`
   - **Kích thước:** M
