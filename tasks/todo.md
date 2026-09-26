@@ -445,15 +445,15 @@
   - **File dự kiến:** `WEB/features/remittance/ReceiptsPage/{ReceiptsPage.tsx,IssueReceiptForm.tsx,IssueReceiptForm.test.tsx,ReceiptPrint.tsx}`, `WEB/shared/amountInWords.ts` + test
   - **Kích thước:** M
 
-- [ ] **T31 — Báo cáo tiến độ và đối soát (màn xã)** · `remittance` · M · P0 (§10 bước 5)
+- [x] **T31 — Báo cáo tiến độ và đối soát (màn xã)** · `remittance` · M · P0 (§10 bước 5) · **xong 26/09/2026** (test tự động; còn xem bằng mắt): thêm API `GET /api/remittance/area-progress` cho tiến độ theo tổ
   - **Mô tả:** Hai màn của cán bộ xã dùng chung API ledger T24. **Tiến độ:** theo công ty và theo tổ, trạng thái R13, cờ < 45%, nợ kỳ trước. **Đối soát:** phải thu / công ty đã thu / đã nộp về xã / chênh lệch, trạng thái Khớp / Đang nộp / Lệch. Thêm một IT backend so dữ liệu 3 nơi (tiến độ, đối soát, dòng công ty) cho cùng kỳ.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Sau khi lập phiếu một phần cho DV01, cả hai màn hiện "Đang nộp" / "Nộp một phần" đúng
-    - [ ] IT: tổng của tiến độ = đối soát = ledger phía công ty cho cùng kỳ (tiêu chí SPEC §9.6)
-    - [ ] Màn hiển thị tiền bằng `MoneyText`, có lọc theo kỳ
+    - [x] Sau khi lập phiếu một phần cho DV01, cả hai màn hiện "Đang nộp" / "Nộp một phần" đúng
+    - [x] IT: tổng của tiến độ = đối soát = ledger phía công ty cho cùng kỳ (tiêu chí SPEC §9.6)
+    - [x] Màn hiển thị tiền bằng `MoneyText`, có lọc theo kỳ
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=LedgerConsistencyIT`
-    - [ ] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
+    - [x] `cd backend && ./mvnw test -Dtest=LedgerConsistencyIT`
+    - [x] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
   - **Phụ thuộc:** T24, T26, T08
   - **File dự kiến:** `WEB/features/remittance/ProgressPage/ProgressPage.tsx`, `WEB/features/remittance/ReconciliationPage/ReconciliationPage.tsx`, `WEB/features/remittance/useCompanyLedger.ts`, `BT/remittance/LedgerConsistencyIT.java`
   - **Kích thước:** M

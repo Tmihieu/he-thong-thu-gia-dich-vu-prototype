@@ -369,6 +369,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/remittance/area-progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tiến độ thu theo tổ trong kỳ (công ty theo khoản đã phát hành; tổ chưa có công ty đánh dấu). Công ty chỉ thấy tổ của mình */
+        get: operations["areaProgress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/auth/me": {
         parameters: {
             query?: never;
@@ -1180,6 +1197,31 @@ export interface components {
             progress: "NO_COMPANY" | "PAID_IN_FULL" | "OVERDUE" | "PARTIAL" | "NOT_PAID";
             /** @enum {string} */
             reconciliation: "MATCHED" | "PENDING" | "MISMATCH";
+        };
+        AreaProgressDto: {
+            /** Format: int64 */
+            areaId: number;
+            areaCode: string;
+            areaName: string;
+            districtCode: string;
+            /** Format: int64 */
+            companyId: number | null;
+            companyCode: string | null;
+            /** Format: int64 */
+            due: number;
+            /** Format: int64 */
+            collected: number;
+            /** Format: int64 */
+            chargeCount: number;
+            /** Format: int64 */
+            paidCount: number;
+            /** Format: int64 */
+            subjectCount: number;
+            /** Format: double */
+            collectionRate: number;
+            lowCollectionRate: boolean;
+            /** @description Tổ chưa có công ty (R13) */
+            noCompany: boolean;
         };
         NotificationPageDto: {
             items: components["schemas"]["NotificationDto"][];
@@ -2092,6 +2134,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["LedgerRowDto"][];
+                };
+            };
+        };
+    };
+    areaProgress: {
+        parameters: {
+            query: {
+                periodId: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AreaProgressDto"][];
                 };
             };
         };

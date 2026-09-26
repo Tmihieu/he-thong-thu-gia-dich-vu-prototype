@@ -5,6 +5,8 @@ import { ChargesHubPage } from '../features/billing/ChargesHubPage';
 import { AreasPage } from '../features/masterdata/AreasPage/AreasPage';
 import { ConfigPage } from '../features/masterdata/ConfigPage';
 import { SubjectsPage } from '../features/masterdata/SubjectsPage/SubjectsPage';
+import { ProgressPage } from '../features/remittance/ProgressPage/ProgressPage';
+import { ReconciliationPage } from '../features/remittance/ReconciliationPage/ReconciliationPage';
 import { LoginPage } from './auth/LoginPage';
 import { RequireRole } from './auth/RequireRole';
 import type { Role } from './auth/authContext';
@@ -18,6 +20,8 @@ const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'COMMUNE_OFFICER:areas': <AreasPage />,
   'COMMUNE_OFFICER:subjects': <SubjectsPage />,
   'COMMUNE_OFFICER:charges': <ChargesHubPage />,
+  'COMMUNE_OFFICER:progress': <ProgressPage />,
+  'COMMUNE_OFFICER:reconciliation': <ReconciliationPage />,
 };
 
 /** Mỗi vai trò một nhánh route. */

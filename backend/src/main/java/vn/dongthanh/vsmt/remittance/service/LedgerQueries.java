@@ -18,6 +18,12 @@ public interface LedgerQueries {
     /** Công ty đã thu: Σ thanh toán của các khoản trong kỳ (G4, R8), kèm số lần thanh toán. */
     List<CompanyAmount> collectedByCompany(long periodId);
 
+    /** Tiến độ theo tổ của một kỳ: công ty chụp trên khoản, phải thu, đã thu, số khoản, số khoản đã thu đủ. */
+    record AreaProgressRow(long areaId, long companyId, long due, long collected, long chargeCount, long paidCount) {
+    }
+
+    List<AreaProgressRow> progressByArea(long periodId);
+
     /** Phải thu theo (công ty, kỳ) của các kỳ có hạn công ty nộp xã trước {@code today}. */
     List<CompanyPeriodAmount> dueByCompanyAndPeriodBefore(LocalDate today);
 }

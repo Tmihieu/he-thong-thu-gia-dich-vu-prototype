@@ -33,4 +33,17 @@ public class JdbcLedgerQueries implements LedgerQueries {
                 + " join collection_periods p on p.id = c.period_id where p.due_date < ? group by c.company_id, c.period_id",
                 (rs, i) -> new CompanyPeriodAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), today);
     }
+
+    @Override
+    public List<AreaProgressRow> progressByArea(long periodId) {
+        return jdbc.query("""
+                select c.area_id, c.company_id, sum(c.amount), coalesce(sum(p.paid), 0), count(*),
+                       count(*) filter (where c.status = 'PAID')
+                from charges c
+                left join (select charge_id, sum(amount) as paid from payments group by charge_id) p on p.charge_id = c.id
+                where c.period_id = ?
+                group by c.area_id, c.company_id""",
+                (rs, i) -> new AreaProgressRow(rs.getLong(1), rs.getLong(2), rs.getLong(3), rs.getLong(4), rs.getLong(5),
+                        rs.getLong(6)), periodId);
+    }
 }

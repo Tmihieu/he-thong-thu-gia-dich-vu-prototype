@@ -15,6 +15,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.platform.domain.Role;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
+import vn.dongthanh.vsmt.remittance.service.AreaProgressService;
+import vn.dongthanh.vsmt.remittance.service.AreaProgressService.AreaProgress;
 import vn.dongthanh.vsmt.remittance.service.CompanyLedgerService;
 import vn.dongthanh.vsmt.remittance.service.CompanyLedgerService.LedgerRow;
 import vn.dongthanh.vsmt.remittance.service.LedgerStatus.Progress;
@@ -27,6 +29,7 @@ import vn.dongthanh.vsmt.remittance.service.LedgerStatus.Reconciliation;
 public class LedgerController {
 
     private final CompanyLedgerService ledger;
+    private final AreaProgressService areaProgress;
 
     @Operation(summary = "Sổ công ty–kỳ: phải thu, đã thu, đã nộp, còn nộp, nợ kỳ trước, tiến độ, đối soát."
             + " Xã và quản trị thấy mọi công ty; công ty chỉ thấy dòng của mình")
@@ -37,6 +40,37 @@ public class LedgerController {
             return List.of(LedgerRowDto.of(ledger.row(actor.companyId(), periodId)));
         }
         return ledger.ledger(periodId).stream().map(LedgerRowDto::of).toList();
+    }
+
+    @Operation(summary = "Tiến độ thu theo tổ trong kỳ (công ty theo khoản đã phát hành; tổ chưa có công ty đánh dấu)."
+            + " Công ty chỉ thấy tổ của mình")
+    @GetMapping("/area-progress")
+    public List<AreaProgressDto> areaProgress(@RequestParam Long periodId, @AuthenticationPrincipal CurrentUser actor) {
+        return areaProgress.progress(periodId, actor).stream().map(AreaProgressDto::of).toList();
+    }
+
+    public record AreaProgressDto(
+            @Schema(requiredMode = RequiredMode.REQUIRED) Long areaId,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String areaCode,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String areaName,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String districtCode,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) Long companyId,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String companyCode,
+            @Schema(requiredMode = RequiredMode.REQUIRED) long due,
+            @Schema(requiredMode = RequiredMode.REQUIRED) long collected,
+            @Schema(requiredMode = RequiredMode.REQUIRED) long chargeCount,
+            @Schema(requiredMode = RequiredMode.REQUIRED) long paidCount,
+            @Schema(requiredMode = RequiredMode.REQUIRED) long subjectCount,
+            @Schema(requiredMode = RequiredMode.REQUIRED) double collectionRate,
+            @Schema(requiredMode = RequiredMode.REQUIRED) boolean lowCollectionRate,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Tổ chưa có công ty (R13)") boolean noCompany) {
+
+        static AreaProgressDto of(AreaProgress p) {
+            return new AreaProgressDto(p.area().getId(), p.area().getCode(), p.area().getName(),
+                    p.area().getDistrict().getCode(), p.company() == null ? null : p.company().getId(),
+                    p.company() == null ? null : p.company().getCode(), p.due(), p.collected(), p.chargeCount(),
+                    p.paidCount(), p.subjectCount(), p.collectionRate(), p.lowCollectionRate(), p.company() == null);
+        }
     }
 
     public record LedgerRowDto(
