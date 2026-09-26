@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Navigate, type RouteObject } from 'react-router';
 
+import { AreasPage } from '../features/masterdata/AreasPage/AreasPage';
 import { ConfigPage } from '../features/masterdata/ConfigPage';
 import { LoginPage } from './auth/LoginPage';
 import { RequireRole } from './auth/RequireRole';
@@ -12,6 +13,7 @@ import { NotFoundPage, RootRedirect, UnderConstructionPage } from './pages/Statu
 /** Màn đã làm, theo `vai trò:đường dẫn menu`; màn chưa có trong đây hiển thị "Đang xây dựng". */
 const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'ADMIN:config': <ConfigPage />,
+  'COMMUNE_OFFICER:areas': <AreasPage />,
 };
 
 /** Mỗi vai trò một nhánh route. */

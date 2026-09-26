@@ -211,15 +211,15 @@
   - **File dự kiến:** `MIG/V6__area_assignments.sql` + `SEED/V6_1__seed_assignments.sql`, `BE/masterdata/domain/AreaAssignment.java` (+ repo), `BE/masterdata/service/AreaAssignmentService.java`, `BE/masterdata/api/AreaAssignmentController.java`, `BT/masterdata/{AreaAssignmentServiceTest,AreaAssignmentIT}.java`
   - **Kích thước:** M
 
-- [ ] **T14 — Web: danh sách khu vực và popup phân công** · `master-data` · M · P0 (§10 bước 2)
+- [x] **T14 — Web: danh sách khu vực và popup phân công** · `master-data` · M · P0 (§10 bước 2) · **xong 26/09/2026** (test tự động; còn xem bằng mắt). Cột số hộ thêm ở T16 khi có đối tượng
   - **Mô tả:** Màn khu vực của cán bộ xã: bảng 24 tổ (địa bàn, công ty hiện tại, từ ngày, số hộ), lọc "chưa có công ty". Popup phân công: chọn một hay nhiều tổ, chọn công ty, ngày bắt đầu, ghi chú. Xem lịch sử phân công của một tổ.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Phân công KV24 cho một công ty bằng popup; bảng cập nhật; lịch sử KV24 có bản ghi mới
-    - [ ] Validation popup (chưa chọn tổ/công ty/ngày) có test component
-    - [ ] Lỗi chồng lấn từ backend hiện thông báo tiếng Việt
+    - [x] Phân công KV24 cho một công ty bằng popup; bảng cập nhật; lịch sử KV24 có bản ghi mới
+    - [x] Validation popup (chưa chọn tổ/công ty/ngày) có test component
+    - [x] Lỗi chồng lấn từ backend hiện thông báo tiếng Việt
   - **Kiểm chứng:**
-    - [ ] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
-    - [ ] Thủ công: đăng nhập `canbo_xa`, phân công KV24
+    - [x] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
+    - [ ] Thủ công: đăng nhập `canbo_xa`, phân công KV24 — chờ người dùng
   - **Phụ thuộc:** T08, T13
   - **File dự kiến:** `WEB/features/masterdata/AreasPage/{AreasPage.tsx,AssignAreaModal.tsx,AssignAreaModal.test.tsx,AssignmentHistoryDrawer.tsx}`, `WEB/features/masterdata/api.ts`
   - **Kích thước:** M

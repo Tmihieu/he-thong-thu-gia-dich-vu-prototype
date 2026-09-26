@@ -8,10 +8,19 @@ export type TariffVersion = components['schemas']['TariffVersionDto'];
 export type TariffRate = components['schemas']['TariffRateDto'];
 export type Period = components['schemas']['PeriodDto'];
 export type OpenPeriodRequest = components['schemas']['OpenPeriodRequest'];
+export type District = components['schemas']['DistrictDto'];
+export type Area = components['schemas']['AreaDto'];
+export type Company = components['schemas']['CompanyDto'];
+export type AreaAssignment = components['schemas']['AreaAssignmentDto'];
+export type AssignRequest = components['schemas']['AssignRequest'];
 
 export const masterdataKeys = {
   tariffs: ['masterdata', 'tariffs'] as const,
   periods: ['masterdata', 'periods'] as const,
+  districts: ['masterdata', 'districts'] as const,
+  areas: ['masterdata', 'areas'] as const,
+  companies: ['masterdata', 'companies'] as const,
+  assignments: ['masterdata', 'assignments'] as const,
 };
 
 export function useTariffs() {
@@ -25,6 +34,42 @@ export function usePeriods() {
   return useQuery({
     queryKey: masterdataKeys.periods,
     queryFn: () => api.get<Period[]>('/api/masterdata/periods'),
+  });
+}
+
+export function useDistricts() {
+  return useQuery({ queryKey: masterdataKeys.districts, queryFn: () => api.get<District[]>('/api/masterdata/districts') });
+}
+
+export function useAreas() {
+  return useQuery({ queryKey: masterdataKeys.areas, queryFn: () => api.get<Area[]>('/api/masterdata/areas') });
+}
+
+export function useCompanies() {
+  return useQuery({ queryKey: masterdataKeys.companies, queryFn: () => api.get<Company[]>('/api/masterdata/companies') });
+}
+
+/** Phân công đang hiệu lực vào ngày ISO {@code date}. */
+export function useActiveAssignments(date: string) {
+  return useQuery({
+    queryKey: [...masterdataKeys.assignments, 'active', date],
+    queryFn: () => api.get<AreaAssignment[]>('/api/masterdata/area-assignments', { params: { date } }),
+  });
+}
+
+export function useAreaHistory(areaId: number | null) {
+  return useQuery({
+    queryKey: [...masterdataKeys.assignments, 'history', areaId],
+    queryFn: () => api.get<AreaAssignment[]>(`/api/masterdata/areas/${areaId}/assignments`),
+    enabled: areaId !== null,
+  });
+}
+
+export function useAssignAreas() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: AssignRequest) => api.post<AreaAssignment[]>('/api/masterdata/area-assignments', body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: masterdataKeys.assignments }),
   });
 }
 
