@@ -3,12 +3,14 @@ import { Button, Layout, Menu, Space, Typography } from 'antd';
 import { createElement } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 
+import { NotificationBell } from '../../features/notifications/NotificationBell';
 import { type Me, useAuth } from '../auth/authContext';
 import { MENU, menuPath, ROLE_LABELS } from './menuConfig';
 
 function UserBox({ user, onLogout }: { user: Me; onLogout: () => void }) {
   return (
     <Space size="middle">
+      <NotificationBell role={user.role} />
       <span>
         <Typography.Text strong>{user.fullName}</Typography.Text>
         <Typography.Text type="secondary"> · {ROLE_LABELS[user.role]}</Typography.Text>
@@ -30,6 +32,7 @@ function MobileLayout({ user, onLogout }: { user: Me; onLogout: () => void }) {
         <Typography.Text strong style={{ flex: 1 }}>
           {user.fullName}
         </Typography.Text>
+        <NotificationBell role={user.role} />
         <Button size="small" icon={<LogoutOutlined />} onClick={onLogout} aria-label="Đăng xuất" />
       </header>
       <main style={{ flex: 1, padding: 16 }}>

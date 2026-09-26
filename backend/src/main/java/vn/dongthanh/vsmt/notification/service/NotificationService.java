@@ -78,8 +78,8 @@ public class NotificationService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Notification> list(CurrentUser actor, boolean unreadOnly, Pageable page) {
-        return notifications.findVisible(actor.role(), actor.companyId(), actor.id(), unreadOnly, page);
+    public Page<Notification> list(CurrentUser actor, boolean unreadOnly, NotificationKind kind, Pageable page) {
+        return notifications.findVisible(actor.role(), actor.companyId(), actor.id(), unreadOnly, kind, page);
     }
 
     @Transactional(readOnly = true)

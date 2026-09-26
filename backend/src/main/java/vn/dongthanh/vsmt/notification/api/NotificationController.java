@@ -42,9 +42,9 @@ public class NotificationController {
     @Operation(summary = "Thông báo của người đang đăng nhập (theo vai trò, công ty, cá nhân), mới nhất trước")
     @GetMapping
     public NotificationPageDto list(@RequestParam(defaultValue = "false") boolean unreadOnly,
-            @RequestParam(defaultValue = "0") @Min(0) int page, @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+            @RequestParam(required = false) NotificationKind kind, @RequestParam(defaultValue = "0") @Min(0) int page, @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @AuthenticationPrincipal CurrentUser actor) {
-        Page<Notification> result = notifications.list(actor, unreadOnly,
+        Page<Notification> result = notifications.list(actor, unreadOnly, kind,
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt", "id")));
         return new NotificationPageDto(result.getContent().stream().map(this::toDto).toList(),
                 result.getTotalElements(), notifications.unreadCount(actor));

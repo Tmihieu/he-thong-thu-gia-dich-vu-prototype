@@ -2844,6 +2844,7 @@ export interface operations {
         parameters: {
             query?: {
                 unreadOnly?: boolean;
+                kind?: "REMINDER" | "COMPLAINT" | "RECEIPT" | "INFO" | "TRANSACTION";
                 page?: number;
                 size?: number;
             };

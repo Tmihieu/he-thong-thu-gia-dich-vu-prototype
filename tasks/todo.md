@@ -471,14 +471,14 @@
   - **File dự kiến:** `BE/remittance/service/PeriodLockService.java`, `BE/masterdata/service/PeriodGuard.java`, `BE/remittance/api/PeriodLockController.java`, `BT/remittance/{PeriodLockServiceTest,PeriodLockIT}.java`, `WEB/features/masterdata/PeriodsPage/PeriodsPage.tsx`
   - **Kích thước:** M (có sửa nhỏ ở service T18/T21/T26 để gọi guard)
 
-- [ ] **T33 — Web: chuông và trung tâm thông báo** · `notifications` · S · P0
+- [x] **T33 — Web: chuông và trung tâm thông báo** · `notifications` · S · P0 · **xong 27/09/2026**: backend thêm tham số `kind` cho `GET /api/notifications`; trung tâm thông báo ở `/{vai trò}/notifications` (không thêm vào menu, mở từ chuông); ánh xạ `link.screen` → route ở `features/notifications/links.ts`, màn có tab mở đúng tab qua `?tab=` (`shared/useTabParam.ts`); `?id=` cho khiếu nại để T37 dùng
   - **Mô tả:** Chuông trên header (số chưa đọc, polling 30 giây bằng TanStack Query `refetchInterval`), dropdown 5 thông báo mới nhất, trang "Trung tâm thông báo" (lọc theo loại, đánh dấu đã đọc, bấm vào liên kết thì đi tới màn tương ứng).
   - **Tiêu chí nghiệm thu:**
-    - [ ] Đánh dấu đã đọc làm giảm số trên chuông
-    - [ ] Bấm thông báo đi đúng route theo `link`
-    - [ ] Có test component cho chuông (số chưa đọc, trạng thái rỗng)
+    - [x] Đánh dấu đã đọc làm giảm số trên chuông
+    - [x] Bấm thông báo đi đúng route theo `link`
+    - [x] Có test component cho chuông (số chưa đọc, trạng thái rỗng)
   - **Kiểm chứng:**
-    - [ ] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
+    - [x] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
   - **Phụ thuộc:** T08, T23
   - **File dự kiến:** `WEB/features/notifications/{NotificationBell.tsx,NotificationBell.test.tsx,NotificationCenterPage.tsx,api.ts}`
   - **Kích thước:** S

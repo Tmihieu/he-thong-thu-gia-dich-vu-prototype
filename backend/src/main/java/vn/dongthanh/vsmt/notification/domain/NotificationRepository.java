@@ -18,10 +18,12 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             + " and (n.recipientRole is null or n.recipientRole = :role))"
             + " or (n.recipientType = 'USER' and n.recipientUserId = :userId))";
 
-    @Query(value = "select n from Notification n where " + VISIBLE + " and (:unreadOnly = false or n.readAt is null)",
+    @Query(value = "select n from Notification n where " + VISIBLE + " and (:unreadOnly = false or n.readAt is null)"
+            + " and (:kind is null or n.kind = :kind)",
             countQuery = "select count(n) from Notification n where " + VISIBLE
-                    + " and (:unreadOnly = false or n.readAt is null)")
-    Page<Notification> findVisible(Role role, Long companyId, Long userId, boolean unreadOnly, Pageable page);
+                    + " and (:unreadOnly = false or n.readAt is null) and (:kind is null or n.kind = :kind)")
+    Page<Notification> findVisible(Role role, Long companyId, Long userId, boolean unreadOnly, NotificationKind kind,
+            Pageable page);
 
     @Query("select count(n) from Notification n where " + VISIBLE + " and n.readAt is null")
     long countUnread(Role role, Long companyId, Long userId);

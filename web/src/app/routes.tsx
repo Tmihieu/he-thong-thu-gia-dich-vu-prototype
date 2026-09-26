@@ -9,6 +9,7 @@ import { CompanyHubPage } from '../features/collection/CompanyHubPage';
 import { AreasPage } from '../features/masterdata/AreasPage/AreasPage';
 import { ConfigPage } from '../features/masterdata/ConfigPage';
 import { SubjectsPage } from '../features/masterdata/SubjectsPage/SubjectsPage';
+import { NotificationCenterPage } from '../features/notifications/NotificationCenterPage';
 import { ProgressPage } from '../features/remittance/ProgressPage/ProgressPage';
 import { ReconciliationPage } from '../features/remittance/ReconciliationPage/ReconciliationPage';
 import { LoginPage } from './auth/LoginPage';
@@ -49,6 +50,7 @@ export const routes: RouteObject[] = [
         path: entry.path,
         element: PAGES[`${role}:${entry.path}`] ?? <UnderConstructionPage title={entry.label} />,
       })),
+      { path: 'notifications', element: <NotificationCenterPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   })),

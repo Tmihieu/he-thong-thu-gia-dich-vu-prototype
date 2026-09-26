@@ -108,6 +108,12 @@ class NotificationServiceIT extends IntegrationTest {
         mvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, bearer(thu07)))
                 .andExpect(jsonPath("$.items[*].title", contains("Thông báo chung DV01", "Bạn được phân tổ KV07")))
                 .andExpect(jsonPath("$.unreadCount").value(2));
+        // Lọc theo loại (trung tâm thông báo, T33).
+        mvc.perform(get("/api/notifications").param("kind", "INFO").header(HttpHeaders.AUTHORIZATION, bearer(thu07)))
+                .andExpect(jsonPath("$.total").value(2));
+        mvc.perform(get("/api/notifications").param("kind", "REMINDER").header(HttpHeaders.AUTHORIZATION, bearer(thu07)))
+                .andExpect(jsonPath("$.total").value(0))
+                .andExpect(jsonPath("$.unreadCount").value(2));
         mvc.perform(post("/api/notifications/" + forDv02.getId() + "/read").header(HttpHeaders.AUTHORIZATION, bearer(thu07)))
                 .andExpect(status().isNotFound());
 
