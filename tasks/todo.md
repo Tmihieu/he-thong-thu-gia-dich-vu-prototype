@@ -84,15 +84,15 @@
   - **Chặn:** mọi task tạo entity/migration của Phần A (T05 trở đi).
   - **Phụ thuộc:** T01
 
-- [ ] **T05 — Bảng users và seed tài khoản demo** · `platform` · M · P0 · **[cần hỏi trước: G8]**
+- [x] **T05 — Bảng users và seed tài khoản demo** · `platform` · M · P0 · **xong 26/09/2026**: `Role` 4 giá trị, không có `CITIZEN` (G8); thêm `BaseEntity` cho trường chung §1.3
   - **Mô tả:** Tạo `MIG/V1__platform_users.sql` và entity `User` (username duy nhất, fullName, phone, role, companyId có thể null, status, passwordHash bcrypt) theo data dictionary. Enum `Role`: `COMMUNE_OFFICER, COMPANY_MANAGER, COLLECTOR, ADMIN, CITIZEN`. Seed `SEED/V1_1__seed_users.sql` gồm `admin` và `canbo_xa`. Tài khoản công ty được seed ở T09, người đi thu ở T20, vì các bảng họ phụ thuộc chưa có. FK `users.company_id` được thêm ở V3. Mật khẩu demo ghi trong `docs/demo-accounts.md` (chỉ cho dữ liệu giả). Cách tổ chức `CITIZEN` theo câu trả lời G8.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Migration chạy trên Testcontainers; tìm user theo username hoạt động (IT)
-    - [ ] Profile demo tạo được 2 tài khoản seed; mật khẩu lưu dạng băm
-    - [ ] Trùng username bị chặn bởi ràng buộc duy nhất (IT)
+    - [x] Migration chạy trên Testcontainers; tìm user theo username hoạt động (IT)
+    - [x] Profile demo tạo được 2 tài khoản seed; mật khẩu lưu dạng băm (`DemoSeedIT` + kiểm tay trên CSDL docker)
+    - [x] Trùng username bị chặn bởi ràng buộc duy nhất (IT)
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=UserRepositoryIT`
-    - [ ] `cd backend && ./mvnw verify`
+    - [x] `cd backend && ./mvnw test -Dtest=UserRepositoryIT`
+    - [x] `cd backend && ./mvnw verify`
   - **Phụ thuộc:** T03, H1
   - **File dự kiến:** `MIG/V1__platform_users.sql` + `SEED/V1_1__seed_users.sql`, `BE/platform/domain/User.java` (+ `UserRepository`), `BE/platform/domain/Role.java`, `BT/platform/UserRepositoryIT.java`, `docs/demo-accounts.md`
   - **Kích thước:** M
