@@ -110,15 +110,15 @@
   - **File dự kiến:** `BE/platform/security/{SecurityConfig,JwtService,CurrentUser}.java`, `BE/platform/api/AuthController.java` (+ DTO), `BT/platform/AuthIT.java`
   - **Kích thước:** M
 
-- [ ] **T07 — AuditLog và AuditService** · `platform` · M · P0
+- [x] **T07 — AuditLog và AuditService** · `platform` · M · P0 · **xong 26/09/2026**: `record` bắt buộc chạy trong transaction có sẵn (MANDATORY); trigger chặn UPDATE/DELETE; có `recordSystem` cho tác vụ tự động
   - **Mô tả:** Tạo `MIG/V2__audit_logs.sql` và entity `AuditLog` (thời gian, actorId, vai trò, hành động, loại đối tượng, id đối tượng, dữ liệu trước/sau dạng `jsonb`). `AuditService.record(actor, action, objectType, objectId, before, after)` ghi trong cùng transaction với thao tác nghiệp vụ. Từ task này trở đi, mọi service tạo/sửa tiền phải gọi nó. Chưa có màn xem (xem T52).
   - **Tiêu chí nghiệm thu:**
-    - [ ] Ghi đủ trường, trước/sau lưu dạng JSON (IT)
-    - [ ] Transaction nghiệp vụ rollback thì bản ghi audit cũng rollback (IT)
-    - [ ] Actor lấy từ `CurrentUser`, không lấy từ tham số client gửi lên
+    - [x] Ghi đủ trường, trước/sau lưu dạng JSON (IT)
+    - [x] Transaction nghiệp vụ rollback thì bản ghi audit cũng rollback (IT)
+    - [x] Actor lấy từ `CurrentUser`, không lấy từ tham số client gửi lên
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=AuditServiceIT`
-    - [ ] `cd backend && ./mvnw verify`
+    - [x] `cd backend && ./mvnw test -Dtest=AuditServiceIT`
+    - [x] `cd backend && ./mvnw verify`
   - **Phụ thuộc:** T06
   - **File dự kiến:** `MIG/V2__audit_logs.sql`, `BE/platform/domain/AuditLog.java` (+ repo), `BE/platform/service/AuditService.java`, `BT/platform/AuditServiceIT.java`
   - **Kích thước:** M
