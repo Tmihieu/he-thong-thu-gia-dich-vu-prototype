@@ -56,6 +56,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/notifications/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Đánh dấu đã đọc (chung cho cả nhóm nhận, D7) */
+        post: operations["read"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Đánh dấu tất cả đã đọc */
+        post: operations["readAll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/masterdata/subjects": {
         parameters: {
             query?: never;
@@ -274,6 +308,40 @@ export interface paths {
         };
         /** Thông tin tài khoản đang đăng nhập */
         get: operations["me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Thông báo của người đang đăng nhập (theo vai trò, công ty, cá nhân), mới nhất trước */
+        get: operations["list_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Số thông báo chưa đọc */
+        get: operations["unreadCount"];
         put?: never;
         post?: never;
         delete?: never;
@@ -619,6 +687,31 @@ export interface components {
              */
             companyId: number | null;
         };
+        NotificationDto: {
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            kind: "REMINDER" | "COMPLAINT" | "RECEIPT" | "INFO" | "TRANSACTION";
+            title: string;
+            body: string;
+            link: components["schemas"]["NotificationLink"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            readAt: string | null;
+        };
+        NotificationLink: {
+            /** @example remittance.receipts */
+            screen: string;
+            /** @description Tham số màn hình, vd. {"periodId": 5} */
+            params?: {
+                [key: string]: unknown;
+            };
+        };
+        UnreadCountDto: {
+            /** Format: int64 */
+            unreadCount: number;
+        };
         EndSubjectRequest: {
             /**
              * Format: date
@@ -859,6 +952,13 @@ export interface components {
             reason: "SUBJECT_NOT_ACTIVE" | "NO_ACTIVE_CONTRACT" | "AREA_WITHOUT_COMPANY" | "DUPLICATE_CHARGE";
             warning: boolean;
             message: string;
+        };
+        NotificationPageDto: {
+            items: components["schemas"]["NotificationDto"][];
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            unreadCount: number;
         };
         TariffRateDto: {
             /** @enum {string} */
@@ -1160,6 +1260,48 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["LoginResponse"];
+                };
+            };
+        };
+    };
+    read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NotificationDto"];
+                };
+            };
+        };
+    };
+    readAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UnreadCountDto"];
                 };
             };
         };
@@ -1587,6 +1729,50 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MeResponse"];
+                };
+            };
+        };
+    };
+    list_1: {
+        parameters: {
+            query?: {
+                unreadOnly?: boolean;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NotificationPageDto"];
+                };
+            };
+        };
+    };
+    unreadCount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UnreadCountDto"];
                 };
             };
         };

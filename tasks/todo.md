@@ -332,15 +332,15 @@
   - **File dự kiến:** `mobile/package.json`, `mobile/app.json`, `MOB/app/_layout.tsx`, `MOB/app/index.tsx`, `MOB/src/api/client.ts` + test, `mobile/README.md`
   - **Kích thước:** L. Scaffold.
 
-- [ ] **T23 — Notifications backend: phát, đọc theo phạm vi, đánh dấu đã đọc** · `notifications` · M · P0
+- [x] **T23 — Notifications backend: phát, đọc theo phạm vi, đánh dấu đã đọc** · `notifications` · M · P0 · **xong 26/09/2026**: đã đọc tính chung trên bản ghi theo D7 (H2), không lưu riêng từng user; thêm `POST /read-all`; người nhận người dân để T39 nối
   - **Mô tả:** Tạo `MIG/V11__notifications.sql` và entity `Notification` (người nhận: vai trò / công ty / người dùng / người dân; loại `REMINDER/COMPLAINT/RECEIPT/INFO/TRANSACTION`; tiêu đề, nội dung, liên kết, thời gian, đã đọc). Chốt **hợp đồng** `NotificationService.publish(NotificationCommand)` để T34, T35, T36, T40, T45 gọi. `GET /api/notifications` (của người đang đăng nhập, theo vai trò + công ty + user), `GET /unread-count`, `POST /{id}/read`. Cách lưu "đã đọc" cho thông báo gửi theo vai trò (bảng đọc theo user) quyết định ở H2.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Thông báo gửi cho công ty DV01 thì `dv02` không thấy (IT phạm vi)
-    - [ ] Thông báo gửi theo vai trò thì mọi user của vai trò thấy; mỗi user có trạng thái đã đọc riêng (IT)
-    - [ ] `unread-count` đúng sau khi đánh dấu đọc
+    - [x] Thông báo gửi cho công ty DV01 thì `dv02` không thấy (IT phạm vi)
+    - [x] Thông báo gửi theo vai trò thì mọi user của vai trò thấy; ~~mỗi user có trạng thái đã đọc riêng~~ → đọc chung theo D7 (IT)
+    - [x] `unread-count` đúng sau khi đánh dấu đọc
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=NotificationServiceIT`
-    - [ ] `cd backend && ./mvnw verify`
+    - [x] `cd backend && ./mvnw test -Dtest=NotificationServiceIT`
+    - [x] `cd backend && ./mvnw verify`
   - **Phụ thuộc:** T06, H2
   - **File dự kiến:** `MIG/V11__notifications.sql`, `BE/notification/domain/Notification.java` (+ repo), `BE/notification/service/NotificationService.java`, `BE/notification/api/NotificationController.java` (+ DTO), `BT/notification/NotificationServiceIT.java`
   - **Kích thước:** M
