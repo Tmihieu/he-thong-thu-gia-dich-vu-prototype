@@ -66,15 +66,15 @@
   - **File dự kiến:** `backend/pom.xml`, `backend/mvnw*` + `.mvn/`, `BE/VsmtApplication.java`, `backend/src/main/resources/application.yml` (+ `application-test.yml`), `BE/platform/common/{BusinessRuleException,ApiError,GlobalExceptionHandler}.java`, `BT/support/IntegrationTest.java`, `BT/SmokeIT.java`
   - **Kích thước:** L. Scaffold, vượt 5 file là chấp nhận được.
 
-- [ ] **T04 — Khung web React** · `platform` · L (scaffold) · P0 · **[cần hỏi trước]**
+- [x] **T04 — Khung web React** · `platform` · L (scaffold) · P0 · **xong 26/09/2026**: React 18.3, AntD 5.29 + icons (G10), React Router 7 (bản 8 đòi React 19), TypeScript 5.9, ESLint 10, Vite 8, Vitest 5
   - **Mô tả:** Khởi tạo `web/` bằng Vite React 18 + TypeScript strict. Cài AntD 5 (`ConfigProvider` locale `vi_VN`, dayjs locale `vi`), React Router, TanStack Query, Vitest + Testing Library, ESLint. `WEB/api/client.ts` là wrapper `fetch`: gắn Bearer token, đổi lỗi `{code, message}` thành `ApiError`. Script `gen:api` chạy `openapi-typescript http://localhost:8080/v3/api-docs -o src/api/schema.d.ts`. Vite proxy `/api` → `:8080`. Thành phần dùng chung: `MoneyText` (định dạng `1.234.567 đ`) và `DateText` (`dd/MM/yyyy`). **Hỏi trước (G10):** có dùng `@ant-design/icons` không? Client HTTP mặc định là `fetch`, không thêm dependency.
   - **Tiêu chí nghiệm thu:**
-    - [ ] `npm run lint && npm run test && npm run build` xanh
-    - [ ] `MoneyText` và `DateText` có test định dạng, gồm cả số 0, số lớn và ngày ISO
-    - [ ] Khi backend đang chạy, `npm run gen:api` sinh ra `src/api/schema.d.ts`
+    - [x] `npm run lint && npm run test && npm run build` xanh
+    - [x] `MoneyText` và `DateText` có test định dạng, gồm cả số 0, số lớn và ngày ISO
+    - [x] Khi backend đang chạy, `npm run gen:api` sinh ra `src/api/schema.d.ts`
   - **Kiểm chứng:**
-    - [ ] `cd web && npm install && npm run lint && npm run test && npm run build`
-    - [ ] `cd web && npm run gen:api` (backend chạy từ T03); `npm run dev` mở http://localhost:5173
+    - [x] `cd web && npm install && npm run lint && npm run test && npm run build`
+    - [x] `cd web && npm run gen:api` (backend chạy từ T03); `npm run dev` mở http://localhost:5173
   - **Phụ thuộc:** T02, T03 (cần OpenAPI cho `gen:api`)
   - **File dự kiến:** `web/package.json`, `web/vite.config.ts`, `web/tsconfig.json`, `WEB/main.tsx`, `WEB/app/App.tsx`, `WEB/api/client.ts`, `WEB/shared/{MoneyText,DateText}.tsx` + test
   - **Kích thước:** L. Scaffold.
