@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 
 import javax.crypto.spec.SecretKeySpec;
 
@@ -34,6 +35,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 
+import vn.dongthanh.vsmt.masterdata.domain.Company;
+import vn.dongthanh.vsmt.masterdata.domain.CompanyRepository;
 import vn.dongthanh.vsmt.platform.domain.Role;
 import vn.dongthanh.vsmt.platform.domain.User;
 import vn.dongthanh.vsmt.platform.domain.UserRepository;
@@ -53,17 +56,25 @@ class AuthIT extends IntegrationTest {
     UserRepository users;
 
     @Autowired
+    CompanyRepository companies;
+
+    @Autowired
     PasswordEncoder encoder;
 
     @Autowired
     ObjectMapper json;
 
+    Long companyId;
+
     @BeforeEach
     void seedUsers() {
         users.deleteAll();
+        companies.deleteAll();
+        companyId = companies.save(Company.create("DV07", "Công ty Mẫu 07", "Người Mẫu", "0900000007",
+                LocalDate.of(2026, 1, 1))).getId();
         String hash = encoder.encode(PASSWORD);
         users.save(User.create("canbo_a", "Cán bộ A", Role.COMMUNE_OFFICER, null, hash));
-        users.save(User.create("dv07", "Công ty 07", Role.COMPANY_MANAGER, 7L, hash));
+        users.save(User.create("dv07", "Công ty 07", Role.COMPANY_MANAGER, companyId, hash));
         User locked = User.create("bi_khoa", "Bị khóa", Role.ADMIN, null, hash);
         locked.setStatus(UserStatus.LOCKED);
         users.save(locked);
@@ -122,7 +133,7 @@ class AuthIT extends IntegrationTest {
         mvc.perform(get("/api/platform/auth/me").header(HttpHeaders.AUTHORIZATION, bearer("dv07")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.role").value("COMPANY_MANAGER"))
-                .andExpect(jsonPath("$.companyId").value(7));
+                .andExpect(jsonPath("$.companyId").value(companyId));
     }
 
     @Test
@@ -139,10 +150,12 @@ class AuthIT extends IntegrationTest {
     @Test
     void companyScopeBlocksOtherCompanies() throws Exception {
         String dv07 = bearer("dv07");
-        mvc.perform(get("/api/test/companies/7").header(HttpHeaders.AUTHORIZATION, dv07)).andExpect(status().isOk());
-        mvc.perform(get("/api/test/companies/8").header(HttpHeaders.AUTHORIZATION, dv07))
+        long other = companyId + 1000;
+        mvc.perform(get("/api/test/companies/" + companyId).header(HttpHeaders.AUTHORIZATION, dv07))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/test/companies/" + other).header(HttpHeaders.AUTHORIZATION, dv07))
                 .andExpect(status().isForbidden());
-        mvc.perform(get("/api/test/companies/8").header(HttpHeaders.AUTHORIZATION, bearer("canbo_a")))
+        mvc.perform(get("/api/test/companies/" + other).header(HttpHeaders.AUTHORIZATION, bearer("canbo_a")))
                 .andExpect(status().isOk());
     }
 

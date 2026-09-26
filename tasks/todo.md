@@ -136,15 +136,15 @@
   - **File dự kiến:** `WEB/app/auth/{AuthProvider,LoginPage,RequireRole}.tsx`, `WEB/app/layout/{RoleLayout.tsx,menuConfig.ts}`, `WEB/app/layout/menuConfig.test.ts`
   - **Kích thước:** M
 
-- [ ] **T09 — Địa bàn, khu vực, công ty: seed, API đọc, phạm vi dữ liệu công ty** · `master-data` · M · P0
+- [x] **T09 — Địa bàn, khu vực, công ty: seed, API đọc, phạm vi dữ liệu công ty** · `master-data` · M · P0 · **xong 26/09/2026**: công ty ngoài phạm vi trả 404 (không lộ tồn tại); khu vực đọc được với mọi vai trò nội bộ (lọc theo phân công ở T13)
   - **Mô tả:** Tạo `MIG/V3__masterdata_districts_areas_companies.sql` (thêm FK `users.company_id`) và các entity `District`, `Area` (thuộc District), `Company` (tên, đầu mối, SĐT, trạng thái, hiệu lực). Seed `V3_1`: 3 địa bàn DTH/TTT/NB, 24 tổ KV01–KV24, 11 công ty DV01–DV11 (tên theo prototype-inventory §0, SĐT giả). Seed `V3_2`: tài khoản `dv01`…`dv11` (COMPANY_MANAGER). API: `GET /api/masterdata/districts`, `/areas`, `/companies`, `/companies/{id}`. Quản lý công ty chỉ đọc được công ty của mình. Đây là nơi chứng minh tiêu chí "công ty A không đọc được dữ liệu công ty B" của SPEC §9.2.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Profile demo có đủ 3 địa bàn, 24 tổ, 11 công ty, 11 tài khoản công ty (IT trên seed)
-    - [ ] `dv01` gọi `GET /companies/DV02` → 403 hoặc 404 (IT phạm vi)
-    - [ ] Cán bộ xã và quản trị đọc được tất cả
+    - [x] Profile demo có đủ 3 địa bàn, 24 tổ, 11 công ty, 11 tài khoản công ty (IT trên seed)
+    - [x] `dv01` gọi `GET /companies/DV02` → 403 hoặc 404 (IT phạm vi)
+    - [x] Cán bộ xã và quản trị đọc được tất cả
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=MasterDataScopeIT`
-    - [ ] `cd backend && ./mvnw verify`
+    - [x] `cd backend && ./mvnw test -Dtest=MasterDataScopeIT`
+    - [x] `cd backend && ./mvnw verify`
   - **Phụ thuộc:** T06, H1
   - **File dự kiến:** `MIG/V3__…sql` + `SEED/V3_1__seed_areas_companies.sql` + `SEED/V3_2__seed_company_users.sql`, `BE/masterdata/domain/{District,Area,Company}.java` (+ repo), `BE/masterdata/api/MasterDataController.java` (+ DTO), `BE/masterdata/service/MasterDataQueryService.java`, `BT/masterdata/MasterDataScopeIT.java`
   - **Kích thước:** M (3 cặp entity + repo tính theo quy ước)

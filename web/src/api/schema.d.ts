@@ -38,6 +38,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/masterdata/districts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Danh sách địa bàn */
+        get: operations["districts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/companies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Danh sách công ty (công ty chỉ thấy công ty của mình) */
+        get: operations["companies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/companies/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chi tiết công ty (công ty khác trả 404) */
+        get: operations["company"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/areas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Danh sách khu vực / tổ dân phố, lọc theo địa bàn nếu có */
+        get: operations["areas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -66,6 +134,52 @@ export interface components {
              * @description Chỉ có với COMPANY_MANAGER, COLLECTOR
              */
             companyId: number | null;
+        };
+        DistrictDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example DTH */
+            code: string;
+            name: string;
+            note: string | null;
+            /** Format: int32 */
+            sortOrder: number | null;
+        };
+        CompanyDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example DV01 */
+            code: string;
+            name: string;
+            contactName: string;
+            contactPhone: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo: string | null;
+            /** @enum {string|null} */
+            orgType: "COMPANY" | "COOPERATIVE" | "PUBLIC_UNIT" | null;
+            taxCode: string | null;
+            address: string | null;
+            email: string | null;
+            communeContractNo: string | null;
+            bankAccount: string | null;
+            bankName: string | null;
+        };
+        AreaDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example KV07 */
+            code: string;
+            name: string;
+            /** Format: int64 */
+            districtId: number;
+            /** @example DTH */
+            districtCode: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
         };
     };
     responses: never;
@@ -116,6 +230,90 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MeResponse"];
+                };
+            };
+        };
+    };
+    districts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DistrictDto"][];
+                };
+            };
+        };
+    };
+    companies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CompanyDto"][];
+                };
+            };
+        };
+    };
+    company: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CompanyDto"];
+                };
+            };
+        };
+    };
+    areas: {
+        parameters: {
+            query?: {
+                districtId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AreaDto"][];
                 };
             };
         };

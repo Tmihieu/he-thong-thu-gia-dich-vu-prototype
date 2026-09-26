@@ -9,7 +9,7 @@ Mật khẩu chung của mọi tài khoản demo: **`Demo@2026`**
 |---|---|---|---|---|
 | `admin` | Quản trị (`ADMIN`) | Quản trị hệ thống | — | T05 · `V1_1__seed_users.sql` |
 | `canbo_xa` | Cán bộ xã (`COMMUNE_OFFICER`) | Nguyễn Thị Mẫu | — | T05 · `V1_1__seed_users.sql` |
-| `dv01` … `dv11` | Công ty môi trường (`COMPANY_MANAGER`) | | DV01 … DV11 | T09 (chưa có) |
+| `dv01` … `dv11` | Công ty môi trường (`COMPANY_MANAGER`) | Người đầu mối của công ty (giả) | DV01 … DV11 | T09 · `V3_2__seed_company_users.sql` |
 | người đi thu | Người đi thu (`COLLECTOR`) | | | T20 (chưa có) |
 
 Người dân không có tài khoản ở bảng `users`; app người dân đăng nhập bằng số điện thoại + OTP cố định (T39, G8).
