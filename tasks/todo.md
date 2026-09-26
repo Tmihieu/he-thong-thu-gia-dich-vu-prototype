@@ -149,15 +149,15 @@
   - **File dự kiến:** `MIG/V3__…sql` + `SEED/V3_1__seed_areas_companies.sql` + `SEED/V3_2__seed_company_users.sql`, `BE/masterdata/domain/{District,Area,Company}.java` (+ repo), `BE/masterdata/api/MasterDataController.java` (+ DTO), `BE/masterdata/service/MasterDataQueryService.java`, `BT/masterdata/MasterDataScopeIT.java`
   - **Kích thước:** M (3 cặp entity + repo tính theo quy ước)
 
-- [ ] **T10 — Biểu giá theo phiên bản và loại phí** · `master-data` · M · P0 · **[cần hỏi trước: G9, G13]**
+- [x] **T10 — Biểu giá theo phiên bản và loại phí** · `master-data` · M · P0 · **xong 26/09/2026**: 2 thành phần thu gom + xử lý (G9, giữ theo quyết định Q65), không có `BULKY` (G13); `activeVersionOn` chọn bản đã ban hành theo hiệu lực, có `rateOn(date, group)`
   - **Mô tả:** Tạo `MIG/V4__tariffs_fee_types.sql` và các entity `TariffVersion` (mã, căn cứ pháp lý, hiệu lực từ/đến, trạng thái), `TariffRate` (nhóm giá, thu gom, vận chuyển, xử lý, VAT, tổng/tháng; tổng phải bằng tổng các thành phần), `FeeType` (`ENV`, `BULKY`, `EXTRA`, có giá mặc định). Seed QĐ 65/2026/QĐ-UBND với 4 nhóm giá (tổng theo prototype 40.000 / 80.000 / 119.000 / 1.266.000). Thành phần giá lấy theo trả lời G9; chưa có trả lời thì dừng. `TariffService.activeVersionOn(date)`. API đọc (`GET /api/masterdata/tariffs`, `/fee-types`).
   - **Tiêu chí nghiệm thu:**
-    - [ ] `activeVersionOn(date)` trả đúng phiên bản theo hiệu lực, ngoài mọi hiệu lực thì báo lỗi rõ ràng (unit test)
-    - [ ] Seed QĐ 65/2026 có 4 nhóm, tổng khớp thành phần (IT)
-    - [ ] API đọc biểu giá + loại phí trả DTO, không trả entity
+    - [x] `activeVersionOn(date)` trả đúng phiên bản theo hiệu lực, ngoài mọi hiệu lực thì báo lỗi rõ ràng (unit test)
+    - [x] Seed QĐ 65/2026 có 4 nhóm, tổng khớp thành phần (IT)
+    - [x] API đọc biểu giá + loại phí trả DTO, không trả entity
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=TariffServiceTest`
-    - [ ] `cd backend && ./mvnw verify`
+    - [x] `cd backend && ./mvnw test -Dtest=TariffServiceTest`
+    - [x] `cd backend && ./mvnw verify`
   - **Phụ thuộc:** T07, H1
   - **File dự kiến:** `MIG/V4__…sql` + `SEED/V4_1__seed_tariff_qd65.sql`, `BE/masterdata/domain/{TariffVersion,TariffRate,FeeType}.java` (+ repo), `BE/masterdata/service/TariffService.java`, `BE/masterdata/api/TariffController.java`, `BT/masterdata/TariffServiceTest.java`
   - **Kích thước:** M

@@ -1115,6 +1115,7 @@ Người duyệt trả lời trực tiếp trong mục 5.1–5.3; ba chỗ trả
 | D9 | Bài chợ đồ cũ `OPEN` / `CLOSED`, người đăng tự đóng | `MarketPost.status` |
 | D10 | Không có hợp đồng giấy; bản ghi đăng ký dịch vụ do xã lập. **Hỏi lại:** số đăng ký hệ thống tự sinh `ĐK-{địa bàn}-{nnnn}`, bỏ "Ngày ký" | `ServiceContract` |
 | D11 | Một SĐT ↔ một hộ; một hộ nhiều tài khoản | `CitizenAccount` |
+| Q65 | **26/09/2026, còn mở.** Báo chí về QĐ 65/2026 cho thấy: công ty giữ tiền thu gom, tiền vận chuyển nộp về Sở NN&MT (xã giữ tối đa 8%), tiền xử lý của hộ chưa thu. Người duyệt chọn **giữ như đã duyệt cho demo** (2 thành phần thu gom + xử lý, công ty nộp toàn bộ về xã); sửa khi có văn bản chính thức hoặc xã xác nhận. Seed `BG-67-2025`: hiệu lực và mức hộ gia đình 57.000 + 23.000 theo prototype, nhóm chủ nguồn thải nhỏ / theo khối lượng tạm dùng số tạm của `BG-65-2026` | `TariffRate`, luồng nộp tiền |
 
 ### 5.1 Khoảng trống trong SPEC (G1–G16, từ `tasks/plan.md` §9)
 

@@ -38,6 +38,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/masterdata/tariffs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Các phiên bản biểu giá kèm đơn giá theo nhóm, mới nhất trước */
+        get: operations["tariffs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/fee-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Danh sách loại phí */
+        get: operations["feeTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/masterdata/districts": {
         parameters: {
             query?: never;
@@ -135,6 +169,48 @@ export interface components {
              */
             companyId: number | null;
         };
+        TariffRateDto: {
+            /** @enum {string} */
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_GENERATOR" | "BY_VOLUME";
+            /** Format: int64 */
+            collectionFee: number;
+            /** Format: int64 */
+            processingFee: number;
+            /** Format: int64 */
+            monthlyTotal: number;
+            /** @example đ/hộ/tháng */
+            unitLabel: string;
+        };
+        TariffVersionDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example BG-65-2026 */
+            code: string;
+            legalBasis: string;
+            /** Format: date */
+            issuedDate: string | null;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo: string | null;
+            /** @enum {string} */
+            status: "DRAFT" | "ACTIVE" | "EXPIRED";
+            scopeNote: string | null;
+            note: string | null;
+            rates: components["schemas"]["TariffRateDto"][];
+        };
+        FeeTypeDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example ENV */
+            code: string;
+            name: string;
+            /** @enum {string} */
+            pricingMode: "TARIFF" | "FIXED";
+            /** Format: int64 */
+            defaultPrice: number | null;
+            active: boolean;
+        };
         DistrictDto: {
             /** Format: int64 */
             id: number;
@@ -230,6 +306,46 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MeResponse"];
+                };
+            };
+        };
+    };
+    tariffs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TariffVersionDto"][];
+                };
+            };
+        };
+    };
+    feeTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FeeTypeDto"][];
                 };
             };
         };
