@@ -140,3 +140,38 @@ describe('Nhắc nộp', () => {
     });
   });
 });
+
+describe('Phiếu thu công ty', () => {
+  it('lập phiếu một phần cho DV01 rồi hiện bản in có số tiền bằng chữ và lũy kế', async () => {
+    const fetchFn = mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
+      'GET /api/masterdata/periods': () => jsonResponse(200, periods),
+      'GET /api/billing/charge-requests': () => jsonResponse(200, []),
+      'GET /api/remittance/ledger': () => jsonResponse(200, [dv01, dv07]),
+      'POST /api/remittance/receipts': () =>
+        jsonResponse(201, {
+          id: 31, code: 'PT-CT-1026-002', companyId: 1, companyCode: 'DV01', companyName: 'Công ty MTĐT Đông Thạnh', periodId: 10,
+          periodCode: '2026-10', periodLabel: 'Tháng 10/2026', amount: 400_000, amountInWords: 'Bốn trăm nghìn đồng',
+          method: 'TRANSFER', receiptDate: '2026-10-20', payerName: 'Trần Văn Mẫu', documentRef: 'UNC-0925', note: null,
+          status: 'RECORDED', cumulativePaid: 1_400_000, periodDue: 1_600_000, remainingAfter: 200_000,
+        }),
+    });
+    renderApp('/commune/charges');
+    await userEvent.click(await screen.findByRole('tab', { name: 'Phiếu thu công ty' }));
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Lập phiếu DV01' }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.type(within(dialog).getByLabelText('Số tiền'), '400000');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Lập phiếu' }));
+
+    await waitFor(() =>
+      expect(fetchFn.mock.calls.some(([url, init]) => String(url) === '/api/remittance/receipts'
+        && (init as RequestInit | undefined)?.method === 'POST')).toBe(true),
+    );
+    expect(await screen.findByText('Bốn trăm nghìn đồng')).toBeInTheDocument();
+    expect(screen.getByText('PHIẾU THU')).toBeInTheDocument();
+    expect(screen.getByText('1.400.000 đ', norm)).toBeInTheDocument();
+    const print = screen.getByText('PHIẾU THU').closest('.ant-modal-content') as HTMLElement;
+    expect(within(print).getAllByRole('button').map((b) => b.textContent)).toContain('In');
+  });
+});

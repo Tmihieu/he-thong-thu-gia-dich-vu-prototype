@@ -432,14 +432,14 @@
   - **File dự kiến:** `WEB/features/collection/CompanyOverviewPage/{CompanyOverviewPage.tsx,CashReceiveForm.tsx,CashReceiveForm.test.tsx}`, `WEB/features/remittance/useCompanyLedger.ts`
   - **Kích thước:** M
 
-- [ ] **T30 — Web xã: lập phiếu thu công ty và in phiếu** · `remittance` · M · P0 (§10 bước 5)
+- [x] **T30 — Web xã: lập phiếu thu công ty và in phiếu** · `remittance` · M · P0 (§10 bước 5) · **xong 27/09/2026** (test tự động; còn bấm In xem bản in thật): tab "Phiếu thu công ty" trong "Khoản thu"; bảng công ty–kỳ từ sổ T24, mở rộng dòng xem lịch sử phiếu; lập xong tự mở bản in; `amountInWords` cùng quy tắc và bộ ca với `VietnameseMoneyWords` backend; bản in dùng CSS `@media print` chỉ in vùng phiếu
   - **Mô tả:** Màn phiếu thu của cán bộ xã: danh sách công ty – kỳ với số còn phải nộp; form lập phiếu (số tiền ≤ còn nộp, hình thức, ngày, người nộp, số chứng từ); lịch sử phiếu theo công ty; bản in phiếu có **số tiền bằng chữ tiếng Việt** (R29) và lũy kế đã nộp (R30). Viết hàm `amountInWords` riêng, không thêm thư viện.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Lập phiếu một phần cho DV01; bản in hiện số tiền bằng chữ đúng
-    - [ ] `amountInWords` có test: 0, 1.005.000, 21.000.000, 1.266.000, số có "linh"/"mươi"/"mốt"/"lăm"
-    - [ ] Validation form phiếu thu (vượt số còn nộp, ≤ 0) có test component
+    - [x] Lập phiếu một phần cho DV01; bản in hiện số tiền bằng chữ đúng
+    - [x] `amountInWords` có test: 0, 1.005.000, 21.000.000, 1.266.000, số có "linh"/"mươi"/"mốt"/"lăm"
+    - [x] Validation form phiếu thu (vượt số còn nộp, ≤ 0) có test component
   - **Kiểm chứng:**
-    - [ ] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
+    - [x] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
     - [ ] Thủ công: lập phiếu, bấm In, xem bản in
   - **Phụ thuộc:** T08, T26
   - **File dự kiến:** `WEB/features/remittance/ReceiptsPage/{ReceiptsPage.tsx,IssueReceiptForm.tsx,IssueReceiptForm.test.tsx,ReceiptPrint.tsx}`, `WEB/shared/amountInWords.ts` + test
