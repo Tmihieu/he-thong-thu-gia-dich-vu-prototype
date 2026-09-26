@@ -21,6 +21,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/masterdata/periods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Danh sách kỳ thu, mới nhất trước; có date thì chỉ các kỳ chứa ngày đó */
+        get: operations["list"];
+        put?: never;
+        /** Mở kỳ thu tháng/quý (quản trị); gắn biểu giá có hiệu lực tại ngày đầu kỳ */
+        post: operations["open"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/periods/{id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bắt đầu thu (quản trị): Đã mở → Đang thu */
+        post: operations["start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/auth/me": {
         parameters: {
             query?: never;
@@ -47,6 +82,23 @@ export interface paths {
         };
         /** Các phiên bản biểu giá kèm đơn giá theo nhóm, mới nhất trước */
         get: operations["tariffs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/periods/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chi tiết kỳ thu */
+        get: operations["get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -169,6 +221,59 @@ export interface components {
              */
             companyId: number | null;
         };
+        OpenPeriodRequest: {
+            /** @enum {string} */
+            type: "MONTH" | "QUARTER";
+            /**
+             * Format: int32
+             * @example 2026
+             */
+            year: number;
+            /**
+             * Format: int32
+             * @description Tháng 1–12 hoặc quý 1–4
+             * @example 10
+             */
+            number: number;
+            /**
+             * Format: date
+             * @description Để trống thì lấy ngày đầu kỳ
+             */
+            openDate?: string;
+            /**
+             * Format: date
+             * @description Hạn công ty nộp xã
+             */
+            dueDate: string;
+            note?: string;
+        };
+        PeriodDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example 2026-10 */
+            code: string;
+            /** @enum {string} */
+            periodType: "MONTH" | "QUARTER";
+            /** @example Tháng 10/2026 */
+            label: string;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            /** Format: date */
+            openDate: string;
+            /** Format: date */
+            dueDate: string;
+            /** Format: int64 */
+            tariffVersionId: number;
+            /** @example BG-65-2026 */
+            tariffVersionCode: string;
+            /** @enum {string} */
+            status: "OPEN" | "COLLECTING" | "LOCKED";
+            /** Format: date-time */
+            lockedAt: string | null;
+            note: string | null;
+        };
         TariffRateDto: {
             /** @enum {string} */
             tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_GENERATOR" | "BY_VOLUME";
@@ -290,6 +395,74 @@ export interface operations {
             };
         };
     };
+    list: {
+        parameters: {
+            query?: {
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodDto"][];
+                };
+            };
+        };
+    };
+    open: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpenPeriodRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodDto"];
+                };
+            };
+        };
+    };
+    start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodDto"];
+                };
+            };
+        };
+    };
     me: {
         parameters: {
             query?: never;
@@ -326,6 +499,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TariffVersionDto"][];
+                };
+            };
+        };
+    };
+    get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodDto"];
                 };
             };
         };

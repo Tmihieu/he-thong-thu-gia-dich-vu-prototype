@@ -172,15 +172,15 @@
 
 ## Tuần 2 — Danh mục, lập khoản, bắt đầu thu (30/09 – 06/10)
 
-- [ ] **T11 — Kỳ thu tháng/quý và vòng đời trạng thái (backend)** · `master-data` · M · P0 · **[TDD]** · **[cần hỏi trước: G1]**
+- [x] **T11 — Kỳ thu tháng/quý và vòng đời trạng thái (backend)** · `master-data` · M · P0 · **[TDD]** · **xong 26/09/2026**: `ADMIN` mở kỳ và bắt đầu thu (G1); trùng kỳ 409, chuyển sai 422; ngày mở mặc định = ngày đầu kỳ
   - **Mô tả:** Tạo `MIG/V5__collection_periods.sql` và entity `CollectionPeriod` (mã `2026-10` hoặc `2026-Q4`, loại MONTH/QUARTER, ngày mở, hạn công ty nộp xã, phiên bản biểu giá, trạng thái `OPEN → COLLECTING → LOCKED`, lockedAt/lockedBy). `PeriodService`: `open(type, month|quarter, dueDate)` gắn phiên bản biểu giá đang hiệu lực (T10); `startCollecting`; truy vấn kỳ theo ngày. Chuyển sang `LOCKED` thuộc T32. Test viết trước: mở tháng; mở quý; mở trùng kỳ bị chặn; chuyển trạng thái sai (vd. COLLECTING → OPEN) → 422; phiên bản biểu giá gắn đúng. Mọi thao tác ghi audit. Ai được mở/khóa kỳ theo trả lời G1; mặc định để hỏi: `ADMIN` mở kỳ (§10 bước 1).
   - **Tiêu chí nghiệm thu:**
-    - [ ] Test đơn vị cho 5 trường hợp trên viết trước và xanh
-    - [ ] API `POST /api/masterdata/periods`, `POST /periods/{id}/start`, `GET /periods`; sai vai trò → 403 (IT)
-    - [ ] Mở kỳ có bản ghi audit
+    - [x] Test đơn vị cho 5 trường hợp trên viết trước và xanh
+    - [x] API `POST /api/masterdata/periods`, `POST /periods/{id}/start`, `GET /periods`; sai vai trò → 403 (IT)
+    - [x] Mở kỳ có bản ghi audit
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=PeriodServiceTest,PeriodApiIT`
-    - [ ] `cd backend && ./mvnw verify`
+    - [x] `cd backend && ./mvnw test -Dtest=PeriodServiceTest,PeriodApiIT`
+    - [x] `cd backend && ./mvnw verify`
   - **Phụ thuộc:** T10
   - **File dự kiến:** `MIG/V5__collection_periods.sql`, `BE/masterdata/domain/CollectionPeriod.java` (+ repo), `BE/masterdata/service/PeriodService.java`, `BE/masterdata/api/PeriodController.java` (+ DTO), `BT/masterdata/{PeriodServiceTest,PeriodApiIT}.java`
   - **Kích thước:** M
