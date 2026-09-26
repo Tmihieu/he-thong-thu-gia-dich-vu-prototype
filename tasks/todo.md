@@ -250,14 +250,14 @@
   - **File dự kiến:** `WEB/features/masterdata/SubjectsPage/{SubjectsPage.tsx,SubjectProfileForm.tsx,SubjectProfileForm.test.tsx}`, `WEB/features/masterdata/api.ts`
   - **Kích thước:** M
 
-- [ ] **T17 — Quy tắc tính khoản phải thu** · `billing` · S · P0 · **[TDD]** · **[cần hỏi trước: G3, G13]**
+- [x] **T17 — Quy tắc tính khoản phải thu** · `billing` · S · P0 · **[TDD]** · **xong 26/09/2026**: hợp đồng và công ty xét tại ngày phát hành (G3); không có BULKY (G13); miễn 100% áp cho mọi loại phí như prototype R1
   - **Mô tả:** Lớp thuần `ChargeCalculator` + `ChargeEligibility` (không đụng CSDL). Quy tắc R1–R4: số tiền phí `ENV` = giá tháng của nhóm (theo phiên bản biểu giá của kỳ) × (quý ? 3 : 1); phí khác = giá nhập, nếu không nhập thì lấy giá mặc định; miễn 100% → 0. Bỏ qua (kèm lý do) các đối tượng: không active; không có hợp đồng hiệu lực; khu vực chưa có công ty (cảnh báo); đã có khoản cùng loại phí ở kỳ chồng lấn (tháng nằm trong quý và ngược lại). Chỉ lập khoản cho kỳ chưa khóa. Test viết trước cho **mỗi** quy tắc và mỗi lý do bỏ qua.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Test đơn vị bao đủ R1–R4: tháng, quý, miễn, phí khác có/không giá nhập, 4 lý do bỏ qua, kỳ đã khóa
-    - [ ] Tiền là `long`, không có phép tính số thực
-    - [ ] Coverage dòng của 2 lớp này = 100%
+    - [x] Test đơn vị bao đủ R1–R4: tháng, quý, miễn, phí khác có/không giá nhập, 4 lý do bỏ qua, kỳ đã khóa
+    - [x] Tiền là `long`, không có phép tính số thực
+    - [x] Coverage dòng của 2 lớp này = 100% (cả nhánh)
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=ChargeCalculatorTest,ChargeEligibilityTest`
+    - [x] `cd backend && ./mvnw test -Dtest=ChargeCalculatorTest,ChargeEligibilityTest`
   - **Phụ thuộc:** T11, T13, T15
   - **File dự kiến:** `BE/billing/service/{ChargeCalculator,ChargeEligibility}.java`, `BT/billing/{ChargeCalculatorTest,ChargeEligibilityTest}.java`
   - **Kích thước:** S
