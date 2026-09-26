@@ -275,15 +275,15 @@
   - **File dự kiến:** `MIG/V8__…sql`, `BE/billing/domain/{ChargeRequest,Charge}.java` (+ repo), `BE/billing/service/ChargeRequestService.java`, `BE/billing/api/BillingController.java` (+ DTO), `BT/billing/ChargeRequestServiceIT.java`
   - **Kích thước:** M
 
-- [ ] **T19 — Web: phiếu yêu cầu thu và danh sách khoản** · `billing` · M · P0 (§10 bước 2)
+- [x] **T19 — Web: phiếu yêu cầu thu và danh sách khoản** · `billing` · M · P0 (§10 bước 2) · **xong 26/09/2026** (test tự động; còn xem bằng mắt): màn `/commune/charges` 2 tab
   - **Mô tả:** Màn khoản thu của cán bộ xã có 2 tab. Tab "Phiếu YCT": form (kỳ, loại phí, phạm vi toàn xã / chọn tổ / theo công ty, hạn đóng, ghi chú), bước **Xem trước** (số khoản, tổng tiền, bảng bỏ qua kèm lý do), rồi bước **Phát hành**. Tab "Khoản thu": bảng lọc theo kỳ/tổ/trạng thái, trạng thái "Quá hạn" tính theo hạn.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Lập phiếu YCT toàn xã → xem trước → phát hành; danh sách khoản hiện đúng số lượng
-    - [ ] Validation form phiếu YCT (phạm vi rỗng, hạn trước ngày mở kỳ) có test component
-    - [ ] Phát hành lần hai báo "không có khoản mới", không lỗi
+    - [x] Lập phiếu YCT toàn xã → xem trước → phát hành; danh sách khoản hiện đúng số lượng
+    - [x] Validation form phiếu YCT (phạm vi rỗng, hạn trước ngày mở kỳ) có test component
+    - [x] Phát hành lần hai báo "không có khoản mới", không lỗi
   - **Kiểm chứng:**
-    - [ ] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
-    - [ ] Thủ công: §10 bước 2 trên web
+    - [x] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
+    - [ ] Thủ công: §10 bước 2 trên web — chờ người dùng
   - **Phụ thuộc:** T08, T18
   - **File dự kiến:** `WEB/features/billing/ChargeRequestPage/{ChargeRequestForm.tsx,ChargeRequestForm.test.tsx,PreviewPanel.tsx}`, `WEB/features/billing/ChargesPage/ChargesPage.tsx`, `WEB/features/billing/api.ts`
   - **Kích thước:** M
