@@ -20,7 +20,7 @@ function UserBox({ user, onLogout }: { user: Me; onLogout: () => void }) {
   );
 }
 
-/** Người đi thu dùng giao diện điện thoại: thanh tiêu đề + thanh điều hướng dưới (hoàn thiện ở T27). */
+/** Người đi thu dùng giao diện điện thoại: thanh tiêu đề + thanh điều hướng dưới. */
 function MobileLayout({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const { pathname } = useLocation();
   const items = MENU[user.role];

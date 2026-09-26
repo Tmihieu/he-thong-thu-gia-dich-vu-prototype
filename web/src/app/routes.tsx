@@ -2,6 +2,9 @@ import type { ReactNode } from 'react';
 import { Navigate, type RouteObject } from 'react-router';
 
 import { ChargesHubPage } from '../features/billing/ChargesHubPage';
+import { CollectorAccountPage } from '../features/collection/CollectorAccountPage';
+import { CollectorCashPage } from '../features/collection/CollectorCashPage';
+import { CollectorListPage } from '../features/collection/CollectorListPage/CollectorListPage';
 import { CompanyHubPage } from '../features/collection/CompanyHubPage';
 import { AreasPage } from '../features/masterdata/AreasPage/AreasPage';
 import { ConfigPage } from '../features/masterdata/ConfigPage';
@@ -24,6 +27,9 @@ const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'COMMUNE_OFFICER:progress': <ProgressPage />,
   'COMMUNE_OFFICER:reconciliation': <ReconciliationPage />,
   'COMPANY_MANAGER:assigned': <CompanyHubPage />,
+  'COLLECTOR:list': <CollectorListPage />,
+  'COLLECTOR:cash': <CollectorCashPage />,
+  'COLLECTOR:account': <CollectorAccountPage />,
 };
 
 /** Mỗi vai trò một nhánh route. */

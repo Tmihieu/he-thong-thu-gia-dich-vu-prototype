@@ -393,14 +393,14 @@
   - **File dự kiến:** `MIG/V13__company_receipts.sql`, `BE/remittance/domain/CompanyReceipt.java` (+ repo), `BE/remittance/service/CompanyReceiptService.java`, `BE/remittance/api/CompanyReceiptController.java` (+ DTO), `BT/remittance/{CompanyReceiptServiceTest,CompanyReceiptIT}.java`
   - **Kích thước:** M
 
-- [ ] **T27 — Web người đi thu (giao diện mobile): danh sách hộ, cập nhật kết quả, tiền đang giữ** · `collection` · M · P0 (§10 bước 3)
+- [x] **T27 — Web người đi thu (giao diện mobile): danh sách hộ, cập nhật kết quả, tiền đang giữ** · `collection` · M · P0 (§10 bước 3) · **xong 26/09/2026** (test tự động; còn kiểm tay 375px): dùng lại `MobileLayout` có sẵn trong `RoleLayout.tsx` thay vì file `CollectorLayout.tsx` riêng; `requestId` giữ theo khoản tới khi gửi thành công (kể cả đóng/mở lại sheet sau lỗi); thêm màn "Tiền mặt" (đang giữ + lịch sử bàn giao) và "Tài khoản" cho đủ menu; nhãn/bộ lọc ở `features/collection/workState.ts`
   - **Mô tả:** Layout mobile cho vai trò COLLECTOR. Danh sách hộ của tổ được giao, lọc Chưa thu / Đã thu / Hẹn / Vắng, tìm theo tên/mã. Bottom sheet cập nhật kết quả: tiền mặt / chuyển khoản / vắng / hẹn (ngày hẹn) / từ chối. Mỗi lần gửi sinh `requestId` mới; bấm lại khi mạng chậm dùng lại `requestId` cũ. Thẻ "Tiền mặt đang giữ". Tham chiếu `prototype/` màn collector. Lịch sử hộ và báo sai thông tin hộ nằm ở T53 (P2).
   - **Tiêu chí nghiệm thu:**
-    - [ ] Ghi 2 hộ tiền mặt + 1 hộ vắng trên màn hình rộng 375px; danh sách và tiền đang giữ cập nhật
-    - [ ] Bấm "Xác nhận" hai lần nhanh không tạo 2 thanh toán (test component kiểm `requestId` + kiểm tra tay)
-    - [ ] Validation bottom sheet (ngày hẹn bắt buộc khi chọn "Hẹn") có test component
+    - [ ] (kiểm tay) Ghi 2 hộ tiền mặt + 1 hộ vắng trên màn hình rộng 375px; danh sách và tiền đang giữ cập nhật
+    - [x] Bấm "Xác nhận" hai lần nhanh không tạo 2 thanh toán (test component kiểm `requestId` + kiểm tra tay)
+    - [x] Validation bottom sheet (ngày hẹn bắt buộc khi chọn "Hẹn") có test component
   - **Kiểm chứng:**
-    - [ ] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
+    - [x] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
     - [ ] Thủ công: DevTools chế độ điện thoại, đăng nhập tài khoản người đi thu KV07
   - **Phụ thuộc:** T08, T21, T25
   - **File dự kiến:** `WEB/app/layout/CollectorLayout.tsx`, `WEB/features/collection/CollectorListPage/{CollectorListPage.tsx,ResultSheet.tsx,ResultSheet.test.tsx}`, `WEB/features/collection/api.ts`
