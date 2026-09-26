@@ -483,15 +483,15 @@
   - **File dự kiến:** `WEB/features/notifications/{NotificationBell.tsx,NotificationBell.test.tsx,NotificationCenterPage.tsx,api.ts}`
   - **Kích thước:** S
 
-- [ ] **T34 — Nhắc nộp cho công ty có nợ quá hạn** · `remittance` · M · P0 (§10 bước 5)
+- [x] **T34 — Nhắc nộp cho công ty có nợ quá hạn** · `remittance` · M · P0 (§10 bước 5) · **xong 26/09/2026** (test tự động; còn kiểm tay): nợ quá hạn theo `CompanyLedgerService.overdueDebtsOf`; lịch sử nhắc kèm cờ "đã hết nợ" tính khi đọc (D6)
   - **Mô tả:** Tạo `MIG/V14__payment_reminders.sql` và entity `PaymentReminder` (công ty, các kỳ, số tiền, hạn, nội dung, người lập). `ReminderService.create(companyId)`: chỉ cho công ty có nợ quá hạn theo ledger (R16), hạn mặc định +5 ngày, nội dung soạn sẵn có thể sửa; phát `Notification` loại `REMINDER` tới công ty. Web xã: nút "Nhắc nộp" trên màn tiến độ + popup xem trước nội dung. Test: công ty không nợ quá hạn → 422.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Nhắc nộp DV01 → `dv01` thấy thông báo trên chuông (IT + kiểm tra tay)
-    - [ ] Công ty không có nợ quá hạn → 422 (unit test)
-    - [ ] Có ghi audit
+    - [x] Nhắc nộp DV01 → `dv01` thấy thông báo trên chuông (IT; kiểm tay chờ T33 chuông)
+    - [x] Công ty không có nợ quá hạn → 422 (unit test)
+    - [x] Có ghi audit
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=ReminderServiceTest`
-    - [ ] Web lint/test/build; thủ công §10 bước 5 (nhắc nộp)
+    - [x] `cd backend && ./mvnw test -Dtest=ReminderServiceTest`
+    - [x] Web lint/test/build; thủ công §10 bước 5 (nhắc nộp) — chờ người dùng
   - **Phụ thuộc:** T24, T23, T31
   - **File dự kiến:** `MIG/V14__payment_reminders.sql`, `BE/remittance/domain/PaymentReminder.java` (+ repo), `BE/remittance/service/ReminderService.java`, `BT/remittance/ReminderServiceTest.java`, `WEB/features/remittance/ProgressPage/ReminderModal.tsx`
   - **Kích thước:** M

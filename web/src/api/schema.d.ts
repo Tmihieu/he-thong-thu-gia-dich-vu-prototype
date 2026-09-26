@@ -39,6 +39,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/remittance/reminders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lịch sử nhắc nộp; công ty chỉ thấy của mình; settled = đã hết nợ các kỳ được nhắc */
+        get: operations["list"];
+        put?: never;
+        /** Gửi nhắc nộp (cán bộ xã); công ty không có nợ quá hạn → 422 */
+        post: operations["create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/remittance/receipts": {
         parameters: {
             query?: never;
@@ -47,7 +65,7 @@ export interface paths {
             cookie?: never;
         };
         /** Phiếu thu theo kỳ/công ty, kèm lũy kế đã nộp tới từng phiếu; công ty chỉ thấy phiếu của mình */
-        get: operations["list"];
+        get: operations["list_1"];
         put?: never;
         /** Lập phiếu thu khi công ty nộp tiền (cán bộ xã); số tiền ≤ còn phải nộp của kỳ */
         post: operations["issue"];
@@ -136,7 +154,7 @@ export interface paths {
         get: operations["search"];
         put?: never;
         /** Tạo hồ sơ hộ, kèm hợp đồng đầu tiên nếu có (cán bộ xã) */
-        post: operations["create"];
+        post: operations["create_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -185,7 +203,7 @@ export interface paths {
             cookie?: never;
         };
         /** Danh sách kỳ thu, mới nhất trước; có date thì chỉ các kỳ chứa ngày đó */
-        get: operations["list_1"];
+        get: operations["list_2"];
         put?: never;
         /** Mở kỳ thu tháng/quý (quản trị); gắn biểu giá có hiệu lực tại ngày đầu kỳ */
         post: operations["open"];
@@ -352,6 +370,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/remittance/reminders/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bản nháp nhắc nộp: các kỳ quá hạn còn nợ, tổng tiền, hạn mới (+5 ngày), nội dung soạn sẵn */
+        get: operations["draft"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/remittance/receipts/{id}": {
         parameters: {
             query?: never;
@@ -428,7 +463,7 @@ export interface paths {
             cookie?: never;
         };
         /** Thông báo của người đang đăng nhập (theo vai trò, công ty, cá nhân), mới nhất trước */
-        get: operations["list_2"];
+        get: operations["list_3"];
         put?: never;
         post?: never;
         delete?: never;
@@ -782,6 +817,38 @@ export interface components {
             note: string | null;
             currentContract: components["schemas"]["ContractDto"];
             contracts: components["schemas"]["ContractDto"][];
+        };
+        CreateReminderRequest: {
+            /** Format: int64 */
+            companyId: number;
+            /** @description Trống thì nhắc mọi kỳ quá hạn còn nợ */
+            periodIds?: number[];
+            /**
+             * Format: date
+             * @description Trống thì ngày nhắc + 5
+             */
+            dueDate?: string;
+            /** @description Trống thì dùng nội dung soạn sẵn */
+            content?: string;
+        };
+        ReminderDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example NN-001 */
+            code: string;
+            /** Format: int64 */
+            companyId: number;
+            companyCode: string;
+            /** Format: date */
+            reminderDate: string;
+            /** Format: date */
+            dueDate: string;
+            periodLabels: string[];
+            /** Format: int64 */
+            amount: number;
+            content: string;
+            /** @description Đã hết nợ các kỳ được nhắc */
+            settled: boolean;
         };
         IssueReceiptRequest: {
             /** Format: int64 */
@@ -1160,6 +1227,27 @@ export interface components {
             reason: "SUBJECT_NOT_ACTIVE" | "NO_ACTIVE_CONTRACT" | "AREA_WITHOUT_COMPANY" | "DUPLICATE_CHARGE";
             warning: boolean;
             message: string;
+        };
+        DebtDto: {
+            /** Format: int64 */
+            periodId: number;
+            periodLabel: string;
+            /** Format: date */
+            periodDueDate: string;
+            /** Format: int64 */
+            remaining: number;
+        };
+        DraftDto: {
+            /** Format: int64 */
+            companyId: number;
+            companyCode: string;
+            companyName: string;
+            debts: components["schemas"]["DebtDto"][];
+            /** Format: int64 */
+            amount: number;
+            /** Format: date */
+            dueDate: string;
+            content: string;
         };
         LedgerRowDto: {
             /** Format: int64 */
@@ -1548,6 +1636,52 @@ export interface operations {
     list: {
         parameters: {
             query?: {
+                companyId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ReminderDto"][];
+                };
+            };
+        };
+    };
+    create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateReminderRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ReminderDto"];
+                };
+            };
+        };
+    };
+    list_1: {
+        parameters: {
+            query?: {
                 periodId?: number;
                 companyId?: number;
             };
@@ -1707,7 +1841,7 @@ export interface operations {
             };
         };
     };
-    create: {
+    create_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -1783,7 +1917,7 @@ export interface operations {
             };
         };
     };
-    list_1: {
+    list_2: {
         parameters: {
             query?: {
                 date?: string;
@@ -2133,6 +2267,28 @@ export interface operations {
             };
         };
     };
+    draft: {
+        parameters: {
+            query: {
+                companyId: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DraftDto"];
+                };
+            };
+        };
+    };
     get_1: {
         parameters: {
             query?: never;
@@ -2219,7 +2375,7 @@ export interface operations {
             };
         };
     };
-    list_2: {
+    list_3: {
         parameters: {
             query?: {
                 unreadOnly?: boolean;

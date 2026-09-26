@@ -100,3 +100,43 @@ describe('Khóa kỳ', () => {
     expect(fetchFn.mock.calls.some(([url]) => String(url) === '/api/remittance/periods/10/lock')).toBe(true);
   });
 });
+
+describe('Nhắc nộp', () => {
+  it('công ty quá hạn có nút Nhắc nộp; popup hiện nợ theo kỳ và gửi nội dung đã sửa', async () => {
+    const fetchFn = mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
+      'GET /api/masterdata/periods': () => jsonResponse(200, periods),
+      'GET /api/remittance/ledger': () => jsonResponse(200, [dv01, dv07]),
+      'GET /api/remittance/area-progress': () => jsonResponse(200, areas),
+      'GET /api/remittance/reminders/draft': () =>
+        jsonResponse(200, {
+          companyId: 7, companyCode: 'DV07', companyName: 'Công ty Xanh Sài Gòn', amount: 950_000, dueDate: '2026-11-08',
+          content: 'Kính gửi Công ty Xanh Sài Gòn', debts: [
+            { periodId: 9, periodLabel: 'Tháng 09/2026', periodDueDate: '2026-09-30', remaining: 150_000 },
+            { periodId: 10, periodLabel: 'Tháng 10/2026', periodDueDate: '2026-10-31', remaining: 800_000 },
+          ],
+        }),
+      'POST /api/remittance/reminders': () =>
+        jsonResponse(201, { id: 1, code: 'NN-001', companyId: 7, companyCode: 'DV07', reminderDate: '2026-11-03',
+          dueDate: '2026-11-08', periodLabels: ['Tháng 09/2026', 'Tháng 10/2026'], amount: 950_000, content: 'x', settled: false }),
+    });
+    renderApp('/commune/progress');
+
+    expect(screen.queryByRole('button', { name: 'Nhắc nộp DV01' })).not.toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('button', { name: 'Nhắc nộp DV07' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(await within(dialog).findByText('Tháng 09/2026')).toBeInTheDocument();
+    expect(within(dialog).getByText('950.000 đ', norm)).toBeInTheDocument();
+
+    const content = within(dialog).getByLabelText('Nội dung');
+    await userEvent.clear(content);
+    await userEvent.type(content, 'Đề nghị nộp gấp');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Gửi nhắc nộp' }));
+
+    await waitFor(() => {
+      const post = fetchFn.mock.calls.find(([url, init]) => String(url) === '/api/remittance/reminders'
+        && (init as RequestInit | undefined)?.method === 'POST');
+      expect(JSON.parse(String((post![1] as RequestInit).body))).toEqual({ companyId: 7, dueDate: '2026-11-08', content: 'Đề nghị nộp gấp' });
+    });
+  });
+});

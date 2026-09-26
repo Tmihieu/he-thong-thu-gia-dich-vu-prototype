@@ -107,6 +107,30 @@ public class CompanyLedgerService {
         return ledger(periodId).stream().filter(r -> r.remaining() > 0).toList();
     }
 
+    public record PeriodDebt(CollectionPeriod period, long remaining) {
+    }
+
+    /** Các kỳ đã hết hạn công ty nộp xã mà công ty còn phải nộp &gt; 0, cũ trước (nhắc nộp R16, nợ kỳ trước). */
+    public List<PeriodDebt> overdueDebtsOf(Long companyId) {
+        LocalDate today = LocalDate.now(clock);
+        Map<Long, Long> receivedByPeriod = new HashMap<>();
+        remitted.receivedByCompanyAndPeriod().stream().filter(r -> r.companyId() == companyId)
+                .forEach(r -> receivedByPeriod.merge(r.periodId(), r.amount(), Long::sum));
+        Map<Long, Long> remainingByPeriod = new HashMap<>();
+        queries.dueByCompanyAndPeriodBefore(today).stream().filter(d -> d.companyId() == companyId)
+                .forEach(d -> remainingByPeriod.merge(d.periodId(),
+                        d.amount() - receivedByPeriod.getOrDefault(d.periodId(), 0L), Long::sum));
+        List<Long> owing = remainingByPeriod.entrySet().stream().filter(e -> e.getValue() > 0).map(Map.Entry::getKey)
+                .toList();
+        if (owing.isEmpty()) {
+            return List.of();
+        }
+        return periods.findAllById(owing).stream()
+                .sorted(Comparator.comparing(CollectionPeriod::getStartDate))
+                .map(p -> new PeriodDebt(p, remainingByPeriod.get(p.getId())))
+                .toList();
+    }
+
     private LedgerRow build(Company company, CollectionPeriod period, LocalDate today, CompanyAmount dueRow,
             CompanyAmount collectedRow, Received receivedRow, long previousDebt) {
         long due = dueRow == null ? 0 : dueRow.amount();

@@ -1,4 +1,4 @@
-import { Alert, Card, Col, Progress, Row, Space, Statistic, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Col, Progress, Row, Space, Statistic, Table, Tag, Typography } from 'antd';
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
@@ -6,6 +6,7 @@ import { PROGRESS_COLORS, PROGRESS_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type AreaProgress, type LedgerRow, useAreaProgress, useCompanyLedger } from '../api';
+import { ReminderModal } from './ReminderModal';
 
 function Rate({ rate, low }: { rate: number; low: boolean }) {
   return (
@@ -23,6 +24,7 @@ function sum(rows: LedgerRow[], key: 'due' | 'collected' | 'received' | 'remaini
 /** Tiến độ thu theo công ty và theo tổ (§10 bước 5, R13): trạng thái nộp, cờ tỷ lệ thu dưới 45%, nợ kỳ trước. */
 export function ProgressPage() {
   const [periodId, setPeriodId] = useState<number>();
+  const [reminding, setReminding] = useState<number | null>(null);
   const ledger = useCompanyLedger(periodId);
   const areas = useAreaProgress(periodId);
   const rows = ledger.data ?? [];
@@ -104,8 +106,18 @@ export function ProgressPage() {
             dataIndex: 'progress',
             render: (p: LedgerRow['progress']) => <Tag color={PROGRESS_COLORS[p]}>{PROGRESS_LABELS[p]}</Tag>,
           },
+          {
+            title: '',
+            render: (_, r) =>
+              r.progress === 'OVERDUE' ? (
+                <Button size="small" danger onClick={() => setReminding(r.companyId)} aria-label={`Nhắc nộp ${r.companyCode}`}>
+                  Nhắc nộp
+                </Button>
+              ) : null,
+          },
         ]}
       />
+      <ReminderModal companyId={reminding} onClose={() => setReminding(null)} />
     </>
   );
 }
