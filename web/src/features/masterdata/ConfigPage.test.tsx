@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, vi } from 'vitest';
 
 import { TOKEN_KEY } from '../../app/auth/authContext';
+import { pickDate, pickOption } from '../../test/antd';
 import { jsonResponse, mockApi, renderApp } from '../../test/renderApp';
 
 const admin = { id: 1, username: 'admin', fullName: 'Quản trị hệ thống', role: 'ADMIN', companyId: null };
@@ -41,11 +42,8 @@ describe('Cấu hình · kỳ thu', () => {
     const dialog = await screen.findByRole('dialog');
 
     fireEvent.change(within(dialog).getByLabelText('Năm'), { target: { value: '2026' } });
-    fireEvent.mouseDown(within(dialog).getByRole('combobox', { name: 'Tháng' }));
-    fireEvent.click(await screen.findByTitle('Tháng 10'));
-    const due = within(dialog).getByLabelText('Hạn công ty nộp xã');
-    await userEvent.type(due, '31/10/2026');
-    fireEvent.keyDown(due, { key: 'Enter', code: 'Enter' });
+    await pickOption(within(dialog).getByRole('combobox', { name: 'Tháng' }), 'Tháng 10');
+    pickDate(within(dialog).getByLabelText('Hạn công ty nộp xã'), '31/10/2026');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Mở kỳ' }));
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('Kỳ 2026-10 đã được mở trước đó.');

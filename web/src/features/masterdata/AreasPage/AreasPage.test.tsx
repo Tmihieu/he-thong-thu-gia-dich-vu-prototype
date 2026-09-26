@@ -1,8 +1,9 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, vi } from 'vitest';
 
 import { TOKEN_KEY } from '../../../app/auth/authContext';
+import { pickDate, pickOption } from '../../../test/antd';
 import { jsonResponse, mockApi, renderApp } from '../../../test/renderApp';
 
 const officer = { id: 2, username: 'canbo_xa', fullName: 'Nguyễn Thị Mẫu', role: 'COMMUNE_OFFICER', companyId: null };
@@ -43,11 +44,8 @@ function baseApi(active: () => unknown[], extra: Parameters<typeof mockApi>[0] =
 }
 
 async function fillAndSubmit(dialog: HTMLElement) {
-  fireEvent.mouseDown(within(dialog).getByRole('combobox', { name: 'Công ty phụ trách' }));
-  fireEvent.click(await screen.findByTitle('DV01 · Công ty MTĐT Đông Thạnh'));
-  const from = within(dialog).getByLabelText('Từ ngày');
-  await userEvent.type(from, '01/10/2026');
-  fireEvent.keyDown(from, { key: 'Enter', code: 'Enter' });
+  await pickOption(within(dialog).getByRole('combobox', { name: 'Công ty phụ trách' }), 'DV01 · Công ty MTĐT Đông Thạnh');
+  pickDate(within(dialog).getByLabelText('Từ ngày'), '01/10/2026');
   await userEvent.click(within(dialog).getByRole('button', { name: 'Phân công' }));
 }
 
