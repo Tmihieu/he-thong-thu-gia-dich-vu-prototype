@@ -99,6 +99,7 @@ export function AreasPage() {
             ),
           },
           { title: 'Địa bàn', dataIndex: 'districtCode' },
+          { title: 'Số hộ', dataIndex: 'subjectCount', align: 'right' },
           {
             title: 'Công ty phụ trách',
             render: (_, r) =>

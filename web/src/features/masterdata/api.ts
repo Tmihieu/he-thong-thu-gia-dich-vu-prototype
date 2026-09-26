@@ -13,6 +13,19 @@ export type Area = components['schemas']['AreaDto'];
 export type Company = components['schemas']['CompanyDto'];
 export type AreaAssignment = components['schemas']['AreaAssignmentDto'];
 export type AssignRequest = components['schemas']['AssignRequest'];
+export type Subject = components['schemas']['SubjectDto'];
+export type SubjectPage = components['schemas']['SubjectPageDto'];
+export type SubjectRequest = components['schemas']['SubjectRequest'];
+export type Contract = components['schemas']['ContractDto'];
+export type ContractRequest = components['schemas']['ContractRequest'];
+
+export interface SubjectQuery {
+  areaId?: number;
+  status?: Subject['status'];
+  q?: string;
+  page: number;
+  size: number;
+}
 
 export const masterdataKeys = {
   tariffs: ['masterdata', 'tariffs'] as const,
@@ -21,6 +34,7 @@ export const masterdataKeys = {
   areas: ['masterdata', 'areas'] as const,
   companies: ['masterdata', 'companies'] as const,
   assignments: ['masterdata', 'assignments'] as const,
+  subjects: ['masterdata', 'subjects'] as const,
 };
 
 export function useTariffs() {
@@ -71,6 +85,53 @@ export function useAssignAreas() {
     mutationFn: (body: AssignRequest) => api.post<AreaAssignment[]>('/api/masterdata/area-assignments', body),
     onSuccess: () => qc.invalidateQueries({ queryKey: masterdataKeys.assignments }),
   });
+}
+
+export function useSubjects(query: SubjectQuery) {
+  return useQuery({
+    queryKey: [...masterdataKeys.subjects, 'list', query],
+    queryFn: () => api.get<SubjectPage>('/api/masterdata/subjects', { params: { ...query } }),
+    placeholderData: (prev) => prev,
+  });
+}
+
+function useSubjectMutation<V, R>(fn: (v: V) => Promise<R>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: masterdataKeys.subjects });
+      void qc.invalidateQueries({ queryKey: masterdataKeys.areas });
+    },
+  });
+}
+
+export function useCreateSubject() {
+  return useSubjectMutation((body: SubjectRequest) => api.post<Subject>('/api/masterdata/subjects', body));
+}
+
+export function useUpdateSubject() {
+  return useSubjectMutation(({ id, body }: { id: number; body: SubjectRequest }) =>
+    api.put<Subject>(`/api/masterdata/subjects/${id}`, body),
+  );
+}
+
+export function useEndSubject() {
+  return useSubjectMutation(({ id, endDate, reason }: { id: number; endDate: string; reason?: string }) =>
+    api.post<Subject>(`/api/masterdata/subjects/${id}/end`, { endDate, reason }),
+  );
+}
+
+export function useAddContract() {
+  return useSubjectMutation(({ subjectId, body }: { subjectId: number; body: ContractRequest }) =>
+    api.post<Contract>(`/api/masterdata/subjects/${subjectId}/contracts`, body),
+  );
+}
+
+export function useUpdateContract() {
+  return useSubjectMutation(({ id, body }: { id: number; body: ContractRequest }) =>
+    api.put<Contract>(`/api/masterdata/contracts/${id}`, body),
+  );
 }
 
 export function useOpenPeriod() {

@@ -237,15 +237,15 @@
   - **File dự kiến:** `MIG/V7__…sql` + `SEED/V7_1__seed_subjects.sql`, `BE/masterdata/domain/{ServiceSubject,ServiceContract}.java` (+ repo), `BE/masterdata/service/SubjectService.java`, `BE/masterdata/api/SubjectController.java` (+ DTO), `BT/masterdata/{SubjectServiceTest,SubjectApiIT}.java`
   - **Kích thước:** M
 
-- [ ] **T16 — Web: hồ sơ hộ (danh sách + form gộp đối tượng/hợp đồng)** · `master-data` · M · P1
+- [x] **T16 — Web: hồ sơ hộ (danh sách + form gộp đối tượng/hợp đồng)** · `master-data` · M · P1 · **xong 26/09/2026** (test tự động; còn xem bằng mắt). Thêm cột số hộ ở màn khu vực
   - **Mô tả:** Màn đối tượng của cán bộ xã: bảng có lọc theo tổ/loại/trạng thái, tìm theo mã/tên. Form hồ sơ hộ gồm hai khối "Thông tin hộ" và "Hợp đồng" trên cùng một form, ghi xuống hai API. Cờ miễn 100% chỉ hiển thị, giống prototype. Nếu người dùng chọn C6 thì bỏ lọc nâng cao.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Tạo hộ mới kèm hợp đồng; sửa thông tin; ngừng cung cấp dịch vụ
-    - [ ] Validation form (SĐT, ngày hợp đồng, nhóm giá bắt buộc khi có hợp đồng) có test component
-    - [ ] Tiền và ngày dùng `MoneyText`, `DateText`
+    - [x] Tạo hộ mới kèm hợp đồng; sửa thông tin; ngừng cung cấp dịch vụ
+    - [x] Validation form (SĐT, ngày hợp đồng, nhóm giá bắt buộc khi có hợp đồng) có test component
+    - [x] Tiền và ngày dùng `MoneyText`, `DateText`
   - **Kiểm chứng:**
-    - [ ] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
-    - [ ] Thủ công: tạo một hộ ở KV24, mở lại thấy đủ hai khối
+    - [x] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
+    - [ ] Thủ công: tạo một hộ ở KV24, mở lại thấy đủ hai khối — chờ người dùng
   - **Phụ thuộc:** T08, T15
   - **File dự kiến:** `WEB/features/masterdata/SubjectsPage/{SubjectsPage.tsx,SubjectProfileForm.tsx,SubjectProfileForm.test.tsx}`, `WEB/features/masterdata/api.ts`
   - **Kích thước:** M

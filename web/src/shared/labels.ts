@@ -6,6 +6,8 @@ export type TariffGroup = Schemas['TariffRateDto']['tariffGroup'];
 export type TariffStatus = Schemas['TariffVersionDto']['status'];
 export type PeriodType = Schemas['PeriodDto']['periodType'];
 export type PeriodStatus = Schemas['PeriodDto']['status'];
+export type SubjectType = Schemas['SubjectDto']['subjectType'];
+export type SubjectStatus = Schemas['SubjectDto']['status'];
 
 /** Nhãn tiếng Việt cho enum của backend (SPEC §6: enum lưu chuỗi, nhãn ở frontend). */
 export const TARIFF_GROUP_LABELS: Record<TariffGroup, string> = {
@@ -30,6 +32,24 @@ export const PERIOD_STATUS_LABELS: Record<PeriodStatus, string> = {
   OPEN: 'Đã mở',
   COLLECTING: 'Đang thu',
   LOCKED: 'Đã khóa',
+};
+
+export const SUBJECT_TYPE_LABELS: Record<SubjectType, string> = {
+  HOUSEHOLD: 'Hộ gia đình',
+  BUSINESS_HOUSEHOLD: 'Hộ kinh doanh',
+  ENTERPRISE: 'Doanh nghiệp',
+};
+
+export const SUBJECT_STATUS_LABELS: Record<SubjectStatus, string> = {
+  ACTIVE: 'Đang cung cấp',
+  PENDING: 'Chờ xử lý',
+  ENDED: 'Đã chấm dứt',
+};
+
+export const SUBJECT_STATUS_COLORS: Record<SubjectStatus, string> = {
+  ACTIVE: 'green',
+  PENDING: 'orange',
+  ENDED: 'default',
 };
 
 /** Màu Tag của AntD theo trạng thái. */
