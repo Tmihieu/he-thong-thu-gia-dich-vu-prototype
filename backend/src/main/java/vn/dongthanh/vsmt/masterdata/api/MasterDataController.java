@@ -35,7 +35,8 @@ public class MasterDataController {
     @Operation(summary = "Danh sách khu vực / tổ dân phố, lọc theo địa bàn nếu có")
     @GetMapping("/areas")
     public List<AreaDto> areas(@RequestParam(required = false) Long districtId) {
-        return query.areas(districtId).stream().map(AreaDto::of).toList();
+        var counts = query.subjectCountByArea();
+        return query.areas(districtId).stream().map(a -> AreaDto.of(a, counts.getOrDefault(a.getId(), 0L))).toList();
     }
 
     @Operation(summary = "Danh sách công ty (công ty chỉ thấy công ty của mình)")

@@ -224,15 +224,15 @@
   - **File dự kiến:** `WEB/features/masterdata/AreasPage/{AreasPage.tsx,AssignAreaModal.tsx,AssignAreaModal.test.tsx,AssignmentHistoryDrawer.tsx}`, `WEB/features/masterdata/api.ts`
   - **Kích thước:** M
 
-- [ ] **T15 — Đối tượng và hợp đồng (backend) kèm seed hộ giả** · `master-data` · M · P0
+- [x] **T15 — Đối tượng và hợp đồng (backend) kèm seed hộ giả** · `master-data` · M · P0 · **xong 26/09/2026**: 227 hộ giả; mã và số đăng ký tự sinh; không tạo cột số định danh (mức Thật, nhạy cảm); `AreaDto.subjectCount`
   - **Mô tả:** Tạo `MIG/V7__service_subjects_contracts.sql` và hai entity `ServiceSubject` (mã `DTH-H000128`, loại HGĐ/HKD/DN, tên, địa chỉ, SĐT, khu vực, trạng thái) và `ServiceContract` (số hợp đồng, đối tượng, nhóm giá → `TariffRate` group, từ ngày, đến ngày, miễn 100% + lý do). `SubjectService`: CRUD; mỗi đối tượng tối đa 1 hợp đồng hiệu lực tại một thời điểm; API trả DTO gộp "hồ sơ hộ". Seed `V7_1`: khoảng 150–300 hộ **giả** chia đều 24 tổ, có đủ các trường hợp (miễn, không hợp đồng, đã chấm dứt), trong đó có `DTH-H000128` ở KV07 (DV01). Có ghi audit. Chạm O3: chỉ dùng trường đã duyệt ở H1.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Tạo/sửa/xem/ngừng đối tượng + hợp đồng qua API (IT)
-    - [ ] Tạo hợp đồng thứ hai chồng hiệu lực → 422 (unit test)
-    - [ ] Seed có `DTH-H000128`; không có tên/SĐT/địa chỉ thật
+    - [x] Tạo/sửa/xem/ngừng đối tượng + hợp đồng qua API (IT)
+    - [x] Tạo hợp đồng thứ hai chồng hiệu lực → 422 (unit test)
+    - [x] Seed có `DTH-H000128`; không có tên/SĐT/địa chỉ thật
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=SubjectServiceTest,SubjectApiIT`
-    - [ ] `cd backend && ./mvnw verify`
+    - [x] `cd backend && ./mvnw test -Dtest=SubjectServiceTest,SubjectApiIT`
+    - [x] `cd backend && ./mvnw verify`
   - **Phụ thuộc:** T09, T10, T07
   - **File dự kiến:** `MIG/V7__…sql` + `SEED/V7_1__seed_subjects.sql`, `BE/masterdata/domain/{ServiceSubject,ServiceContract}.java` (+ repo), `BE/masterdata/service/SubjectService.java`, `BE/masterdata/api/SubjectController.java` (+ DTO), `BT/masterdata/{SubjectServiceTest,SubjectApiIT}.java`
   - **Kích thước:** M

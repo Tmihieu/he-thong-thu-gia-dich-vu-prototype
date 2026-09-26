@@ -112,6 +112,28 @@ class DemoSeedIT extends IntegrationTest {
                 .containsExactly("KV03", "KV13", "KV14");
     }
 
+    @Test
+    void demoProfileSeedsFakeSubjectsWithAllCases() {
+        int total = demoDb.queryForObject("select count(*) from service_subjects", Integer.class);
+        assertThat(total).isBetween(150, 300);
+        assertThat(demoDb.queryForList("""
+                select a.code || ':' || s.status || ':' || c.tariff_group from service_subjects s
+                join areas a on a.id = s.area_id join service_contracts c on c.subject_id = s.id
+                where s.code = 'DTH-H000128'""", String.class)).containsExactly("KV07:ACTIVE:HH_3_PLUS");
+        assertThat(demoDb.queryForObject("select count(*) from service_contracts where exempt", Integer.class)).isPositive();
+        assertThat(demoDb.queryForObject("""
+                select count(*) from service_subjects s where s.status = 'PENDING'
+                and not exists (select 1 from service_contracts c where c.subject_id = s.id)""", Integer.class)).isPositive();
+        assertThat(demoDb.queryForObject("""
+                select count(*) from service_subjects s join service_contracts c on c.subject_id = s.id
+                where s.status = 'ENDED' and c.valid_to is not null""", Integer.class)).isPositive();
+        assertThat(demoDb.queryForList("select distinct subject_type from service_subjects order by 1", String.class))
+                .containsExactly("BUSINESS_HOUSEHOLD", "ENTERPRISE", "HOUSEHOLD");
+        assertThat(demoDb.queryForObject("select count(distinct area_id) from service_subjects", Integer.class)).isEqualTo(24);
+        // Không có SĐT trùng giữa các hộ (SĐT dùng để gắn tài khoản app người dân).
+        assertThat(demoDb.queryForObject("select count(*) - count(distinct phone) from service_subjects", Integer.class)).isZero();
+    }
+
     private static DataSource dataSource(String url) {
         return new DriverManagerDataSource(url, POSTGRES.getUsername(), POSTGRES.getPassword());
     }

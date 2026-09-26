@@ -33,11 +33,12 @@ public final class MasterDataDtos {
             @Schema(requiredMode = RequiredMode.REQUIRED) String name,
             @Schema(requiredMode = RequiredMode.REQUIRED) Long districtId,
             @Schema(requiredMode = RequiredMode.REQUIRED, example = "DTH") String districtCode,
-            @Schema(requiredMode = RequiredMode.REQUIRED) ActiveStatus status) {
+            @Schema(requiredMode = RequiredMode.REQUIRED) ActiveStatus status,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Số đối tượng chưa chấm dứt") long subjectCount) {
 
-        static AreaDto of(Area a) {
+        static AreaDto of(Area a, long subjectCount) {
             return new AreaDto(a.getId(), a.getCode(), a.getName(), a.getDistrict().getId(),
-                    a.getDistrict().getCode(), a.getStatus());
+                    a.getDistrict().getCode(), a.getStatus(), subjectCount);
         }
     }
 

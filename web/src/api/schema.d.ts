@@ -4,6 +4,41 @@
  */
 
 export interface paths {
+    "/api/masterdata/subjects/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chi tiết hồ sơ hộ */
+        get: operations["get"];
+        /** Sửa thông tin đối tượng (cán bộ xã); hợp đồng sửa qua /contracts/{id} */
+        put: operations["update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/contracts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sửa hợp đồng: nhóm giá, hiệu lực, miễn 100% */
+        put: operations["updateContract"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/auth/login": {
         parameters: {
             query?: never;
@@ -15,6 +50,58 @@ export interface paths {
         put?: never;
         /** Đăng nhập bằng tên đăng nhập và mật khẩu, nhận access token */
         post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/subjects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tìm hồ sơ hộ (mã, tên, SĐT, địa chỉ); công ty chỉ thấy hộ thuộc khu vực của mình */
+        get: operations["search"];
+        put?: never;
+        /** Tạo hồ sơ hộ, kèm hợp đồng đầu tiên nếu có (cán bộ xã) */
+        post: operations["create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/subjects/{id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ngừng cung cấp dịch vụ: đối tượng Đã chấm dứt, hợp đồng đang hiệu lực kết thúc */
+        post: operations["end"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/subjects/{id}/contracts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Thêm hợp đồng cho đối tượng (không được chồng hiệu lực với hợp đồng khác) */
+        post: operations["addContract"];
         delete?: never;
         options?: never;
         head?: never;
@@ -116,7 +203,7 @@ export interface paths {
             cookie?: never;
         };
         /** Chi tiết kỳ thu */
-        get: operations["get"];
+        get: operations["get_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -231,6 +318,76 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ContractRequest: {
+            /** @enum {string} */
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_GENERATOR" | "BY_VOLUME";
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string;
+            exempt?: boolean;
+            exemptReason?: string;
+            exemptDecisionNo?: string;
+            note?: string;
+        };
+        SubjectRequest: {
+            /** @enum {string} */
+            type: "HOUSEHOLD" | "BUSINESS_HOUSEHOLD" | "ENTERPRISE";
+            name: string;
+            address: string;
+            /** Format: int64 */
+            areaId: number;
+            phone?: string;
+            /** Format: int32 */
+            memberCount?: number;
+            representativeName?: string;
+            taxCode?: string;
+            note?: string;
+            /** @description Chỉ dùng khi tạo mới: hợp đồng đầu tiên (không bắt buộc) */
+            contract?: components["schemas"]["ContractRequest"];
+        };
+        ContractDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example ĐK-DTH-0128 */
+            contractNo: string;
+            /** @enum {string} */
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_GENERATOR" | "BY_VOLUME";
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo: string | null;
+            exempt: boolean;
+            exemptReason: string | null;
+            exemptDecisionNo: string | null;
+            note: string | null;
+        };
+        SubjectDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example DTH-H000128 */
+            code: string;
+            /** @enum {string} */
+            subjectType: "HOUSEHOLD" | "BUSINESS_HOUSEHOLD" | "ENTERPRISE";
+            name: string;
+            address: string;
+            /** Format: int64 */
+            areaId: number;
+            /** @example KV07 */
+            areaCode: string;
+            /** @example DTH */
+            districtCode: string;
+            phone: string | null;
+            /** @enum {string} */
+            status: "ACTIVE" | "PENDING" | "ENDED";
+            /** Format: int32 */
+            memberCount: number | null;
+            representativeName: string | null;
+            taxCode: string | null;
+            note: string | null;
+            currentContract: components["schemas"]["ContractDto"];
+            contracts: components["schemas"]["ContractDto"][];
+        };
         LoginRequest: {
             username: string;
             password: string;
@@ -255,6 +412,14 @@ export interface components {
              * @description Chỉ có với COMPANY_MANAGER, COLLECTOR
              */
             companyId: number | null;
+        };
+        EndSubjectRequest: {
+            /**
+             * Format: date
+             * @description Ngày cuối cùng còn cung cấp dịch vụ
+             */
+            endDate: string;
+            reason?: string;
         };
         OpenPeriodRequest: {
             /** @enum {string} */
@@ -368,6 +533,15 @@ export interface components {
             note: string | null;
             rates: components["schemas"]["TariffRateDto"][];
         };
+        SubjectPageDto: {
+            items: components["schemas"]["SubjectDto"][];
+            /** Format: int64 */
+            total: number;
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
+        };
         FeeTypeDto: {
             /** Format: int64 */
             id: number;
@@ -425,6 +599,11 @@ export interface components {
             districtCode: string;
             /** @enum {string} */
             status: "ACTIVE" | "INACTIVE";
+            /**
+             * Format: int64
+             * @description Số đối tượng chưa chấm dứt
+             */
+            subjectCount: number;
         };
     };
     responses: never;
@@ -435,6 +614,80 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SubjectDto"];
+                };
+            };
+        };
+    };
+    update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubjectRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SubjectDto"];
+                };
+            };
+        };
+    };
+    updateContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContractRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ContractDto"];
+                };
+            };
+        };
+    };
     login: {
         parameters: {
             query?: never;
@@ -455,6 +708,109 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["LoginResponse"];
+                };
+            };
+        };
+    };
+    search: {
+        parameters: {
+            query?: {
+                districtId?: number;
+                areaId?: number;
+                status?: "ACTIVE" | "PENDING" | "ENDED";
+                q?: string;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SubjectPageDto"];
+                };
+            };
+        };
+    };
+    create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubjectRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SubjectDto"];
+                };
+            };
+        };
+    };
+    end: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EndSubjectRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SubjectDto"];
+                };
+            };
+        };
+    };
+    addContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContractRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ContractDto"];
                 };
             };
         };
@@ -613,7 +969,7 @@ export interface operations {
             };
         };
     };
-    get: {
+    get_1: {
         parameters: {
             query?: never;
             header?: never;

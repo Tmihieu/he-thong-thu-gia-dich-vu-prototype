@@ -1,6 +1,8 @@
 package vn.dongthanh.vsmt.masterdata.service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.stereotype.Service;
@@ -13,6 +15,7 @@ import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.masterdata.domain.CompanyRepository;
 import vn.dongthanh.vsmt.masterdata.domain.District;
 import vn.dongthanh.vsmt.masterdata.domain.DistrictRepository;
+import vn.dongthanh.vsmt.masterdata.domain.ServiceSubjectRepository;
 import vn.dongthanh.vsmt.platform.common.NotFoundException;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
 
@@ -28,6 +31,7 @@ public class MasterDataQueryService {
     private final DistrictRepository districts;
     private final AreaRepository areas;
     private final CompanyRepository companies;
+    private final ServiceSubjectRepository subjects;
 
     public List<District> districts() {
         return districts.findAllByOrderBySortOrderAscCodeAsc();
@@ -35,6 +39,13 @@ public class MasterDataQueryService {
 
     public List<Area> areas(Long districtId) {
         return areas.findAllWithDistrict(districtId);
+    }
+
+    /** Số đối tượng chưa chấm dứt theo khu vực. */
+    public Map<Long, Long> subjectCountByArea() {
+        Map<Long, Long> counts = new HashMap<>();
+        subjects.countActiveByArea().forEach(row -> counts.put((Long) row[0], (Long) row[1]));
+        return counts;
     }
 
     public List<Company> companies(CurrentUser actor) {
