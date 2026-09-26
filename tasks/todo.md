@@ -97,15 +97,15 @@
   - **File dự kiến:** `MIG/V1__platform_users.sql` + `SEED/V1_1__seed_users.sql`, `BE/platform/domain/User.java` (+ `UserRepository`), `BE/platform/domain/Role.java`, `BT/platform/UserRepositoryIT.java`, `docs/demo-accounts.md`
   - **Kích thước:** M
 
-- [ ] **T06 — Đăng nhập JWT, kiểm tra vai trò, CurrentUser** · `platform` · M · P0 · **[cần hỏi trước: thư viện JWT, G10]**
+- [x] **T06 — Đăng nhập JWT, kiểm tra vai trò, CurrentUser** · `platform` · M · P0 · **xong 26/09/2026**: `oauth2-resource-server` HS256 (G10), token 8 giờ, controller nhận `@AuthenticationPrincipal CurrentUser`
   - **Mô tả:** `POST /api/platform/auth/login` nhận username + mật khẩu, trả access token có claim `sub, role, companyId`. `GET /api/platform/auth/me`. `SecurityConfig` stateless; lỗi 401/403 trả JSON tiếng Việt. `CurrentUser` (id, role, companyId) có `requireRole(...)` và `requireCompany(companyId)`, dùng cho mọi service về sau. JWT secret lấy từ biến môi trường. Đề xuất mặc định để hỏi: dùng `spring-boot-starter-oauth2-resource-server` (Nimbus, thuộc hệ Spring) thay cho thư viện JWT bên thứ ba.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Sai mật khẩu → 401 kèm thông báo tiếng Việt; đúng → token; `/auth/me` trả đúng vai trò và companyId (IT)
-    - [ ] Token `COMPANY_MANAGER` gọi endpoint chỉ dành cho `COMMUNE_OFFICER` → 403 (IT, dùng một endpoint thử trong test)
-    - [ ] Không có secret trong mã nguồn; thiếu `JWT_SECRET` thì ứng dụng không khởi động
+    - [x] Sai mật khẩu → 401 kèm thông báo tiếng Việt; đúng → token; `/auth/me` trả đúng vai trò và companyId (IT)
+    - [x] Token `COMPANY_MANAGER` gọi endpoint chỉ dành cho `COMMUNE_OFFICER` → 403 (IT, dùng một endpoint thử trong test)
+    - [x] Không có secret trong mã nguồn; thiếu `JWT_SECRET` thì ứng dụng không khởi động
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=AuthIT`
-    - [ ] `cd backend && ./mvnw verify`; thủ công: đăng nhập qua Swagger UI
+    - [x] `cd backend && ./mvnw test -Dtest=AuthIT`
+    - [x] `cd backend && ./mvnw verify`; thủ công: đăng nhập qua API như Swagger gọi (login `admin` → `/me`); Swagger có nút Authorize (bearer)
   - **Phụ thuộc:** T05
   - **File dự kiến:** `BE/platform/security/{SecurityConfig,JwtService,CurrentUser}.java`, `BE/platform/api/AuthController.java` (+ DTO), `BT/platform/AuthIT.java`
   - **Kích thước:** M

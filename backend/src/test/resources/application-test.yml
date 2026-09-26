@@ -3,3 +3,8 @@
 spring:
   flyway:
     locations: classpath:db/migration
+
+vsmt:
+  jwt:
+    # Khóa giả chỉ dùng trong test, không dùng ở môi trường nào khác.
+    secret: test-only-secret-khong-dung-o-dau-khac-0123456789

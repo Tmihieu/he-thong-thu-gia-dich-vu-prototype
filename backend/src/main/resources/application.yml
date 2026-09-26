@@ -22,12 +22,19 @@ spring:
   jackson:
     time-zone: Asia/Ho_Chi_Minh
   autoconfigure:
-    # Không dùng tài khoản mặc định của Spring Security; đăng nhập JWT làm ở T06.
+    # Không dùng tài khoản mặc định của Spring Security; đăng nhập qua AuthService + JWT.
     exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
 
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+    persist-authorization: true
+
+vsmt:
+  jwt:
+    # Bắt buộc, tối thiểu 32 ký tự; thiếu thì ứng dụng không khởi động.
+    secret: ${JWT_SECRET:}
+    access-token-ttl: 8h
 
 ---
 # Profile demo: nạp thêm seed dữ liệu giả (db/seed). Mặc định khi ./mvnw spring-boot:run.

@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -32,6 +34,8 @@ public class GlobalExceptionHandler {
 
     public static final String VALIDATION_ERROR = "VALIDATION_ERROR";
     public static final String UNAUTHORIZED = "UNAUTHORIZED";
+    public static final String INVALID_CREDENTIALS = "INVALID_CREDENTIALS";
+    public static final String ACCOUNT_LOCKED = "ACCOUNT_LOCKED";
     public static final String FORBIDDEN = "FORBIDDEN";
     public static final String NOT_FOUND = "NOT_FOUND";
     public static final String CONFLICT = "CONFLICT";
@@ -62,6 +66,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({NoResourceFoundException.class, NoHandlerFoundException.class})
     ResponseEntity<ApiError> noResource(Exception ex) {
         return error(HttpStatus.NOT_FOUND, NOT_FOUND, "Không tìm thấy địa chỉ yêu cầu.");
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    ResponseEntity<ApiError> badCredentials(BadCredentialsException ex) {
+        return error(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS, "Tên đăng nhập hoặc mật khẩu không đúng.");
+    }
+
+    @ExceptionHandler(LockedException.class)
+    ResponseEntity<ApiError> locked(LockedException ex) {
+        return error(HttpStatus.UNAUTHORIZED, ACCOUNT_LOCKED, "Tài khoản đã bị khóa. Vui lòng liên hệ quản trị.");
     }
 
     @ExceptionHandler(AuthenticationException.class)
