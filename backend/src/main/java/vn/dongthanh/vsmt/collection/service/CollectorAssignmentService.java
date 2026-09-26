@@ -149,6 +149,13 @@ public class CollectorAssignmentService {
         return charges.searchInAreas(actor.companyId(), areaIds, periodId, status, page);
     }
 
+    /** Khoản của công ty (theo công ty chụp trên khoản, G3), lọc theo kỳ / tổ / trạng thái (quản lý công ty). */
+    @Transactional(readOnly = true)
+    public Page<Charge> companyCharges(Long periodId, Long areaId, ChargeStatus status, Pageable page, CurrentUser actor) {
+        actor.requireRole(Role.COMPANY_MANAGER);
+        return charges.search(periodId, areaId, status, null, actor.companyId(), page);
+    }
+
     /** Khoản trong phạm vi người đi thu (tổ đang được giao, của công ty mình); ngoài phạm vi → 404. */
     @Transactional(readOnly = true)
     public Charge myCharge(Long chargeId, CurrentUser actor) {

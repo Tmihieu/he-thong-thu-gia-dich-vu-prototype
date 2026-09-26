@@ -62,12 +62,26 @@ public class PaymentController {
     public List<CollectorChargeDto> myWork(@RequestParam(required = false) Long periodId,
             @RequestParam(required = false) ChargeStatus status, @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "500") @Min(1) @Max(1000) int size, @AuthenticationPrincipal CurrentUser actor) {
-        Page<Charge> result = assignments.myCharges(periodId, status, PageRequest.of(page, size, Sort.by("code")), actor);
+        return withProgress(assignments.myCharges(periodId, status, PageRequest.of(page, size, Sort.by("code")), actor));
+    }
+
+    private List<CollectorChargeDto> withProgress(Page<Charge> result) {
         Map<Long, ChargeProgress> progress = collection.progressOf(result.getContent().stream().map(Charge::getId).toList());
         LocalDate today = assignments.today();
         return result.getContent().stream()
                 .map(c -> CollectorChargeDto.of(ChargeDto.of(c, today), progress.get(c.getId())))
                 .toList();
+    }
+
+    @Operation(summary = "Hộ được giao của công ty: khoản các tổ công ty phụ trách, kèm đã thu và lượt ghé mới nhất")
+    @GetMapping("/company-work")
+    public List<CollectorChargeDto> companyWork(@RequestParam(required = false) Long periodId,
+            @RequestParam(required = false) Long areaId, @RequestParam(required = false) ChargeStatus status,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "1000") @Min(1) @Max(2000) int size, @AuthenticationPrincipal CurrentUser actor) {
+        Page<Charge> result = assignments.companyCharges(periodId, areaId, status,
+                PageRequest.of(page, size, Sort.by("code")), actor);
+        return withProgress(result);
     }
 
     @Operation(summary = "Ghi nhận thanh toán (tiền mặt / chuyển khoản); gửi lại cùng clientRequestId trả kết quả cũ (200)")

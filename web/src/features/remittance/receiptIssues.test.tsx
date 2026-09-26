@@ -53,6 +53,7 @@ describe('Công ty: phiếu thu xã lập', () => {
   it('phiếu đã báo hiện "chờ xã kiểm tra" và không báo lại được; form bắt buộc loại và mô tả', async () => {
     const fetchFn = api();
     renderApp('/company/assigned');
+    await userEvent.click(await screen.findByRole('tab', { name: 'Phiếu thu xã lập' }));
 
     const [first, reported] = (await screen.findAllByRole('button', { name: 'Báo sai sót' })).map((b) => b.closest('tr')!);
     expect(within(first!).getByText('PT-CT-1026-001')).toBeInTheDocument();
@@ -81,6 +82,7 @@ describe('Công ty: phiếu thu xã lập', () => {
   it('loại khác "Sai số tiền" thì không gửi số đúng', async () => {
     const fetchFn = api();
     renderApp('/company/assigned');
+    await userEvent.click(await screen.findByRole('tab', { name: 'Phiếu thu xã lập' }));
 
     await userEvent.click((await screen.findAllByRole('button', { name: 'Báo sai sót' }))[0]!);
     const dialog = await screen.findByRole('dialog');

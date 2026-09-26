@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, DatePicker, Drawer, Form, Input, InputNumber, Radio, Space, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Drawer, Form, Input, InputNumber, Radio, Select, Space, Typography } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useEffect } from 'react';
 
 import { api, ApiError } from '../../../api/client';
 import { formatMoney } from '../../../shared/format';
 import { MoneyText } from '../../../shared/MoneyText';
-import { type CollectorCharge, collectionKeys, type PaymentResult, type Visit } from '../api';
+import { type Collector, type CollectorCharge, collectionKeys, type PaymentResult, type Visit } from '../api';
 import { RESULT_LABELS, type ResultKind } from '../workState';
 
 interface Values {
@@ -15,6 +15,7 @@ interface Values {
   bankRef?: string;
   revisitDate?: Dayjs;
   note?: string;
+  collectorId?: number;
 }
 
 /**
@@ -35,12 +36,13 @@ function requestIdFor(key: string): string {
 interface Props {
   item: CollectorCharge | null;
   onClose: () => void;
-  /** Quản lý công ty ghi thay: người đi thu đã nhận tiền (T28). */
-  collectorId?: number;
+  /** Quản lý công ty ghi thay (T28): chọn người đi thu đã nhận tiền, mặc định người phụ trách tổ. */
+  collectors?: Collector[];
+  defaultCollectorId?: number;
 }
 
 /** Bottom sheet cập nhật kết quả thu một hộ: tiền mặt / chuyển khoản / vắng / hẹn (ngày hẹn) / từ chối. */
-export function ResultSheet({ item, onClose, collectorId }: Props) {
+export function ResultSheet({ item, onClose, collectors, defaultCollectorId }: Props) {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [form] = Form.useForm<Values>();
@@ -59,7 +61,7 @@ export function ResultSheet({ item, onClose, collectorId }: Props) {
           clientRequestId: requestIdFor(key),
           bankRef: v.result === 'TRANSFER' ? v.bankRef?.trim() || undefined : undefined,
           note: v.note?.trim() || undefined,
-          collectorId,
+          collectorId: v.collectorId,
         });
         pendingRequestIds.delete(key);
         return `Đã thu ${formatMoney(r.payment.amount)} · ${charge.subjectName}`;
@@ -83,8 +85,8 @@ export function ResultSheet({ item, onClose, collectorId }: Props) {
   });
 
   useEffect(() => {
-    if (item) form.setFieldsValue({ result: 'CASH', amount: item.remainingAmount });
-  }, [item, form]);
+    if (item) form.setFieldsValue({ result: 'CASH', amount: item.remainingAmount, collectorId: defaultCollectorId });
+  }, [item, form, defaultCollectorId]);
 
   const remaining = item?.remainingAmount ?? 0;
   return (
@@ -144,6 +146,18 @@ export function ResultSheet({ item, onClose, collectorId }: Props) {
               addonAfter="đ"
               formatter={(v) => (v === undefined || v === null || `${v}` === '' ? '' : Number(v).toLocaleString('vi-VN'))}
               parser={(v) => Number((v ?? '').replace(/\D/g, ''))}
+            />
+          </Form.Item>
+        )}
+        {paying && collectors && (
+          <Form.Item
+            name="collectorId"
+            label="Người đi thu đã nhận tiền"
+            rules={[{ required: true, message: 'Vui lòng chọn người đi thu' }]}
+          >
+            <Select
+              placeholder="Chọn người đi thu"
+              options={collectors.map((c) => ({ value: c.id, label: `${c.fullName} · ${c.username}` }))}
             />
           </Form.Item>
         )}

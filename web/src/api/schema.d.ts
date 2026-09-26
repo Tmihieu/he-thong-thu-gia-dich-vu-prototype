@@ -283,6 +283,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/complaints": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Danh sách khiếu nại, mới nhất trước; công ty chỉ thấy khiếu nại đã chuyển cho mình (G12) */
+        get: operations["list_4"];
+        put?: never;
+        /** Cán bộ xã ghi nhận khiếu nại qua điện thoại / trực tiếp */
+        post: operations["create_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/complaints/{id}/reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Công ty được chuyển phản hồi kết quả xử lý */
+        post: operations["reply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/complaints/{id}/forward": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Chuyển công ty xử lý (để trống công ty: công ty phụ trách khu vực), hạn hôm nay + 3 ngày */
+        post: operations["forward"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/complaints/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cán bộ xã đóng khiếu nại kèm kết quả cuối */
+        post: operations["close"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/collection/visits": {
         parameters: {
             query?: never;
@@ -498,7 +567,7 @@ export interface paths {
             cookie?: never;
         };
         /** Thông báo của người đang đăng nhập (theo vai trò, công ty, cá nhân), mới nhất trước */
-        get: operations["list_4"];
+        get: operations["list_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -660,6 +729,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/complaints/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chi tiết khiếu nại kèm timeline */
+        get: operations["get_3"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/collection/my-work": {
         parameters: {
             query?: never;
@@ -703,6 +789,23 @@ export interface paths {
         };
         /** Một khoản trong phạm vi người đi thu; ngoài tổ được giao → 404 */
         get: operations["myCharge"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/collection/company-work": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Hộ được giao của công ty: khoản các tổ công ty phụ trách, kèm đã thu và lượt ghé mới nhất */
+        get: operations["companyWork"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1126,6 +1229,96 @@ export interface components {
             validTo: string | null;
             note: string | null;
             decisionNo: string | null;
+        };
+        CreateComplaintRequest: {
+            complainantName: string;
+            complainantPhone?: string;
+            /**
+             * Format: int64
+             * @description Hộ / đối tượng liên quan, nếu biết
+             */
+            subjectId?: number;
+            /**
+             * Format: int64
+             * @description Để trống thì lấy khu vực của hộ
+             */
+            areaId?: number;
+            /** @enum {string} */
+            channel: "APP" | "PHONE" | "IN_PERSON";
+            /** @enum {string} */
+            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "OTHER";
+            summary: string;
+            content: string;
+            /**
+             * Format: date
+             * @description Để trống thì lấy hôm nay
+             */
+            receivedDate?: string;
+        };
+        ComplaintDetailDto: {
+            complaint: components["schemas"]["ComplaintDto"];
+            events: components["schemas"]["EventDto"][];
+        };
+        ComplaintDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example KN-1026-001 */
+            code: string;
+            /** Format: date */
+            receivedDate: string;
+            complainantName: string;
+            complainantPhone: string | null;
+            /** Format: int64 */
+            subjectId: number | null;
+            subjectCode: string | null;
+            subjectName: string | null;
+            /** Format: int64 */
+            areaId: number;
+            areaCode: string;
+            areaName: string;
+            /** @enum {string} */
+            channel: "APP" | "PHONE" | "IN_PERSON";
+            /** @enum {string} */
+            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "OTHER";
+            summary: string;
+            content: string;
+            /** @enum {string} */
+            status: "NEW" | "PROCESSING" | "RESOLVED";
+            /** Format: int64 */
+            forwardedCompanyId: number | null;
+            forwardedCompanyCode: string | null;
+            forwardedCompanyName: string | null;
+            /** Format: date */
+            deadline: string | null;
+            /** @description Chưa giải quyết và đã qua hạn */
+            overdue: boolean;
+            resolution: string | null;
+            /** Format: date-time */
+            resolvedAt: string | null;
+        };
+        EventDto: {
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            eventType: "SUBMITTED" | "RECEIVED" | "FORWARDED" | "COMPANY_REPLIED" | "CLOSED";
+            /** Format: date-time */
+            occurredAt: string;
+            actorLabel: string;
+            content: string;
+        };
+        ReplyRequest: {
+            content: string;
+        };
+        ForwardRequest: {
+            /**
+             * Format: int64
+             * @description Để trống thì lấy công ty phụ trách khu vực
+             */
+            companyId?: number;
+            note?: string;
+        };
+        CloseRequest: {
+            resolution: string;
         };
         VisitRequest: {
             /** Format: int64 */
@@ -2179,6 +2372,130 @@ export interface operations {
             };
         };
     };
+    list_4: {
+        parameters: {
+            query?: {
+                status?: "NEW" | "PROCESSING" | "RESOLVED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ComplaintDto"][];
+                };
+            };
+        };
+    };
+    create_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateComplaintRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ComplaintDetailDto"];
+                };
+            };
+        };
+    };
+    reply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ComplaintDetailDto"];
+                };
+            };
+        };
+    };
+    forward: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForwardRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ComplaintDetailDto"];
+                };
+            };
+        };
+    };
+    close: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ComplaintDetailDto"];
+                };
+            };
+        };
+    };
     visit: {
         parameters: {
             query?: never;
@@ -2523,7 +2840,7 @@ export interface operations {
             };
         };
     };
-    list_4: {
+    list_5: {
         parameters: {
             query?: {
                 unreadOnly?: boolean;
@@ -2735,6 +3052,28 @@ export interface operations {
             };
         };
     };
+    get_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ComplaintDetailDto"];
+                };
+            };
+        };
+    };
     myWork: {
         parameters: {
             query?: {
@@ -2803,6 +3142,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ChargeDto"];
+                };
+            };
+        };
+    };
+    companyWork: {
+        parameters: {
+            query?: {
+                periodId?: number;
+                areaId?: number;
+                status?: "UNPAID" | "PAID" | "EXEMPT";
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CollectorChargeDto"][];
                 };
             };
         };

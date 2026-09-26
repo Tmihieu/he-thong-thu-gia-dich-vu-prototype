@@ -110,6 +110,18 @@ class CollectionApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$[1].remainingAmount").value(80_000))
                 .andExpect(jsonPath("$[1].lastVisit.result").value("ABSENT"));
 
+        // Quản lý công ty thấy mọi khoản của công ty (KV07 + KV09), lọc được theo tổ; công ty khác không thấy.
+        mvc.perform(get("/api/collection/company-work").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.dv01Manager)))
+                .andExpect(jsonPath("$.length()").value(4))
+                .andExpect(jsonPath("$[0].paidAmount").value(80_000));
+        mvc.perform(get("/api/collection/company-work").param("areaId", fx.kv09.getId().toString())
+                        .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.dv01Manager)))
+                .andExpect(jsonPath("$[*].charge.areaCode", contains("KV09", "KV09")));
+        mvc.perform(get("/api/collection/company-work").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.dv07Manager)))
+                .andExpect(jsonPath("$[*].charge.companyCode", contains("DV07", "DV07")));
+        mvc.perform(get("/api/collection/company-work").header(HttpHeaders.AUTHORIZATION, collector))
+                .andExpect(status().isForbidden());
+
         mvc.perform(get("/api/collection/charges/" + absent + "/activity").header(HttpHeaders.AUTHORIZATION,
                         fx.bearer(fx.officer)))
                 .andExpect(jsonPath("$.visits[0].note").value("Nhà khóa cửa"))

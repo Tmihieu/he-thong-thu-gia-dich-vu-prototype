@@ -5,12 +5,8 @@ import { ApiError } from '../../../api/client';
 import { MoneyText } from '../../../shared/MoneyText';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type CollectorCharge, useCashHeld, useMyWork } from '../api';
-import { WORK_FILTERS, type WorkGroup, workState } from '../workState';
+import { normalizeText, WORK_FILTERS, type WorkGroup, workState } from '../workState';
 import { ResultSheet } from './ResultSheet';
-
-function normalize(s: string) {
-  return s.normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/đ/gi, 'd').toLowerCase();
-}
 
 /** Danh sách thu của người đi thu (giao diện điện thoại, §10 bước 3). */
 export function CollectorListPage() {
@@ -23,11 +19,11 @@ export function CollectorListPage() {
   const items = useMemo(() => work.data ?? [], [work.data]);
 
   const visible = useMemo(() => {
-    const needle = normalize(q.trim());
+    const needle = normalizeText(q.trim());
     return items.filter((w) => {
       if (filter !== 'ALL' && workState(w).group !== filter) return false;
       if (!needle) return true;
-      return normalize(`${w.charge.subjectName} ${w.charge.subjectCode} ${w.charge.subjectAddress}`).includes(needle);
+      return normalizeText(`${w.charge.subjectName} ${w.charge.subjectCode} ${w.charge.subjectAddress}`).includes(needle);
     });
   }, [items, filter, q]);
 

@@ -406,14 +406,14 @@
   - **File dự kiến:** `WEB/app/layout/CollectorLayout.tsx`, `WEB/features/collection/CollectorListPage/{CollectorListPage.tsx,ResultSheet.tsx,ResultSheet.test.tsx}`, `WEB/features/collection/api.ts`
   - **Kích thước:** M
 
-- [ ] **T28 — Web công ty: phân tổ cho người đi thu, danh sách hộ được giao** · `collection` · M · P0 (§10 bước 3)
+- [x] **T28 — Web công ty: phân tổ cho người đi thu, danh sách hộ được giao** · `collection` · M · P0 (§10 bước 3) · **xong 27/09/2026** (test tự động; còn kiểm tay): thêm API `GET /api/collection/company-work` (khoản của công ty kèm đã thu, lượt ghé); hai màn là tab "Hộ được giao" và "Phân tổ" trong "Khu vực được giao"; lọc người đi thu theo phân tổ hiện tại; `ResultSheet` nhận danh sách người đi thu để công ty ghi thay (mặc định người phụ trách tổ)
   - **Mô tả:** Màn "Hộ được giao" của công ty: danh sách hộ các tổ mình phụ trách trong kỳ (lọc theo tổ, trạng thái, người đi thu); cập nhật kết quả thay người đi thu (dùng lại `ResultSheet` của T27). Màn "Phân tổ": bảng tổ → người đi thu, form gán/đổi người đi thu.
   - **Tiêu chí nghiệm thu:**
-    - [ ] `dv01` phân KV07 cho một người đi thu; người đó đăng nhập thấy hộ KV07
-    - [ ] `dv01` chỉ thấy tổ và hộ của DV01
-    - [ ] Validation form phân tổ có test component
+    - [ ] (kiểm tay) `dv01` phân KV07 cho một người đi thu; người đó đăng nhập thấy hộ KV07
+    - [x] `dv01` chỉ thấy tổ và hộ của DV01 (IT `CollectionApiIT`)
+    - [x] Validation form phân tổ có test component
   - **Kiểm chứng:**
-    - [ ] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
+    - [x] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
     - [ ] Thủ công: đăng nhập `dv01`
   - **Phụ thuộc:** T08, T20, T27
   - **File dự kiến:** `WEB/features/collection/CompanyHouseholdsPage/CompanyHouseholdsPage.tsx`, `WEB/features/collection/CollectorAssignPage/{CollectorAssignPage.tsx,AssignCollectorForm.tsx,AssignCollectorForm.test.tsx}`
