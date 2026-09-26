@@ -262,15 +262,15 @@
   - **File dự kiến:** `BE/billing/service/{ChargeCalculator,ChargeEligibility}.java`, `BT/billing/{ChargeCalculatorTest,ChargeEligibilityTest}.java`
   - **Kích thước:** S
 
-- [ ] **T18 — Phiếu yêu cầu thu: xem trước và phát hành (backend)** · `billing` · M · P0 · **[TDD]** · **[cần hỏi trước: G3, G11, G16]**
+- [x] **T18 — Phiếu yêu cầu thu: xem trước và phát hành (backend)** · `billing` · M · P0 · **[TDD]** · **xong 26/09/2026**: mã khoản giữ mã đối tượng đầy đủ `KT-1026-DTH-H000128` (tránh trùng giữa địa bàn); phát hành 0 khoản mới thì không lưu phiếu (HTTP 200); ngày phát hành lấy từ bean `Clock`
   - **Mô tả:** Tạo `MIG/V8__charge_requests_charges.sql` và hai entity: `ChargeRequest` (mã `YCT-…`, kỳ, loại phí, phạm vi **có cấu trúc**: toàn xã / danh sách tổ / theo công ty, hạn đóng, ghi chú, người lập) và `Charge` (đối tượng, hợp đồng, kỳ, loại phí, số tiền snapshot, hạn, trạng thái `UNPAID/PAID/EXEMPT`; "Quá hạn" tính khi đọc, không lưu; công ty snapshot theo trả lời G3). `ChargeRequestService.preview(cmd)` trả số khoản sẽ sinh, tổng tiền, danh sách bỏ qua kèm lý do. `publish(cmd)` sinh khoản trong một transaction, idempotent (ràng buộc duy nhất subject + loại phí + kỳ), ghi audit. API `POST /api/billing/charge-requests/preview`, `POST /api/billing/charge-requests`, `GET /api/billing/charges?periodId&areaId&status`.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Xem trước và phát hành toàn xã kỳ 10/2026 cho cùng số khoản và cùng tổng tiền (IT)
-    - [ ] Phát hành lại cùng kỳ và loại phí không sinh khoản trùng; kết quả báo "0 khoản mới" (IT)
-    - [ ] Kỳ đã khóa → 422; không phải COMMUNE_OFFICER → 403 (IT)
+    - [x] Xem trước và phát hành toàn xã kỳ 10/2026 cho cùng số khoản và cùng tổng tiền (IT)
+    - [x] Phát hành lại cùng kỳ và loại phí không sinh khoản trùng; kết quả báo "0 khoản mới" (IT)
+    - [x] Kỳ đã khóa → 422; không phải COMMUNE_OFFICER → 403 (IT)
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=ChargeRequestServiceIT`
-    - [ ] `cd backend && ./mvnw verify`
+    - [x] `cd backend && ./mvnw test -Dtest=ChargeRequestServiceIT`
+    - [x] `cd backend && ./mvnw verify`
   - **Phụ thuộc:** T17
   - **File dự kiến:** `MIG/V8__…sql`, `BE/billing/domain/{ChargeRequest,Charge}.java` (+ repo), `BE/billing/service/ChargeRequestService.java`, `BE/billing/api/BillingController.java` (+ DTO), `BT/billing/ChargeRequestServiceIT.java`
   - **Kích thước:** M

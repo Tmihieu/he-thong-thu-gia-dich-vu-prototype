@@ -161,6 +161,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/billing/charge-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Phiếu yêu cầu thu đã phát hành, kèm số khoản và tổng tiền (cán bộ xã, quản trị) */
+        get: operations["requests"];
+        put?: never;
+        /** Phát hành phiếu yêu cầu thu; 201 khi có khoản mới, 200 khi không có khoản mới (không lưu phiếu) */
+        post: operations["publish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/charge-requests/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Xem trước phiếu yêu cầu thu: số khoản, tổng tiền, danh sách bỏ qua (không ghi CSDL) */
+        post: operations["preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/auth/me": {
         parameters: {
             query?: never;
@@ -306,6 +341,23 @@ export interface paths {
         };
         /** Lịch sử phân công của một khu vực, mới nhất trước (cán bộ xã, quản trị) */
         get: operations["history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/charges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Khoản phải thu; công ty chỉ thấy khoản của công ty mình */
+        get: operations["charges"];
         put?: never;
         post?: never;
         delete?: never;
@@ -503,6 +555,56 @@ export interface components {
             note: string | null;
             decisionNo: string | null;
         };
+        IssueRequest: {
+            /** Format: int64 */
+            periodId: number;
+            /** Format: int64 */
+            feeTypeId: number;
+            /** @enum {string} */
+            scopeType: "ALL" | "AREAS" | "COMPANY";
+            /** @description Bắt buộc khi scopeType = AREAS */
+            areaIds?: number[];
+            /**
+             * Format: int64
+             * @description Bắt buộc khi scopeType = COMPANY
+             */
+            companyId?: number;
+            /**
+             * Format: date
+             * @description Hạn hộ đóng, không sau hạn công ty nộp xã
+             */
+            dueDate: string;
+            /**
+             * Format: int64
+             * @description Chỉ với loại phí giá cố định; trống thì dùng giá mặc định
+             */
+            unitPrice?: number;
+            note?: string;
+        };
+        IssueResultDto: {
+            /** @description Null khi không có khoản mới */
+            requestCode: string | null;
+            /** Format: int32 */
+            chargeCount: number;
+            /** Format: int32 */
+            exemptCount: number;
+            /** Format: int64 */
+            totalAmount: number;
+            /** Format: int32 */
+            warningCount: number;
+            skipped: components["schemas"]["SkippedDto"][];
+        };
+        SkippedDto: {
+            /** Format: int64 */
+            subjectId: number;
+            subjectCode: string;
+            subjectName: string;
+            areaCode: string;
+            /** @enum {string} */
+            reason: "SUBJECT_NOT_ACTIVE" | "NO_ACTIVE_CONTRACT" | "AREA_WITHOUT_COMPANY" | "DUPLICATE_CHARGE";
+            warning: boolean;
+            message: string;
+        };
         TariffRateDto: {
             /** @enum {string} */
             tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_GENERATOR" | "BY_VOLUME";
@@ -604,6 +706,76 @@ export interface components {
              * @description Số đối tượng chưa chấm dứt
              */
             subjectCount: number;
+        };
+        ChargeDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example KT-1026-DTH-H000128 */
+            code: string;
+            requestCode: string;
+            /** Format: int64 */
+            subjectId: number;
+            subjectCode: string;
+            subjectName: string;
+            subjectAddress: string;
+            /** Format: int64 */
+            areaId: number;
+            areaCode: string;
+            /** Format: int64 */
+            companyId: number;
+            companyCode: string;
+            /** Format: int64 */
+            periodId: number;
+            periodCode: string;
+            feeTypeCode: string;
+            /** @enum {string|null} */
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_GENERATOR" | "BY_VOLUME" | null;
+            /** Format: int64 */
+            unitPrice: number;
+            /** Format: int32 */
+            months: number;
+            /** Format: int64 */
+            amount: number;
+            /** Format: date */
+            dueDate: string;
+            /** @enum {string} */
+            status: "UNPAID" | "PAID" | "EXEMPT";
+            /** @description Chưa thu và đã qua hạn đóng */
+            overdue: boolean;
+        };
+        ChargePageDto: {
+            items: components["schemas"]["ChargeDto"][];
+            /** Format: int64 */
+            total: number;
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
+        };
+        ChargeRequestDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example YCT-1026-01 */
+            code: string;
+            /** Format: int64 */
+            periodId: number;
+            periodCode: string;
+            feeTypeCode: string;
+            feeTypeName: string;
+            /** @enum {string} */
+            scopeType: "ALL" | "AREAS" | "COMPANY";
+            /** Format: date */
+            issueDate: string;
+            /** Format: date */
+            dueDate: string;
+            /** Format: int64 */
+            unitPrice: number | null;
+            /** Format: int64 */
+            chargeCount: number;
+            /** Format: int64 */
+            exemptCount: number;
+            /** Format: int64 */
+            totalAmount: number;
         };
     };
     responses: never;
@@ -929,6 +1101,76 @@ export interface operations {
             };
         };
     };
+    requests: {
+        parameters: {
+            query?: {
+                periodId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ChargeRequestDto"][];
+                };
+            };
+        };
+    };
+    publish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IssueRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["IssueResultDto"];
+                };
+            };
+        };
+    };
+    preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IssueRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["IssueResultDto"];
+                };
+            };
+        };
+    };
     me: {
         parameters: {
             query?: never;
@@ -1113,6 +1355,33 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["AreaAssignmentDto"][];
+                };
+            };
+        };
+    };
+    charges: {
+        parameters: {
+            query?: {
+                periodId?: number;
+                areaId?: number;
+                status?: "UNPAID" | "PAID" | "EXEMPT";
+                subjectId?: number;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ChargePageDto"];
                 };
             };
         };

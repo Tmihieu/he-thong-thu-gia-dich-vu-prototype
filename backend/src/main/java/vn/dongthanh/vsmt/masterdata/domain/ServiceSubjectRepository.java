@@ -35,6 +35,12 @@ public interface ServiceSubjectRepository extends JpaRepository<ServiceSubject, 
     Page<ServiceSubject> search(Long districtId, Long areaId, SubjectStatus status, boolean scoped,
             Collection<Long> areaIds, String q, Pageable pageable);
 
+    @Query("select s from ServiceSubject s join fetch s.area a join fetch a.district order by s.code")
+    List<ServiceSubject> findAllWithArea();
+
+    @Query("select s from ServiceSubject s join fetch s.area a join fetch a.district where a.id in :areaIds order by s.code")
+    List<ServiceSubject> findAllWithAreaIn(Collection<Long> areaIds);
+
     @Query("select s from ServiceSubject s join fetch s.area a join fetch a.district where s.id = :id")
     Optional<ServiceSubject> findByIdWithArea(Long id);
 

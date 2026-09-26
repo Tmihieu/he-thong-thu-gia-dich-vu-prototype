@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 
 import vn.dongthanh.vsmt.billing.service.ChargeCalculator;
-import vn.dongthanh.vsmt.billing.service.ChargeCalculator.ChargeAmount;
+import vn.dongthanh.vsmt.billing.domain.ChargeAmount;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
 import vn.dongthanh.vsmt.masterdata.domain.District;

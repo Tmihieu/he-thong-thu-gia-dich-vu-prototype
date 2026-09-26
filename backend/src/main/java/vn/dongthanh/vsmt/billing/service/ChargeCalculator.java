@@ -2,6 +2,7 @@ package vn.dongthanh.vsmt.billing.service;
 
 import org.springframework.stereotype.Component;
 
+import vn.dongthanh.vsmt.billing.domain.ChargeAmount;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
 import vn.dongthanh.vsmt.masterdata.domain.FeeType;
 import vn.dongthanh.vsmt.masterdata.domain.PeriodType;
@@ -21,9 +22,6 @@ import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
  */
 @Component
 public class ChargeCalculator {
-
-    public record ChargeAmount(TariffGroup tariffGroup, long unitPrice, int months, long amount, boolean exempt) {
-    }
 
     public ChargeAmount calculate(FeeType feeType, CollectionPeriod period, ServiceContract contract, Long enteredPrice) {
         TariffGroup group = null;
