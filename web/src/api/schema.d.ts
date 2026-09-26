@@ -264,6 +264,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/collection/cash/handovers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lịch sử bàn giao: người đi thu xem của mình, quản lý công ty xem của công ty */
+        get: operations["handovers"];
+        put?: never;
+        /** Ghi nhận tiền mặt nhận từ người đi thu (quản lý công ty, G5) */
+        post: operations["handover"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/billing/charge-requests": {
         parameters: {
             query?: never;
@@ -580,6 +598,23 @@ export interface paths {
         };
         /** Lịch sử thu của một khoản: thanh toán và lượt ghé */
         get: operations["activity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/collection/cash/held": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tiền mặt đang giữ. Người đi thu: của mình; quản lý công ty: một người (collectorId) hoặc cả công ty */
+        get: operations["held"];
         put?: never;
         post?: never;
         delete?: never;
@@ -920,6 +955,32 @@ export interface components {
             /** Format: date */
             endDate: string;
         };
+        HandoverRequest: {
+            /** Format: int64 */
+            collectorId: number;
+            /** Format: int64 */
+            amount: number;
+            /**
+             * Format: date
+             * @description Để trống thì lấy hôm nay
+             */
+            handoverDate?: string;
+            note?: string;
+        };
+        HandoverDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example BG-1026-01 */
+            code: string;
+            /** Format: int64 */
+            collectorId: number;
+            collectorName: string;
+            /** Format: date */
+            handoverDate: string;
+            /** Format: int64 */
+            amount: number;
+            note: string | null;
+        };
         IssueRequest: {
             /** Format: int64 */
             periodId: number;
@@ -1202,6 +1263,24 @@ export interface components {
             remainingAmount: number;
             payments: components["schemas"]["PaymentDto"][];
             visits: components["schemas"]["VisitDto"][];
+        };
+        CashHeldDto: {
+            /** Format: int64 */
+            collectorId: number;
+            collectorUsername: string;
+            collectorName: string;
+            /**
+             * Format: int64
+             * @description Tiền mặt đã thu (mọi kỳ)
+             */
+            collectedCash: number;
+            /** Format: int64 */
+            handedOver: number;
+            /**
+             * Format: int64
+             * @description Đang giữ
+             */
+            held: number;
         };
         ChargeRequestDto: {
             /** Format: int64 */
@@ -1714,6 +1793,52 @@ export interface operations {
             };
         };
     };
+    handovers: {
+        parameters: {
+            query?: {
+                collectorId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["HandoverDto"][];
+                };
+            };
+        };
+    };
+    handover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HandoverRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["HandoverDto"];
+                };
+            };
+        };
+    };
     requests: {
         parameters: {
             query?: {
@@ -2148,6 +2273,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ActivityDto"];
+                };
+            };
+        };
+    };
+    held: {
+        parameters: {
+            query?: {
+                collectorId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CashHeldDto"][];
                 };
             };
         };

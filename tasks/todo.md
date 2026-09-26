@@ -369,13 +369,13 @@
   - **File dự kiến:** `BE/remittance/service/{CompanyLedgerService,LedgerStatus}.java`, `BE/remittance/api/LedgerController.java` (+ DTO), `BT/remittance/{CompanyLedgerServiceTest,LedgerApiIT}.java`
   - **Kích thước:** M
 
-- [ ] **T25 — Tiền mặt người đi thu đang giữ và bàn giao cho công ty** · `collection` · S · P0 · **[TDD]** · **[cần hỏi trước: G5]**
+- [x] **T25 — Tiền mặt người đi thu đang giữ và bàn giao cho công ty** · `collection` · S · P0 · **[TDD]** · **xong 26/09/2026**: quản lý công ty ghi khi nhận tiền (G5); bàn giao không gắn kỳ theo D5 (DD đã duyệt, khác mô tả task)
   - **Mô tả:** Tạo `MIG/V12__cash_handovers.sql` và entity `CashHandover` (người đi thu, kỳ, ngày, số tiền, ghi chú, người ghi). `CashService.held(collectorId)` = Σ thanh toán tiền mặt người đó xác nhận − Σ bàn giao (R21). `handover(...)`: 0 < số tiền ≤ đang giữ (R22). Bên ghi nhận (công ty "nhận tiền mặt" hay người đi thu "bàn giao") theo trả lời G5. Có ghi audit. Test viết trước.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Test đơn vị: đang giữ đúng sau 2 lần thu và 1 lần bàn giao; bàn giao vượt đang giữ → 422; số tiền ≤ 0 → 422
-    - [ ] API `GET /api/collection/cash/held`, `POST /api/collection/cash/handovers`; công ty không bàn giao được cho người đi thu của công ty khác (IT)
+    - [x] Test đơn vị: đang giữ đúng sau 2 lần thu và 1 lần bàn giao; bàn giao vượt đang giữ → 422; số tiền ≤ 0 → 422
+    - [x] API `GET /api/collection/cash/held`, `POST /api/collection/cash/handovers`; công ty không bàn giao được cho người đi thu của công ty khác (IT)
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=CashServiceTest,CashApiIT`
+    - [x] `cd backend && ./mvnw test -Dtest=CashServiceTest,CashApiIT`
   - **Phụ thuộc:** T21
   - **File dự kiến:** `MIG/V12__cash_handovers.sql`, `BE/collection/domain/CashHandover.java` (+ repo), `BE/collection/service/CashService.java`, `BT/collection/{CashServiceTest,CashApiIT}.java`
   - **Kích thước:** S (API gắn vào `CollectionController` có sẵn)
