@@ -39,6 +39,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/remittance/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Phiếu thu theo kỳ/công ty, kèm lũy kế đã nộp tới từng phiếu; công ty chỉ thấy phiếu của mình */
+        get: operations["list"];
+        put?: never;
+        /** Lập phiếu thu khi công ty nộp tiền (cán bộ xã); số tiền ≤ còn phải nộp của kỳ */
+        post: operations["issue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/auth/login": {
         parameters: {
             query?: never;
@@ -150,7 +168,7 @@ export interface paths {
             cookie?: never;
         };
         /** Danh sách kỳ thu, mới nhất trước; có date thì chỉ các kỳ chứa ngày đó */
-        get: operations["list"];
+        get: operations["list_1"];
         put?: never;
         /** Mở kỳ thu tháng/quý (quản trị); gắn biểu giá có hiệu lực tại ngày đầu kỳ */
         post: operations["open"];
@@ -317,6 +335,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/remittance/receipts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Một phiếu thu (để in: số tiền bằng chữ, lũy kế, còn phải nộp) */
+        get: operations["get_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/remittance/ledger": {
         parameters: {
             query?: never;
@@ -359,7 +394,7 @@ export interface paths {
             cookie?: never;
         };
         /** Thông báo của người đang đăng nhập (theo vai trò, công ty, cá nhân), mới nhất trước */
-        get: operations["list_1"];
+        get: operations["list_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -410,7 +445,7 @@ export interface paths {
             cookie?: never;
         };
         /** Chi tiết kỳ thu */
-        get: operations["get_1"];
+        get: operations["get_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -713,6 +748,67 @@ export interface components {
             note: string | null;
             currentContract: components["schemas"]["ContractDto"];
             contracts: components["schemas"]["ContractDto"][];
+        };
+        IssueReceiptRequest: {
+            /** Format: int64 */
+            companyId: number;
+            /** Format: int64 */
+            periodId: number;
+            /** Format: int64 */
+            amount: number;
+            /** @enum {string} */
+            method: "CASH" | "TRANSFER";
+            /**
+             * Format: date
+             * @description Để trống thì lấy hôm nay
+             */
+            receiptDate?: string;
+            /** @description Để trống thì lấy người đầu mối công ty */
+            payerName?: string;
+            documentRef?: string;
+            note?: string;
+        };
+        ReceiptDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example PT-CT-1026-001 */
+            code: string;
+            /** Format: int64 */
+            companyId: number;
+            companyCode: string;
+            companyName: string;
+            /** Format: int64 */
+            periodId: number;
+            periodCode: string;
+            periodLabel: string;
+            /** Format: int64 */
+            amount: number;
+            /** @description Số tiền bằng chữ (R29) */
+            amountInWords: string;
+            /** @enum {string} */
+            method: "CASH" | "TRANSFER";
+            /** Format: date */
+            receiptDate: string;
+            payerName: string;
+            documentRef: string | null;
+            note: string | null;
+            /** @enum {string} */
+            status: "RECORDED";
+            /**
+             * Format: int64
+             * @description Lũy kế đã nộp tới phiếu này (R30)
+             */
+            cumulativePaid: number;
+            /**
+             * Format: int64
+             * @description Phải thu của công ty trong kỳ
+             */
+            periodDue: number;
+            /**
+             * Format: int64
+             * @description Còn phải nộp sau phiếu này
+             */
+            remainingAfter: number;
         };
         LoginRequest: {
             username: string;
@@ -1390,6 +1486,53 @@ export interface operations {
             };
         };
     };
+    list: {
+        parameters: {
+            query?: {
+                periodId?: number;
+                companyId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ReceiptDto"][];
+                };
+            };
+        };
+    };
+    issue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IssueReceiptRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ReceiptDto"];
+                };
+            };
+        };
+    };
     login: {
         parameters: {
             query?: never;
@@ -1559,7 +1702,7 @@ export interface operations {
             };
         };
     };
-    list: {
+    list_1: {
         parameters: {
             query?: {
                 date?: string;
@@ -1909,6 +2052,28 @@ export interface operations {
             };
         };
     };
+    get_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ReceiptDto"];
+                };
+            };
+        };
+    };
     ledger: {
         parameters: {
             query: {
@@ -1951,7 +2116,7 @@ export interface operations {
             };
         };
     };
-    list_1: {
+    list_2: {
         parameters: {
             query?: {
                 unreadOnly?: boolean;
@@ -2015,7 +2180,7 @@ export interface operations {
             };
         };
     };
-    get_1: {
+    get_2: {
         parameters: {
             query?: never;
             header?: never;

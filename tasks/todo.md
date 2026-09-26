@@ -380,15 +380,15 @@
   - **File dự kiến:** `MIG/V12__cash_handovers.sql`, `BE/collection/domain/CashHandover.java` (+ repo), `BE/collection/service/CashService.java`, `BT/collection/{CashServiceTest,CashApiIT}.java`
   - **Kích thước:** S (API gắn vào `CollectionController` có sẵn)
 
-- [ ] **T26 — Phiếu thu công ty do xã lập (backend)** · `remittance` · M · P0 · **[TDD]** · **[cần hỏi trước: G11]**
+- [x] **T26 — Phiếu thu công ty do xã lập (backend)** · `remittance` · M · P0 · **[TDD]** · **xong 26/09/2026**: khóa dòng kỳ (`SELECT … FOR UPDATE`) để mã tuần tự và R15 an toàn khi song song; sổ công ty–kỳ đọc số đã nộp thật; DTO có số tiền bằng chữ (R29), lũy kế và còn nộp (R30)
   - **Mô tả:** Tạo `MIG/V13__company_receipts.sql` và entity `CompanyReceipt` (mã `PT-CT-MMYY-nnn`, công ty, kỳ, số tiền, hình thức, ngày, người nộp, số chứng từ, ghi chú, người lập). `CompanyReceiptService.issue(...)` theo mẫu SPEC §6: chỉ COMMUNE_OFFICER; 1 phiếu 1 kỳ, một kỳ nộp nhiều lần; 0 < số tiền ≤ `ledger.remaining` (R15); sinh mã tuần tự không trùng khi gọi đồng thời; ghi audit; kỳ đã khóa → 422. `GET` danh sách phiếu theo kỳ/công ty (công ty chỉ thấy phiếu của mình) kèm lũy kế đã nộp tới từng phiếu (R30). Sau task này ledger (T24) đọc số đã nộp thật.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Test đơn vị: phiếu vượt số còn nộp → 422 `RECEIPT_AMOUNT_OUT_OF_RANGE`; số tiền 0 → 422; nộp 2 lần cộng dồn đúng
-    - [ ] IT: sau khi lập phiếu, `ledger` đổi "đã nộp" và "còn nộp" tương ứng; dv02 không xem được phiếu của DV01
-    - [ ] Mã phiếu không trùng khi 2 yêu cầu song song (IT)
+    - [x] Test đơn vị: phiếu vượt số còn nộp → 422 `RECEIPT_AMOUNT_OUT_OF_RANGE`; số tiền 0 → 422; nộp 2 lần cộng dồn đúng
+    - [x] IT: sau khi lập phiếu, `ledger` đổi "đã nộp" và "còn nộp" tương ứng; dv02 không xem được phiếu của DV01
+    - [x] Mã phiếu không trùng khi 2 yêu cầu song song (IT)
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=CompanyReceiptServiceTest,CompanyReceiptIT`
-    - [ ] `cd backend && ./mvnw verify`
+    - [x] `cd backend && ./mvnw test -Dtest=CompanyReceiptServiceTest,CompanyReceiptIT`
+    - [x] `cd backend && ./mvnw verify`
   - **Phụ thuộc:** T24, T07
   - **File dự kiến:** `MIG/V13__company_receipts.sql`, `BE/remittance/domain/CompanyReceipt.java` (+ repo), `BE/remittance/service/CompanyReceiptService.java`, `BE/remittance/api/CompanyReceiptController.java` (+ DTO), `BT/remittance/{CompanyReceiptServiceTest,CompanyReceiptIT}.java`
   - **Kích thước:** M
