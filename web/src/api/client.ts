@@ -24,10 +24,16 @@ export interface RequestOptions {
 }
 
 let tokenGetter: () => string | null = () => null;
+let unauthorizedHandler: () => void = () => {};
 
-/** Đăng ký nơi lấy access token (đặt ở T08 khi có đăng nhập). */
+/** Đăng ký nơi lấy access token (AuthProvider). */
 export function setTokenGetter(getter: () => string | null): void {
   tokenGetter = getter;
+}
+
+/** Gọi khi request có gửi token mà nhận 401 (token hết hạn/sai) để đưa về trang đăng nhập. */
+export function setUnauthorizedHandler(handler: () => void): void {
+  unauthorizedHandler = handler;
 }
 
 function buildUrl(path: string, params?: Record<string, QueryValue>): string {
@@ -72,7 +78,10 @@ async function request<T>(method: string, path: string, options: RequestOptions 
     throw new ApiError(0, 'NETWORK_ERROR', 'Không kết nối được máy chủ. Vui lòng kiểm tra mạng.');
   }
 
-  if (!res.ok) throw await toApiError(res);
+  if (!res.ok) {
+    if (res.status === 401 && token) unauthorizedHandler();
+    throw await toApiError(res);
+  }
   if (res.status === 204) return undefined as T;
   const text = await res.text();
   return (text ? JSON.parse(text) : undefined) as T;

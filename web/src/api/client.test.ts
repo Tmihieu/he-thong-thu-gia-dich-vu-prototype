@@ -1,6 +1,6 @@
 import { afterEach, vi } from 'vitest';
 
-import { api, ApiError, setTokenGetter } from './client';
+import { api, ApiError, setTokenGetter, setUnauthorizedHandler } from './client';
 
 function mockFetch(response: Response | Error) {
   const fn = vi.fn(() => (response instanceof Error ? Promise.reject(response) : Promise.resolve(response)));
@@ -15,6 +15,7 @@ function json(status: number, body: unknown) {
 afterEach(() => {
   vi.unstubAllGlobals();
   setTokenGetter(() => null);
+  setUnauthorizedHandler(() => {});
 });
 
 describe('api client', () => {
@@ -58,5 +59,19 @@ describe('api client', () => {
   it('204 trả undefined', async () => {
     mockFetch(new Response(null, { status: 204 }));
     await expect(api.delete('/api/x/1')).resolves.toBeUndefined();
+  });
+
+  it('401 khi đã gửi token thì gọi unauthorizedHandler; chưa có token thì không', async () => {
+    const onUnauthorized = vi.fn();
+    setUnauthorizedHandler(onUnauthorized);
+
+    mockFetch(json(401, { code: 'UNAUTHORIZED', message: 'Hết hạn' }));
+    await expect(api.post('/api/platform/auth/login', {})).rejects.toBeInstanceOf(ApiError);
+    expect(onUnauthorized).not.toHaveBeenCalled();
+
+    setTokenGetter(() => 'het-han');
+    mockFetch(json(401, { code: 'UNAUTHORIZED', message: 'Hết hạn' }));
+    await expect(api.get('/api/x')).rejects.toMatchObject({ status: 401 });
+    expect(onUnauthorized).toHaveBeenCalledTimes(1);
   });
 });

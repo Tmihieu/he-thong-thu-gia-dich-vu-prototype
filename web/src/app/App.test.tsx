@@ -3,9 +3,10 @@ import { render, screen } from '@testing-library/react';
 import { App } from './App';
 
 describe('App', () => {
-  it('khởi động được với AntD tiếng Việt, router và React Query', async () => {
+  it('khởi động được và chưa đăng nhập thì mở trang đăng nhập', async () => {
+    sessionStorage.clear();
     render(<App />);
-    expect(await screen.findByText('Thu giá dịch vụ VSMT – xã Đông Thạnh')).toBeInTheDocument();
-    expect(screen.getByText('01/10/2026')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Đăng nhập/ })).toBeInTheDocument();
+    expect(screen.getByText('Thu giá dịch vụ VSMT')).toBeInTheDocument();
   });
 });

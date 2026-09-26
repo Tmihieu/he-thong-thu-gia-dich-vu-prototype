@@ -2,6 +2,8 @@ package vn.dongthanh.vsmt.platform.api;
 
 import java.time.Instant;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import vn.dongthanh.vsmt.platform.domain.Role;
@@ -22,10 +24,20 @@ public final class AuthDtos {
         }
     }
 
-    public record LoginResponse(String accessToken, String tokenType, Instant expiresAt, MeResponse user) {
+    public record LoginResponse(
+            @Schema(requiredMode = RequiredMode.REQUIRED) String accessToken,
+            @Schema(requiredMode = RequiredMode.REQUIRED, example = "Bearer") String tokenType,
+            @Schema(requiredMode = RequiredMode.REQUIRED) Instant expiresAt,
+            @Schema(requiredMode = RequiredMode.REQUIRED) MeResponse user) {
     }
 
-    public record MeResponse(Long id, String username, String fullName, Role role, Long companyId) {
+    public record MeResponse(
+            @Schema(requiredMode = RequiredMode.REQUIRED) Long id,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String username,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String fullName,
+            @Schema(requiredMode = RequiredMode.REQUIRED) Role role,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true,
+                    description = "Chỉ có với COMPANY_MANAGER, COLLECTOR") Long companyId) {
 
         static MeResponse of(User user) {
             return new MeResponse(user.getId(), user.getUsername(), user.getFullName(), user.getRole(),

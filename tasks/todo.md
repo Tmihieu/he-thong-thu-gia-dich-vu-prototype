@@ -123,15 +123,15 @@
   - **File dự kiến:** `MIG/V2__audit_logs.sql`, `BE/platform/domain/AuditLog.java` (+ repo), `BE/platform/service/AuditService.java`, `BT/platform/AuditServiceIT.java`
   - **Kích thước:** M
 
-- [ ] **T08 — Web: đăng nhập, layout và menu theo vai trò** · `platform` · M · P0
+- [x] **T08 — Web: đăng nhập, layout và menu theo vai trò** · `platform` · M · P0 · **xong 26/09/2026** (tự động + kiểm qua proxy); còn kiểm bằng mắt trên trình duyệt, và `dv01` sau T09
   - **Mô tả:** Trang đăng nhập; `AuthProvider` lưu token (sessionStorage) và gọi `/auth/me`; `RequireRole` bảo vệ route; `RoleLayout` (AntD Layout) hiển thị menu theo vai trò, danh mục lấy từ prototype-inventory §3. Màn nào chưa làm thì trỏ tới trang "Đang xây dựng". Người đi thu dùng layout mobile, hoàn thiện ở T27. Gặp 401 thì quay về đăng nhập; vào route của vai trò khác thì ra trang 403.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Đăng nhập lần lượt 4 vai trò nội bộ, mỗi vai trò thấy đúng menu (test `menuConfig` + kiểm tra tay)
-    - [ ] Vào URL của vai trò khác → trang 403; token hết hạn/sai → về trang đăng nhập
-    - [ ] Form đăng nhập báo lỗi tiếng Việt khi sai mật khẩu (test component)
+    - [x] Đăng nhập lần lượt 4 vai trò nội bộ, mỗi vai trò thấy đúng menu (test `menuConfig` + kiểm tra tay; tay mới kiểm `admin`, `canbo_xa` qua API)
+    - [x] Vào URL của vai trò khác → trang 403; token hết hạn/sai → về trang đăng nhập
+    - [x] Form đăng nhập báo lỗi tiếng Việt khi sai mật khẩu (test component)
   - **Kiểm chứng:**
-    - [ ] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
-    - [ ] Thủ công: `npm run dev`, đăng nhập `admin`, `canbo_xa` (và `dv01` sau T09)
+    - [x] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
+    - [ ] Thủ công: `npm run dev`, đăng nhập `admin`, `canbo_xa` (và `dv01` sau T09) — chờ người dùng xem trên trình duyệt
   - **Phụ thuộc:** T04, T06
   - **File dự kiến:** `WEB/app/auth/{AuthProvider,LoginPage,RequireRole}.tsx`, `WEB/app/layout/{RoleLayout.tsx,menuConfig.ts}`, `WEB/app/layout/menuConfig.test.ts`
   - **Kích thước:** M

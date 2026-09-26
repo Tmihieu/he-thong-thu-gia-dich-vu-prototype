@@ -15,5 +15,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     env: { TZ: 'Asia/Ho_Chi_Minh' },
+    // Form AntD trong jsdom chậm khi gõ phím; 5 giây mặc định không đủ cho test đăng nhập.
+    testTimeout: 15000,
   },
 });
