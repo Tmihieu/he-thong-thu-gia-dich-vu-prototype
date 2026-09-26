@@ -356,15 +356,15 @@
 
 ## Tuần 3 — Hoàn tất luồng tiền, thông báo, khiếu nại backend (07/10 – 13/10)
 
-- [ ] **T24 — Sổ công ty–kỳ (CompanyLedgerService): nguồn số liệu duy nhất** · `remittance` · M · P0 · **[TDD]** · **[cần hỏi trước: G3, G4; O2 mặc định "công ty nộp toàn bộ"]**
+- [x] **T24 — Sổ công ty–kỳ (CompanyLedgerService): nguồn số liệu duy nhất** · `remittance` · M · P0 · **[TDD]** · **xong 26/09/2026**: phải thu theo công ty chụp trên khoản (G3); đã nộp lấy qua `RemittedTotals` (tạm 0 tới T26); nợ kỳ trước tính mọi kỳ khác đã hết hạn
   - **Mô tả:** Service chỉ đọc, tính cho mỗi (công ty, kỳ): **phải thu** (Σ khoản của các tổ công ty phụ trách **tại kỳ phát sinh**, không dùng phân công hiện tại, đây là sửa lỗi R6 của prototype); **công ty đã thu** (R8, theo G4); **đã nộp về xã** (Σ phiếu thu, R7, trả 0 cho tới khi T26 xong); **còn phải nộp**; **nợ kỳ trước**; **quá hạn** khi hạn kỳ < hôm nay (R9–R11). Có thêm trạng thái tiến độ (R13: Chưa có công ty / Đã nộp đủ / Quá hạn nộp / Nộp một phần / Chưa nộp; cờ < 45%) và trạng thái đối soát (R14: chênh lệch = đã nộp − đã thu; Khớp / Đang nộp / Lệch). "Hôm nay" lấy qua `Clock` inject để test được. Test viết trước, gồm ca **đổi công ty giữa các kỳ**: kỳ cũ vẫn tính cho công ty cũ.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Test đơn vị cho từng công thức R6–R14 và mỗi nhánh trạng thái, gồm ca đổi công ty
-    - [ ] `GET /api/remittance/ledger?periodId` (xã: mọi công ty; công ty: chỉ dòng của mình) (IT phạm vi)
-    - [ ] Tiền `long`; kết quả tính bằng truy vấn tổng hợp, không nạp toàn bộ khoản vào bộ nhớ
+    - [x] Test đơn vị cho từng công thức R6–R14 và mỗi nhánh trạng thái, gồm ca đổi công ty
+    - [x] `GET /api/remittance/ledger?periodId` (xã: mọi công ty; công ty: chỉ dòng của mình) (IT phạm vi)
+    - [x] Tiền `long`; kết quả tính bằng truy vấn tổng hợp, không nạp toàn bộ khoản vào bộ nhớ
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=CompanyLedgerServiceTest,LedgerApiIT`
-    - [ ] `cd backend && ./mvnw verify`
+    - [x] `cd backend && ./mvnw test -Dtest=CompanyLedgerServiceTest,LedgerApiIT`
+    - [x] `cd backend && ./mvnw verify`
   - **Phụ thuộc:** T13, T18, T21
   - **File dự kiến:** `BE/remittance/service/{CompanyLedgerService,LedgerStatus}.java`, `BE/remittance/api/LedgerController.java` (+ DTO), `BT/remittance/{CompanyLedgerServiceTest,LedgerApiIT}.java`
   - **Kích thước:** M

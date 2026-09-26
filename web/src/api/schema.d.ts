@@ -299,6 +299,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/remittance/ledger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sổ công ty–kỳ: phải thu, đã thu, đã nộp, còn nộp, nợ kỳ trước, tiến độ, đối soát. Xã và quản trị thấy mọi công ty; công ty chỉ thấy dòng của mình */
+        get: operations["ledger"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/auth/me": {
         parameters: {
             query?: never;
@@ -952,6 +969,60 @@ export interface components {
             reason: "SUBJECT_NOT_ACTIVE" | "NO_ACTIVE_CONTRACT" | "AREA_WITHOUT_COMPANY" | "DUPLICATE_CHARGE";
             warning: boolean;
             message: string;
+        };
+        LedgerRowDto: {
+            /** Format: int64 */
+            companyId: number;
+            companyCode: string;
+            companyName: string;
+            /** Format: int64 */
+            periodId: number;
+            /**
+             * Format: int64
+             * @description Phải thu
+             */
+            due: number;
+            /** Format: int64 */
+            chargeCount: number;
+            /**
+             * Format: int64
+             * @description Công ty đã thu của hộ
+             */
+            collected: number;
+            /**
+             * Format: int64
+             * @description Đã nộp về xã
+             */
+            received: number;
+            /** Format: int64 */
+            receiptCount: number;
+            /**
+             * Format: int64
+             * @description Còn phải nộp
+             */
+            remaining: number;
+            /**
+             * Format: int64
+             * @description Đã nộp − đã thu; âm là thu rồi chưa nộp
+             */
+            gap: number;
+            /**
+             * Format: int64
+             * @description Nợ các kỳ trước đã hết hạn
+             */
+            previousDebt: number;
+            overdue: boolean;
+            /**
+             * Format: double
+             * @description Đã thu / phải thu (%)
+             */
+            collectionRate: number;
+            /** @description Tỷ lệ thu dưới 45% */
+            lowCollectionRate: boolean;
+            /** @enum {string} */
+            progress: "NO_COMPANY" | "PAID_IN_FULL" | "OVERDUE" | "PARTIAL" | "NOT_PAID";
+            /** @enum {string} */
+            reconciliation: "MATCHED" | "PENDING" | "MISMATCH";
         };
         NotificationPageDto: {
             items: components["schemas"]["NotificationDto"][];
@@ -1709,6 +1780,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["IssueResultDto"];
+                };
+            };
+        };
+    };
+    ledger: {
+        parameters: {
+            query: {
+                periodId: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LedgerRowDto"][];
                 };
             };
         };

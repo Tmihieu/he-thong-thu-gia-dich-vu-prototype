@@ -12,6 +12,7 @@ import java.time.LocalDate;
 
 import javax.crypto.spec.SecretKeySpec;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,7 +71,7 @@ class AuthIT extends IntegrationTest {
     void seedUsers() {
         users.deleteAll();
         companies.deleteAll();
-        companyId = companies.save(Company.create("DV07", "Công ty Mẫu 07", "Người Mẫu", "0900000007",
+        companyId = companies.save(Company.create("DV99", "Công ty Mẫu 99", "Người Mẫu", "0900000099",
                 LocalDate.of(2026, 1, 1))).getId();
         String hash = encoder.encode(PASSWORD);
         users.save(User.create("canbo_a", "Cán bộ A", Role.COMMUNE_OFFICER, null, hash));
@@ -78,6 +79,13 @@ class AuthIT extends IntegrationTest {
         User locked = User.create("bi_khoa", "Bị khóa", Role.ADMIN, null, hash);
         locked.setStatus(UserStatus.LOCKED);
         users.save(locked);
+    }
+
+    /** Test này commit dữ liệu (không chạy trong transaction) nên phải dọn để không ảnh hưởng IT khác. */
+    @AfterEach
+    void cleanUp() {
+        users.deleteAll();
+        companies.deleteAll();
     }
 
     @Test
