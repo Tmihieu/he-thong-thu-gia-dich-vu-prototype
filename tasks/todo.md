@@ -198,15 +198,15 @@
   - **File dự kiến:** `WEB/features/masterdata/PeriodsPage/{PeriodsPage.tsx,OpenPeriodForm.tsx,OpenPeriodForm.test.tsx}`, `WEB/features/masterdata/TariffsPage/TariffsPage.tsx`, `WEB/features/masterdata/api.ts`
   - **Kích thước:** M
 
-- [ ] **T13 — Phân công khu vực có hiệu lực và lưu lịch sử (backend)** · `master-data` · M · P0 · **[TDD]** · **[cần hỏi trước: G3, G14]**
+- [x] **T13 — Phân công khu vực có hiệu lực và lưu lịch sử (backend)** · `master-data` · M · P0 · **[TDD]** · **xong 26/09/2026**: exclusion constraint (btree_gist) + kiểm tra ở service; đổi công ty phát `AreaReassignedEvent` để T20 kết thúc phân tổ cũ (G14); thêm `GET /area-assignments?date` cho T14
   - **Mô tả:** Tạo `MIG/V6__area_assignments.sql` và entity `AreaAssignment` (khu vực, công ty, từ ngày, đến ngày có thể null, ghi chú). `AreaAssignmentService.assign(areaIds[], companyId, fromDate, note)`: tự đóng phân công cũ (đến ngày = fromDate − 1), tạo bản ghi mới, giữ lịch sử. Mỗi khu vực tối đa 1 công ty trong cùng khoảng hiệu lực. `companyOf(areaId, date)` dùng cho billing và remittance. Seed `V6_1` theo prototype-inventory §0 (KV24 chưa có công ty). Test viết trước: phân công mới; đổi công ty giữ lịch sử và `companyOf` ngày cũ vẫn trả công ty cũ; phân công chồng lấn bị chặn; phân công nhiều tổ một lần; fromDate trước phân công hiện tại → 422. Có ghi audit.
   - **Tiêu chí nghiệm thu:**
-    - [ ] 5 test đơn vị trên viết trước và xanh
-    - [ ] `POST /api/masterdata/area-assignments` (chỉ COMMUNE_OFFICER), `GET /areas/{id}/assignments` trả lịch sử (IT)
-    - [ ] Ràng buộc chống chồng lấn có ở cả service lẫn CSDL (exclusion constraint hoặc kiểm tra trong transaction), có IT
+    - [x] 5 test đơn vị trên viết trước và xanh
+    - [x] `POST /api/masterdata/area-assignments` (chỉ COMMUNE_OFFICER), `GET /areas/{id}/assignments` trả lịch sử (IT)
+    - [x] Ràng buộc chống chồng lấn có ở cả service lẫn CSDL (exclusion constraint hoặc kiểm tra trong transaction), có IT
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=AreaAssignmentServiceTest,AreaAssignmentIT`
-    - [ ] `cd backend && ./mvnw verify`
+    - [x] `cd backend && ./mvnw test -Dtest=AreaAssignmentServiceTest,AreaAssignmentIT`
+    - [x] `cd backend && ./mvnw verify`
   - **Phụ thuộc:** T09, T07
   - **File dự kiến:** `MIG/V6__area_assignments.sql` + `SEED/V6_1__seed_assignments.sql`, `BE/masterdata/domain/AreaAssignment.java` (+ repo), `BE/masterdata/service/AreaAssignmentService.java`, `BE/masterdata/api/AreaAssignmentController.java`, `BT/masterdata/{AreaAssignmentServiceTest,AreaAssignmentIT}.java`
   - **Kích thước:** M

@@ -100,6 +100,18 @@ class DemoSeedIT extends IntegrationTest {
                 .containsExactly("ENV", "EXTRA");
     }
 
+    @Test
+    void demoProfileSeedsAreaAssignmentsWithKv24Unassigned() {
+        assertThat(demoDb.queryForObject("select count(*) from area_assignments", Integer.class)).isEqualTo(23);
+        assertThat(demoDb.queryForObject("""
+                select count(*) from area_assignments aa join areas a on a.id = aa.area_id where a.code = 'KV24'""",
+                Integer.class)).isZero();
+        assertThat(demoDb.queryForList("""
+                select a.code from area_assignments aa join areas a on a.id = aa.area_id
+                join companies c on c.id = aa.company_id where c.code = 'DV03' order by a.code""", String.class))
+                .containsExactly("KV03", "KV13", "KV14");
+    }
+
     private static DataSource dataSource(String url) {
         return new DriverManagerDataSource(url, POSTGRES.getUsername(), POSTGRES.getPassword());
     }

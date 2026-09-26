@@ -56,6 +56,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/masterdata/area-assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Phân công đang hiệu lực vào ngày (mặc định hôm nay); công ty chỉ thấy khu vực của mình */
+        get: operations["active"];
+        put?: never;
+        /** Phân công một hoặc nhiều khu vực cho công ty (cán bộ xã); tự đóng phân công cũ */
+        post: operations["assign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/auth/me": {
         parameters: {
             query?: never;
@@ -192,6 +210,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/masterdata/areas/{areaId}/assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lịch sử phân công của một khu vực, mới nhất trước (cán bộ xã, quản trị) */
+        get: operations["history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -273,6 +308,35 @@ export interface components {
             /** Format: date-time */
             lockedAt: string | null;
             note: string | null;
+        };
+        AssignRequest: {
+            areaIds: number[];
+            /** Format: int64 */
+            companyId: number;
+            /** Format: date */
+            fromDate: string;
+            note?: string;
+            decisionNo?: string;
+        };
+        AreaAssignmentDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            areaId: number;
+            /** @example KV07 */
+            areaCode: string;
+            areaName: string;
+            /** Format: int64 */
+            companyId: number;
+            /** @example DV01 */
+            companyCode: string;
+            companyName: string;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo: string | null;
+            note: string | null;
+            decisionNo: string | null;
         };
         TariffRateDto: {
             /** @enum {string} */
@@ -463,6 +527,52 @@ export interface operations {
             };
         };
     };
+    active: {
+        parameters: {
+            query?: {
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AreaAssignmentDto"][];
+                };
+            };
+        };
+    };
+    assign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AreaAssignmentDto"][];
+                };
+            };
+        };
+    };
     me: {
         parameters: {
             query?: never;
@@ -625,6 +735,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["AreaDto"][];
+                };
+            };
+        };
+    };
+    history: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                areaId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AreaAssignmentDto"][];
                 };
             };
         };
