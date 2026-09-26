@@ -17,13 +17,13 @@ import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.billing.domain.Charge;
 import vn.dongthanh.vsmt.billing.domain.ChargeRepository;
 import vn.dongthanh.vsmt.billing.domain.ChargeStatus;
-import vn.dongthanh.vsmt.billing.service.ChargeEligibility;
 import vn.dongthanh.vsmt.collection.domain.CollectionVisit;
 import vn.dongthanh.vsmt.collection.domain.CollectionVisitRepository;
 import vn.dongthanh.vsmt.collection.domain.Payment;
 import vn.dongthanh.vsmt.collection.domain.PaymentMethod;
 import vn.dongthanh.vsmt.collection.domain.PaymentRepository;
 import vn.dongthanh.vsmt.collection.domain.VisitResult;
+import vn.dongthanh.vsmt.masterdata.service.PeriodGuard;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 import vn.dongthanh.vsmt.platform.common.ConflictException;
 import vn.dongthanh.vsmt.platform.common.Money;
@@ -182,7 +182,7 @@ public class CollectionService {
     }
 
     private static void requireCollectable(Charge charge) {
-        ChargeEligibility.requireBillable(charge.getPeriod());
+        PeriodGuard.requireOpen(charge.getPeriod());
         if (charge.getStatus() == ChargeStatus.EXEMPT) {
             throw new BusinessRuleException("CHARGE_EXEMPT", "Khoản " + charge.getCode() + " được miễn, không thu.");
         }

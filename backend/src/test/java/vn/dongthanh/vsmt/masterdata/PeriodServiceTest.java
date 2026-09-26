@@ -38,7 +38,8 @@ class PeriodServiceTest {
     final CollectionPeriodRepository periods = mock(CollectionPeriodRepository.class);
     final TariffService tariffs = mock(TariffService.class);
     final AuditService audit = mock(AuditService.class);
-    final PeriodService service = new PeriodService(periods, tariffs, audit);
+    final PeriodService service = new PeriodService(periods, tariffs, audit,
+            java.time.Clock.systemDefaultZone());
 
     final CurrentUser admin = new CurrentUser(1L, "admin", Role.ADMIN, null);
     final CurrentUser officer = new CurrentUser(2L, "canbo_xa", Role.COMMUNE_OFFICER, null);

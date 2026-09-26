@@ -1,6 +1,8 @@
 package vn.dongthanh.vsmt.masterdata.service;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +35,7 @@ public class PeriodService {
     private final CollectionPeriodRepository periods;
     private final TariffService tariffs;
     private final AuditService audit;
+    private final Clock clock;
 
     public record OpenPeriodCommand(PeriodType type, int year, int number, LocalDate openDate, LocalDate dueDate,
             String note) {
@@ -62,6 +65,19 @@ public class PeriodService {
         period.startCollecting();
         audit.record(actor, "START_COLLECTING_PERIOD", ENTITY, period.getCode(), Map.of("status", before),
                 Map.of("status", period.getStatus()));
+        return period;
+    }
+
+    /**
+     * Đặt kỳ sang Đã khóa. Chỉ gọi từ PeriodLockService (remittance) sau khi đã kiểm tra hết nợ bằng sổ công ty–kỳ
+     * (G15) và đã khóa dòng kỳ trong transaction.
+     */
+    public CollectionPeriod markLocked(CollectionPeriod period, CurrentUser actor) {
+        actor.requireRole(Role.COMMUNE_OFFICER);
+        PeriodStatus before = period.getStatus();
+        period.lock(OffsetDateTime.now(clock), actor.id());
+        audit.record(actor, "LOCK_PERIOD", ENTITY, period.getCode(), Map.of("status", before),
+                Map.of("status", period.getStatus(), "lockedAt", period.getLockedAt()));
         return period;
     }
 

@@ -6,6 +6,7 @@ import { RECONCILIATION_COLORS, RECONCILIATION_LABELS } from '../../../shared/la
 import { MoneyText } from '../../../shared/MoneyText';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type LedgerRow, useCompanyLedger } from '../api';
+import { LockPeriodButton } from './LockPeriodButton';
 
 function Gap({ gap }: { gap: number }) {
   if (gap === 0) return <MoneyText value={0} />;
@@ -38,6 +39,7 @@ export function ReconciliationPage() {
       </Typography.Title>
       <Space style={{ marginBottom: 16 }} wrap>
         <PeriodSelect value={periodId} onChange={setPeriodId} />
+        {periodId !== undefined && <LockPeriodButton periodId={periodId} />}
       </Space>
       {ledger.error && <Alert type="error" showIcon message={ledger.error instanceof ApiError ? ledger.error.message : 'Không tải được số liệu'} />}
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>

@@ -8,11 +8,10 @@ import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
-import vn.dongthanh.vsmt.masterdata.domain.PeriodStatus;
+import vn.dongthanh.vsmt.masterdata.service.PeriodGuard;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceContract;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubject;
 import vn.dongthanh.vsmt.masterdata.domain.SubjectStatus;
-import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 
 /**
  * Quy tắc R2, đối tượng nào được lập khoản (không đụng CSDL). Xét lần lượt: đang cung cấp dịch vụ →
@@ -85,8 +84,6 @@ public class ChargeEligibility {
 
     /** Chặn lập khoản cho kỳ đã khóa. */
     public static void requireBillable(CollectionPeriod period) {
-        if (period.getStatus() == PeriodStatus.LOCKED) {
-            throw new BusinessRuleException("PERIOD_LOCKED", "Kỳ " + period.getCode() + " đã khóa, không lập khoản được.");
-        }
+        PeriodGuard.requireOpen(period);
     }
 }

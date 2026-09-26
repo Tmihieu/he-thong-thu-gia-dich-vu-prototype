@@ -93,7 +93,7 @@ public class PeriodController {
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) OffsetDateTime lockedAt,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String note) {
 
-        static PeriodDto of(CollectionPeriod p) {
+        public static PeriodDto of(CollectionPeriod p) {
             return new PeriodDto(p.getId(), p.getCode(), p.getPeriodType(), p.getLabel(), p.getStartDate(),
                     p.getEndDate(), p.getOpenDate(), p.getDueDate(), p.getTariffVersion().getId(),
                     p.getTariffVersion().getCode(), p.getStatus(), p.getLockedAt(), p.getNote());

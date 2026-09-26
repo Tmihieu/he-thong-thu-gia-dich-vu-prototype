@@ -458,15 +458,15 @@
   - **File dự kiến:** `WEB/features/remittance/ProgressPage/ProgressPage.tsx`, `WEB/features/remittance/ReconciliationPage/ReconciliationPage.tsx`, `WEB/features/remittance/useCompanyLedger.ts`, `BT/remittance/LedgerConsistencyIT.java`
   - **Kích thước:** M
 
-- [ ] **T32 — Khóa kỳ: chặn khi còn nợ, cấm sửa sau khóa** · `remittance` · M · P0 (§10 bước 8) · **[TDD]** · **[cần hỏi trước: G1, G15]**
+- [x] **T32 — Khóa kỳ: chặn khi còn nợ, cấm sửa sau khóa** · `remittance` · M · P0 (§10 bước 8) · **[TDD]** · **xong 26/09/2026**: cán bộ xã khóa (G1), chặn khi còn phải nộp > 0 kể cả chưa quá hạn (G15); nút Khóa kỳ đặt ở màn **Đối soát** của cán bộ xã (màn kỳ thu thuộc quản trị); chỉ khóa được kỳ Đang thu
   - **Mô tả:** `PeriodLockService.lock(periodId)`: dùng ledger để chặn khi còn công ty nợ, trả lỗi 422 liệt kê công ty và số nợ (R19); khóa thành công thì đặt `LOCKED` qua service public của master-data. Viết `PeriodGuard.requireOpen(periodId)` (master-data) và gọi trong billing publish, collection recordPayment/handover, remittance issue receipt: sau khóa không sửa được khoản, thanh toán, phiếu thu của kỳ. Thêm nút "Khóa kỳ" trên màn kỳ thu (vai trò theo G1). Test viết trước.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Test đơn vị: còn nợ → 422 kèm danh sách công ty; hết nợ → khóa được
-    - [ ] IT: sau khóa, phát hành YCT, ghi thanh toán, lập phiếu thu cho kỳ đó đều → 422
-    - [ ] Web: bấm khóa khi còn nợ hiện lý do rõ ràng bằng tiếng Việt
+    - [x] Test đơn vị: còn nợ → 422 kèm danh sách công ty; hết nợ → khóa được
+    - [x] IT: sau khóa, phát hành YCT, ghi thanh toán, lập phiếu thu cho kỳ đó đều → 422
+    - [x] Web: bấm khóa khi còn nợ hiện lý do rõ ràng bằng tiếng Việt
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=PeriodLockServiceTest,PeriodLockIT`
-    - [ ] `cd backend && ./mvnw verify`; web lint/test/build
+    - [x] `cd backend && ./mvnw test -Dtest=PeriodLockServiceTest,PeriodLockIT`
+    - [x] `cd backend && ./mvnw verify`; web lint/test/build
   - **Phụ thuộc:** T11, T24, T26, T12
   - **File dự kiến:** `BE/remittance/service/PeriodLockService.java`, `BE/masterdata/service/PeriodGuard.java`, `BE/remittance/api/PeriodLockController.java`, `BT/remittance/{PeriodLockServiceTest,PeriodLockIT}.java`, `WEB/features/masterdata/PeriodsPage/PeriodsPage.tsx`
   - **Kích thước:** M (có sửa nhỏ ở service T18/T21/T26 để gọi guard)

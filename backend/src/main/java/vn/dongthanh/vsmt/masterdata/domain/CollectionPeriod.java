@@ -106,6 +106,14 @@ public class CollectionPeriod extends BaseEntity {
         status = PeriodStatus.COLLECTING;
     }
 
+    /** Cán bộ xã khóa kỳ (G1): chỉ từ Đang thu; sau khóa không phát hành, ghi thu, lập phiếu thu cho kỳ. */
+    public void lock(OffsetDateTime at, Long by) {
+        requireStatus(PeriodStatus.COLLECTING, PeriodStatus.LOCKED);
+        status = PeriodStatus.LOCKED;
+        lockedAt = at;
+        lockedBy = by;
+    }
+
     /** Phần kỳ trong mã chứng từ: tháng {@code MMYY} (1026), quý {@code Q{quý}{YY}} (Q426) (G11). */
     public String documentToken() {
         int yy = startDate.getYear() % 100;

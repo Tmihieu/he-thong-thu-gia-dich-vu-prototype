@@ -57,6 +57,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/remittance/periods/{id}/lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Khóa kỳ (cán bộ xã); còn công ty chưa nộp đủ thì 422 kèm danh sách công ty và số nợ */
+        post: operations["lock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/auth/login": {
         parameters: {
             query?: never;
@@ -827,6 +844,33 @@ export interface components {
              */
             remainingAfter: number;
         };
+        PeriodDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example 2026-10 */
+            code: string;
+            /** @enum {string} */
+            periodType: "MONTH" | "QUARTER";
+            /** @example Tháng 10/2026 */
+            label: string;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            /** Format: date */
+            openDate: string;
+            /** Format: date */
+            dueDate: string;
+            /** Format: int64 */
+            tariffVersionId: number;
+            /** @example BG-65-2026 */
+            tariffVersionCode: string;
+            /** @enum {string} */
+            status: "OPEN" | "COLLECTING" | "LOCKED";
+            /** Format: date-time */
+            lockedAt: string | null;
+            note: string | null;
+        };
         LoginRequest: {
             username: string;
             password: string;
@@ -910,33 +954,6 @@ export interface components {
              */
             dueDate: string;
             note?: string;
-        };
-        PeriodDto: {
-            /** Format: int64 */
-            id: number;
-            /** @example 2026-10 */
-            code: string;
-            /** @enum {string} */
-            periodType: "MONTH" | "QUARTER";
-            /** @example Tháng 10/2026 */
-            label: string;
-            /** Format: date */
-            startDate: string;
-            /** Format: date */
-            endDate: string;
-            /** Format: date */
-            openDate: string;
-            /** Format: date */
-            dueDate: string;
-            /** Format: int64 */
-            tariffVersionId: number;
-            /** @example BG-65-2026 */
-            tariffVersionCode: string;
-            /** @enum {string} */
-            status: "OPEN" | "COLLECTING" | "LOCKED";
-            /** Format: date-time */
-            lockedAt: string | null;
-            note: string | null;
         };
         AssignRequest: {
             areaIds: number[];
@@ -1571,6 +1588,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ReceiptDto"];
+                };
+            };
+        };
+    };
+    lock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodDto"];
                 };
             };
         };

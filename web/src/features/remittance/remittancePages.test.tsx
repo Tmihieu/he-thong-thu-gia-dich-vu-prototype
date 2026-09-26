@@ -78,3 +78,25 @@ describe('Đối soát', () => {
     expect(screen.getAllByText('400.000 đ', norm).length).toBeGreaterThan(0);
   });
 });
+
+describe('Khóa kỳ', () => {
+  it('còn công ty nợ thì hiện lý do tiếng Việt từ máy chủ', async () => {
+    const fetchFn = mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
+      'GET /api/masterdata/periods': () => jsonResponse(200, periods),
+      'GET /api/remittance/ledger': () => jsonResponse(200, [dv01, dv07]),
+      'POST /api/remittance/periods/10/lock': () =>
+        jsonResponse(422, {
+          code: 'PERIOD_HAS_DEBT',
+          message: 'Chưa khóa được kỳ 2026-10 vì còn 2 công ty chưa nộp đủ: DV01: 600.000 đ; DV07: 800.000 đ.',
+        }),
+    });
+    renderApp('/commune/reconciliation');
+
+    await userEvent.click(await screen.findByRole('button', { name: /Khóa kỳ/ }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Khóa kỳ' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('còn 2 công ty chưa nộp đủ: DV01: 600.000 đ; DV07: 800.000 đ');
+    expect(fetchFn.mock.calls.some(([url]) => String(url) === '/api/remittance/periods/10/lock')).toBe(true);
+  });
+});
