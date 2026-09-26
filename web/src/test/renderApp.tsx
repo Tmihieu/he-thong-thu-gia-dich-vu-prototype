@@ -1,9 +1,8 @@
-import { QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { vi } from 'vitest';
 
-import { AuthProvider } from '../app/auth/AuthProvider';
+import { AppProviders } from '../app/AppProviders';
 import { createQueryClient } from '../app/queryClient';
 import { routes } from '../app/routes';
 
@@ -25,15 +24,13 @@ export function mockApi(handlers: Record<string, Handler>) {
   return fn;
 }
 
-/** Render toàn bộ route của app tại một đường dẫn, có AuthProvider và React Query thật. */
+/** Render toàn bộ route của app tại một đường dẫn, với đúng provider của app thật. */
 export function renderApp(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
   const utils = render(
-    <QueryClientProvider client={createQueryClient()}>
-      <AuthProvider>
-        <RouterProvider router={router} />
-      </AuthProvider>
-    </QueryClientProvider>,
+    <AppProviders queryClient={createQueryClient()}>
+      <RouterProvider router={router} />
+    </AppProviders>,
   );
   return { ...utils, router };
 }

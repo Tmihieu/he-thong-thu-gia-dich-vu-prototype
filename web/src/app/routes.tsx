@@ -1,12 +1,20 @@
+import type { ReactNode } from 'react';
 import { Navigate, type RouteObject } from 'react-router';
 
+import { ConfigPage } from '../features/masterdata/ConfigPage';
 import { LoginPage } from './auth/LoginPage';
 import { RequireRole } from './auth/RequireRole';
+import type { Role } from './auth/authContext';
 import { homePath, MENU, ROLE_BASE, ROLES } from './layout/menuConfig';
 import { RoleLayout } from './layout/RoleLayout';
 import { NotFoundPage, RootRedirect, UnderConstructionPage } from './pages/StatusPages';
 
-/** Mỗi vai trò một nhánh route; màn chưa làm hiển thị "Đang xây dựng". */
+/** Màn đã làm, theo `vai trò:đường dẫn menu`; màn chưa có trong đây hiển thị "Đang xây dựng". */
+const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
+  'ADMIN:config': <ConfigPage />,
+};
+
+/** Mỗi vai trò một nhánh route. */
 export const routes: RouteObject[] = [
   { path: '/login', element: <LoginPage /> },
   { path: '/', element: <RootRedirect /> },
@@ -19,7 +27,10 @@ export const routes: RouteObject[] = [
     ),
     children: [
       { index: true, element: <Navigate to={homePath(role)} replace /> },
-      ...MENU[role].map((entry) => ({ path: entry.path, element: <UnderConstructionPage title={entry.label} /> })),
+      ...MENU[role].map((entry) => ({
+        path: entry.path,
+        element: PAGES[`${role}:${entry.path}`] ?? <UnderConstructionPage title={entry.label} />,
+      })),
       { path: '*', element: <NotFoundPage /> },
     ],
   })),

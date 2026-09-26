@@ -185,15 +185,15 @@
   - **File dự kiến:** `MIG/V5__collection_periods.sql`, `BE/masterdata/domain/CollectionPeriod.java` (+ repo), `BE/masterdata/service/PeriodService.java`, `BE/masterdata/api/PeriodController.java` (+ DTO), `BT/masterdata/{PeriodServiceTest,PeriodApiIT}.java`
   - **Kích thước:** M
 
-- [ ] **T12 — Web quản trị: biểu giá và kỳ thu** · `master-data` · M · P0 (§10 bước 1)
+- [x] **T12 — Web quản trị: biểu giá và kỳ thu** · `master-data` · M · P0 (§10 bước 1) · **xong 26/09/2026** (test tự động; còn xem bằng mắt): màn `/admin/config` 2 tab Kỳ thu / Biểu giá
   - **Mô tả:** Màn cấu hình của quản trị: bảng phiên bản biểu giá (chỉ xem, có chi tiết 4 nhóm giá); danh sách kỳ thu; form "Mở kỳ" (chọn tháng/quý, hạn nộp; phiên bản biểu giá tự hiện); nút "Bắt đầu thu". Tham chiếu UI: `prototype/` màn quản trị config.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Quản trị mở được kỳ 10/2026 (tháng) theo QĐ 65/2026 từ giao diện
-    - [ ] Form validation (thiếu tháng/hạn nộp, hạn trước ngày mở) có test component
-    - [ ] Lỗi 422 từ backend (mở trùng kỳ) hiện đúng thông báo tiếng Việt
+    - [x] Quản trị mở được kỳ 10/2026 (tháng) theo QĐ 65/2026 từ giao diện (test trang với API giả lập)
+    - [x] Form validation (thiếu tháng/hạn nộp, hạn trước ngày mở) có test component
+    - [x] Lỗi 422 từ backend (mở trùng kỳ) hiện đúng thông báo tiếng Việt (backend trả 409 cho trùng kỳ, xem T11)
   - **Kiểm chứng:**
-    - [ ] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
-    - [ ] Thủ công: đăng nhập `admin`, mở kỳ 10/2026, bấm "Bắt đầu thu"
+    - [x] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
+    - [ ] Thủ công: đăng nhập `admin`, mở kỳ 10/2026, bấm "Bắt đầu thu" — chờ người dùng
   - **Phụ thuộc:** T08, T11
   - **File dự kiến:** `WEB/features/masterdata/PeriodsPage/{PeriodsPage.tsx,OpenPeriodForm.tsx,OpenPeriodForm.test.tsx}`, `WEB/features/masterdata/TariffsPage/TariffsPage.tsx`, `WEB/features/masterdata/api.ts`
   - **Kích thước:** M
