@@ -19,6 +19,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -30,6 +31,10 @@ import vn.dongthanh.vsmt.masterdata.domain.PeriodStatus;
 import vn.dongthanh.vsmt.masterdata.domain.PeriodType;
 import vn.dongthanh.vsmt.masterdata.domain.TariffStatus;
 import vn.dongthanh.vsmt.masterdata.domain.TariffVersion;
+import vn.dongthanh.vsmt.notification.domain.NotificationKind;
+import vn.dongthanh.vsmt.notification.domain.RecipientType;
+import vn.dongthanh.vsmt.notification.service.NotificationService;
+import vn.dongthanh.vsmt.notification.service.NotificationService.NotificationCommand;
 import vn.dongthanh.vsmt.platform.domain.Role;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
 import vn.dongthanh.vsmt.platform.service.AuditService;
@@ -47,9 +52,10 @@ class CompanyReceiptServiceTest {
     final CollectionPeriodRepository periods = mock(CollectionPeriodRepository.class);
     final CompanyRepository companies = mock(CompanyRepository.class);
     final CompanyLedgerService ledger = mock(CompanyLedgerService.class);
+    final NotificationService notifications = mock(NotificationService.class);
     final AuditService audit = mock(AuditService.class);
     final Clock clock = Clock.fixed(Instant.parse("2026-10-15T03:00:00Z"), ZoneId.of("Asia/Ho_Chi_Minh"));
-    final CompanyReceiptService service = new CompanyReceiptService(receipts, periods, companies, ledger, audit, clock);
+    final CompanyReceiptService service = new CompanyReceiptService(receipts, periods, companies, ledger, notifications, audit, clock);
 
     final CurrentUser officer = new CurrentUser(2L, "canbo_xa", Role.COMMUNE_OFFICER, null);
     final List<CompanyReceipt> stored = new ArrayList<>();
@@ -82,6 +88,11 @@ class CompanyReceiptServiceTest {
         assertThat(r.getReceiptDate()).isEqualTo(LocalDate.of(2026, 10, 15));
         verify(audit).record(eq(officer), eq("ISSUE_COMPANY_RECEIPT"), eq("CompanyReceipt"), eq("PT-CT-1026-001"),
                 eq(null), any());
+        ArgumentCaptor<NotificationCommand> sent = ArgumentCaptor.forClass(NotificationCommand.class);
+        verify(notifications).publish(sent.capture(), eq(officer.id()));
+        assertThat(sent.getValue().type()).isEqualTo(RecipientType.COMPANY);
+        assertThat(sent.getValue().kind()).isEqualTo(NotificationKind.RECEIPT);
+        assertThat(sent.getValue().title()).isEqualTo("Xã đã lập phiếu thu PT-CT-1026-001");
     }
 
     @Test

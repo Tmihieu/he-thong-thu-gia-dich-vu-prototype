@@ -78,7 +78,7 @@ class ReminderIT extends IntegrationTest {
                 .andExpect(jsonPath("$.items[0].title").value("Nhắc nộp tiền Tháng 10/2026"))
                 .andExpect(jsonPath("$.unreadCount").value(1));
         mvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.dv07Manager)))
-                .andExpect(jsonPath("$.total").value(0));
+                .andExpect(jsonPath("$.items[?(@.kind == 'REMINDER')]").isEmpty());
         assertThat(jdbc.queryForObject("select count(*) from audit_logs where action = 'CREATE_PAYMENT_REMINDER'",
                 Integer.class)).isEqualTo(1);
 

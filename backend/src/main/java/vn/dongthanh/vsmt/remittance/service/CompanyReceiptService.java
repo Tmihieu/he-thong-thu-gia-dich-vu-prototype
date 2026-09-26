@@ -18,6 +18,9 @@ import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository;
 import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.masterdata.domain.CompanyRepository;
 import vn.dongthanh.vsmt.masterdata.service.PeriodGuard;
+import vn.dongthanh.vsmt.notification.domain.NotificationKind;
+import vn.dongthanh.vsmt.notification.service.NotificationService;
+import vn.dongthanh.vsmt.notification.service.NotificationService.NotificationCommand;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 import vn.dongthanh.vsmt.platform.common.Money;
 import vn.dongthanh.vsmt.platform.common.NotFoundException;
@@ -44,6 +47,7 @@ public class CompanyReceiptService {
     private final CollectionPeriodRepository periods;
     private final CompanyRepository companies;
     private final CompanyLedgerService ledger;
+    private final NotificationService notifications;
     private final AuditService audit;
     private final Clock clock;
 
@@ -93,6 +97,10 @@ public class CompanyReceiptService {
         after.put("remainingBefore", remaining);
         after.put("remainingAfter", remaining - cmd.amount());
         audit.record(actor, "ISSUE_COMPANY_RECEIPT", ENTITY, code, null, after);
+        notifications.publish(NotificationCommand.toCompany(company.getId(), Role.COMPANY_MANAGER, NotificationKind.RECEIPT,
+                "Xã đã lập phiếu thu " + code, "Đã ghi nhận " + Money.format(cmd.amount()) + " cho " + period.getLabel()
+                        + ". Còn phải nộp kỳ này: " + Money.format(remaining - cmd.amount()) + ".",
+                ReceiptIssueService.link("company.receipts", "receiptId", saved.getId())), actor.id());
         return saved;
     }
 
