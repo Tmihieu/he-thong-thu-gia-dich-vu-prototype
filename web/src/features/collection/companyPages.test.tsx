@@ -60,6 +60,20 @@ function api() {
       const body = JSON.parse(String(init.body)) as { areaIds: number[] };
       return jsonResponse(201, body.areaIds.map((areaId, i) => ({ ...collectorAssignments[0]!, id: 10 + i, areaId })));
     },
+    'GET /api/remittance/ledger': () =>
+      jsonResponse(200, [{ companyId: 1, companyCode: 'DV01', companyName: 'Công ty MTĐT Đông Thạnh', periodId: 10,
+        due: 1_600_000, chargeCount: 20, collected: 1_200_000, received: 1_000_000, receiptCount: 1, remaining: 600_000,
+        gap: -200_000, previousDebt: 0, overdue: false, collectionRate: 75, lowCollectionRate: false, progress: 'PARTIAL',
+        reconciliation: 'PENDING' }]),
+    'GET /api/collection/cash/held': () =>
+      jsonResponse(200, [
+        { collectorId: 21, collectorUsername: 'thu07', collectorName: 'Nguyễn Thành Mẫu', collectedCash: 240_000,
+          handedOver: 80_000, held: 160_000 },
+        { collectorId: 22, collectorUsername: 'thu09', collectorName: 'Lê Văn Mẫu', collectedCash: 0, handedOver: 0, held: 0 },
+      ]),
+    'GET /api/collection/cash/handovers': () => jsonResponse(200, []),
+    'POST /api/collection/cash/handovers': () =>
+      jsonResponse(422, { code: 'HANDOVER_AMOUNT_INVALID', message: 'Số tiền bàn giao phải lớn hơn 0 và không vượt số đang giữ (160.000 đ).' }),
     'POST /api/collection/payments': () =>
       jsonResponse(201, {
         payment: { id: 1, code: 'TT-1026-000001', amount: 80_000, method: 'CASH', paidAt: '2026-10-12T02:00:00Z',
@@ -78,6 +92,7 @@ describe('Công ty: hộ được giao', () => {
   it('hiện người đi thu theo tổ, lọc theo người đi thu; ghi thay mặc định người phụ trách tổ', async () => {
     const fetchFn = api();
     renderApp('/company/assigned');
+    await userEvent.click(await screen.findByRole('tab', { name: 'Hộ được giao' }));
 
     const row = (await screen.findByText('Hộ Cường')).closest('tr')!;
     expect(within(row).getByText('Lê Văn Mẫu')).toBeInTheDocument();
@@ -117,5 +132,23 @@ describe('Công ty: phân tổ', () => {
       expect(lastPost(fetchFn, '/api/collection/collector-assignments')).toMatchObject({ collectorId: 21, areaIds: [12] }),
     );
     expect(await screen.findByText('Đã phân 1 tổ cho Nguyễn Thành Mẫu')).toBeInTheDocument();
+  });
+});
+
+describe('Công ty: tổng quan', () => {
+  it('vòng tiến độ lấy đúng dòng sổ công ty; nhận tiền mặt lỗi thì hiện thông báo tiếng Việt từ máy chủ', async () => {
+    const fetchFn = api();
+    renderApp('/company/assigned');
+
+    expect(await screen.findByText('75%')).toBeInTheDocument();
+    expect(screen.getByText('Nộp một phần')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Nhận tiền mặt Lê Văn Mẫu' })).toBeDisabled();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Nhận tiền mặt Nguyễn Thành Mẫu' }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Xác nhận đã nhận' }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('không vượt số đang giữ (160.000 đ)');
+    expect(lastPost(fetchFn, '/api/collection/cash/handovers')).toMatchObject({ collectorId: 21, amount: 160_000 });
   });
 });

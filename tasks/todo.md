@@ -419,14 +419,14 @@
   - **File dự kiến:** `WEB/features/collection/CompanyHouseholdsPage/CompanyHouseholdsPage.tsx`, `WEB/features/collection/CollectorAssignPage/{CollectorAssignPage.tsx,AssignCollectorForm.tsx,AssignCollectorForm.test.tsx}`
   - **Kích thước:** M
 
-- [ ] **T29 — Web công ty: tổng quan tiến độ, bảng người đi thu, nhận tiền mặt** · `collection` · M · P0 (§10 bước 3)
+- [x] **T29 — Web công ty: tổng quan tiến độ, bảng người đi thu, nhận tiền mặt** · `collection` · M · P0 (§10 bước 3) · **xong 27/09/2026** (test tự động; còn kiểm tay §10 bước 3): tab "Tổng quan" đầu tiên trong "Khu vực được giao"; vòng tiến độ dùng `useCompanyLedger` có sẵn trong `features/remittance/api.ts` (không thêm file `useCompanyLedger.ts`); bảng người đi thu dùng `/cash/held` (tiền mặt mọi kỳ)
   - **Mô tả:** Màn tổng quan của công ty: vòng tiến độ (đã thu / phải thu) lấy **từ API ledger T24**, không tự tính lại; bảng người đi thu (đã thu, tiền mặt đang giữ); form "Nhận tiền mặt" (≤ đang giữ); lịch sử bàn giao.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Số trên vòng tiến độ bằng dòng DV01 trong API ledger cùng kỳ
-    - [ ] Nhận tiền mặt xong, tiền đang giữ của người đi thu giảm tương ứng; vượt → thông báo lỗi tiếng Việt
-    - [ ] Validation form nhận tiền mặt có test component
+    - [x] Số trên vòng tiến độ bằng dòng DV01 trong API ledger cùng kỳ
+    - [x] Nhận tiền mặt xong, tiền đang giữ của người đi thu giảm tương ứng; vượt → thông báo lỗi tiếng Việt
+    - [x] Validation form nhận tiền mặt có test component
   - **Kiểm chứng:**
-    - [ ] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
+    - [x] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
     - [ ] Thủ công: §10 bước 3 trọn vẹn trên web
   - **Phụ thuộc:** T24, T25, T28
   - **File dự kiến:** `WEB/features/collection/CompanyOverviewPage/{CompanyOverviewPage.tsx,CashReceiveForm.tsx,CashReceiveForm.test.tsx}`, `WEB/features/remittance/useCompanyLedger.ts`
