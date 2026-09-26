@@ -1,9 +1,10 @@
 import { Tabs, Typography } from 'antd';
 
+import { ReceiptIssuesPage } from '../remittance/ReceiptIssuesPage/ReceiptIssuesPage';
 import { ChargeRequestTab } from './ChargeRequestPage/ChargeRequestTab';
 import { ChargesPage } from './ChargesPage/ChargesPage';
 
-/** Màn "Khoản thu" của cán bộ xã: lập phiếu yêu cầu thu và danh sách khoản (phiếu thu công ty thêm ở T30). */
+/** Màn "Khoản thu" của cán bộ xã: phiếu YCT, danh sách khoản, sai sót phiếu thu công ty báo (T35); phiếu thu công ty thêm ở T30. */
 export function ChargesHubPage() {
   return (
     <>
@@ -14,6 +15,7 @@ export function ChargesHubPage() {
         items={[
           { key: 'requests', label: 'Phiếu YCT', children: <ChargeRequestTab /> },
           { key: 'charges', label: 'Khoản thu', children: <ChargesPage /> },
+          { key: 'receipt-issues', label: 'Sai sót phiếu thu', children: <ReceiptIssuesPage /> },
         ]}
       />
     </>

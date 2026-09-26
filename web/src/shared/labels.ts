@@ -12,6 +12,9 @@ export type ChargeStatus = Schemas['ChargeDto']['status'];
 export type ChargeScope = Schemas['IssueRequest']['scopeType'];
 export type LedgerProgress = Schemas['LedgerRowDto']['progress'];
 export type LedgerReconciliation = Schemas['LedgerRowDto']['reconciliation'];
+export type ReceiptMethod = Schemas['ReceiptDto']['method'];
+export type ReceiptIssueType = Schemas['IssueDto']['issueType'];
+export type ReceiptIssueStatus = Schemas['IssueDto']['status'];
 
 /** Nhãn tiếng Việt cho enum của backend (SPEC §6: enum lưu chuỗi, nhãn ở frontend). */
 export const TARIFF_GROUP_LABELS: Record<TariffGroup, string> = {
@@ -102,6 +105,29 @@ export const RECONCILIATION_COLORS: Record<LedgerReconciliation, string> = {
   MATCHED: 'green',
   PENDING: 'orange',
   MISMATCH: 'red',
+};
+
+export const RECEIPT_METHOD_LABELS: Record<ReceiptMethod, string> = {
+  CASH: 'Tiền mặt',
+  TRANSFER: 'Chuyển khoản',
+};
+
+/** Loại sai sót phiếu thu công ty báo (R28). */
+export const RECEIPT_ISSUE_TYPE_LABELS: Record<ReceiptIssueType, string> = {
+  WRONG_AMOUNT: 'Sai số tiền',
+  WRONG_PERIOD: 'Sai kỳ thu',
+  WRONG_DOCUMENT: 'Sai chứng từ',
+  NOT_OURS: 'Không phải khoản nộp của công ty',
+};
+
+export const RECEIPT_ISSUE_STATUS_LABELS: Record<ReceiptIssueStatus, string> = {
+  PENDING: 'Chờ xã kiểm tra',
+  RESOLVED: 'Đã xử lý',
+};
+
+export const RECEIPT_ISSUE_STATUS_COLORS: Record<ReceiptIssueStatus, string> = {
+  PENDING: 'orange',
+  RESOLVED: 'green',
 };
 
 /** Màu Tag của AntD theo trạng thái. */

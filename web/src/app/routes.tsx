@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Navigate, type RouteObject } from 'react-router';
 
 import { ChargesHubPage } from '../features/billing/ChargesHubPage';
+import { CompanyHubPage } from '../features/collection/CompanyHubPage';
 import { AreasPage } from '../features/masterdata/AreasPage/AreasPage';
 import { ConfigPage } from '../features/masterdata/ConfigPage';
 import { SubjectsPage } from '../features/masterdata/SubjectsPage/SubjectsPage';
@@ -22,6 +23,7 @@ const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'COMMUNE_OFFICER:charges': <ChargesHubPage />,
   'COMMUNE_OFFICER:progress': <ProgressPage />,
   'COMMUNE_OFFICER:reconciliation': <ReconciliationPage />,
+  'COMPANY_MANAGER:assigned': <CompanyHubPage />,
 };
 
 /** Mỗi vai trò một nhánh route. */

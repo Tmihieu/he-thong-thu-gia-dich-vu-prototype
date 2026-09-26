@@ -496,15 +496,15 @@
   - **File dự kiến:** `MIG/V14__payment_reminders.sql`, `BE/remittance/domain/PaymentReminder.java` (+ repo), `BE/remittance/service/ReminderService.java`, `BT/remittance/ReminderServiceTest.java`, `WEB/features/remittance/ProgressPage/ReminderModal.tsx`
   - **Kích thước:** M
 
-- [ ] **T35 — Công ty xem phiếu thu, báo sai sót; xã xử lý** · `remittance` · M · P0 (§10 bước 5) · **[cần hỏi trước: G6]**
+- [x] **T35 — Công ty xem phiếu thu, báo sai sót; xã xử lý** · `remittance` · M · P0 (§10 bước 5) · ~~[cần hỏi trước: G6]~~ G6 đã chốt ở DD · **xong 26/09/2026** (test tự động; còn kiểm tay): API `/api/remittance/receipt-issues` (+ `/{id}/resolve`); màn công ty đặt tạm làm tab "Phiếu thu xã lập" trong "Khu vực được giao" (`features/collection/CompanyHubPage.tsx`, T28–T29 thêm tab); màn xã là tab "Sai sót phiếu thu" trong "Khoản thu"; nhãn "Đã báo sai sót · chờ xã kiểm tra" ghép ở web từ danh sách sai sót
   - **Mô tả:** Tạo `MIG/V15__receipt_issues.sql` và entity `ReceiptIssue` (phiếu thu, loại: Sai số tiền / Sai kỳ thu / Sai chứng từ / Không phải khoản nộp của công ty; số đúng; mô tả; trạng thái `PENDING/RESOLVED`; kết quả xử lý; người xử lý). Công ty: màn "Phiếu thu xã lập" (chỉ phiếu của mình) + form báo sai sót → thông báo `RECEIPT` tới xã. Xã: **màn xử lý mới** (prototype chưa có): danh sách sai sót chờ, đánh dấu đã xử lý kèm ghi chú → thông báo về công ty. Khi lập phiếu (T26) phát thông báo `RECEIPT` tới công ty. "Xử lý" có sửa/hủy phiếu hay không theo trả lời G6; mặc định để hỏi: chỉ đóng kèm ghi chú.
   - **Tiêu chí nghiệm thu:**
-    - [ ] DV01 báo sai sót → xã thấy thông báo và mục chờ; xã xử lý → DV01 thấy thông báo và trạng thái "Đã xử lý" (IT + tay)
-    - [ ] dv02 không báo sai sót được trên phiếu của DV01 (IT)
-    - [ ] Validation form báo sai sót có test component
+    - [x] DV01 báo sai sót → xã thấy thông báo và mục chờ; xã xử lý → DV01 thấy thông báo và trạng thái "Đã xử lý" (IT; kiểm tay còn chờ)
+    - [x] dv02 không báo sai sót được trên phiếu của DV01 (IT, dùng DV07 của fixture)
+    - [x] Validation form báo sai sót có test component
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=ReceiptIssueIT`
-    - [ ] Web lint/test/build; thủ công §10 bước 5 (sai sót)
+    - [x] `cd backend && ./mvnw test -Dtest=ReceiptIssueIT`
+    - [x] Web lint/test/build; [ ] thủ công §10 bước 5 (sai sót)
   - **Phụ thuộc:** T26, T23, T30
   - **File dự kiến:** `MIG/V15__receipt_issues.sql`, `BE/remittance/domain/ReceiptIssue.java` (+ repo), `BE/remittance/service/ReceiptIssueService.java`, `BT/remittance/ReceiptIssueIT.java`, `WEB/features/remittance/{CompanyReceiptsPage/CompanyReceiptsPage.tsx,ReceiptIssuesPage/ReceiptIssuesPage.tsx}`
   - **Kích thước:** M

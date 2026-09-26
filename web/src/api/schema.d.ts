@@ -75,6 +75,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/remittance/receipt-issues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sai sót phiếu thu; công ty chỉ thấy sai sót trên phiếu của mình */
+        get: operations["list_2"];
+        put?: never;
+        /** Công ty báo sai sót trên phiếu thu của mình; thông báo tới cán bộ xã */
+        post: operations["report"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/remittance/receipt-issues/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Xã đánh dấu đã xử lý kèm ghi chú kết quả (không sửa phiếu, G6); thông báo về công ty */
+        post: operations["resolve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/remittance/periods/{id}/lock": {
         parameters: {
             query?: never;
@@ -203,7 +238,7 @@ export interface paths {
             cookie?: never;
         };
         /** Danh sách kỳ thu, mới nhất trước; có date thì chỉ các kỳ chứa ngày đó */
-        get: operations["list_2"];
+        get: operations["list_3"];
         put?: never;
         /** Mở kỳ thu tháng/quý (quản trị); gắn biểu giá có hiệu lực tại ngày đầu kỳ */
         post: operations["open"];
@@ -463,7 +498,7 @@ export interface paths {
             cookie?: never;
         };
         /** Thông báo của người đang đăng nhập (theo vai trò, công ty, cá nhân), mới nhất trước */
-        get: operations["list_3"];
+        get: operations["list_4"];
         put?: never;
         post?: never;
         delete?: never;
@@ -910,6 +945,47 @@ export interface components {
              * @description Còn phải nộp sau phiếu này
              */
             remainingAfter: number;
+        };
+        ReportIssueRequest: {
+            /** Format: int64 */
+            receiptId: number;
+            /** @enum {string} */
+            issueType: "WRONG_AMOUNT" | "WRONG_PERIOD" | "WRONG_DOCUMENT" | "NOT_OURS";
+            /**
+             * Format: int64
+             * @description Nên nhập khi sai số tiền
+             */
+            correctAmount?: number;
+            description: string;
+        };
+        IssueDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            receiptId: number;
+            receiptCode: string;
+            /** Format: int64 */
+            receiptAmount: number;
+            /** Format: int64 */
+            companyId: number;
+            companyCode: string;
+            companyName: string;
+            periodLabel: string;
+            /** @enum {string} */
+            issueType: "WRONG_AMOUNT" | "WRONG_PERIOD" | "WRONG_DOCUMENT" | "NOT_OURS";
+            /** Format: int64 */
+            correctAmount: number | null;
+            description: string;
+            /** @enum {string} */
+            status: "PENDING" | "RESOLVED";
+            /** Format: date-time */
+            reportedAt: string;
+            /** Format: date-time */
+            resolvedAt: string | null;
+            resolutionNote: string | null;
+        };
+        ResolveIssueRequest: {
+            resolutionNote: string;
         };
         PeriodDto: {
             /** Format: int64 */
@@ -1726,6 +1802,78 @@ export interface operations {
             };
         };
     };
+    list_2: {
+        parameters: {
+            query?: {
+                status?: "PENDING" | "RESOLVED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["IssueDto"][];
+                };
+            };
+        };
+    };
+    report: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportIssueRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["IssueDto"];
+                };
+            };
+        };
+    };
+    resolve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveIssueRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["IssueDto"];
+                };
+            };
+        };
+    };
     lock: {
         parameters: {
             query?: never;
@@ -1917,7 +2065,7 @@ export interface operations {
             };
         };
     };
-    list_2: {
+    list_3: {
         parameters: {
             query?: {
                 date?: string;
@@ -2375,7 +2523,7 @@ export interface operations {
             };
         };
     };
-    list_3: {
+    list_4: {
         parameters: {
             query?: {
                 unreadOnly?: boolean;
