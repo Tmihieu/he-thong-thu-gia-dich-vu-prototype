@@ -134,6 +134,18 @@ class DemoSeedIT extends IntegrationTest {
         assertThat(demoDb.queryForObject("select count(*) - count(distinct phone) from service_subjects", Integer.class)).isZero();
     }
 
+    @Test
+    void demoProfileSeedsOneCollectorPerAssignedArea() {
+        assertThat(demoDb.queryForObject("select count(*) from users where role = 'COLLECTOR'", Integer.class)).isEqualTo(23);
+        assertThat(demoDb.queryForObject("select count(*) from collector_assignments", Integer.class)).isEqualTo(23);
+        assertThat(demoDb.queryForObject("""
+                select u.username || ':' || a.code || ':' || c.code from collector_assignments ca
+                join users u on u.id = ca.collector_id join areas a on a.id = ca.area_id
+                join companies c on c.id = ca.company_id where u.username = 'thu07'""", String.class))
+                .isEqualTo("thu07:KV07:DV01");
+        assertThat(demoDb.queryForObject("select count(*) from users where username = 'thu24'", Integer.class)).isZero();
+    }
+
     private static DataSource dataSource(String url) {
         return new DriverManagerDataSource(url, POSTGRES.getUsername(), POSTGRES.getPassword());
     }

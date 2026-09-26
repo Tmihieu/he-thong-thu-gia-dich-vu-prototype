@@ -288,15 +288,15 @@
   - **File dự kiến:** `WEB/features/billing/ChargeRequestPage/{ChargeRequestForm.tsx,ChargeRequestForm.test.tsx,PreviewPanel.tsx}`, `WEB/features/billing/ChargesPage/ChargesPage.tsx`, `WEB/features/billing/api.ts`
   - **Kích thước:** M
 
-- [ ] **T20 — Phân tổ cho người đi thu và danh sách hộ theo phạm vi (backend)** · `collection` · M · P0 · **[cần hỏi trước: G14]**
+- [x] **T20 — Phân tổ cho người đi thu và danh sách hộ theo phạm vi (backend)** · `collection` · M · P0 · **xong 26/09/2026**: G14 qua `AreaReassignedEvent`; người đi thu dùng `/my-charges`, bị chặn ở `/api/billing/charges`; khoản của công ty vẫn đọc ở `/api/billing/charges` (không tạo `/company-charges` riêng)
   - **Mô tả:** Tạo `MIG/V9__collector_assignments.sql` và entity `CollectorAssignment` (người đi thu, khu vực, từ ngày, đến ngày). Schema cho phép nhiều–nhiều (O4); seed `V9_1` có 1 người/tổ cho các tổ đã có công ty, gồm tài khoản COLLECTOR giả. Công ty chỉ phân tổ **thuộc mình** (dùng `companyOf` của T13) cho người đi thu **của mình**. `GET /api/collection/my-charges?periodId` cho người đi thu chỉ trả khoản của hộ thuộc tổ được giao; `GET /api/collection/company-charges` cho công ty. Có ghi audit.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Người đi thu chỉ thấy hộ trong tổ được giao; gọi hộ ngoài tổ → 403/404 (IT phạm vi, SPEC §7)
-    - [ ] Công ty A phân tổ của công ty B hoặc dùng người đi thu của B → 403 (IT)
-    - [ ] Schema nhiều–nhiều: một người hai tổ và một tổ hai người đều lưu được (IT)
+    - [x] Người đi thu chỉ thấy hộ trong tổ được giao; gọi hộ ngoài tổ → 403/404 (IT phạm vi, SPEC §7)
+    - [x] Công ty A phân tổ của công ty B hoặc dùng người đi thu của B → 403 (IT)
+    - [x] Schema nhiều–nhiều: một người hai tổ và một tổ hai người đều lưu được (IT)
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=CollectorAssignmentIT`
-    - [ ] `cd backend && ./mvnw verify`
+    - [x] `cd backend && ./mvnw test -Dtest=CollectorAssignmentIT`
+    - [x] `cd backend && ./mvnw verify`
   - **Phụ thuộc:** T13, T18
   - **File dự kiến:** `MIG/V9__…sql` + `SEED/V9_1__seed_collectors.sql`, `BE/collection/domain/CollectorAssignment.java` (+ repo), `BE/collection/service/CollectorAssignmentService.java`, `BE/collection/api/CollectionController.java` (+ DTO), `BT/collection/CollectorAssignmentIT.java`
   - **Kích thước:** M

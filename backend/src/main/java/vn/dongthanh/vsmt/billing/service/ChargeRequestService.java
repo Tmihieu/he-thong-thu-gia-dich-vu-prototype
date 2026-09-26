@@ -216,6 +216,8 @@ public class ChargeRequestService {
     @Transactional(readOnly = true)
     public Page<Charge> searchCharges(Long periodId, Long areaId, ChargeStatus status, Long subjectId, Pageable page,
             CurrentUser actor) {
+        // Người đi thu chỉ xem khoản trong tổ được giao, qua /api/collection/my-charges.
+        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER);
         Long companyId = actor.role().belongsToCompany() ? actor.companyId() : null;
         return charges.search(periodId, areaId, status, subjectId, companyId, page);
     }

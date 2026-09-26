@@ -7,18 +7,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.Clock;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -56,22 +50,13 @@ import vn.dongthanh.vsmt.platform.domain.Role;
 import vn.dongthanh.vsmt.platform.domain.User;
 import vn.dongthanh.vsmt.platform.domain.UserRepository;
 import vn.dongthanh.vsmt.platform.security.JwtService;
+import vn.dongthanh.vsmt.support.FixedClockConfig;
 import vn.dongthanh.vsmt.support.IntegrationTest;
 
 /** Viết trước (TDD) cho T18: xem trước = phát hành, phát hành lại không trùng, kỳ khóa, phân quyền, phạm vi. */
 @Transactional
-@Import(ChargeRequestServiceIT.FixedClock.class)
+@Import(FixedClockConfig.class)
 class ChargeRequestServiceIT extends IntegrationTest {
-
-    /** "Hôm nay" cố định 01/10/2026 để phân công và hợp đồng xét đúng ngày phát hành. */
-    @TestConfiguration
-    static class FixedClock {
-        @Bean
-        @Primary
-        Clock fixedClock() {
-            return Clock.fixed(Instant.parse("2026-10-01T02:00:00Z"), ZoneId.of("Asia/Ho_Chi_Minh"));
-        }
-    }
 
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;

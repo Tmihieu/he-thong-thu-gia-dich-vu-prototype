@@ -169,7 +169,7 @@ public class BillingController {
             @Schema(requiredMode = RequiredMode.REQUIRED) ChargeStatus status,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Chưa thu và đã qua hạn đóng") boolean overdue) {
 
-        static ChargeDto of(Charge c, LocalDate today) {
+        public static ChargeDto of(Charge c, LocalDate today) {
             return new ChargeDto(c.getId(), c.getCode(), c.getChargeRequest().getCode(), c.getSubject().getId(),
                     c.getSubject().getCode(), c.getSubject().getName(), c.getSubject().getAddress(), c.getArea().getId(),
                     c.getArea().getCode(), c.getCompany().getId(), c.getCompany().getCode(), c.getPeriod().getId(),

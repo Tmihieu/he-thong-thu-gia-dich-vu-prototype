@@ -161,6 +161,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/collection/collector-assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Phân tổ đang hiệu lực vào ngày (mặc định hôm nay), theo phạm vi người gọi */
+        get: operations["assignments"];
+        put?: never;
+        /** Phân tổ cho người đi thu (quản lý công ty); người cũ của tổ kết thúc vào ngày trước */
+        post: operations["assign_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/collection/collector-assignments/{id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Kết thúc phân tổ vào ngày endDate (quản lý công ty) */
+        post: operations["end_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/billing/charge-requests": {
         parameters: {
             query?: never;
@@ -341,6 +376,57 @@ export interface paths {
         };
         /** Lịch sử phân công của một khu vực, mới nhất trước (cán bộ xã, quản trị) */
         get: operations["history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/collection/my-charges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Khoản của hộ trong các tổ được giao (người đi thu) */
+        get: operations["myCharges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/collection/my-charges/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Một khoản trong phạm vi người đi thu; ngoài tổ được giao → 404 */
+        get: operations["myCharge"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/collection/collectors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Người đi thu của công ty (quản lý công ty) */
+        get: operations["collectors"];
         put?: never;
         post?: never;
         delete?: never;
@@ -555,6 +641,37 @@ export interface components {
             note: string | null;
             decisionNo: string | null;
         };
+        AssignCollectorRequest: {
+            /** Format: int64 */
+            collectorId: number;
+            areaIds: number[];
+            /** Format: date */
+            fromDate: string;
+            note?: string;
+        };
+        CollectorAssignmentDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            collectorId: number;
+            collectorUsername: string;
+            collectorName: string;
+            /** Format: int64 */
+            areaId: number;
+            areaCode: string;
+            areaName: string;
+            /** Format: int64 */
+            companyId: number;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo: string | null;
+            note: string | null;
+        };
+        EndAssignmentRequest: {
+            /** Format: date */
+            endDate: string;
+        };
         IssueRequest: {
             /** Format: int64 */
             periodId: number;
@@ -751,6 +868,14 @@ export interface components {
             page: number;
             /** Format: int32 */
             size: number;
+        };
+        CollectorDto: {
+            /** Format: int64 */
+            id: number;
+            username: string;
+            fullName: string;
+            phone: string | null;
+            active: boolean;
         };
         ChargeRequestDto: {
             /** Format: int64 */
@@ -1101,6 +1226,78 @@ export interface operations {
             };
         };
     };
+    assignments: {
+        parameters: {
+            query?: {
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CollectorAssignmentDto"][];
+                };
+            };
+        };
+    };
+    assign_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignCollectorRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CollectorAssignmentDto"][];
+                };
+            };
+        };
+    };
+    end_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EndAssignmentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CollectorAssignmentDto"];
+                };
+            };
+        };
+    };
     requests: {
         parameters: {
             query?: {
@@ -1355,6 +1552,73 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["AreaAssignmentDto"][];
+                };
+            };
+        };
+    };
+    myCharges: {
+        parameters: {
+            query?: {
+                periodId?: number;
+                status?: "UNPAID" | "PAID" | "EXEMPT";
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ChargePageDto"];
+                };
+            };
+        };
+    };
+    myCharge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ChargeDto"];
+                };
+            };
+        };
+    };
+    collectors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CollectorDto"][];
                 };
             };
         };
