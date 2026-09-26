@@ -509,15 +509,15 @@
   - **File dự kiến:** `MIG/V15__receipt_issues.sql`, `BE/remittance/domain/ReceiptIssue.java` (+ repo), `BE/remittance/service/ReceiptIssueService.java`, `BT/remittance/ReceiptIssueIT.java`, `WEB/features/remittance/{CompanyReceiptsPage/CompanyReceiptsPage.tsx,ReceiptIssuesPage/ReceiptIssuesPage.tsx}`
   - **Kích thước:** M
 
-- [ ] **T36 — Khiếu nại backend: luồng trạng thái, timeline nối tiếp, thông báo** · `complaints` · M · P0 · **[TDD]** · **[cần hỏi trước: G12]**
+- [x] **T36 — Khiếu nại backend: luồng trạng thái, timeline nối tiếp, thông báo** · `complaints` · M · P0 · **[TDD]** · ~~[cần hỏi trước: G12]~~ G12 đã chốt ở DD · **xong 26/09/2026**: xã ghi nhận chỉ kênh PHONE/IN_PERSON (APP do người dân gửi ở T43, thêm mốc SUBMITTED); chuyển công ty một lần (chuyển lại → 422 `COMPLAINT_ALREADY_FORWARDED`); công ty phản hồi không đổi trạng thái, xã đóng từ Mới hoặc Đang xử lý; tạo mới chỉ báo xã (không báo công ty theo khu vực như prototype, vì G12); `complaint_events` có trigger chặn sửa/xóa; FK tới `citizen_accounts` thêm ở V18
   - **Mô tả:** Tạo `MIG/V16__complaints.sql` và hai entity: `Complaint` (mã `KN-…`, ngày, người gửi, đối tượng liên quan, khu vực, kênh APP/PHONE/IN_PERSON, loại, nội dung, trạng thái `NEW → PROCESSING → RESOLVED`, công ty được chuyển, hạn xử lý) và `ComplaintEvent` (append-only: RECEIVED, FORWARDED, COMPANY_REPLIED, CLOSED; người, thời gian, nội dung). `ComplaintService`: xã ghi nhận/xử lý; chuyển công ty (hạn = hôm nay + 3 ngày, công ty mặc định theo `companyOf(khu vực)`); công ty phản hồi; xã đóng. Mỗi bước phát thông báo (xã, công ty, người dân nếu người gửi là dân). Công ty chỉ thấy khiếu nại theo phạm vi G12. Test viết trước cho chuyển trạng thái hợp lệ/không hợp lệ và timeline không bị ghi đè.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Test đơn vị: chuyển trạng thái sai → 422; mỗi bước thêm một event, event cũ không đổi
-    - [ ] IT: xã tạo → chuyển DV01 → DV01 phản hồi → xã đóng; mỗi bước có đúng thông báo; dv02 không thấy khiếu nại → 403/404
-    - [ ] API `/api/complaints/**` đủ cho web (T37) và app dân (T43)
+    - [x] Test đơn vị: chuyển trạng thái sai → 422; mỗi bước thêm một event, event cũ không đổi
+    - [x] IT: xã tạo → chuyển DV01 → DV01 phản hồi → xã đóng; mỗi bước có đúng thông báo; dv02 không thấy khiếu nại → 403/404
+    - [x] API `/api/complaints/**` đủ cho web (T37) và app dân (T43)
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=ComplaintServiceTest,ComplaintFlowIT`
-    - [ ] `cd backend && ./mvnw verify`
+    - [x] `cd backend && ./mvnw test -Dtest=ComplaintServiceTest,ComplaintFlowIT`
+    - [x] `cd backend && ./mvnw verify`
   - **Phụ thuộc:** T09, T13, T23, H2
   - **File dự kiến:** `MIG/V16__complaints.sql`, `BE/complaint/domain/{Complaint,ComplaintEvent}.java` (+ repo), `BE/complaint/service/ComplaintService.java`, `BE/complaint/api/ComplaintController.java` (+ DTO), `BT/complaint/{ComplaintServiceTest,ComplaintFlowIT}.java`
   - **Kích thước:** M
