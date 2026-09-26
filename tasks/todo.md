@@ -44,24 +44,24 @@
   - **Mô tả:** `git mv index.html assets prototype/` (giữ nguyên đường dẫn tương đối). Tạo `docker-compose.yml` có service `db` (postgres:16, volume có tên, healthcheck `pg_isready`, biến lấy từ `.env`). Tạo `.env.example` (POSTGRES_DB/USER/PASSWORD, JWT_SECRET, chỉ chứa giá trị giả). Bổ sung `.gitignore`: `.env`, `backend/target/`, `node_modules/`, `dist/`, `.expo/`.
   - **Tiêu chí nghiệm thu:**
     - [ ] Mở `prototype/index.html` trên trình duyệt thấy giao diện như trước khi chuyển
-    - [ ] `docker compose up -d db` chạy và healthcheck ra healthy
+    - [x] `docker compose up -d db` chạy và healthcheck ra healthy (26/09/2026, Docker Desktop 29.8.0)
     - [x] Không có secret thật trong repo; `.env` bị git bỏ qua
   - **Kiểm chứng:**
-    - [ ] `docker compose up -d db && docker compose exec db pg_isready`
+    - [x] `docker compose up -d db && docker compose exec db pg_isready`
     - [ ] `git status` không hiện `.env` (đã đạt 24/09); thủ công mở `prototype/index.html` (chờ người dùng, đã kiểm tra 23 đường dẫn CSS/JS đều đúng)
   - **Phụ thuộc:** Không
   - **File dự kiến:** `prototype/**` (chỉ di chuyển), `docker-compose.yml`, `.env.example`, `.gitignore`
   - **Kích thước:** S
 
-- [ ] **T03 — Khung backend Spring Boot** · `platform` · L (scaffold) · P0 · **[cần hỏi trước]**
+- [x] **T03 — Khung backend Spring Boot** · `platform` · L (scaffold) · P0 · **xong 26/09/2026**: Spring Boot 3.5.16 (bản 3.x cuối; start.spring.io chỉ còn 4.x), Lombok + JaCoCo theo G10
   - **Mô tả:** Khởi tạo `backend/`: Maven wrapper, Java 21, Spring Boot 3.x với đúng dependency SPEC §3 (Web, Data JPA, Security, Validation, springdoc-openapi, Flyway, PostgreSQL driver, Testcontainers). Tạo package gốc `vn.dongthanh.vsmt` và các package module rỗng theo SPEC §5. `application.yml`: datasource lấy từ biến môi trường; timezone `Asia/Ho_Chi_Minh`; profile `demo` là profile mặc định khi `spring-boot:run` và nạp thêm `db/seed`; profile `test` không nạp seed. Trong `platform/common`: `BusinessRuleException(code, message)`, `ApiError`, `GlobalExceptionHandler` (422 lỗi quy tắc, 409 xung đột, 403, 404, 400 validation, tất cả trả `{code, message}`). Lớp nền `IntegrationTest` dùng Testcontainers PostgreSQL 16. **Hỏi trước (G10), gộp một lần:** có thêm Lombok (mẫu code §6 dùng) và JaCoCo (đo coverage ≥ 80% §7) không? Chưa được đồng ý thì không thêm.
   - **Tiêu chí nghiệm thu:**
-    - [ ] `./mvnw verify` xanh: context khởi động và Flyway chạy trên Testcontainers (Docker Desktop trên Windows chạy được Testcontainers)
-    - [ ] `./mvnw spring-boot:run` lên cổng 8080; `/v3/api-docs` và `/swagger-ui.html` mở được
-    - [ ] Có test chứng minh `BusinessRuleException` trả 422 với JSON `{code, message}`
+    - [x] `./mvnw verify` xanh: context khởi động và Flyway chạy trên Testcontainers (Docker Desktop trên Windows chạy được Testcontainers)
+    - [x] `./mvnw spring-boot:run` lên cổng 8080; `/v3/api-docs` và `/swagger-ui.html` mở được
+    - [x] Có test chứng minh `BusinessRuleException` trả 422 với JSON `{code, message}`
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw verify`
-    - [ ] `docker compose up -d db`, `cd backend && ./mvnw spring-boot:run`, rồi `curl http://localhost:8080/v3/api-docs`
+    - [x] `cd backend && ./mvnw verify`
+    - [x] `docker compose up -d db`, `cd backend && ./mvnw spring-boot:run`, rồi `curl http://localhost:8080/v3/api-docs`
   - **Phụ thuộc:** T02
   - **File dự kiến:** `backend/pom.xml`, `backend/mvnw*` + `.mvn/`, `BE/VsmtApplication.java`, `backend/src/main/resources/application.yml` (+ `application-test.yml`), `BE/platform/common/{BusinessRuleException,ApiError,GlobalExceptionHandler}.java`, `BT/support/IntegrationTest.java`, `BT/SmokeIT.java`
   - **Kích thước:** L. Scaffold, vượt 5 file là chấp nhận được.

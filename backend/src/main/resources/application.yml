@@ -1,0 +1,39 @@
+# Cấu hình chung. Thông tin kết nối lấy từ biến môi trường; khi chạy trên máy dev,
+# file .env ở gốc repo (xem .env.example) được nạp như một nguồn thuộc tính.
+spring:
+  application:
+    name: vsmt
+  config:
+    import: optional:file:../.env[.properties]
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:vsmt}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Ho_Chi_Minh
+  flyway:
+    locations: classpath:db/migration
+  jackson:
+    time-zone: Asia/Ho_Chi_Minh
+  autoconfigure:
+    # Không dùng tài khoản mặc định của Spring Security; đăng nhập JWT làm ở T06.
+    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+---
+# Profile demo: nạp thêm seed dữ liệu giả (db/seed). Mặc định khi ./mvnw spring-boot:run.
+spring:
+  config:
+    activate:
+      on-profile: demo
+  flyway:
+    locations: classpath:db/migration,classpath:db/seed
