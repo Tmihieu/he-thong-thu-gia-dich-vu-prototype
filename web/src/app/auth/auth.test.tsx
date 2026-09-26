@@ -76,12 +76,12 @@ describe('bảo vệ route', () => {
   });
 
   it('đúng vai trò thì thấy layout và trang đang xây dựng', async () => {
-    sessionStorage.setItem(TOKEN_KEY, 'tok-dv01');
-    mockApi({ 'GET /api/platform/auth/me': () => jsonResponse(200, company) });
-    renderApp('/company/complaints');
+    sessionStorage.setItem(TOKEN_KEY, 'tok-canbo');
+    mockApi({ 'GET /api/platform/auth/me': () => jsonResponse(200, officer) });
+    renderApp('/commune/companies');
 
     expect(await screen.findByText(/Đang xây dựng/)).toBeInTheDocument();
-    expect(within(screen.getByRole('menu', { name: 'Menu chính' })).getByText('Khu vực được giao')).toBeInTheDocument();
+    expect(within(screen.getByRole('menu', { name: 'Menu chính' })).getByText('Hồ sơ hộ')).toBeInTheDocument();
   });
 
   it('token hết hạn/sai (401 từ /me) thì xóa token và về trang đăng nhập', async () => {

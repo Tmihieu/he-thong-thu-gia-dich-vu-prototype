@@ -534,14 +534,14 @@
 
 ## Tuần 4 — Khiếu nại liên thông, app người dân, đóng gói demo (14/10 – 21/10)
 
-- [ ] **T37 — Web khiếu nại: màn xã và màn công ty** · `complaints` · M · P0 (§10 bước 6)
+- [x] **T37 — Web khiếu nại: màn xã và màn công ty** · `complaints` · M · P0 (§10 bước 6) · **xong 27/09/2026** (test tự động; còn chạy tay trên web): chi tiết dạng Drawer dùng chung (`ComplaintDrawer` + `ComplaintTimeline`), mở từ `?id=` để thông báo đi thẳng tới khiếu nại; form ghi nhận chọn hộ thì tự điền khu vực; chuyển công ty để trống = công ty phụ trách khu vực; `normalizeText` chuyển sang `shared/`
   - **Mô tả:** Xã: danh sách (lọc trạng thái/kênh/quá hạn), form ghi nhận (điện thoại/trực tiếp), chi tiết có timeline, nút "Chuyển công ty" (chọn công ty, mặc định theo khu vực), nút "Đóng". Công ty: danh sách khiếu nại được chuyển, "Quá hạn xử lý" tính từ hạn, form phản hồi. Dùng chung component `ComplaintTimeline`.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Chạy trên web: xã chuyển DV01 → DV01 phản hồi → xã đóng; timeline hiện đủ các bước
-    - [ ] Validation form ghi nhận và form phản hồi có test component
-    - [ ] Chuông của xã/công ty có thông báo ở mỗi bước
+    - [ ] (kiểm tay) Chạy trên web: xã chuyển DV01 → DV01 phản hồi → xã đóng; timeline hiện đủ các bước
+    - [x] Validation form ghi nhận và form phản hồi có test component
+    - [x] Chuông của xã/công ty có thông báo ở mỗi bước (IT `ComplaintFlowIT` + chuông T33)
   - **Kiểm chứng:**
-    - [ ] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
+    - [x] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
   - **Phụ thuộc:** T36, T08, T33
   - **File dự kiến:** `WEB/features/complaints/{CommuneComplaintsPage.tsx,CompanyComplaintsPage.tsx,ComplaintTimeline.tsx,ComplaintForms.tsx,ComplaintForms.test.tsx}`
   - **Kích thước:** M

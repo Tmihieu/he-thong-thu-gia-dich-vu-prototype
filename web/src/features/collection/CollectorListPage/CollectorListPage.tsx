@@ -3,9 +3,10 @@ import { useMemo, useState } from 'react';
 
 import { ApiError } from '../../../api/client';
 import { MoneyText } from '../../../shared/MoneyText';
+import { normalizeText } from '../../../shared/normalizeText';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type CollectorCharge, useCashHeld, useMyWork } from '../api';
-import { normalizeText, WORK_FILTERS, type WorkGroup, workState } from '../workState';
+import { WORK_FILTERS, type WorkGroup, workState } from '../workState';
 import { ResultSheet } from './ResultSheet';
 
 /** Danh sách thu của người đi thu (giao diện điện thoại, §10 bước 3). */

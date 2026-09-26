@@ -6,6 +6,8 @@ import { CollectorAccountPage } from '../features/collection/CollectorAccountPag
 import { CollectorCashPage } from '../features/collection/CollectorCashPage';
 import { CollectorListPage } from '../features/collection/CollectorListPage/CollectorListPage';
 import { CompanyHubPage } from '../features/collection/CompanyHubPage';
+import { CommuneComplaintsPage } from '../features/complaints/CommuneComplaintsPage';
+import { CompanyComplaintsPage } from '../features/complaints/CompanyComplaintsPage';
 import { AreasPage } from '../features/masterdata/AreasPage/AreasPage';
 import { ConfigPage } from '../features/masterdata/ConfigPage';
 import { SubjectsPage } from '../features/masterdata/SubjectsPage/SubjectsPage';
@@ -27,6 +29,8 @@ const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'COMMUNE_OFFICER:charges': <ChargesHubPage />,
   'COMMUNE_OFFICER:progress': <ProgressPage />,
   'COMMUNE_OFFICER:reconciliation': <ReconciliationPage />,
+  'COMMUNE_OFFICER:complaints': <CommuneComplaintsPage />,
+  'COMPANY_MANAGER:complaints': <CompanyComplaintsPage />,
   'COMPANY_MANAGER:assigned': <CompanyHubPage />,
   'COLLECTOR:list': <CollectorListPage />,
   'COLLECTOR:cash': <CollectorCashPage />,

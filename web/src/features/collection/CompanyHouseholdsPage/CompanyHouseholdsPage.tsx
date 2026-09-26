@@ -3,10 +3,11 @@ import { useMemo, useState } from 'react';
 
 import { ApiError } from '../../../api/client';
 import { MoneyText } from '../../../shared/MoneyText';
+import { normalizeText } from '../../../shared/normalizeText';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type CollectorCharge, useCollectorAssignments, useCollectors, useCompanyWork } from '../api';
 import { ResultSheet } from '../CollectorListPage/ResultSheet';
-import { normalizeText, WORK_FILTERS, type WorkGroup, workState } from '../workState';
+import { WORK_FILTERS, type WorkGroup, workState } from '../workState';
 
 /** "Hộ được giao" của công ty: khoản các tổ mình phụ trách trong kỳ; lọc tổ / trạng thái / người đi thu; ghi thay. */
 export function CompanyHouseholdsPage() {
