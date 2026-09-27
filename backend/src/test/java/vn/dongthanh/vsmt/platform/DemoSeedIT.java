@@ -2,6 +2,7 @@ package vn.dongthanh.vsmt.platform;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -14,6 +15,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import vn.dongthanh.vsmt.remittance.service.LedgerQueries;
+import vn.dongthanh.vsmt.remittance.service.LedgerQueries.CompanyAmount;
+import vn.dongthanh.vsmt.remittance.service.LedgerQueries.CompanyPeriodAmount;
 import vn.dongthanh.vsmt.support.IntegrationTest;
 
 /**
@@ -192,6 +196,51 @@ class DemoSeedIT extends IntegrationTest {
                 join service_subjects s on s.id = a.subject_id where p.code = 'CDC-035'""", String.class))
                 .isEqualTo("DTH-H000128");
         assertThat(demoDb.queryForObject("select count(*) from market_comments", Integer.class)).isEqualTo(3);
+    }
+
+    @Test
+    void demoProfileSeedsOverdueOldPeriodWhereDv01StillOwes() {
+        // Chỉ kỳ cũ 09/2026; kỳ 10/2026 để §10 bước 1 mở.
+        assertThat(demoDb.queryForList("select code || ':' || status || ':' || due_date from collection_periods",
+                String.class)).containsExactly("2026-09:COLLECTING:2026-09-25");
+        long dv01 = demoDb.queryForObject("select id from companies where code = 'DV01'", Long.class);
+        long period = demoDb.queryForObject("select id from collection_periods where code = '2026-09'", Long.class);
+
+        // Chính các truy vấn sổ công ty–kỳ dùng. Chỉ DV01 có khoản nên công ty khác không mang nợ kỳ trước sang kỳ 10.
+        LedgerQueries ledger = new LedgerQueries(demoDb);
+        assertThat(ledger.dueByCompany(period)).containsExactly(new CompanyAmount(dv01, 1_319_000, 19));
+        assertThat(ledger.collectedByCompany(period)).containsExactly(new CompanyAmount(dv01, 609_000, 8));
+        long received = demoDb.queryForObject(
+                "select sum(amount) from company_receipts where company_id = ? and period_id = ?", Long.class, dv01, period);
+        assertThat(received).isEqualTo(400_000L);
+        // Như CompanyLedgerService.overdueDebtsOf (nhắc nộp, R16): kỳ có hạn trước hôm nay, còn nợ = phải thu − đã nộp.
+        // Đúng cả lúc làm seed lẫn ngày demo.
+        for (LocalDate today : List.of(LocalDate.of(2026, 9, 28), LocalDate.of(2026, 10, 21))) {
+            assertThat(ledger.dueByCompanyAndPeriodBefore(today))
+                    .map(d -> new CompanyPeriodAmount(d.companyId(), d.periodId(), d.amount() - received))
+                    .containsExactly(new CompanyPeriodAmount(dv01, period, 919_000));
+        }
+
+        // Khoản Đã thu đúng khi Σ thanh toán = số tiền, không thu vượt (G4); hộ kịch bản đã đóng kỳ cũ.
+        assertThat(demoDb.queryForObject("""
+                select count(*) from charges c
+                cross join lateral (select coalesce(sum(p.amount), 0) as paid from payments p where p.charge_id = c.id) t
+                where t.paid > c.amount or (c.status <> 'EXEMPT' and (c.status = 'PAID') <> (t.paid = c.amount))""",
+                Integer.class)).isZero();
+        assertThat(demoDb.queryForObject("select status from charges where code = 'KT-0926-DTH-H000128'", String.class))
+                .isEqualTo("PAID");
+        // Người đi thu đã bàn giao hết tiền mặt kỳ cũ (R21) nên bước 3 bàn giao bắt đầu từ 0.
+        assertThat(demoDb.queryForList("""
+                select u.username || ':' || (
+                    coalesce((select sum(p.amount) from payments p where p.collector_id = u.id and p.method = 'CASH'), 0)
+                    - coalesce((select sum(h.amount) from cash_handovers h where h.collector_id = u.id), 0))
+                from users u where u.username in ('thu07', 'thu09') order by u.username""", String.class))
+                .containsExactly("thu07:0", "thu09:0");
+        // Thao tác tiền của seed có nhật ký như khi làm qua service.
+        assertThat(demoDb.queryForList("select action from audit_logs order by id", String.class)).containsExactly(
+                "OPEN_PERIOD", "ISSUE_CHARGE_REQUEST", "RECORD_PAYMENT", "RECORD_PAYMENT", "RECORD_PAYMENT",
+                "RECORD_PAYMENT", "RECORD_PAYMENT", "RECORD_PAYMENT", "RECORD_PAYMENT", "RECORD_PAYMENT",
+                "RECEIVE_CASH_HANDOVER", "RECEIVE_CASH_HANDOVER", "ISSUE_COMPANY_RECEIPT");
     }
 
     private static DataSource dataSource(String url) {
