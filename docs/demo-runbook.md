@@ -10,13 +10,16 @@ Chạy kịch bản SPEC §10 trên laptop bằng dữ liệu seed giả (profil
 
 ## Chạy db + backend + web
 
-1. Tạo `.env` ở gốc repo từ `.env.example`, đổi `POSTGRES_PASSWORD` và `JWT_SECRET` (tối thiểu 32 ký tự). `.env` không được commit.
+1. Đã có `.env` từ lúc dev thì dùng luôn. Chưa có thì tạo ở gốc repo từ `.env.example`, đổi `POSTGRES_PASSWORD` và `JWT_SECRET` (tối thiểu 32 ký tự). `.env` không được commit.
+   Postgres chỉ đọc `POSTGRES_PASSWORD` khi tạo volume lần đầu: máy đã chạy `docker compose up -d db` mà đổi mật khẩu thì backend báo `password authentication failed`. Khi đó chạy `docker compose down -v` trước (dữ liệu chỉ là seed).
 2. Tắt `./mvnw spring-boot:run` và `npm run dev` nếu đang chạy (trùng cổng 8080, 5173).
-3. Từ gốc repo:
+3. Kiểm ổ C còn trên 3 GB, rồi từ gốc repo build **lần lượt** từng image (`docker compose up --build` chạy Maven và npm song song; trên máy 7,3 GB RAM, các việc nặng chạy cùng lúc từng làm Docker treo):
    ```sh
-   docker compose up --build
+   docker compose build backend
+   docker compose build web
+   docker compose up
    ```
-   Lần đầu mất vài phút (tải image, thư viện Maven và npm). Backend chạy Flyway và nạp seed demo khi khởi động; xong khi log có `Started VsmtApplication`.
+   Máy khỏe thì gộp thành `docker compose up --build`. Lần đầu mất vài phút (tải image, thư viện Maven và npm). Backend chạy Flyway và nạp seed demo khi khởi động; xong khi log có `Started VsmtApplication`.
 
 | Thành phần | Địa chỉ |
 |---|---|
@@ -69,7 +72,7 @@ Xem [`docs/demo-accounts.md`](demo-accounts.md). Web: mật khẩu chung `Demo@2
 
 ```sh
 docker compose down -v
-docker compose up --build
+docker compose up
 ```
 
-`down -v` xóa volume `vsmt-db-data`, volume này dùng chung với CSDL dev (`docker compose up -d db`).
+Code đã đổi thì build lại lần lượt như bước 3 trước khi `up`. `down -v` xóa volume `vsmt-db-data` (dùng chung với CSDL dev của `docker compose up -d db`) và `vsmt-uploads` (ảnh người dân đã tải lên).

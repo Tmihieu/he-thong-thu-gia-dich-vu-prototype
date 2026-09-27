@@ -686,12 +686,12 @@
   - **File dự kiến:** `MOB/app/market/{index,new,[id]}.tsx`, `MOB/src/features/market/validate.ts` + test
   - **Kích thước:** M
 
-- [ ] **T49 — `docker compose up --build` chạy db + backend + web; rà seed theo §10** · `platform` · M · P0 (§10 bước 9) · **phần hạ tầng viết xong 27/09/2026 trên nhánh feat/t49-docker (chưa merge main; chưa chạy thử được `docker compose up --build` vì máy hết đĩa, Docker treo); còn rà seed §10 sau T39–T48**
+- [ ] **T49 — `docker compose up --build` chạy db + backend + web; rà seed theo §10** · `platform` · M · P0 (§10 bước 9) · **phần hạ tầng code xong 27/09/2026, chưa chạy thử build/up (việc nặng, xếp ở bước gộp); rà seed §10 để ở bước Demo cuối**: image backend đóng gói bằng Maven wrapper, bỏ test (test chạy riêng `./mvnw verify`), profile `demo`; web build Vite rồi nginx phục vụ file tĩnh + proxy `/api/` sang `backend:8080` (dùng DNS của Docker nên backend tạo lại vẫn nối được); backend mở cổng `BACKEND_PORT` cho Expo Go gọi thẳng; volume `vsmt-uploads` giữ ảnh của T47; runbook build lần lượt từng image (máy yếu) và cảnh báo đổi `POSTGRES_PASSWORD` khi đã có volume cũ; người đi thu mở web qua `http://<IP LAN>:5173` (không phải secure context) nên `requestId` bỏ `crypto.randomUUID`, lấy lại fix 9e72d61 kèm test vitest; qua nginx thì audit ghi IP container (cột `ip_address` mức Thật, demo chấp nhận)
   - **Mô tả:** Viết `backend/Dockerfile` (multi-stage, JRE 21) và `web/Dockerfile` (build Vite + nginx proxy `/api`), thêm service `backend` và `web` vào `docker-compose.yml` (profile `demo`, biến từ `.env`). Rà seed khớp kịch bản §10: có kỳ 10/2026 chưa mở, KV24 chưa phân công, DV01 + người đi thu KV07/KV09, hộ `DTH-H000128` có tài khoản dân; không có dữ liệu thật. Ghi `docs/demo-runbook.md` (lệnh chạy, tài khoản, thứ tự §10). Nếu chọn C7 thì chỉ viết runbook chạy dev.
   - **Tiêu chí nghiệm thu:**
     - [ ] Máy sạch: `docker compose up --build` → web ở http://localhost:5173 (hoặc cổng đã ghi) đăng nhập được
     - [ ] Seed đủ điều kiện ban đầu của §10 bước 1–8
-    - [ ] Không có secret thật trong Dockerfile/compose
+    - [x] Không có secret thật trong Dockerfile/compose (rà tay: mật khẩu CSDL và `JWT_SECRET` lấy từ `.env`; giá trị mặc định chỉ có cổng và OTP demo `123456`)
   - **Kiểm chứng:**
     - [ ] `docker compose down -v && docker compose up --build`; thủ công đăng nhập 4 vai trò
   - **Phụ thuộc:** tất cả task P0/P1 trước đó (T02–T48), trừ những task người dùng đã chọn cắt

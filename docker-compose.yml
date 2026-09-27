@@ -39,6 +39,10 @@ services:
     ports:
       # App mobile (Expo Go) gọi thẳng backend qua IP LAN của laptop.
       - "${BACKEND_PORT:-8080}:8080"
+    volumes:
+      # Ảnh người dân tải lên (T47: vsmt.upload-dir mặc định uploads/, tính từ WORKDIR /app); giữ lại khi container
+      # bị tạo lại, vì CSDL vẫn lưu tên ảnh.
+      - vsmt-uploads:/app/uploads
 
   web:
     build: ./web
@@ -49,3 +53,4 @@ services:
 
 volumes:
   vsmt-db-data:
+  vsmt-uploads:
