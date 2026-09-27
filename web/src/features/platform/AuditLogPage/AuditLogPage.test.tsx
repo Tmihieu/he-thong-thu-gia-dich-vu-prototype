@@ -1,9 +1,9 @@
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, vi } from 'vitest';
 
 import { TOKEN_KEY } from '../../../app/auth/authContext';
-import { pickDate, pickOption } from '../../../test/antd';
+import { pickDate } from '../../../test/antd';
 import { jsonResponse, mockApi, renderApp } from '../../../test/renderApp';
 
 const admin = { id: 1, username: 'admin', fullName: 'Quản trị hệ thống', role: 'ADMIN', companyId: null };
@@ -53,11 +53,15 @@ describe('Nhật ký', () => {
     // Vai trò người dân (app) không phải vai trò đăng nhập web nhưng vẫn có nhãn tiếng Việt.
     expect(screen.getByText('Người dân')).toBeInTheDocument();
 
-    await userEvent.click(screen.getAllByRole('button', { name: /mở rộng|expand/i })[0]);
+    await userEvent.click(screen.getAllByRole('button', { name: /mở rộng|expand/i })[0]!);
     expect(await screen.findByText(/"status": "UNPAID"/)).toBeInTheDocument();
     expect(screen.getByText('không phải JSON')).toBeInTheDocument();
 
-    await pickOption(screen.getByRole('combobox', { name: 'Lọc theo hành động' }), 'Ghi nhận thanh toán');
+    // Danh sách lựa chọn của AntD là danh sách ảo, chỉ dựng vài dòng đầu: gõ tìm như người dùng rồi mới chọn.
+    const actionFilter = screen.getByRole('combobox', { name: 'Lọc theo hành động' });
+    fireEvent.mouseDown(actionFilter);
+    fireEvent.change(actionFilter, { target: { value: 'Ghi nhận' } });
+    fireEvent.click(await screen.findByTitle('Ghi nhận thanh toán'));
     pickDate(screen.getByPlaceholderText('Từ ngày'), '01/10/2026');
     pickDate(screen.getByPlaceholderText('Đến ngày'), '31/10/2026');
     await waitFor(() => {
