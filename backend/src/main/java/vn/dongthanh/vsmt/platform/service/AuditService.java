@@ -40,6 +40,13 @@ public class AuditService {
         return save(actor.id(), actor.username(), actor.role().name(), action, entityType, entityId, before, after);
     }
 
+    /** Thao tác của người dân trên app (không phải user nội bộ): ghi {@code citizen:<sđt>}, vai trò CITIZEN. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public AuditLog recordCitizen(String phone, String action, String entityType, Object entityId, Object before,
+            Object after) {
+        return save(null, "citizen:" + phone, "CITIZEN", action, entityType, entityId, before, after);
+    }
+
     /** Tác vụ tự động của hệ thống (không có người đăng nhập). */
     @Transactional(propagation = Propagation.MANDATORY)
     public AuditLog recordSystem(String action, String entityType, Object entityId, Object before, Object after) {

@@ -13,6 +13,14 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     List<Payment> findByChargeIdOrderByPaidAtAsc(Long chargeId);
 
+    @Query("select p from Payment p join fetch p.charge c join fetch c.subject s join fetch c.period"
+            + " join fetch c.feeType join fetch c.company where s.id = :subjectId order by p.paidAt desc, p.id desc")
+    List<Payment> findBySubjectIdWithCharge(Long subjectId);
+
+    @Query("select p from Payment p join fetch p.charge c join fetch c.subject s join fetch c.period"
+            + " join fetch c.feeType join fetch c.company where p.id = :id")
+    Optional<Payment> findByIdWithCharge(Long id);
+
     @Query("select coalesce(sum(p.amount), 0) from Payment p where p.charge.id = :chargeId")
     long sumByChargeId(Long chargeId);
 

@@ -70,6 +70,11 @@ public class CollectionService {
     public record VisitOutcome(CollectionVisit visit, boolean replayed) {
     }
 
+    /** Người dân thanh toán mô phỏng trên app: trả đúng số còn thiếu của khoản thuộc hộ mình. */
+    public record CitizenPaymentCommand(Long chargeId, Long subjectId, Long citizenAccountId, String citizenPhone,
+            long amount, String clientRequestId) {
+    }
+
     public record Activity(Charge charge, List<Payment> payments, List<CollectionVisit> visits, long paidAmount) {
     }
 
@@ -93,8 +98,7 @@ public class CollectionService {
             throw new BusinessRuleException("PAYMENT_AMOUNT_INVALID", "Số tiền phải lớn hơn 0 và không vượt số còn thiếu ("
                     + Money.format(remaining) + ").");
         }
-        String prefix = "TT-" + charge.getPeriod().documentToken() + "-";
-        String code = prefix + "%06d".formatted(payments.maxCodeNumber(prefix) + 1);
+        String code = nextCode(charge);
         OffsetDateTime now = OffsetDateTime.now(clock);
         Map<String, Object> before = state(charge, paidBefore);
 
@@ -113,6 +117,60 @@ public class CollectionService {
         after.put("method", cmd.method());
         audit.record(actor, "RECORD_PAYMENT", ENTITY, charge.getCode(), before, after);
         return new PaymentOutcome(payment, charge, paidAfter, charge.getAmount() - paidAfter, false);
+    }
+
+    /**
+     * Thanh toán mô phỏng từ app người dân (T40, O1): khoản phải thuộc hộ của tài khoản, số tiền phải bằng đúng số
+     * còn thiếu (công ty vừa thu một phần thì app phải tải lại), trả đủ thì khoản chuyển Đã thu.
+     */
+    public PaymentOutcome recordCitizenPayment(CitizenPaymentCommand cmd) {
+        Optional<Payment> existing = payments.findByClientRequestId(cmd.clientRequestId());
+        if (existing.isPresent()) {
+            if (!Objects.equals(existing.get().getCitizenAccountId(), cmd.citizenAccountId())) {
+                throw requestReused();
+            }
+            return replay(existing.get(), cmd.chargeId());
+        }
+        Charge charge = charges.findByIdWithDetails(cmd.chargeId())
+                .filter(c -> c.getSubject().getId().equals(cmd.subjectId()))
+                .orElseThrow(() -> new NotFoundException("CHARGE_NOT_FOUND", "Không tìm thấy khoản thu."));
+        requireCollectable(charge);
+
+        long paidBefore = payments.sumByChargeId(charge.getId());
+        long remaining = charge.getAmount() - paidBefore;
+        if (cmd.amount() != remaining) {
+            throw new BusinessRuleException("PAYMENT_AMOUNT_CHANGED", "Số tiền cần đóng đã thay đổi, hiện còn "
+                    + Money.format(remaining) + ". Vui lòng tải lại trước khi thanh toán.");
+        }
+        String code = nextCode(charge);
+        OffsetDateTime now = OffsetDateTime.now(clock);
+        Map<String, Object> before = state(charge, paidBefore);
+
+        Payment payment = payments.save(Payment.builder()
+                .code(code).charge(charge).amount(remaining).method(PaymentMethod.APP_SIMULATED).paidAt(now)
+                .citizenAccountId(cmd.citizenAccountId()).clientRequestId(cmd.clientRequestId())
+                .build());
+        charge.markPaid(now);
+        Map<String, Object> after = state(charge, charge.getAmount());
+        after.put("payment", code);
+        after.put("amount", remaining);
+        after.put("method", PaymentMethod.APP_SIMULATED);
+        audit.recordCitizen(cmd.citizenPhone(), "RECORD_CITIZEN_PAYMENT", ENTITY, charge.getCode(), before, after);
+        return new PaymentOutcome(payment, charge, charge.getAmount(), 0, false);
+    }
+
+    /** Các lần thanh toán của một hộ (mọi hình thức), mới nhất trước — danh sách xác nhận trên app người dân. */
+    @Transactional(readOnly = true)
+    public List<Payment> paymentsOfSubject(Long subjectId) {
+        return payments.findBySubjectIdWithCharge(subjectId);
+    }
+
+    /** Một lần thanh toán của hộ; của hộ khác trả 404 như không tồn tại. */
+    @Transactional(readOnly = true)
+    public Payment paymentOfSubject(Long paymentId, Long subjectId) {
+        return payments.findByIdWithCharge(paymentId)
+                .filter(p -> p.getCharge().getSubject().getId().equals(subjectId))
+                .orElseThrow(() -> new NotFoundException("PAYMENT_NOT_FOUND", "Không tìm thấy thanh toán."));
     }
 
     public VisitOutcome recordVisit(VisitCommand cmd, CurrentUser actor) {
@@ -203,6 +261,11 @@ public class CollectionService {
                 .filter(u -> u.getRole() == Role.COLLECTOR && Objects.equals(u.getCompanyId(), actor.companyId()))
                 .orElseThrow(() -> new NotFoundException("COLLECTOR_NOT_FOUND", "Không tìm thấy người đi thu của công ty."));
         return collector.getId();
+    }
+
+    private String nextCode(Charge charge) {
+        String prefix = "TT-" + charge.getPeriod().documentToken() + "-";
+        return prefix + "%06d".formatted(payments.maxCodeNumber(prefix) + 1);
     }
 
     private static Map<String, Object> state(Charge charge, long paid) {

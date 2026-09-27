@@ -570,14 +570,14 @@
   - **File dự kiến:** `MIG/V18__…sql` + `SEED/V18_1__seed_citizens.sql`, `BE/citizen/domain/CitizenAccount.java` (+ repo), `BE/citizen/service/CitizenAuthService.java`, `BE/citizen/api/CitizenController.java` (+ DTO), `BT/citizen/{CitizenAuthIT,CitizenApiIT}.java`
   - **Kích thước:** M
 
-- [ ] **T40 — Thanh toán mô phỏng từ app người dân (backend)** · `citizen-app` · S · P0 (§10 bước 4) · **O1 mặc định**
+- [x] **T40 — Thanh toán mô phỏng từ app người dân (backend)** · `citizen-app` · S · P0 (§10 bước 4) · **O1 mặc định** · **xong 27/09/2026**: `CollectionService.recordCitizenPayment` riêng (không đi qua `recordPayment` vì hàm đó đòi vai trò nội bộ và người thu); số tiền phải **bằng đúng** số còn thiếu, lệch → 422 `PAYMENT_AMOUNT_CHANGED` (công ty vừa thu một phần thì app tải lại); `clientRequestId` của hộ khác → 409; audit ghi `citizen:<sđt>` vai trò CITIZEN (`AuditService.recordCitizen`); thêm `GET /api/citizen/payments` (danh sách xác nhận mọi hình thức) và V19 nối FK + check `payments.citizen_account_id`; thông báo TRANSACTION có `link.screen = citizen.paymentConfirmation`
   - **Mô tả:** `POST /api/citizen/payments` gọi `CollectionService.recordPayment` (T21) với hình thức `CITIZEN_APP`, có `requestId` chống trùng. Khoản chuyển Đã thu; công ty và xã thấy ngay qua ledger. Phát thông báo `TRANSACTION` cho người dân. `GET /api/citizen/payments/{id}/confirmation` trả "Xác nhận thanh toán" (O1: **không** gọi là biên lai pháp lý; mã lấy từ Payment, ổn định).
   - **Tiêu chí nghiệm thu:**
-    - [ ] IT: dân thanh toán → khoản PAID → API công ty và ledger thấy "Đã thu"
-    - [ ] Gửi trùng `requestId` không tạo 2 thanh toán; thanh toán khoản của hộ khác → 403/404
-    - [ ] Kỳ đã khóa → 422
+    - [x] IT: dân thanh toán → khoản PAID → API công ty và ledger thấy "Đã thu"
+    - [x] Gửi trùng `requestId` không tạo 2 thanh toán; thanh toán khoản của hộ khác → 403/404
+    - [x] Kỳ đã khóa → 422
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=CitizenPaymentIT`
+    - [x] `cd backend && ./mvnw test -Dtest=CitizenPaymentIT`; `./mvnw verify`
   - **Phụ thuộc:** T39, T21, T23
   - **File dự kiến:** `BE/citizen/service/CitizenPaymentService.java`, `BE/citizen/api/CitizenController.java`, `BT/citizen/CitizenPaymentIT.java`
   - **Kích thước:** S

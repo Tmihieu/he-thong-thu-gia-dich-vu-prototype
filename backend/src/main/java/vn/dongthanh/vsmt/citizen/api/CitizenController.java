@@ -18,16 +18,21 @@ import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.citizen.api.CitizenDtos.CitizenAccountDto;
 import vn.dongthanh.vsmt.citizen.api.CitizenDtos.CitizenChargeDto;
 import vn.dongthanh.vsmt.citizen.api.CitizenDtos.CitizenLoginResponse;
+import vn.dongthanh.vsmt.citizen.api.CitizenDtos.CitizenPaymentRequest;
+import vn.dongthanh.vsmt.citizen.api.CitizenDtos.CitizenPaymentResponse;
 import vn.dongthanh.vsmt.citizen.api.CitizenDtos.CitizenProfileDto;
 import vn.dongthanh.vsmt.citizen.api.CitizenDtos.OtpRequest;
 import vn.dongthanh.vsmt.citizen.api.CitizenDtos.OtpRequestResponse;
 import vn.dongthanh.vsmt.citizen.api.CitizenDtos.OtpVerifyRequest;
+import vn.dongthanh.vsmt.citizen.api.CitizenDtos.PaymentConfirmationDto;
 import vn.dongthanh.vsmt.citizen.service.CitizenAuthService;
 import vn.dongthanh.vsmt.citizen.service.CitizenAuthService.LoginResult;
+import vn.dongthanh.vsmt.citizen.service.CitizenPaymentService;
 import vn.dongthanh.vsmt.citizen.service.CitizenQueryService;
+import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentOutcome;
 import vn.dongthanh.vsmt.platform.security.CurrentCitizen;
 
-@Tag(name = "App người dân: tài khoản, hộ, khoản phải đóng")
+@Tag(name = "App người dân: tài khoản, hộ, khoản phải đóng, thanh toán mô phỏng")
 @RestController
 @RequestMapping("/api/citizen")
 @RequiredArgsConstructor
@@ -35,6 +40,7 @@ public class CitizenController {
 
     private final CitizenAuthService auth;
     private final CitizenQueryService query;
+    private final CitizenPaymentService payments;
 
     @Operation(summary = "Yêu cầu mã OTP (mô phỏng, không gửi SMS)")
     @SecurityRequirements
@@ -71,5 +77,25 @@ public class CitizenController {
     @GetMapping("/charges/{id}")
     public CitizenChargeDto charge(@AuthenticationPrincipal CurrentCitizen citizen, @PathVariable Long id) {
         return CitizenChargeDto.of(query.charge(citizen, id));
+    }
+
+    @Operation(summary = "Thanh toán mô phỏng một khoản của hộ (trả đúng số còn thiếu)")
+    @PostMapping("/payments")
+    public CitizenPaymentResponse pay(@AuthenticationPrincipal CurrentCitizen citizen,
+            @Valid @RequestBody CitizenPaymentRequest request) {
+        PaymentOutcome outcome = payments.pay(citizen, request.chargeId(), request.amount(), request.clientRequestId());
+        return new CitizenPaymentResponse(outcome.replayed(), PaymentConfirmationDto.of(outcome.payment()));
+    }
+
+    @Operation(summary = "Các xác nhận thanh toán của hộ (mọi hình thức), mới nhất trước")
+    @GetMapping("/payments")
+    public List<PaymentConfirmationDto> confirmations(@AuthenticationPrincipal CurrentCitizen citizen) {
+        return payments.confirmations(citizen).stream().map(PaymentConfirmationDto::of).toList();
+    }
+
+    @Operation(summary = "Xác nhận thanh toán (không phải biên lai pháp lý, O1)")
+    @GetMapping("/payments/{id}/confirmation")
+    public PaymentConfirmationDto confirmation(@AuthenticationPrincipal CurrentCitizen citizen, @PathVariable Long id) {
+        return PaymentConfirmationDto.of(payments.confirmation(citizen, id));
     }
 }

@@ -67,7 +67,7 @@ public class CitizenQueryService {
     }
 
     /** Tài khoản của token, còn hoạt động và vẫn gắn đúng hộ ghi trong token. */
-    CitizenAccount requireActive(CurrentCitizen citizen) {
+    public CitizenAccount requireActive(CurrentCitizen citizen) {
         CitizenAccount account = accounts.findById(citizen.accountId())
                 .filter(a -> a.getSubject().getId().equals(citizen.subjectId()))
                 .orElseThrow(() -> new UnauthorizedException("UNAUTHORIZED",

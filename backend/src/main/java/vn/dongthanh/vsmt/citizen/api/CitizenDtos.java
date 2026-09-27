@@ -7,12 +7,17 @@ import java.time.OffsetDateTime;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import vn.dongthanh.vsmt.billing.domain.Charge;
 import vn.dongthanh.vsmt.billing.domain.ChargeStatus;
 import vn.dongthanh.vsmt.citizen.domain.CitizenAccount;
 import vn.dongthanh.vsmt.citizen.service.CitizenQueryService.ChargeView;
 import vn.dongthanh.vsmt.citizen.service.CitizenQueryService.Profile;
+import vn.dongthanh.vsmt.collection.domain.Payment;
+import vn.dongthanh.vsmt.collection.domain.PaymentMethod;
 import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceContract;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubject;
@@ -166,5 +171,47 @@ public final class CitizenDtos {
                     v.paidAmount(), v.remainingAmount(), c.getCoverageFrom(), c.getCoverageTo(), c.getDueDate(),
                     c.getStatus(), v.overdue(), c.getPaidAt());
         }
+    }
+
+    public record CitizenPaymentRequest(
+            @NotNull(message = "không được để trống") Long chargeId,
+            @Schema(description = "Phải bằng đúng số còn thiếu của khoản") @Positive(message = "phải lớn hơn 0") long amount,
+            @Schema(description = "Mã do app sinh cho mỗi lần bấm thanh toán; gửi lại cùng mã không tạo thanh toán thứ hai")
+            @NotBlank(message = "không được để trống") @Size(max = 40) String clientRequestId) {
+    }
+
+    /** "Xác nhận thanh toán" (O1): không phải biên lai pháp lý. */
+    public record PaymentConfirmationDto(
+            @Schema(requiredMode = RequiredMode.REQUIRED) Long id,
+            @Schema(requiredMode = RequiredMode.REQUIRED, example = "TT-1026-000123") String code,
+            @Schema(requiredMode = RequiredMode.REQUIRED) OffsetDateTime paidAt,
+            @Schema(requiredMode = RequiredMode.REQUIRED) long amount,
+            @Schema(requiredMode = RequiredMode.REQUIRED) PaymentMethod method,
+            @Schema(requiredMode = RequiredMode.REQUIRED) Long chargeId,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String chargeCode,
+            @Schema(requiredMode = RequiredMode.REQUIRED) ChargeStatus chargeStatus,
+            @Schema(requiredMode = RequiredMode.REQUIRED) long chargeAmount,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String periodCode,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String periodLabel,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String feeTypeName,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String subjectCode,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String subjectName,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String subjectAddress,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Công ty phụ trách khoản") String companyName) {
+
+        static PaymentConfirmationDto of(Payment p) {
+            Charge c = p.getCharge();
+            ServiceSubject s = c.getSubject();
+            return new PaymentConfirmationDto(p.getId(), p.getCode(), p.getPaidAt(), p.getAmount(), p.getMethod(),
+                    c.getId(), c.getCode(), c.getStatus(), c.getAmount(), c.getPeriod().getCode(),
+                    c.getPeriod().getLabel(), c.getFeeType().getName(), s.getCode(), s.getName(), s.getAddress(),
+                    c.getCompany().getName());
+        }
+    }
+
+    public record CitizenPaymentResponse(
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "true: yêu cầu gửi lại, trả thanh toán đã có")
+            boolean replayed,
+            @Schema(requiredMode = RequiredMode.REQUIRED) PaymentConfirmationDto confirmation) {
     }
 }
