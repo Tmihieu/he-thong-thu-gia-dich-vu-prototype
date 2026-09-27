@@ -47,8 +47,9 @@ public class BulkyWasteService {
     static final String COMPANY_SCREEN = "company.bulky";
     static final DateTimeFormatter CODE_TOKEN = DateTimeFormatter.ofPattern("MMyy");
     static final DateTimeFormatter VN_DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-    static final int MAX_DAYS_AHEAD = 90;
-    static final int MAX_OPEN_PER_HOUSEHOLD = 5;
+    // Người dùng chốt 28/09/2026: hẹn xa nhất 30 ngày, mỗi hộ tối đa 3 yêu cầu đang mở, phí tối đa 10.000.000 đ.
+    static final int MAX_DAYS_AHEAD = 30;
+    static final int MAX_OPEN_PER_HOUSEHOLD = 3;
 
     private final BulkyWasteRequestRepository requests;
     private final CitizenQueryService citizens;

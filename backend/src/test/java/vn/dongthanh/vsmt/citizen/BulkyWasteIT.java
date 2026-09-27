@@ -236,21 +236,21 @@ class BulkyWasteIT extends IntegrationTest {
 
     @Test
     void datesFeeAndOpenRequestsHaveUpperBounds() throws Exception {
-        citizen(citizenA, post("/api/citizen/bulky-requests"), "{\"itemType\": \"DEBRIS\", \"quantity\": 1, \"preferredDate\": \"2026-12-31\"}")
+        citizen(citizenA, post("/api/citizen/bulky-requests"), "{\"itemType\": \"DEBRIS\", \"quantity\": 1, \"preferredDate\": \"2026-11-01\"}")
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("BULKY_DATE_TOO_FAR"));
 
         long first = create(citizenA);
-        internal(fx.dv01Manager, post("/api/bulky-requests/{id}/quote", first), "{\"fee\": 50000001}")
+        internal(fx.dv01Manager, post("/api/bulky-requests/{id}/quote", first), "{\"fee\": 10000001}")
                 .andExpect(status().isBadRequest());
-        internal(fx.dv01Manager, post("/api/bulky-requests/{id}/quote", first), "{\"fee\": 150000, \"scheduledDate\": \"2027-01-15\"}")
+        internal(fx.dv01Manager, post("/api/bulky-requests/{id}/quote", first), "{\"fee\": 150000, \"scheduledDate\": \"2026-11-01\"}")
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("BULKY_DATE_TOO_FAR"));
-        internal(fx.dv01Manager, post("/api/bulky-requests/{id}/quote", first), "{\"fee\": 50000000, \"scheduledDate\": \"2026-12-30\"}")
+        internal(fx.dv01Manager, post("/api/bulky-requests/{id}/quote", first), "{\"fee\": 10000000, \"scheduledDate\": \"2026-10-31\"}")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("QUOTED"));
 
-        for (int i = 1; i < 5; i++) {
+        for (int i = 1; i < 3; i++) {
             create(citizenA);
         }
         citizen(citizenA, post("/api/citizen/bulky-requests"), "{\"itemType\": \"DEBRIS\", \"quantity\": 1, \"preferredDate\": \"2026-10-18\"}")
