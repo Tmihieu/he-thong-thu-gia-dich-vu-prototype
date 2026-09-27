@@ -632,14 +632,14 @@
   - **File dự kiến:** `BE/citizen/api/CitizenNotificationController.java`, `BT/citizen/CitizenNotificationIT.java`, `MOB/app/(tabs)/notifications.tsx`
   - **Kích thước:** S
 
-- [ ] **T45 — Rác cồng kềnh: backend và màn công ty báo phí** · `citizen-app` · M · P0 (§10 bước 7) · **O5 mặc định (không sinh Charge)** · **[cần hỏi trước: G13]**
+- [x] **T45 — Rác cồng kềnh: backend và màn công ty báo phí** · `citizen-app` · M · P0 (§10 bước 7) · **O5 mặc định (không sinh Charge)** · ~~[cần hỏi trước: G13]~~ G13 đã chốt · **xong 27/09/2026** (test tự động; còn kiểm tay §10 bước 7): mã `CK-MMYY-nnn`; công ty phụ trách chụp theo `companyOf(khu vực, ngày đăng ký)`, tổ chưa có công ty → 422 `BULKY_NO_COMPANY`; ngày mong muốn/ngày hẹn trước hôm nay → 422; ngày hẹn để trống = ngày hộ mong muốn; ngoài báo phí và đã thu gom, công ty còn **từ chối** (kèm lý do) và dân hủy được khi Chờ xác nhận/Đã báo phí; dân hủy thì báo công ty; audit ghi thao tác của công ty; xã/quản trị đọc được `GET /api/bulky-requests` (web chưa có màn xã); `photoUrls` là danh sách đường dẫn, upload ảnh để T46 dùng `/api/citizen/photos` của T47 (API đó chỉ nhận token người dân, nên màn công ty **chưa hiện ảnh**; T46 cần thêm đường tải ảnh cho công ty và chỉ nhận tên ảnh đã lưu thay vì URL tự do); màn web `/company/bulky` (menu "Rác cồng kềnh"), thông báo `company.bulky` mở màn và tô dòng theo `?id=`
   - **Mô tả:** Tạo `MIG/V21__bulky_waste_requests.sql` và entity `BulkyWasteRequest` (loại vật dụng, số lượng, địa chỉ, ngày mong muốn, ảnh (tùy C5), công ty phụ trách = `companyOf(khu vực)`, phí công ty báo, trạng thái `PENDING → QUOTED → COLLECTED / CANCELLED`). API cho dân (tạo, xem, hủy) và cho công ty (danh sách của mình, báo phí, đánh dấu đã thu gom). Mỗi lần đổi trạng thái phát thông báo cho dân. Web công ty: màn "Rác cồng kềnh" có form báo phí. Phí **không** sinh `Charge` (O5).
   - **Tiêu chí nghiệm thu:**
-    - [ ] IT: dân tạo → yêu cầu gán DV01 → DV01 báo phí → dân thấy "Đã báo phí"; dv02 không thấy yêu cầu này
-    - [ ] Không có `Charge` nào được tạo từ yêu cầu (IT)
-    - [ ] Validation form báo phí (phí > 0) có test component
+    - [x] IT: dân tạo → yêu cầu gán DV01 → DV01 báo phí → dân thấy "Đã báo phí"; dv02 không thấy yêu cầu này (`BulkyWasteIT`, dùng DV07 của fixture)
+    - [x] Không có `Charge` nào được tạo từ yêu cầu (IT)
+    - [x] Validation form báo phí (phí > 0) có test component (`QuoteForm.test.tsx`, kèm form từ chối và luồng màn công ty)
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=BulkyWasteIT`; web lint/test/build
+    - [x] `cd backend && ./mvnw test -Dtest=BulkyWasteIT` (7 test); web lint/test/build (111 test)
   - **Phụ thuộc:** T13, T23, T39, T08
   - **File dự kiến:** `MIG/V21__…sql`, `BE/citizen/domain/BulkyWasteRequest.java` (+ repo), `BE/citizen/service/BulkyWasteService.java` + `api/BulkyWasteController.java`, `BT/citizen/BulkyWasteIT.java`, `WEB/features/citizen/BulkyRequestsPage/{BulkyRequestsPage.tsx,QuoteForm.test.tsx}`
   - **Kích thước:** M

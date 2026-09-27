@@ -17,7 +17,7 @@ describe('menuConfig', () => {
       'Đối soát',
       'Khiếu nại',
     ]);
-    expect(labels('COMPANY_MANAGER')).toEqual(['Khu vực được giao', 'Khiếu nại']);
+    expect(labels('COMPANY_MANAGER')).toEqual(['Khu vực được giao', 'Khiếu nại', 'Rác cồng kềnh']);
     expect(labels('COLLECTOR')).toEqual(['Danh sách thu', 'Tiền mặt', 'Tài khoản']);
     expect(labels('ADMIN')).toEqual(['Tài khoản', 'Cấu hình', 'Nhật ký']);
   });

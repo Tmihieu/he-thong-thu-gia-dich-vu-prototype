@@ -509,6 +509,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/citizen/bulky-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Yêu cầu của hộ, mới nhất trước */
+        get: operations["list_6"];
+        put?: never;
+        /** Đăng ký thu gom rác cồng kềnh; công ty phụ trách khu vực của hộ nhận yêu cầu */
+        post: operations["create_3"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/citizen/bulky-requests/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hủy yêu cầu (khi chờ xác nhận hoặc đã báo phí), phải ghi lý do */
+        post: operations["cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/citizen/auth/otp/verify": {
         parameters: {
             query?: never;
@@ -537,6 +572,57 @@ export interface paths {
         put?: never;
         /** Yêu cầu mã OTP (mô phỏng, không gửi SMS) */
         post: operations["requestOtp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/bulky-requests/{id}/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Công ty báo phí và ngày hẹn thu gom (phí không sinh khoản phải thu, O5) */
+        post: operations["quote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/bulky-requests/{id}/collected": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Công ty đánh dấu đã thu gom */
+        post: operations["collected"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/bulky-requests/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Công ty từ chối / hủy yêu cầu, phải ghi lý do */
+        post: operations["cancel_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -671,7 +757,7 @@ export interface paths {
             cookie?: never;
         };
         /** Thông báo của người đang đăng nhập (theo vai trò, công ty, cá nhân), mới nhất trước */
-        get: operations["list_6"];
+        get: operations["list_7"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1028,7 +1114,7 @@ export interface paths {
             cookie?: never;
         };
         /** Thông báo của tài khoản người dân, mới nhất trước; lọc theo loại (Phản ánh / Giao dịch) */
-        get: operations["list_7"];
+        get: operations["list_8"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1114,6 +1200,40 @@ export interface paths {
         };
         /** Chi tiết một khoản của hộ (khoản của hộ khác trả 404) */
         get: operations["charge"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/citizen/bulky-requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chi tiết yêu cầu (của hộ khác trả 404) */
+        get: operations["get_5"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/bulky-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Yêu cầu rác cồng kềnh (công ty: của mình; xã / quản trị: tất cả), lọc theo trạng thái */
+        get: operations["list_9"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1815,6 +1935,66 @@ export interface components {
             actorLabel: string;
             content: string;
         };
+        CreateBulkyRequest: {
+            /** @enum {string} */
+            itemType: "MATTRESS" | "FURNITURE" | "LARGE_APPLIANCE" | "DEBRIS";
+            itemDescription?: string;
+            /** Format: int32 */
+            quantity?: number;
+            /** @description Để trống = địa chỉ hộ */
+            address?: string;
+            /** Format: date */
+            preferredDate: string;
+            /** @enum {string} */
+            preferredSlot?: "MORNING" | "AFTERNOON";
+            /** @description Đường dẫn ảnh (tùy chọn, chưa có upload trong demo) */
+            photoUrls?: string[];
+        };
+        BulkyRequestDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example CK-1026-006 */
+            code: string;
+            /** Format: int64 */
+            subjectId: number;
+            /** @example DTH-H000128 */
+            subjectCode: string;
+            subjectName: string;
+            citizenName: string;
+            citizenPhone: string;
+            /** @example KV07 */
+            areaCode: string;
+            /** @enum {string} */
+            itemType: "MATTRESS" | "FURNITURE" | "LARGE_APPLIANCE" | "DEBRIS";
+            itemDescription: string | null;
+            /** Format: int32 */
+            quantity: number;
+            address: string;
+            /** Format: date */
+            preferredDate: string;
+            /** @enum {string|null} */
+            preferredSlot: "MORNING" | "AFTERNOON" | null;
+            photoUrls: string[];
+            /** Format: int64 */
+            companyId: number;
+            companyName: string;
+            /** Format: int64 */
+            quotedFee: number | null;
+            /** Format: date-time */
+            quotedAt: string | null;
+            /** Format: date */
+            scheduledDate: string | null;
+            /** @enum {string} */
+            status: "PENDING" | "QUOTED" | "COLLECTED" | "CANCELLED";
+            /** Format: date-time */
+            collectedAt: string | null;
+            cancelReason: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CancelBulkyRequest: {
+            reason: string;
+        };
         OtpVerifyRequest: {
             /** @example 0902000128 */
             phone: string;
@@ -1850,6 +2030,15 @@ export interface components {
             message: string;
             /** Format: int32 */
             expiresInSeconds: number;
+        };
+        QuoteBulkyRequest: {
+            /** Format: int64 */
+            fee?: number;
+            /**
+             * Format: date
+             * @description Để trống = ngày hộ mong muốn
+             */
+            scheduledDate?: string;
         };
         IssueRequest: {
             /** Format: int64 */
@@ -3341,6 +3530,76 @@ export interface operations {
             };
         };
     };
+    list_6: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BulkyRequestDto"][];
+                };
+            };
+        };
+    };
+    create_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBulkyRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BulkyRequestDto"];
+                };
+            };
+        };
+    };
+    cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelBulkyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BulkyRequestDto"];
+                };
+            };
+        };
+    };
     verifyOtp: {
         parameters: {
             query?: never;
@@ -3385,6 +3644,80 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["OtpRequestResponse"];
+                };
+            };
+        };
+    };
+    quote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuoteBulkyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BulkyRequestDto"];
+                };
+            };
+        };
+    };
+    collected: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BulkyRequestDto"];
+                };
+            };
+        };
+    };
+    cancel_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelBulkyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BulkyRequestDto"];
                 };
             };
         };
@@ -3567,7 +3900,7 @@ export interface operations {
             };
         };
     };
-    list_6: {
+    list_7: {
         parameters: {
             query?: {
                 unreadOnly?: boolean;
@@ -4028,7 +4361,7 @@ export interface operations {
             };
         };
     };
-    list_7: {
+    list_8: {
         parameters: {
             query?: {
                 unreadOnly?: boolean;
@@ -4153,6 +4486,50 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CitizenChargeDto"];
+                };
+            };
+        };
+    };
+    get_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BulkyRequestDto"];
+                };
+            };
+        };
+    };
+    list_9: {
+        parameters: {
+            query?: {
+                status?: "PENDING" | "QUOTED" | "COLLECTED" | "CANCELLED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BulkyRequestDto"][];
                 };
             };
         };

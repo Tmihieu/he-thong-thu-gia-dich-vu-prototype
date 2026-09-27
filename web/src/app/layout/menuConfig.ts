@@ -4,6 +4,7 @@ import {
   AuditOutlined,
   BankOutlined,
   CommentOutlined,
+  DeleteOutlined,
   EnvironmentOutlined,
   FileSearchOutlined,
   FundOutlined,
@@ -53,6 +54,7 @@ export const MENU: Record<Role, MenuEntry[]> = {
   COMPANY_MANAGER: [
     { path: 'assigned', label: 'Khu vực được giao', icon: ApartmentOutlined },
     { path: 'complaints', label: 'Khiếu nại', icon: CommentOutlined },
+    { path: 'bulky', label: 'Rác cồng kềnh', icon: DeleteOutlined },
   ],
   COLLECTOR: [
     { path: 'list', label: 'Danh sách thu', icon: UnorderedListOutlined },
