@@ -146,6 +146,22 @@ class DemoSeedIT extends IntegrationTest {
         assertThat(demoDb.queryForObject("select count(*) from users where username = 'thu24'", Integer.class)).isZero();
     }
 
+    @Test
+    void demoProfileSeedsCollectionSchedulesForEveryArea() {
+        assertThat(demoDb.queryForObject("""
+                select count(*) from areas a
+                where not exists (select 1 from collection_schedules s where s.area_id = a.id)""", Integer.class))
+                .isZero();
+        // KV07 (DTH) theo lịch prototype: thứ 3 – 5 – 7 buổi chiều, Chủ nhật đầu tháng rác cồng kềnh.
+        assertThat(demoDb.queryForList("""
+                select s.weekday || ':' || coalesce(s.week_of_month::text, '-') || ':' || to_char(s.start_time, 'HH24:MI')
+                       || ':' || s.waste_type
+                from collection_schedules s join areas a on a.id = s.area_id
+                where a.code = 'KV07' order by s.weekday""", String.class))
+                .containsExactly("2:-:17:00:HOUSEHOLD", "4:-:17:00:HOUSEHOLD", "6:-:17:00:HOUSEHOLD_RECYCLABLE",
+                        "7:1:08:00:BULKY");
+    }
+
     private static DataSource dataSource(String url) {
         return new DriverManagerDataSource(url, POSTGRES.getUsername(), POSTGRES.getPassword());
     }

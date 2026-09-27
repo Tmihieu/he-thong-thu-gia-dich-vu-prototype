@@ -546,13 +546,13 @@
   - **File dự kiến:** `WEB/features/complaints/{CommuneComplaintsPage.tsx,CompanyComplaintsPage.tsx,ComplaintTimeline.tsx,ComplaintForms.tsx,ComplaintForms.test.tsx}`
   - **Kích thước:** M
 
-- [ ] **T38 — Lịch thu gom theo khu vực** · `master-data` · S · P1
+- [x] **T38 — Lịch thu gom theo khu vực** · `master-data` · S · P1 · **xong 27/09/2026**: seed khác nhau theo địa bàn (DTH đúng lịch prototype thứ 3 – 5 – 7 + Chủ nhật đầu tháng); đọc qua `MasterDataQueryService.schedulesOf` để app dân dùng lại (T42); kiểm seed nằm ở `DemoSeedIT`
   - **Mô tả:** Tạo `MIG/V17__collection_schedules.sql` và entity `CollectionSchedule` (khu vực, thứ, khung giờ, loại rác). Seed `V17_1` cho 24 tổ. `GET /api/masterdata/areas/{id}/schedules`. Nếu người dùng chọn C8 thì bỏ task này, app dùng dữ liệu tĩnh.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Seed có lịch cho mọi tổ; API trả lịch đúng tổ (IT)
-    - [ ] Thứ/khung giờ lưu có cấu trúc (không phải một chuỗi tự do)
+    - [x] Seed có lịch cho mọi tổ; API trả lịch đúng tổ (IT)
+    - [x] Thứ/khung giờ lưu có cấu trúc (không phải một chuỗi tự do)
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=CollectionScheduleIT`
+    - [x] `cd backend && ./mvnw test -Dtest=CollectionScheduleIT,DemoSeedIT`; `./mvnw verify`
   - **Phụ thuộc:** T09, H2
   - **File dự kiến:** `MIG/V17__…sql` + `SEED/V17_1__seed_schedules.sql`, `BE/masterdata/domain/CollectionSchedule.java` (+ repo), `BE/masterdata/api/ScheduleController.java`, `BT/masterdata/CollectionScheduleIT.java`
   - **Kích thước:** S

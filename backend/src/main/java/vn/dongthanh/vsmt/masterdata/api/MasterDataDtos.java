@@ -1,14 +1,17 @@
 package vn.dongthanh.vsmt.masterdata.api;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 import vn.dongthanh.vsmt.masterdata.domain.ActiveStatus;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
+import vn.dongthanh.vsmt.masterdata.domain.CollectionSchedule;
 import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.masterdata.domain.CompanyType;
 import vn.dongthanh.vsmt.masterdata.domain.District;
+import vn.dongthanh.vsmt.masterdata.domain.WasteType;
 
 public final class MasterDataDtos {
 
@@ -39,6 +42,24 @@ public final class MasterDataDtos {
         static AreaDto of(Area a, long subjectCount) {
             return new AreaDto(a.getId(), a.getCode(), a.getName(), a.getDistrict().getId(),
                     a.getDistrict().getCode(), a.getStatus(), subjectCount);
+        }
+    }
+
+    public record CollectionScheduleDto(
+            @Schema(requiredMode = RequiredMode.REQUIRED) Long id,
+            @Schema(requiredMode = RequiredMode.REQUIRED) Long areaId,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "1 = Thứ 2 … 7 = Chủ nhật (ISO)", example = "3")
+            int weekday,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true,
+                    description = "Null = hằng tuần; 1 = tuần đầu tháng") Integer weekOfMonth,
+            @Schema(requiredMode = RequiredMode.REQUIRED, type = "string", example = "17:00:00") LocalTime startTime,
+            @Schema(requiredMode = RequiredMode.REQUIRED, type = "string", example = "19:00:00") LocalTime endTime,
+            @Schema(requiredMode = RequiredMode.REQUIRED) WasteType wasteType,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String note) {
+
+        static CollectionScheduleDto of(CollectionSchedule s) {
+            return new CollectionScheduleDto(s.getId(), s.getArea().getId(), s.getWeekday(), s.getWeekOfMonth(),
+                    s.getStartTime(), s.getEndTime(), s.getWasteType(), s.getNote());
         }
     }
 

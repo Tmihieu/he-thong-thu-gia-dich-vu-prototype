@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.AreaDto;
+import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.CollectionScheduleDto;
 import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.CompanyDto;
 import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.DistrictDto;
 import vn.dongthanh.vsmt.masterdata.service.MasterDataQueryService;
@@ -37,6 +38,12 @@ public class MasterDataController {
     public List<AreaDto> areas(@RequestParam(required = false) Long districtId) {
         var counts = query.subjectCountByArea();
         return query.areas(districtId).stream().map(a -> AreaDto.of(a, counts.getOrDefault(a.getId(), 0L))).toList();
+    }
+
+    @Operation(summary = "Lịch thu gom của khu vực")
+    @GetMapping("/areas/{id}/schedules")
+    public List<CollectionScheduleDto> schedules(@PathVariable Long id) {
+        return query.schedulesOf(id).stream().map(CollectionScheduleDto::of).toList();
     }
 
     @Operation(summary = "Danh sách công ty (công ty chỉ thấy công ty của mình)")
