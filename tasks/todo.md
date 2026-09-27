@@ -621,13 +621,13 @@
   - **File dự kiến:** `BE/citizen/api/CitizenComplaintController.java`, `BT/citizen/CitizenComplaintIT.java`, `MOB/app/complaints/{index,new,[id]}.tsx`
   - **Kích thước:** M
 
-- [ ] **T44 — Mobile: tab thông báo** · `citizen-app` · S · P0 (§10 bước 6)
+- [ ] **T44 — Mobile: tab thông báo** · `citizen-app` · S · P0 (§10 bước 6) · **code xong 27/09/2026, chờ người dùng kiểm tay**: API `/api/citizen/notifications` (+ `unread-count`, `/{id}/read`, `/read-all`) chỉ trả thông báo `recipient_type = CITIZEN` của tài khoản; tab Thông báo có 3 mục Tất cả / Phản ánh / Giao dịch như prototype, badge chưa đọc trên thanh tab; poll 30 giây (`NOTIFICATION_POLL_MS`); bấm thông báo → đánh dấu đã đọc và mở đúng màn theo `link.screen` (`features/notifications/links.ts`, có test)
   - **Mô tả:** `GET /api/citizen/notifications` + đánh dấu đã đọc (gọi service T23 với người nhận là người dân). Tab Thông báo trên mobile: nhóm Khiếu nại / Giao dịch, badge chưa đọc, polling bằng `refetchInterval` (không push thật).
   - **Tiêu chí nghiệm thu:**
-    - [ ] Xã đóng khiếu nại → trong vòng một chu kỳ polling, tab Thông báo có mục mới
-    - [ ] Thanh toán mô phỏng → có thông báo Giao dịch
+    - [ ] Xã đóng khiếu nại → trong vòng một chu kỳ polling, tab Thông báo có mục mới — API kiểm bằng `CitizenNotificationIT.appPaymentAndClosedComplaintShowUpAsNotifications`; chờ người dùng kiểm tay
+    - [x] Thanh toán mô phỏng → có thông báo Giao dịch (IT; mục "Giao dịch" trên tab)
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=CitizenNotificationIT`; `cd mobile && npm test`
+    - [x] `cd backend && ./mvnw test -Dtest=CitizenNotificationIT`; `cd mobile && npm test` + `npm run typecheck` + `expo export`
   - **Phụ thuộc:** T41, T23
   - **File dự kiến:** `BE/citizen/api/CitizenNotificationController.java`, `BT/citizen/CitizenNotificationIT.java`, `MOB/app/(tabs)/notifications.tsx`
   - **Kích thước:** S

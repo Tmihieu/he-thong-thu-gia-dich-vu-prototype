@@ -38,4 +38,14 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     Page<Notification> findByRecipientCitizenId(Long citizenId, Pageable page);
 
     long countByRecipientCitizenIdAndReadAtIsNull(Long citizenId);
+
+    @Query(value = "select n from Notification n where n.recipientCitizenId = :citizenId"
+            + " and (:unreadOnly = false or n.readAt is null) and (:kind is null or n.kind = :kind)",
+            countQuery = "select count(n) from Notification n where n.recipientCitizenId = :citizenId"
+                    + " and (:unreadOnly = false or n.readAt is null) and (:kind is null or n.kind = :kind)")
+    Page<Notification> findForCitizen(Long citizenId, boolean unreadOnly, NotificationKind kind, Pageable page);
+
+    @Modifying
+    @Query("update Notification n set n.readAt = :at where n.readAt is null and n.recipientCitizenId = :citizenId")
+    int markAllReadForCitizen(Long citizenId, OffsetDateTime at);
 }

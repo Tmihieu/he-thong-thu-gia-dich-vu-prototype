@@ -100,6 +100,30 @@ public class NotificationService {
         return notifications.markAllRead(actor.role(), actor.companyId(), actor.id(), OffsetDateTime.now(clock));
     }
 
+    /** Thông báo gửi riêng cho một tài khoản người dân (app, T44). */
+    @Transactional(readOnly = true)
+    public Page<Notification> listForCitizen(Long citizenId, boolean unreadOnly, NotificationKind kind, Pageable page) {
+        return notifications.findForCitizen(citizenId, unreadOnly, kind, page);
+    }
+
+    @Transactional(readOnly = true)
+    public long unreadCountForCitizen(Long citizenId) {
+        return notifications.countByRecipientCitizenIdAndReadAtIsNull(citizenId);
+    }
+
+    /** Thông báo của tài khoản khác trả 404 như không tồn tại. */
+    public Notification markReadForCitizen(Long id, Long citizenId) {
+        Notification n = notifications.findById(id)
+                .filter(x -> citizenId.equals(x.getRecipientCitizenId()))
+                .orElseThrow(() -> new NotFoundException("NOTIFICATION_NOT_FOUND", "Không tìm thấy thông báo."));
+        n.markRead(OffsetDateTime.now(clock));
+        return n;
+    }
+
+    public int markAllReadForCitizen(Long citizenId) {
+        return notifications.markAllReadForCitizen(citizenId, OffsetDateTime.now(clock));
+    }
+
     private String toJson(Map<String, Object> link) {
         if (link == null) {
             return null;

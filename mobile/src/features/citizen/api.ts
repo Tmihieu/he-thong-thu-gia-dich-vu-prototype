@@ -15,6 +15,9 @@ export type CitizenSchedule = S['CitizenScheduleDto'];
 export type CitizenComplaint = S['CitizenComplaintDto'];
 export type CitizenComplaintDetail = S['CitizenComplaintDetailDto'];
 export type SubmitComplaintRequest = S['SubmitComplaintRequest'];
+export type CitizenNotification = S['CitizenNotificationDto'];
+export type CitizenNotificationPage = S['CitizenNotificationPageDto'];
+export type NotificationKind = CitizenNotification['kind'];
 
 export const citizenApi = {
   requestOtp: (phone: string) => api.post<OtpRequestResponse>('/api/citizen/auth/otp/request', { phone }),
@@ -30,6 +33,11 @@ export const citizenApi = {
   complaints: () => api.get<CitizenComplaint[]>('/api/citizen/complaints'),
   complaint: (id: number) => api.get<CitizenComplaintDetail>(`/api/citizen/complaints/${id}`),
   submitComplaint: (body: SubmitComplaintRequest) => api.post<CitizenComplaintDetail>('/api/citizen/complaints', body),
+  notifications: (kind?: NotificationKind) =>
+    api.get<CitizenNotificationPage>('/api/citizen/notifications', { params: { kind, size: 100 } }),
+  unreadCount: () => api.get<{ unreadCount: number }>('/api/citizen/notifications/unread-count'),
+  markRead: (id: number) => api.post<CitizenNotification>(`/api/citizen/notifications/${id}/read`),
+  markAllRead: () => api.post<{ unreadCount: number }>('/api/citizen/notifications/read-all'),
 };
 
 export const citizenKeys = {
@@ -41,7 +49,12 @@ export const citizenKeys = {
   schedule: ['citizen', 'schedule'] as const,
   complaints: ['citizen', 'complaints'] as const,
   complaint: (id: number) => ['citizen', 'complaints', id] as const,
+  notifications: (kind?: NotificationKind) => ['citizen', 'notifications', kind ?? 'ALL'] as const,
+  unreadCount: ['citizen', 'notifications', 'unread-count'] as const,
 };
+
+/** Không có push thật: tab Thông báo và badge poll theo chu kỳ này (SPEC §9.7). */
+export const NOTIFICATION_POLL_MS = 30_000;
 
 export function useProfile() {
   return useQuery({ queryKey: citizenKeys.me, queryFn: citizenApi.me, staleTime: 5 * 60_000 });
@@ -94,6 +107,40 @@ export function useSubmitComplaint() {
       void queryClient.invalidateQueries({ queryKey: citizenKeys.complaints });
     },
   });
+}
+
+export function useNotifications(kind?: NotificationKind) {
+  return useQuery({
+    queryKey: citizenKeys.notifications(kind),
+    queryFn: () => citizenApi.notifications(kind),
+    refetchInterval: NOTIFICATION_POLL_MS,
+  });
+}
+
+export function useUnreadCount() {
+  return useQuery({
+    queryKey: citizenKeys.unreadCount,
+    queryFn: citizenApi.unreadCount,
+    refetchInterval: NOTIFICATION_POLL_MS,
+    select: (d) => d.unreadCount,
+  });
+}
+
+function useRefreshNotifications() {
+  const queryClient = useQueryClient();
+  return () => {
+    void queryClient.invalidateQueries({ queryKey: ['citizen', 'notifications'] });
+  };
+}
+
+export function useMarkRead() {
+  const refresh = useRefreshNotifications();
+  return useMutation({ mutationFn: citizenApi.markRead, onSuccess: refresh });
+}
+
+export function useMarkAllRead() {
+  const refresh = useRefreshNotifications();
+  return useMutation({ mutationFn: citizenApi.markAllRead, onSuccess: refresh });
 }
 
 /**

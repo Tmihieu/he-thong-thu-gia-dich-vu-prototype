@@ -457,6 +457,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/citizen/notifications/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Đánh dấu một thông báo đã đọc */
+        post: operations["read_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/citizen/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Đánh dấu tất cả đã đọc */
+        post: operations["readAll_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/citizen/complaints": {
         parameters: {
             query?: never;
@@ -978,6 +1012,40 @@ export interface paths {
         };
         /** Xác nhận thanh toán (không phải biên lai pháp lý, O1) */
         get: operations["confirmation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/citizen/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Thông báo của tài khoản người dân, mới nhất trước; lọc theo loại (Phản ánh / Giao dịch) */
+        get: operations["list_7"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/citizen/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Số thông báo chưa đọc (badge trên tab) */
+        get: operations["unreadCount_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1679,6 +1747,27 @@ export interface components {
             /** @description Công ty phụ trách khoản */
             companyName: string;
         };
+        CitizenNotificationDto: {
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            kind: "REMINDER" | "COMPLAINT" | "RECEIPT" | "INFO" | "TRANSACTION";
+            title: string;
+            body: string;
+            link: components["schemas"]["CitizenNotificationLink"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            readAt: string | null;
+        };
+        CitizenNotificationLink: {
+            /** @example citizen.complaintDetail */
+            screen: string;
+            /** @description Tham số màn hình, vd. {"complaintId": 5} hoặc {"paymentId": 9} */
+            params?: {
+                [key: string]: unknown;
+            };
+        };
         SubmitComplaintRequest: {
             /** @enum {string} */
             category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "OTHER";
@@ -2168,6 +2257,13 @@ export interface components {
             name: string;
             contactName: string;
             contactPhone: string;
+        };
+        CitizenNotificationPageDto: {
+            items: components["schemas"]["CitizenNotificationDto"][];
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            unreadCount: number;
         };
         CitizenProfileDto: {
             /** Format: int64 */
@@ -3159,6 +3255,48 @@ export interface operations {
             };
         };
     };
+    read_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CitizenNotificationDto"];
+                };
+            };
+        };
+    };
+    readAll_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UnreadCountDto"];
+                };
+            };
+        };
+    };
     list_5: {
         parameters: {
             query?: never;
@@ -3886,6 +4024,51 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PaymentConfirmationDto"];
+                };
+            };
+        };
+    };
+    list_7: {
+        parameters: {
+            query?: {
+                unreadOnly?: boolean;
+                kind?: "REMINDER" | "COMPLAINT" | "RECEIPT" | "INFO" | "TRANSACTION";
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CitizenNotificationPageDto"];
+                };
+            };
+        };
+    };
+    unreadCount_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UnreadCountDto"];
                 };
             };
         };
