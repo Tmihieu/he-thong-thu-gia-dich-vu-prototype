@@ -17,3 +17,4 @@ backend/uploads/
 node_modules/
 dist/
 .expo/
+*.tsbuildinfo
