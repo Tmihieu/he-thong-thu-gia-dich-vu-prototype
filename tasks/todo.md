@@ -319,15 +319,15 @@
   - **Chặn:** T23, T36, T38, T39, T45, T47.
   - **Phụ thuộc:** T01
 
-- [ ] **T22 — Khung mobile Expo gọi được API từ điện thoại** · `platform` · L (scaffold) · P0 · **[cần hỏi trước: G10 `expo-secure-store`]**
+- [ ] **T22 — Khung mobile Expo gọi được API từ điện thoại** · `platform` · L (scaffold) · P0 · ~~[cần hỏi trước: G10]~~ G10 đã duyệt `expo-secure-store` · **code xong 27/09/2026, chờ người dùng quét QR trên điện thoại thật**: Expo SDK 57 + RN 0.86 + TS 6; màn hình ở `mobile/src/app/` (quy ước SDK 57, không phải `mobile/app/`); `react-dom`/`react-native-reanimated`/`react-native-worklets` ghim bằng `expo install` để hết xung đột peer của expo-router; `gen:api` chạy `npx openapi-typescript@7.13.0` vì bản này chưa nhận TS 6; đã kiểm `expo-doctor` 21/21, `expo export` android đóng gói được, gọi `http://192.168.1.66:8080/v3/api-docs` qua IP LAN trả 200
   - **Mô tả:** Khởi tạo `mobile/` bằng Expo SDK (ghim phiên bản) + TypeScript + Expo Router + TanStack Query. `MOB/src/api/client.ts` đọc base URL từ `EXPO_PUBLIC_API_URL` (IP LAN của laptop). Script `gen:api` (openapi-typescript). Jest tối thiểu. Một màn "Kiểm tra kết nối" gọi `GET /v3/api-docs` hoặc endpoint health. Task này nằm ở tuần 2 để phát hiện sớm rủi ro R6 (mạng LAN/SDK).
   - **Tiêu chí nghiệm thu:**
-    - [ ] `npx expo start`, quét QR bằng Expo Go trên điện thoại thật, màn "Kiểm tra kết nối" báo thành công
-    - [ ] `npm test` xanh với ít nhất 1 test cho client
-    - [ ] Ghi cách chạy (IP LAN / `--tunnel`) vào `mobile/README.md`
+    - [ ] `npx expo start`, quét QR bằng Expo Go trên điện thoại thật, màn "Kiểm tra kết nối" báo thành công — chờ người dùng
+    - [x] `npm test` xanh với ít nhất 1 test cho client (11 test: client 9, kiểm tra kết nối 2)
+    - [x] Ghi cách chạy (IP LAN / `--tunnel`) vào `mobile/README.md`
   - **Kiểm chứng:**
-    - [ ] `cd mobile && npm install && npm run gen:api && npm test`
-    - [ ] Thủ công: `cd mobile && npx expo start` trên điện thoại
+    - [x] `cd mobile && npm install && npm run gen:api && npm test` (+ `npm run typecheck`)
+    - [ ] Thủ công: `cd mobile && npx expo start` trên điện thoại — chờ người dùng
   - **Phụ thuộc:** T03 (T06 nếu muốn thử đăng nhập)
   - **File dự kiến:** `mobile/package.json`, `mobile/app.json`, `MOB/app/_layout.tsx`, `MOB/app/index.tsx`, `MOB/src/api/client.ts` + test, `mobile/README.md`
   - **Kích thước:** L. Scaffold.
