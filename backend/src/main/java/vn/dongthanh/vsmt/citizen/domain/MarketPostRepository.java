@@ -20,6 +20,10 @@ public interface MarketPostRepository extends JpaRepository<MarketPost, Long> {
     @Query(WITH_AUTHOR + " where p.id = :id")
     Optional<MarketPost> findByIdWithAuthor(Long id);
 
+    /** Khóa theo tiền tố mã tới hết transaction, để hai người đăng cùng lúc không lấy trùng số. */
+    @Query(value = "select count(*) from pg_advisory_xact_lock(hashtext(:prefix))", nativeQuery = true)
+    long lockCodePrefix(String prefix);
+
     /** Số lớn nhất đang dùng của mã {@code CDC-nnn}; 0 nếu chưa có. */
     @Query(value = "select coalesce(max(cast(substring(code, 5) as integer)), 0) from market_posts", nativeQuery = true)
     int maxCodeNumber();

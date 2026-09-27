@@ -165,7 +165,7 @@ class MarketIT extends IntegrationTest {
     }
 
     @Test
-    void onlyAuthorChangesStatusAndClosedPostsLeaveDefaultList() throws Exception {
+    void onlyAuthorClosesPostOnceWithoutReopeningAndClosedPostsLeaveDefaultList() throws Exception {
         long id = create(citizenA, "Xe đạp trẻ em", "GIVE");
 
         citizen(citizenB, post("/api/citizen/market/posts/{id}/status", id), "{\"status\": \"CLOSED\"}")
@@ -175,15 +175,51 @@ class MarketIT extends IntegrationTest {
 
         citizen(citizenA, post("/api/citizen/market/posts/{id}/status", id), "{}")
                 .andExpect(status().isBadRequest());
+        // Quyết định 27/09/2026: endpoint chỉ nhận CLOSED.
+        citizen(citizenA, post("/api/citizen/market/posts/{id}/status", id), "{\"status\": \"OPEN\"}")
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("MARKET_POST_STATUS_INVALID"))
+                .andExpect(jsonPath("$.message").value("Chỉ đóng được bài đăng; bài đã đóng không mở lại được."));
         citizen(citizenA, post("/api/citizen/market/posts/{id}/status", id), "{\"status\": \"CLOSED\"}")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CLOSED"))
                 .andExpect(jsonPath("$.mine").value(true));
 
+        citizen(citizenA, post("/api/citizen/market/posts/{id}/status", id), "{\"status\": \"OPEN\"}")
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("MARKET_POST_STATUS_INVALID"));
+        citizen(citizenA, post("/api/citizen/market/posts/{id}/status", id), "{\"status\": \"CLOSED\"}")
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("MARKET_POST_CLOSED"))
+                .andExpect(jsonPath("$.message").value("Bài CDC-001 đã đóng, không đóng lại được."));
+
         citizen(citizenB, get("/api/citizen/market/posts"), null)
                 .andExpect(jsonPath("$.total").value(0));
         citizen(citizenB, get("/api/citizen/market/posts").param("status", "CLOSED"), null)
-                .andExpect(jsonPath("$.items[*].id").value(contains((int) id)));
+                .andExpect(jsonPath("$.items[*].id").value(contains((int) id)))
+                .andExpect(jsonPath("$.items[0].status").value("CLOSED"));
+    }
+
+    @Test
+    void closedPostTakesNoNewComments() throws Exception {
+        long id = create(citizenA, "Nồi cơm điện", "GIVE");
+        citizen(citizenB, post("/api/citizen/market/posts/{id}/comments", id), "{\"content\": \"Còn không chị?\"}")
+                .andExpect(status().isCreated());
+        citizen(citizenA, post("/api/citizen/market/posts/{id}/status", id), "{\"status\": \"CLOSED\"}")
+                .andExpect(status().isOk());
+
+        citizen(citizenB, post("/api/citizen/market/posts/{id}/comments", id), "{\"content\": \"Cho em xin nhé\"}")
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("MARKET_POST_CLOSED"))
+                .andExpect(jsonPath("$.message").value("Bài CDC-001 đã đóng, không bình luận được."));
+        citizen(citizenA, post("/api/citizen/market/posts/{id}/comments", id), "{\"content\": \"Đã cho rồi\"}")
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("MARKET_POST_CLOSED"));
+
+        // Bình luận cũ vẫn xem được.
+        citizen(citizenB, get("/api/citizen/market/posts/{id}", id), null)
+                .andExpect(jsonPath("$.post.commentCount").value(1))
+                .andExpect(jsonPath("$.comments[*].content").value(contains("Còn không chị?")));
     }
 
     @Test

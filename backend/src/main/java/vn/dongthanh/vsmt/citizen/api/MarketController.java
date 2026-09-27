@@ -81,7 +81,7 @@ public class MarketController {
         return MarketPostDto.of(post, 0, citizen);
     }
 
-    @Operation(summary = "Đổi trạng thái bài (chỉ người đăng, D9)")
+    @Operation(summary = "Đóng bài (chỉ người đăng, không mở lại)")
     @PostMapping("/{id}/status")
     public MarketPostDto changeStatus(@AuthenticationPrincipal CurrentCitizen citizen, @PathVariable Long id,
             @Valid @RequestBody MarketPostStatusRequest request) {

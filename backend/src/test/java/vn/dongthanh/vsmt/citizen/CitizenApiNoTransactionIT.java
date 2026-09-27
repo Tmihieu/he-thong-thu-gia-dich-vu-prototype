@@ -1,9 +1,23 @@
 package vn.dongthanh.vsmt.citizen;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -22,6 +37,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import vn.dongthanh.vsmt.citizen.domain.CitizenAccount;
 import vn.dongthanh.vsmt.citizen.domain.CitizenAccountRepository;
+import vn.dongthanh.vsmt.citizen.domain.MarketComment;
+import vn.dongthanh.vsmt.citizen.domain.MarketCommentRepository;
+import vn.dongthanh.vsmt.citizen.domain.MarketPost;
+import vn.dongthanh.vsmt.citizen.domain.MarketPostRepository;
+import vn.dongthanh.vsmt.citizen.domain.MarketPostType;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubjectRepository;
 import vn.dongthanh.vsmt.support.CollectionFixture;
 import vn.dongthanh.vsmt.support.DatabaseCleaner;
@@ -42,10 +62,14 @@ class CitizenApiNoTransactionIT extends IntegrationTest {
     @Autowired TransactionTemplate tx;
     @Autowired CitizenAccountRepository accounts;
     @Autowired ServiceSubjectRepository subjects;
+    @Autowired MarketPostRepository marketPosts;
+    @Autowired MarketCommentRepository marketComments;
     @Autowired ObjectMapper json;
 
     @Value("${vsmt.citizen.demo-otp}")
     String demoOtp;
+    @Value("${vsmt.upload-dir}")
+    String uploadDir;
 
     long chargeId;
     String token;
@@ -114,6 +138,67 @@ class CitizenApiNoTransactionIT extends IntegrationTest {
         company(dv01, post("/api/bulky-requests/" + quotedId + "/collected")).andExpect(jsonPath("$.status").value("COLLECTED"));
         ok(post("/api/citizen/bulky-requests/" + bulkyId + "/cancel"), "{\"reason\":\"Đã tự xử lý\"}")
                 .andExpect(jsonPath("$.status").value("CANCELLED"));
+    }
+
+    @Test
+    void marketFlowLoadsOutsideTestTransaction() throws Exception {
+        // Bài và bình luận của hộ B: người đăng khác người đang xem nên không có sẵn trong session của request.
+        long otherPostId = tx.execute(s -> {
+            CitizenAccount b = accounts.save(CitizenAccount.create("0902000005",
+                    subjects.findByCode("DTH-H000005").orElseThrow(), "Chủ hộ B"));
+            MarketPost p = marketPosts.save(MarketPost.create("CDC-001", b, "Tủ gỗ", MarketPostType.EXCHANGE,
+                    "Còn tốt", List.of(), null));
+            marketComments.save(MarketComment.create(p, b, "Ưu tiên đổi bàn học"));
+            return p.getId();
+        });
+        String photo = body(mvc.perform(multipart("/api/citizen/photos").file(new MockMultipartFile("file", "anh.jpg",
+                        MediaType.IMAGE_JPEG_VALUE, MarketIT.JPEG)).header(HttpHeaders.AUTHORIZATION, token))
+                .andExpect(status().isCreated())).get("name").asText();
+        try {
+            ok(post("/api/citizen/market/posts"), """
+                    {"title":"Kệ sách","postType":"GIVE","description":"Kệ 3 tầng","photoNames":["%s"]}"""
+                    .formatted(photo)).andExpect(jsonPath("$.photoUrls[0]").value("/api/citizen/photos/" + photo));
+            long myPostId = body(ok(post("/api/citizen/market/posts"),
+                    "{\"title\":\"Ghế nhựa\",\"postType\":\"GIVE\",\"description\":\"Còn tốt\"}")
+                    .andExpect(jsonPath("$.author.areaCode").value("KV07"))).get("id").asLong();
+            ok(get("/api/citizen/market/posts"))
+                    .andExpect(jsonPath("$.items[*].author.areaCode").value(contains("KV07", "KV07", "KV12")));
+            ok(post("/api/citizen/market/posts/" + otherPostId + "/comments"), "{\"content\":\"Còn không anh?\"}")
+                    .andExpect(jsonPath("$.author.areaCode").value("KV07"));
+            ok(get("/api/citizen/market/posts/" + otherPostId))
+                    .andExpect(jsonPath("$.post.author.areaCode").value("KV12"))
+                    .andExpect(jsonPath("$.comments[*].author.areaCode").value(contains("KV12", "KV07")));
+            ok(post("/api/citizen/market/posts/" + myPostId + "/status"), "{\"status\":\"CLOSED\"}")
+                    .andExpect(jsonPath("$.status").value("CLOSED"));
+        } finally {
+            Files.deleteIfExists(Path.of(uploadDir, photo));
+        }
+    }
+
+    @Test
+    void concurrentMarketPostsGetDistinctCodes() throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(4);
+        try {
+            CountDownLatch start = new CountDownLatch(1);
+            List<Future<Integer>> results = new ArrayList<>();
+            for (int i = 0; i < 4; i++) {
+                results.add(pool.submit(() -> {
+                    start.await();
+                    return mvc.perform(post("/api/citizen/market/posts").header(HttpHeaders.AUTHORIZATION, token)
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content("{\"title\":\"Ghế nhựa\",\"postType\":\"GIVE\",\"description\":\"Còn tốt\"}"))
+                            .andReturn().getResponse().getStatus();
+                }));
+            }
+            start.countDown();
+            for (Future<Integer> r : results) {
+                assertThat(r.get(30, TimeUnit.SECONDS)).isEqualTo(201);
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+        ok(get("/api/citizen/market/posts")).andExpect(jsonPath("$.items[*].code",
+                containsInAnyOrder("CDC-001", "CDC-002", "CDC-003", "CDC-004")));
     }
 
     private org.springframework.test.web.servlet.ResultActions ok(MockHttpServletRequestBuilder req) throws Exception {

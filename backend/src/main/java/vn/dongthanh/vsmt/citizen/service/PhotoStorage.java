@@ -29,6 +29,12 @@ public class PhotoStorage {
      */
     public static final long MAX_BYTES = 5L * 1024 * 1024;
 
+    /**
+     * Dưới mức trống này của ổ chứa {@code vsmt.upload-dir} thì từ chối ảnh mới, để ảnh không làm đầy ổ của CSDL/log.
+     * ponytail: ngưỡng cố định cho demo một máy; khi chạy thật đưa vào cấu hình hoặc chuyển ảnh sang object storage.
+     */
+    static final long MIN_FREE_BYTES = 1024L * 1024 * 1024;
+
     /** Chỉ tên do {@link #save} sinh (UUID + đuôi chuẩn) mới được đọc: chặn path traversal. */
     public static final String NAME_PATTERN =
             "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|png|webp)$";
@@ -57,9 +63,16 @@ public class PhotoStorage {
         if (ext == null) {
             throw new BusinessRuleException("PHOTO_TYPE_INVALID", "Chỉ nhận ảnh JPEG, PNG hoặc WebP.");
         }
+        requireFreeSpace(Files.getFileStore(dir).getUsableSpace());
         String name = UUID.randomUUID() + "." + ext;
         Files.write(dir.resolve(name), bytes, StandardOpenOption.CREATE_NEW);
         return name;
+    }
+
+    static void requireFreeSpace(long usableBytes) {
+        if (usableBytes < MIN_FREE_BYTES) {
+            throw new BusinessRuleException("STORAGE_FULL", "Máy chủ sắp hết chỗ lưu ảnh, vui lòng thử lại sau.");
+        }
     }
 
     public boolean exists(String name) {

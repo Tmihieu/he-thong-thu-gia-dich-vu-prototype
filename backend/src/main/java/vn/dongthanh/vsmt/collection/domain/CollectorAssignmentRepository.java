@@ -2,6 +2,7 @@ package vn.dongthanh.vsmt.collection.domain;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -9,6 +10,10 @@ import org.springframework.data.jpa.repository.Query;
 public interface CollectorAssignmentRepository extends JpaRepository<CollectorAssignment, Long> {
 
     String FETCH = "select a from CollectorAssignment a join fetch a.collector join fetch a.area ar join fetch a.company c";
+
+    /** Kèm người đi thu, tổ, công ty: controller dựng DTO sau khi transaction đã đóng. */
+    @Query(FETCH + " where a.id = :id")
+    Optional<CollectorAssignment> findByIdWithDetails(Long id);
 
     /** Phân tổ còn hiệu lực từ ngày {@code date} trở đi (hoặc bắt đầu sau), của một tổ. */
     @Query(FETCH + " where ar.id = :areaId and (a.validTo is null or a.validTo >= :date) order by a.validFrom")

@@ -256,7 +256,7 @@ Cuối cùng làm chung: phần rà seed của T49 (sau khi T42–T48 vào `main
 
 **Kiểm tích hợp sớm, không đợi T50.** Mỗi khi một tính năng vào `main`, chạy tay bước §10 tương ứng trên `main`: T42 là bước 4; T43 và T44 là bước 6; T45 + T46 và T47 + T48 là bước 7.
 
-**Quyết định đã có, không phải hỏi lại:** G7 (chỉ thông báo, không entity), G10 (`expo-image-picker` đã duyệt), G13 (rác cồng kềnh không vào phiếu YCT), C4/C5 không cắt (có bình luận, ảnh thật). Còn chờ người dùng: giữ hay cắt T51.
+**Quyết định đã có, không phải hỏi lại:** G7 (chỉ thông báo, không entity), G10 (`expo-image-picker` đã duyệt), G13 (rác cồng kềnh không vào phiếu YCT), C4/C5 không cắt (có bình luận, ảnh thật). T51 đã cắt khỏi demo (C1, người dùng chốt 27/09/2026, dùng tài khoản seed).
 
 ---
 

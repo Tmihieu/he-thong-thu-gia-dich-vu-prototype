@@ -14,8 +14,9 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import vn.dongthanh.vsmt.platform.common.BaseEntity;
+import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 
-/** Bài đăng chợ đồ cũ (data dictionary §3.4). Không kiểm duyệt (O6); chỉ người đăng đổi trạng thái (D9). */
+/** Bài đăng chợ đồ cũ (data dictionary §3.4). Không kiểm duyệt (O6); chỉ người đăng đóng bài (D9). */
 @Getter
 @Entity
 @Table(name = "market_posts")
@@ -73,7 +74,16 @@ public class MarketPost extends BaseEntity {
         return author.getId().equals(accountId);
     }
 
-    public void changeStatus(MarketPostStatus status) {
-        this.status = status;
+    /** Người đăng chỉ đóng bài (OPEN → CLOSED), không mở lại (quyết định 27/09/2026). */
+    public void close() {
+        requireOpen("đóng lại");
+        status = MarketPostStatus.CLOSED;
+    }
+
+    /** Bài đã đóng không đổi trạng thái và không nhận bình luận mới (quyết định 27/09/2026). */
+    public void requireOpen(String action) {
+        if (status == MarketPostStatus.CLOSED) {
+            throw new BusinessRuleException("MARKET_POST_CLOSED", "Bài " + code + " đã đóng, không " + action + " được.");
+        }
     }
 }

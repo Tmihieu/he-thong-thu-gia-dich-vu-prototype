@@ -24,7 +24,7 @@ import vn.dongthanh.vsmt.platform.common.NotFoundException;
 import vn.dongthanh.vsmt.platform.security.CurrentCitizen;
 
 /**
- * Chợ đồ cũ (T47): mọi người dân đã đăng nhập xem và bình luận được mọi bài; chỉ người đăng đổi trạng thái (D9).
+ * Chợ đồ cũ (T47): mọi người dân đã đăng nhập xem mọi bài, bình luận được bài đang đăng; chỉ người đăng đóng bài (D9).
  * Không kiểm duyệt (O6).
  */
 @Service
@@ -65,24 +65,32 @@ public class MarketService {
                         "Ảnh \"" + name + "\" không tồn tại. Vui lòng tải ảnh lên lại.");
             }
         }
+        posts.lockCodePrefix("CDC-");
         String code = "CDC-%03d".formatted(posts.maxCodeNumber() + 1);
         return posts.save(MarketPost.create(code, author, cmd.title().trim(), cmd.postType(),
                 cmd.description().trim(), names, blankToNull(cmd.pickupLocation())));
     }
 
+    /** Endpoint giữ dạng đổi trạng thái nhưng chỉ nhận CLOSED: không mở lại bài (quyết định 27/09/2026). */
     public PostView changeStatus(CurrentCitizen citizen, Long id, MarketPostStatus status) {
         Long myId = citizens.requireActive(citizen).getId();
         MarketPost post = find(id);
         if (!post.isAuthoredBy(myId)) {
             throw new AccessDeniedException("Chỉ người đăng được đổi trạng thái bài " + post.getCode());
         }
-        post.changeStatus(status);
+        if (status != MarketPostStatus.CLOSED) {
+            throw new BusinessRuleException("MARKET_POST_STATUS_INVALID",
+                    "Chỉ đóng được bài đăng; bài đã đóng không mở lại được.");
+        }
+        post.close();
         return new PostView(post, comments.countByPostId(id));
     }
 
     public MarketComment comment(CurrentCitizen citizen, Long postId, String content) {
         CitizenAccount author = citizens.requireActive(citizen);
-        return comments.save(MarketComment.create(find(postId), author, content.trim()));
+        MarketPost post = find(postId);
+        post.requireOpen("bình luận");
+        return comments.save(MarketComment.create(post, author, content.trim()));
     }
 
     private MarketPost find(Long id) {

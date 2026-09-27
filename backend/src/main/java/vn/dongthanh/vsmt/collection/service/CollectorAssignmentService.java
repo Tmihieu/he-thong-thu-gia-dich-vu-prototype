@@ -105,7 +105,7 @@ public class CollectorAssignmentService {
 
     public CollectorAssignment end(Long id, LocalDate endDate, CurrentUser actor) {
         actor.requireRole(Role.COMPANY_MANAGER);
-        CollectorAssignment a = assignments.findById(id)
+        CollectorAssignment a = assignments.findByIdWithDetails(id)
                 .filter(x -> Objects.equals(x.getCompany().getId(), actor.companyId()))
                 .orElseThrow(() -> new NotFoundException("COLLECTOR_ASSIGNMENT_NOT_FOUND", "Không tìm thấy phân tổ."));
         Map<String, Object> before = snapshot(a);

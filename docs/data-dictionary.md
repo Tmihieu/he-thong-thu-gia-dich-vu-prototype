@@ -695,9 +695,9 @@ Timeline lưu nối tiếp, không ghi đè. Không có `updated_at`, `updated_b
 | Tiêu đề           | `title`           | `text(150)`             | Có       | Người dân | Ghế sofa 3 chỗ còn dùng tốt | Demo |                                    |
 | Hình thức         | `post_type`       | `enum MarketPostType`   | Có       | Người dân | `GIVE`                      | Demo |                                    |
 | Mô tả             | `description`     | `text(2000)`            | Có       | Người dân |                             | Demo |                                    |
-| Ảnh               | `photo_urls`      | `text` (danh sách)      | Không    | Người dân |                             | Demo | Có thể dùng ảnh mẫu tĩnh (plan C5) |
+| Ảnh               | `photo_urls`      | `text` (danh sách)      | Không    | Người dân |                             | Demo | Tối đa 5 ảnh, ≤ 5 MB/ảnh, JPEG/PNG/WebP (T47 (3, 4)) |
 | Nơi nhận          | `pickup_location` | `text(255)`             | Không    | Người dân | Hẻm 12, Tổ 5                | Demo |                                    |
-| Trạng thái | `status` | `enum MarketPostStatus` | Có | Hệ thống | `OPEN` | Demo | Người đăng tự đóng; không kiểm duyệt (D9, O6) |
+| Trạng thái | `status` | `enum MarketPostStatus` | Có | Hệ thống | `OPEN` | Demo | Người đăng tự đóng, không mở lại; bài đã đóng không nhận bình luận mới; không kiểm duyệt (D9, T47 (1, 2), O6) |
 
 
 **Enum `MarketPostType`:** `GIVE` Cho tặng · `EXCHANGE` Trao đổi
@@ -1116,6 +1116,10 @@ Người duyệt trả lời trực tiếp trong mục 5.1–5.3; ba chỗ trả
 | D10 | Không có hợp đồng giấy; bản ghi đăng ký dịch vụ do xã lập. **Hỏi lại:** số đăng ký hệ thống tự sinh `ĐK-{địa bàn}-{nnnn}`, bỏ "Ngày ký" | `ServiceContract` |
 | D11 | Một SĐT ↔ một hộ; một hộ nhiều tài khoản | `CitizenAccount` |
 | Q65 | **26/09/2026, còn mở.** Báo chí về QĐ 65/2026 cho thấy: công ty giữ tiền thu gom, tiền vận chuyển nộp về Sở NN&MT (xã giữ tối đa 8%), tiền xử lý của hộ chưa thu. Người duyệt chọn **giữ như đã duyệt cho demo** (2 thành phần thu gom + xử lý, công ty nộp toàn bộ về xã); sửa khi có văn bản chính thức hoặc xã xác nhận. Seed `BG-67-2025`: hiệu lực và mức hộ gia đình 57.000 + 23.000 theo prototype, nhóm chủ nguồn thải nhỏ / theo khối lượng tạm dùng số tạm của `BG-65-2026` | `TariffRate`, luồng nộp tiền |
+| T47 (1, 2) | **27/09/2026.** Người đăng chỉ đóng bài (`OPEN` → `CLOSED`), không mở lại; gửi trạng thái khác `CLOSED` → 422 `MARKET_POST_STATUS_INVALID`, đóng bài đã đóng → 422 `MARKET_POST_CLOSED`. Bài đã đóng không nhận bình luận mới (422 `MARKET_POST_CLOSED`), bình luận cũ vẫn xem được. Giữ endpoint `POST /{id}/status {status}` | `MarketPost.status`, `MarketComment` |
+| T47 (3, 4) | **27/09/2026.** Ảnh bài chợ **không bắt buộc** (theo data dictionary, không theo dấu * của prototype); tối đa 5 ảnh, ≤ 5 MB/ảnh, chỉ JPEG/PNG/WebP | `MarketPost.photo_urls` |
+| T53 | **27/09/2026.** Lịch sử hộ của người đi thu giữ theo **một kỳ** (một khoản), xem kỳ khác bằng ô chọn kỳ; không gộp các kỳ như prototype | T53 |
+| T51 (C1) | **27/09/2026.** Cắt màn quản trị tài khoản khỏi demo, dùng tài khoản seed (plan C1) | T51 |
 
 ### 5.1 Khoảng trống trong SPEC (G1–G16, từ `tasks/plan.md` §9)
 
