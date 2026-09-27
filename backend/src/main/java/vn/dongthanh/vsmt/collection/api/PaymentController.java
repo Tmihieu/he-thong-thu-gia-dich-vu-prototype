@@ -2,8 +2,10 @@ package vn.dongthanh.vsmt.collection.api;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -110,6 +112,15 @@ public class PaymentController {
                 a.visits().stream().map(VisitDto::of).toList());
     }
 
+    @Operation(summary = "Lịch sử hộ trên một khoản: thanh toán và lượt ghé gộp một dòng thời gian, cũ trước")
+    @GetMapping("/charges/{id}/history")
+    public List<HistoryEntryDto> history(@PathVariable Long id, @AuthenticationPrincipal CurrentUser actor) {
+        Activity a = collection.activity(id, actor);
+        return Stream.concat(a.payments().stream().map(HistoryEntryDto::of), a.visits().stream().map(HistoryEntryDto::of))
+                .sorted(Comparator.comparing(HistoryEntryDto::at))
+                .toList();
+    }
+
     public record PaymentRequest(
             @Schema(requiredMode = RequiredMode.REQUIRED) @NotNull(message = "không được để trống") Long chargeId,
             @Schema(requiredMode = RequiredMode.REQUIRED) @Positive(message = "phải lớn hơn 0") long amount,
@@ -191,5 +202,20 @@ public class PaymentController {
             @Schema(requiredMode = RequiredMode.REQUIRED) long remainingAmount,
             @Schema(requiredMode = RequiredMode.REQUIRED) List<PaymentDto> payments,
             @Schema(requiredMode = RequiredMode.REQUIRED) List<VisitDto> visits) {
+    }
+
+    /** Một mốc trong lịch sử hộ: đúng một trong {@code payment} / {@code visit} khác null. */
+    public record HistoryEntryDto(
+            @Schema(requiredMode = RequiredMode.REQUIRED) OffsetDateTime at,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) PaymentDto payment,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) VisitDto visit) {
+
+        static HistoryEntryDto of(Payment p) {
+            return new HistoryEntryDto(p.getPaidAt(), PaymentDto.of(p), null);
+        }
+
+        static HistoryEntryDto of(CollectionVisit v) {
+            return new HistoryEntryDto(v.getVisitedAt(), null, VisitDto.of(v));
+        }
     }
 }

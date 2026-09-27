@@ -13,6 +13,8 @@ export type Handover = components['schemas']['HandoverDto'];
 export type Collector = components['schemas']['CollectorDto'];
 export type CollectorAssignment = components['schemas']['CollectorAssignmentDto'];
 export type AssignCollectorRequest = components['schemas']['AssignCollectorRequest'];
+export type HistoryEntry = components['schemas']['HistoryEntryDto'];
+export type SubjectReportRequest = components['schemas']['SubjectReportRequest'];
 
 export const collectionKeys = {
   all: ['collection'] as const,
@@ -22,6 +24,7 @@ export const collectionKeys = {
   companyWork: ['collection', 'company-work'] as const,
   collectors: ['collection', 'collectors'] as const,
   collectorAssignments: ['collection', 'collector-assignments'] as const,
+  history: ['collection', 'history'] as const,
 };
 
 /** Danh sách thu của người đi thu: khoản trong tổ được giao kèm đã thu và lượt ghé gần nhất. */
@@ -83,5 +86,21 @@ export function useEndCollectorAssignment() {
     mutationFn: ({ id, endDate }: { id: number; endDate: string }) =>
       api.post<CollectorAssignment>(`/api/collection/collector-assignments/${id}/end`, { endDate }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: collectionKeys.all }),
+  });
+}
+
+/** Lịch sử hộ trên một khoản: thanh toán và lượt ghé, cũ trước. */
+export function useChargeHistory(chargeId: number | undefined) {
+  return useQuery({
+    queryKey: [...collectionKeys.history, chargeId],
+    queryFn: () => api.get<HistoryEntry[]>(`/api/collection/charges/${chargeId}/history`),
+    enabled: chargeId !== undefined,
+  });
+}
+
+/** Người đi thu báo hộ chuyển đi / sai thông tin: máy chủ chỉ phát thông báo tới xã và công ty (G7). */
+export function useReportSubject() {
+  return useMutation({
+    mutationFn: (body: SubjectReportRequest) => api.post<void>('/api/collection/subject-reports', body),
   });
 }

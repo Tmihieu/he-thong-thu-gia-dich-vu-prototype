@@ -93,7 +93,8 @@ describe('Người đi thu: danh sách thu', () => {
     expect(screen.getByText('1/4 hộ')).toBeInTheDocument();
     expect(await screen.findByText('160.000 đ', norm)).toBeInTheDocument();
     expect(within(screen.getByRole('listitem', { name: 'Hộ Lê Văn Cường' })).getByText('Vắng nhà')).toBeInTheDocument();
-    expect(within(screen.getByRole('listitem', { name: 'Hộ Trần Thị Bình' })).queryByRole('button')).not.toBeInTheDocument();
+    expect(within(screen.getByRole('listitem', { name: 'Hộ Trần Thị Bình' })).queryByRole('button', { name: 'Cập nhật' }))
+      .not.toBeInTheDocument();
     expect(within(screen.getByRole('listitem', { name: 'Hộ Phạm Thị Dung' })).getByText('50.000 đ', norm)).toBeInTheDocument();
 
     await userEvent.click(screen.getByText('Vắng'));
@@ -176,6 +177,52 @@ describe('Người đi thu: danh sách thu', () => {
       }),
     );
     expect(posts(fetchFn, '/api/collection/payments')).toHaveLength(0);
+  });
+});
+
+describe('Người đi thu: lịch sử hộ', () => {
+  it('mở từ danh sách, hiện lượt ghé và lần thu theo thời gian', async () => {
+    api({
+      'GET /api/collection/charges/4/history': () =>
+        jsonResponse(200, [
+          { at: '2026-10-10T02:00:00Z', payment: null,
+            visit: { id: 9, chargeId: 4, result: 'APPOINTMENT', visitedAt: '2026-10-10T02:00:00Z', revisitDate: '2026-10-12',
+              note: 'Chủ nhà đi vắng' } },
+          { at: '2026-10-12T03:30:00Z', visit: null,
+            payment: { id: 7, code: 'TT-1026-000007', amount: 30_000, method: 'CASH', paidAt: '2026-10-12T03:30:00Z',
+              collectorId: 21, note: null } },
+        ]),
+    });
+    renderApp('/collector/list');
+
+    const row = await screen.findByRole('listitem', { name: 'Hộ Phạm Thị Dung' });
+    await userEvent.click(within(row).getByRole('button', { name: 'Lịch sử' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(await within(dialog).findByText('Đã thu 30.000 đ', norm)).toBeInTheDocument();
+    const items = within(dialog).getAllByRole('listitem').map((li) => li.textContent);
+    expect(items[0]).toContain('Hẹn lại');
+    expect(items[0]).toContain('Ngày hẹn 12/10/2026');
+    expect(items[1]).toContain('TT-1026-000007');
+  });
+});
+
+describe('Người đi thu: báo sai thông tin hộ', () => {
+  it('mở từ đúng hàng và gửi khoản của hộ đó', async () => {
+    const fetchFn = api({ 'POST /api/collection/subject-reports': () => new Response(null, { status: 204 }) });
+    renderApp('/collector/list');
+
+    const row = await screen.findByRole('listitem', { name: 'Hộ Phạm Thị Dung' });
+    await userEvent.click(within(row).getByRole('button', { name: 'Báo sai thông tin' }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByText('Sai thông tin hộ'));
+    await userEvent.type(within(dialog).getByLabelText('Mô tả'), 'Sai số nhà');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Gửi báo cáo' }));
+
+    await waitFor(() =>
+      expect(posts(fetchFn, '/api/collection/subject-reports')).toEqual([
+        { chargeId: 4, reportType: 'WRONG_INFO', description: 'Sai số nhà' },
+      ]),
+    );
   });
 });
 

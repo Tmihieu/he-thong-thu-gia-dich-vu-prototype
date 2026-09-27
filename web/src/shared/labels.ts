@@ -13,6 +13,7 @@ export type ChargeScope = Schemas['IssueRequest']['scopeType'];
 export type LedgerProgress = Schemas['LedgerRowDto']['progress'];
 export type LedgerReconciliation = Schemas['LedgerRowDto']['reconciliation'];
 export type ReceiptMethod = Schemas['ReceiptDto']['method'];
+export type PaymentMethod = Schemas['PaymentDto']['method'];
 export type ReceiptIssueType = Schemas['IssueDto']['issueType'];
 export type ReceiptIssueStatus = Schemas['IssueDto']['status'];
 
@@ -110,6 +111,13 @@ export const RECONCILIATION_COLORS: Record<LedgerReconciliation, string> = {
 export const RECEIPT_METHOD_LABELS: Record<ReceiptMethod, string> = {
   CASH: 'Tiền mặt',
   TRANSFER: 'Chuyển khoản',
+};
+
+/** Hình thức một lần hộ thanh toán. */
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  CASH: 'Tiền mặt',
+  TRANSFER: 'Chuyển khoản',
+  APP_SIMULATED: 'App người dân (mô phỏng)',
 };
 
 /** Loại sai sót phiếu thu công ty báo (R28). */

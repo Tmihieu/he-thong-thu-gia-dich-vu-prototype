@@ -734,12 +734,15 @@
   - **File dự kiến:** `BE/platform/api/AuditLogController.java`, `BT/platform/AuditLogApiIT.java`, `WEB/features/platform/AuditLogPage/AuditLogPage.tsx`
   - **Kích thước:** S
 
-- [ ] **T53 — Người đi thu: lịch sử hộ và báo sai thông tin hộ** · `collection` · M · P2 (C3) · **[cần hỏi trước: G7]**
+- [ ] **T53 — Người đi thu: lịch sử hộ và báo sai thông tin hộ** · `collection` · M · P2 (C3) · ~~[cần hỏi trước: G7]~~ G7 đã chốt (a) · **code xong 27/09/2026, test tự động xanh khi gộp; chờ người dùng chọn phạm vi lịch sử (một kỳ hay gộp các kỳ) và thử tay trên web**: không có entity, chỉ thông báo `INFO` + nhật ký `REPORT_SUBJECT`; báo theo **khoản** (`chargeId`) chứ không theo hộ, dùng lại `CollectorAssignmentService.myCharge` nên phạm vi giống danh sách thu (tổ/công ty chụp trên khoản, G3): xã đổi tổ của hộ sau khi phát hành vẫn báo được, ngoài phạm vi → 404 `CHARGE_NOT_FOUND`; thông báo tới cán bộ xã (`commune.subjects`) và quản lý công ty của khoản (`company.households`); lịch sử hộ chỉ trong một khoản (một kỳ), xem kỳ khác bằng ô chọn kỳ (prototype gộp các kỳ, chờ người dùng chọn); web: nút Lịch sử và Báo sai thông tin trên từng hộ, mở bottom sheet
   - **Mô tả:** `GET /api/collection/charges/{id}/history` (thanh toán + lượt ghé). `POST /api/collection/subject-reports`: báo hộ chuyển đi / sai thông tin → thông báo `INFO` tới xã + công ty (G2, G7; có lưu thành entity riêng hay không tùy trả lời G7). Web người đi thu: màn lịch sử hộ + form báo sai.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Lịch sử hộ hiện đủ thanh toán và lượt ghé theo thời gian
-    - [ ] Báo sai thông tin → xã và công ty của tổ đó nhận thông báo; công ty khác không nhận (IT)
-  - **Kiểm chứng:** `cd backend && ./mvnw test -Dtest=SubjectReportIT`; web lint/test/build
+    - [x] Lịch sử hộ hiện đủ thanh toán và lượt ghé theo thời gian (`SubjectReportIT.historyMergesPaymentsAndVisitsInTimeOrder`, test web `collectorPages.test.tsx`), trong một kỳ; gộp các kỳ hay không chờ người dùng chọn
+    - [x] Báo sai thông tin → xã và công ty của tổ đó nhận thông báo; công ty khác không nhận (IT `SubjectReportIT`, kể cả hộ bị xã đổi tổ sau khi phát hành)
+  - **Kiểm chứng:**
+    - [x] `cd backend && ./mvnw test -Dtest=SubjectReportIT` (6 test), chạy trong `./mvnw verify` đầy đủ khi gộp (153 unit + 167 IT xanh)
+    - [x] Web lint/test/build (116 test / 25 file); schema web + mobile sinh lại, mobile typecheck + Jest (60 test) xanh
+    - [ ] Thử tay trên web: người đi thu mở Lịch sử và Báo sai thông tin; xã và công ty nhận thông báo, bấm mở đúng màn — chờ người dùng
   - **Phụ thuộc:** T27, T23
   - **File dự kiến:** `BE/collection/service/SubjectReportService.java`, `BE/collection/api/CollectionController.java`, `BT/collection/SubjectReportIT.java`, `WEB/features/collection/CollectorListPage/{HouseholdHistory.tsx,ReportSubjectForm.tsx}`
   - **Kích thước:** M

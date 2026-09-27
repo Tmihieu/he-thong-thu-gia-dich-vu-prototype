@@ -27,6 +27,12 @@ describe('notificationPath', () => {
       .toBe('/company/complaints?id=40');
     expect(notificationPath('COMPANY_MANAGER', { screen: 'company.receipts' })).toBe('/company/assigned?tab=receipts');
     expect(notificationPath('COMMUNE_OFFICER', { screen: 'company.receipts' })).toBeNull();
+    // T53: người đi thu báo sai thông tin hộ → xã mở hồ sơ hộ, công ty mở tab hộ được giao
+    expect(notificationPath('COMMUNE_OFFICER', { screen: 'commune.subjects', params: { subjectId: 7 } }))
+      .toBe('/commune/subjects');
+    expect(notificationPath('COMPANY_MANAGER', { screen: 'company.households', params: { subjectId: 7 } }))
+      .toBe('/company/assigned?tab=households');
+    expect(notificationPath('COMPANY_MANAGER', { screen: 'commune.subjects' })).toBeNull();
     expect(notificationPath('COMMUNE_OFFICER', { screen: 'khong.co' })).toBeNull();
     expect(notificationPath('COMMUNE_OFFICER', null)).toBeNull();
   });

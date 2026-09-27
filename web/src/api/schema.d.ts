@@ -369,6 +369,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/collection/subject-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Người đi thu báo hộ của một khoản trong tổ được giao đã chuyển đi / sai thông tin; thông báo tới xã và công ty */
+        post: operations["reportSubject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/collection/payments": {
         parameters: {
             query?: never;
@@ -1030,6 +1047,23 @@ export interface paths {
         };
         /** Người đi thu của công ty (quản lý công ty) */
         get: operations["collectors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/collection/charges/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lịch sử hộ trên một khoản: thanh toán và lượt ghé gộp một dòng thời gian, cũ trước */
+        get: operations["history_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1723,6 +1757,13 @@ export interface components {
             revisitDate: string | null;
             note: string | null;
         };
+        SubjectReportRequest: {
+            /** Format: int64 */
+            chargeId: number;
+            /** @enum {string} */
+            reportType: "MOVED_AWAY" | "WRONG_INFO";
+            description: string;
+        };
         PaymentRequest: {
             /** Format: int64 */
             chargeId: number;
@@ -2383,6 +2424,12 @@ export interface components {
             fullName: string;
             phone: string | null;
             active: boolean;
+        };
+        HistoryEntryDto: {
+            /** Format: date-time */
+            at: string;
+            payment: components["schemas"]["PaymentDto"];
+            visit: components["schemas"]["VisitDto"];
         };
         ActivityDto: {
             charge: components["schemas"]["ChargeDto"];
@@ -3255,6 +3302,28 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["VisitDto"];
                 };
+            };
+        };
+    };
+    reportSubject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubjectReportRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -4271,6 +4340,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CollectorDto"][];
+                };
+            };
+        };
+    };
+    history_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["HistoryEntryDto"][];
                 };
             };
         };

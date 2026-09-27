@@ -1,3 +1,4 @@
+import { ClockCircleOutlined, WarningOutlined } from '@ant-design/icons';
 import { Alert, Button, Card, Empty, Input, List, Segmented, Space, Spin, Statistic, Tag, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 
@@ -7,6 +8,8 @@ import { normalizeText } from '../../../shared/normalizeText';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type CollectorCharge, useCashHeld, useMyWork } from '../api';
 import { WORK_FILTERS, type WorkGroup, workState } from '../workState';
+import { HouseholdHistory } from './HouseholdHistory';
+import { ReportSubjectForm } from './ReportSubjectForm';
 import { ResultSheet } from './ResultSheet';
 
 /** Danh sách thu của người đi thu (giao diện điện thoại, §10 bước 3). */
@@ -15,6 +18,8 @@ export function CollectorListPage() {
   const [filter, setFilter] = useState<WorkGroup | 'ALL'>('ALL');
   const [q, setQ] = useState('');
   const [editing, setEditing] = useState<CollectorCharge | null>(null);
+  const [viewing, setViewing] = useState<CollectorCharge | null>(null);
+  const [reporting, setReporting] = useState<CollectorCharge | null>(null);
   const work = useMyWork(periodId);
   const cash = useCashHeld();
   const items = useMemo(() => work.data ?? [], [work.data]);
@@ -60,15 +65,31 @@ export function CollectorListPage() {
             return (
               <List.Item
                 aria-label={w.charge.subjectName}
-                actions={
-                  w.charge.status === 'UNPAID'
+                actions={[
+                  ...(w.charge.status === 'UNPAID'
                     ? [
                         <Button key="update" type="primary" size="small" onClick={() => setEditing(w)}>
                           Cập nhật
                         </Button>,
                       ]
-                    : []
-                }
+                    : []),
+                  <Button
+                    key="history"
+                    size="small"
+                    icon={<ClockCircleOutlined />}
+                    aria-label="Lịch sử"
+                    title="Lịch sử"
+                    onClick={() => setViewing(w)}
+                  />,
+                  <Button
+                    key="report"
+                    size="small"
+                    icon={<WarningOutlined />}
+                    aria-label="Báo sai thông tin"
+                    title="Báo sai thông tin / chuyển đi"
+                    onClick={() => setReporting(w)}
+                  />,
+                ]}
               >
                 <List.Item.Meta
                   title={
@@ -94,6 +115,8 @@ export function CollectorListPage() {
         />
       )}
       <ResultSheet item={editing} onClose={() => setEditing(null)} />
+      <HouseholdHistory item={viewing} onClose={() => setViewing(null)} />
+      <ReportSubjectForm item={reporting} onClose={() => setReporting(null)} />
     </Space>
   );
 }

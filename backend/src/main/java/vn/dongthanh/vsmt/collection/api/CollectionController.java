@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -33,17 +34,20 @@ import vn.dongthanh.vsmt.billing.api.BillingController.ChargePageDto;
 import vn.dongthanh.vsmt.billing.domain.Charge;
 import vn.dongthanh.vsmt.billing.domain.ChargeStatus;
 import vn.dongthanh.vsmt.collection.domain.CollectorAssignment;
+import vn.dongthanh.vsmt.collection.domain.SubjectReportType;
 import vn.dongthanh.vsmt.collection.service.CollectorAssignmentService;
+import vn.dongthanh.vsmt.collection.service.SubjectReportService;
 import vn.dongthanh.vsmt.platform.domain.User;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
 
-@Tag(name = "Thu tiền: phân tổ người đi thu, khoản theo phạm vi")
+@Tag(name = "Thu tiền: phân tổ người đi thu, khoản theo phạm vi, báo sai thông tin hộ")
 @RestController
 @RequestMapping("/api/collection")
 @RequiredArgsConstructor
 public class CollectionController {
 
     private final CollectorAssignmentService service;
+    private final SubjectReportService subjectReports;
 
     @Operation(summary = "Người đi thu của công ty (quản lý công ty)")
     @GetMapping("/collectors")
@@ -90,6 +94,22 @@ public class CollectionController {
     @GetMapping("/my-charges/{id}")
     public ChargeDto myCharge(@PathVariable Long id, @AuthenticationPrincipal CurrentUser actor) {
         return ChargeDto.of(service.myCharge(id, actor), service.today());
+    }
+
+    @Operation(summary = "Người đi thu báo hộ của một khoản trong tổ được giao đã chuyển đi / sai thông tin;"
+            + " thông báo tới xã và công ty")
+    @PostMapping("/subject-reports")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void reportSubject(@Valid @RequestBody SubjectReportRequest req, @AuthenticationPrincipal CurrentUser actor) {
+        subjectReports.report(req.chargeId(), req.reportType(), req.description(), actor);
+    }
+
+    public record SubjectReportRequest(
+            @Schema(requiredMode = RequiredMode.REQUIRED) @NotNull(message = "không được để trống") Long chargeId,
+            @Schema(requiredMode = RequiredMode.REQUIRED) @NotNull(message = "không được để trống")
+            SubjectReportType reportType,
+            @Schema(requiredMode = RequiredMode.REQUIRED) @NotBlank(message = "không được để trống")
+            @Size(max = 1000, message = "tối đa 1000 ký tự") String description) {
     }
 
     public record AssignCollectorRequest(
