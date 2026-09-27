@@ -52,6 +52,7 @@ export function QuoteForm({ request, submitting, error, onSubmit, onCancel }: Qu
           rules={[
             { required: true, message: 'Vui lòng nhập phí thu gom' },
             { type: 'number', min: 1, message: 'Phí phải lớn hơn 0' },
+            { type: 'number', max: 50_000_000, message: 'Phí tối đa 50.000.000 đ' },
           ]}
         >
           <InputNumber<number>
@@ -62,7 +63,8 @@ export function QuoteForm({ request, submitting, error, onSubmit, onCancel }: Qu
           />
         </Form.Item>
         <Form.Item label="Ngày hẹn thu gom" name="scheduledDate" rules={[{ required: true, message: 'Vui lòng chọn ngày hẹn' }]}>
-          <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} disabledDate={(d) => d.isBefore(dayjs(), 'day')} />
+          <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} disabledDate={(d) => d.isBefore(dayjs(), 'day') || d.isAfter(dayjs().add(90, 'day'), 'day')}
+          />
         </Form.Item>
       </Form>
     </Modal>

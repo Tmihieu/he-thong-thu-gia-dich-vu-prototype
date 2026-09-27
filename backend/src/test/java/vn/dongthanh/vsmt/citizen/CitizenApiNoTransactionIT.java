@@ -142,10 +142,10 @@ class CitizenApiNoTransactionIT extends IntegrationTest {
             }
             start.countDown();
             for (var r : results) {
-                org.assertj.core.api.Assertions.assertThat(r.get()).isEqualTo(201);
+                org.assertj.core.api.Assertions.assertThat(r.get(30, java.util.concurrent.TimeUnit.SECONDS)).isEqualTo(201);
             }
         } finally {
-            pool.shutdown();
+            pool.shutdownNow();
         }
         ok(get("/api/citizen/bulky-requests")).andExpect(jsonPath("$[*].code",
                 org.hamcrest.Matchers.containsInAnyOrder("CK-1026-001", "CK-1026-002", "CK-1026-003", "CK-1026-004")));

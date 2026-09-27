@@ -70,6 +70,7 @@ export function BulkyRequestsPage() {
         <Alert type="error" showIcon message={errorText(requests.error ?? collect.error)} style={{ marginBottom: 12 }} />
       )}
       <Table<BulkyRequest>
+        key={focusId ?? 'none'} // mở từ thông báo khác thì dựng lại bảng, về trang 1 nơi có dòng đó
         rowKey="id"
         loading={requests.isLoading}
         dataSource={visible}

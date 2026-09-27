@@ -121,7 +121,7 @@ class BulkyWasteIT extends IntegrationTest {
 
         assertThat(jdbc.queryForObject("select count(*) from charges", Integer.class)).isEqualTo(chargesBefore);
         assertThat(jdbc.queryForList("select action from audit_logs where entity_type = 'BulkyWasteRequest' order by id",
-                String.class)).containsExactly("QUOTE_BULKY_FEE", "COLLECT_BULKY");
+                String.class)).containsExactly("CREATE_BULKY", "QUOTE_BULKY_FEE", "COLLECT_BULKY");
         assertThat(jdbc.queryForObject("select count(*) from notifications where recipient_citizen_id = ?", Integer.class,
                 citizenA.getId())).isEqualTo(2);
     }
@@ -246,6 +246,9 @@ class BulkyWasteIT extends IntegrationTest {
         internal(fx.dv01Manager, post("/api/bulky-requests/{id}/quote", first), "{\"fee\": 150000, \"scheduledDate\": \"2027-01-15\"}")
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("BULKY_DATE_TOO_FAR"));
+        internal(fx.dv01Manager, post("/api/bulky-requests/{id}/quote", first), "{\"fee\": 50000000, \"scheduledDate\": \"2026-12-30\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("QUOTED"));
 
         for (int i = 1; i < 5; i++) {
             create(citizenA);
