@@ -432,17 +432,17 @@
   - **File dự kiến:** `WEB/features/collection/CompanyOverviewPage/{CompanyOverviewPage.tsx,CashReceiveForm.tsx,CashReceiveForm.test.tsx}`, `WEB/features/remittance/useCompanyLedger.ts`
   - **Kích thước:** M
 
-- [x] **T30 — Web xã: lập phiếu thu công ty và in phiếu** · `remittance` · M · P0 (§10 bước 5) · **xong 27/09/2026** (test tự động; còn bấm In xem bản in thật): tab "Phiếu thu công ty" trong "Khoản thu"; bảng công ty–kỳ từ sổ T24, mở rộng dòng xem lịch sử phiếu; lập xong tự mở bản in; `amountInWords` cùng quy tắc và bộ ca với `VietnameseMoneyWords` backend; bản in dùng CSS `@media print` chỉ in vùng phiếu
-  - **Mô tả:** Màn phiếu thu của cán bộ xã: danh sách công ty – kỳ với số còn phải nộp; form lập phiếu (số tiền ≤ còn nộp, hình thức, ngày, người nộp, số chứng từ); lịch sử phiếu theo công ty; bản in phiếu có **số tiền bằng chữ tiếng Việt** (R29) và lũy kế đã nộp (R30). Viết hàm `amountInWords` riêng, không thêm thư viện.
+- [x] **T30 — Web xã: lập phiếu thu công ty và in phiếu** · `remittance` · M · P0 (§10 bước 5) · **xong 27/09/2026** (test tự động; còn bấm In xem bản in thật): tab "Phiếu thu công ty" trong "Khoản thu"; bảng công ty–kỳ từ sổ T24, mở rộng dòng xem lịch sử phiếu; lập xong tự mở bản in; số tiền bằng chữ trên bản in lấy từ trường `amountInWords` của `ReceiptDto` (backend `VietnameseMoneyWords`, test ở `VietnameseMoneyWordsTest`), web không tự tính lại (đã bỏ `WEB/shared/amountInWords.ts` ngày 28/09/2026); bản in dùng CSS `@media print` chỉ in vùng phiếu
+  - **Mô tả:** Màn phiếu thu của cán bộ xã: danh sách công ty – kỳ với số còn phải nộp; form lập phiếu (số tiền ≤ còn nộp, hình thức, ngày, người nộp, số chứng từ); lịch sử phiếu theo công ty; bản in phiếu có **số tiền bằng chữ tiếng Việt** (R29) và lũy kế đã nộp (R30). Số tiền bằng chữ dùng `amountInWords` backend trả trong `ReceiptDto`, không thêm thư viện.
   - **Tiêu chí nghiệm thu:**
     - [x] Lập phiếu một phần cho DV01; bản in hiện số tiền bằng chữ đúng
-    - [x] `amountInWords` có test: 0, 1.005.000, 21.000.000, 1.266.000, số có "linh"/"mươi"/"mốt"/"lăm"
+    - [x] Số tiền bằng chữ (backend `VietnameseMoneyWords`) có test ở `VietnameseMoneyWordsTest`: 0, 1.005.000, 21.000.000, 1.266.000, số có "linh"/"mươi"/"mốt"/"lăm" (20 ca, xanh khi gộp 28/09/2026)
     - [x] Validation form phiếu thu (vượt số còn nộp, ≤ 0) có test component
   - **Kiểm chứng:**
     - [x] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
     - [ ] Thủ công: lập phiếu, bấm In, xem bản in
   - **Phụ thuộc:** T08, T26
-  - **File dự kiến:** `WEB/features/remittance/ReceiptsPage/{ReceiptsPage.tsx,IssueReceiptForm.tsx,IssueReceiptForm.test.tsx,ReceiptPrint.tsx}`, `WEB/shared/amountInWords.ts` + test
+  - **File dự kiến:** `WEB/features/remittance/ReceiptsPage/{ReceiptsPage.tsx,IssueReceiptForm.tsx,IssueReceiptForm.test.tsx,ReceiptPrint.tsx}`
   - **Kích thước:** M
 
 - [x] **T31 — Báo cáo tiến độ và đối soát (màn xã)** · `remittance` · M · P0 (§10 bước 5) · **xong 26/09/2026** (test tự động; còn xem bằng mắt): thêm API `GET /api/remittance/area-progress` cho tiến độ theo tổ
@@ -725,15 +725,15 @@
   - **File dự kiến:** `BE/platform/service/UserAdminService.java`, `BE/platform/api/UserAdminController.java`, `BT/platform/UserAdminIT.java`, `WEB/features/platform/AccountsPage/{AccountsPage.tsx,AccountForm.test.tsx}`
   - **Kích thước:** M
 
-- [ ] **T52 — Màn nhật ký (xem audit log)** · `platform` · S · P2 (C2) · **code xong 27/09/2026, chờ kiểm chứng ở bước gộp và người dùng xem tay**: `AuditLogQueryService.search` chỉ cho ADMIN; lọc ngày theo giờ Việt Nam, `to` gồm trọn ngày; tên đăng nhập "chứa chuỗi" so bằng `locate` (không `like`) nên `_`/`%` trong `canbo_xa…` không thành ký tự đại diện; hành động so đúng mã; mới nhất trước, sắp xếp cố định ở server. Web `/admin/logs`: mã hành động và loại đối tượng hiện nhãn tiếng Việt (`WEB/features/platform/labels.ts`; nhãn đối tượng lấy theo tiêu đề entity trong data dictionary, nhãn hành động theo chữ trên nút các màn; mã chưa có nhãn thì hiện nguyên mã, di chuột lên nhãn thấy mã), lọc hành động bằng danh sách chọn có tìm kiếm; mở dòng xem JSON trước/sau; vai trò `CITIZEN`/`SYSTEM` có nhãn. **Task sau thêm mã audit mới (T47, T53…) thì bổ sung nhãn vào `labels.ts`.**
+- [ ] **T52 — Màn nhật ký (xem audit log)** · `platform` · S · P2 (C2) · **code xong 27/09/2026, kiểm chứng tự động xanh khi gộp 28/09/2026; chờ người dùng xem tay**: `AuditLogQueryService.search` chỉ cho ADMIN; lọc ngày theo giờ Việt Nam, `to` gồm trọn ngày; tên đăng nhập "chứa chuỗi" so bằng `locate` (không `like`) nên `_`/`%` trong `canbo_xa…` không thành ký tự đại diện; hành động so đúng mã; mới nhất trước, sắp xếp cố định ở server. Web `/admin/logs`: mã hành động và loại đối tượng hiện nhãn tiếng Việt (`WEB/features/platform/labels.ts`; nhãn đối tượng lấy theo tiêu đề entity trong data dictionary, nhãn hành động theo chữ trên nút các màn; mã chưa có nhãn thì hiện nguyên mã, di chuột lên nhãn thấy mã), lọc hành động bằng danh sách chọn có tìm kiếm; mở dòng xem JSON trước/sau; vai trò `CITIZEN`/`SYSTEM` có nhãn. **Task sau thêm mã audit mới (T47, T53…) thì bổ sung nhãn vào `labels.ts`.** Khi gộp 28/09/2026 đã đối chiếu đủ mọi mã backend truyền vào `AuditService.record/recordCitizen/recordSystem` và thêm nhãn `REPORT_SUBJECT` (T53), `CREATE_BULKY`, `CITIZEN_CANCEL_BULKY` (rác cồng kềnh); ô lọc hành động là danh sách ảo của AntD nên test gõ tìm rồi mới chọn.
   - **Mô tả:** `GET /api/platform/audit-logs` (ADMIN, lọc theo thời gian/người/hành động, phân trang). Web: bảng nhật ký, xem trước/sau.
   - **Tiêu chí nghiệm thu:**
-    - [x] Lập phiếu thu xong thấy dòng `ISSUE_COMPANY_RECEIPT` kèm trước/sau (phiếu thu là tạo mới nên "trước" rỗng theo data dictionary; `RECORD_PAYMENT` có đủ trước/sau — `AuditLogApiIT` kiểm cả hai) (kiểm chứng ở bước gộp)
-    - [x] Không phải ADMIN → 403 (`AuditLogApiIT.nonAdminIsForbidden`) (kiểm chứng ở bước gộp)
+    - [x] Lập phiếu thu xong thấy dòng `ISSUE_COMPANY_RECEIPT` kèm trước/sau (phiếu thu là tạo mới nên "trước" rỗng theo data dictionary; `RECORD_PAYMENT` có đủ trước/sau — `AuditLogApiIT` kiểm cả hai) (xanh khi gộp 28/09/2026)
+    - [x] Không phải ADMIN → 403 (`AuditLogApiIT.nonAdminIsForbidden`) (xanh khi gộp 28/09/2026)
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw verify` (gồm `AuditLogApiIT`: lọc ngày giờ VN bằng mốc cố định 23:59/00:00, `_` không là ký tự đại diện, phân trang)
-    - [ ] `cd web && npm run gen:api && npm run lint && npm test && npm run build` (test `AuditLogPage.test.tsx`: nhãn tiếng Việt, chọn hành động gửi đúng mã)
-    - [ ] Thủ công: đăng nhập quản trị, mở "Nhật ký", lọc theo ngày/người/hành động, mở một dòng xem trước/sau
+    - [x] `cd backend && ./mvnw verify` (gồm `AuditLogApiIT` 5 test: lọc ngày giờ VN bằng mốc cố định 23:59/00:00, `_` không là ký tự đại diện, phân trang) — 28/09/2026: 342 test xanh (154 unit + 188 IT)
+    - [x] `cd web && npm run gen:api && npm run lint && npm test && npm run build` (test `AuditLogPage.test.tsx`: nhãn tiếng Việt, chọn hành động gửi đúng mã) — 28/09/2026: lint sạch, 104 test xanh, build xong; mobile `gen:api` + typecheck + 60 test jest xanh
+    - [ ] Thủ công: đăng nhập quản trị, mở "Nhật ký", lọc theo ngày/người/hành động, mở một dòng xem trước/sau — chờ người dùng
   - **Phụ thuộc:** T07, T08
   - **File dự kiến:** `BE/platform/api/AuditLogController.java`, `BT/platform/AuditLogApiIT.java`, `WEB/features/platform/AuditLogPage/AuditLogPage.tsx`
   - **Kích thước:** S
