@@ -2,7 +2,6 @@ import { PrinterOutlined } from '@ant-design/icons';
 import { Button, Modal } from 'antd';
 import type { ReactNode } from 'react';
 
-import { amountInWords } from '../../../shared/amountInWords';
 import { formatDate, formatMoney } from '../../../shared/format';
 import { RECEIPT_METHOD_LABELS } from '../../../shared/labels';
 import type { Receipt } from '../api';
@@ -66,7 +65,7 @@ export function ReceiptPrint({ receipt, onClose }: { receipt: Receipt | null; on
                 <strong>{formatMoney(receipt.amount)}</strong>
               </Line>
               <Line label="Bằng chữ">
-                <em>{amountInWords(receipt.amount)}</em>
+                <em>{receipt.amountInWords}</em>
               </Line>
               <Line label="Hình thức">
                 {RECEIPT_METHOD_LABELS[receipt.method]}
