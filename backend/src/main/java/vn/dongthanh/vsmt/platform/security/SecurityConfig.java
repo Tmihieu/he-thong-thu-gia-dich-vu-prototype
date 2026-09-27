@@ -2,6 +2,7 @@ package vn.dongthanh.vsmt.platform.security;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -12,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -19,6 +21,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
@@ -34,10 +37,12 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import jakarta.servlet.http.HttpServletResponse;
 import vn.dongthanh.vsmt.platform.common.ApiError;
 import vn.dongthanh.vsmt.platform.common.GlobalExceptionHandler;
+import vn.dongthanh.vsmt.platform.domain.Role;
 
 /**
  * API không trạng thái, xác thực bằng Bearer JWT (HS256, khóa từ {@code JWT_SECRET}).
- * Swagger và đăng nhập mở công khai; mọi API khác cần token. Lỗi 401/403 trả {@link ApiError} tiếng Việt.
+ * Swagger và đăng nhập mở công khai; mọi API khác cần token. Token người dân chỉ dùng được cho
+ * {@code /api/citizen/**}, token nội bộ thì ngược lại (G8). Lỗi 401/403 trả {@link ApiError} tiếng Việt.
  */
 @Configuration
 @EnableMethodSecurity
@@ -45,7 +50,11 @@ import vn.dongthanh.vsmt.platform.common.GlobalExceptionHandler;
 public class SecurityConfig {
 
     static final String LOGIN_PATH = "/api/platform/auth/login";
+    static final String[] CITIZEN_LOGIN_PATHS = {"/api/citizen/auth/otp/request", "/api/citizen/auth/otp/verify"};
+    static final String CITIZEN_PATHS = "/api/citizen/**";
     static final String[] PUBLIC_PATHS = {"/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/error"};
+    private static final String[] INTERNAL_AUTHORITIES = Arrays.stream(Role.values())
+            .map(r -> "ROLE_" + r.name()).toArray(String[]::new);
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper json, JwtDecoder jwtDecoder)
@@ -64,13 +73,21 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_PATHS).permitAll()
                         .requestMatchers(HttpMethod.POST, LOGIN_PATH).permitAll()
-                        .anyRequest().authenticated())
+                        .requestMatchers(HttpMethod.POST, CITIZEN_LOGIN_PATHS).permitAll()
+                        .requestMatchers(CITIZEN_PATHS).hasAuthority(CurrentCitizenAuthentication.AUTHORITY)
+                        .anyRequest().hasAnyAuthority(INTERNAL_AUTHORITIES))
                 .oauth2ResourceServer(rs -> rs
-                        .jwt(jwt -> jwt.decoder(jwtDecoder).jwtAuthenticationConverter(CurrentUserAuthentication::from))
+                        .jwt(jwt -> jwt.decoder(jwtDecoder).jwtAuthenticationConverter(SecurityConfig::authenticate))
                         .authenticationEntryPoint(unauthorized)
                         .accessDeniedHandler(forbidden))
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorized).accessDeniedHandler(forbidden))
                 .build();
+    }
+
+    static AbstractAuthenticationToken authenticate(Jwt jwt) {
+        return CurrentCitizen.isCitizenToken(jwt)
+                ? new CurrentCitizenAuthentication(CurrentCitizen.fromJwt(jwt), jwt)
+                : CurrentUserAuthentication.from(jwt);
     }
 
     @Bean

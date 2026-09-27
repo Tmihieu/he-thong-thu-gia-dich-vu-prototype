@@ -35,6 +35,11 @@ vsmt:
     # Bắt buộc, tối thiểu 32 ký tự; thiếu thì ứng dụng không khởi động.
     secret: ${JWT_SECRET:}
     access-token-ttl: 8h
+    # Token app người dân sống lâu hơn để không phải đăng nhập lại mỗi ngày.
+    citizen-token-ttl: 7d
+  citizen:
+    # OTP cố định mô phỏng (O7): không gửi SMS, không phải bí mật; ghi ở docs/demo-accounts.md.
+    demo-otp: ${CITIZEN_DEMO_OTP:123456}
 
 ---
 # Profile demo: nạp thêm seed dữ liệu giả (db/seed). Mặc định khi ./mvnw spring-boot:run.

@@ -73,6 +73,11 @@ public class MasterDataQueryService {
         return companies.findById(id).orElseThrow(MasterDataQueryService::companyNotFound);
     }
 
+    /** Công ty theo id, không xét phạm vi người gọi (dùng cho thông tin liên hệ trên app người dân). */
+    public Company companyInfo(Long id) {
+        return companies.findById(id).orElseThrow(MasterDataQueryService::companyNotFound);
+    }
+
     private static NotFoundException companyNotFound() {
         return new NotFoundException("COMPANY_NOT_FOUND", "Không tìm thấy công ty.");
     }

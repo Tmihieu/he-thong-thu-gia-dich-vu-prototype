@@ -162,6 +162,25 @@ class DemoSeedIT extends IntegrationTest {
                         "7:1:08:00:BULKY");
     }
 
+    @Test
+    void demoProfileSeedsCitizenAccountsForDemoHouseholdAndOtherCases() {
+        assertThat(demoDb.queryForList("""
+                select c.phone || ':' || s.code from citizen_accounts c join service_subjects s on s.id = c.subject_id
+                where s.code = 'DTH-H000128' order by c.phone""", String.class))
+                .containsExactly("0902000128:DTH-H000128", "0903000128:DTH-H000128");
+        assertThat(demoDb.queryForList("""
+                select s.code from citizen_accounts c join service_subjects s on s.id = c.subject_id
+                order by s.code, c.phone""", String.class))
+                .containsExactly("DTH-H000128", "DTH-H000128", "DTH-H000149", "NB-H000341", "TTT-H000161",
+                        "TTT-H000221");
+        // DTH-H000149 là hộ miễn 100% (tổ KV08, j = 9 trong V7_1).
+        assertThat(demoDb.queryForObject("""
+                select c.exempt from service_contracts c join service_subjects s on s.id = c.subject_id
+                where s.code = 'DTH-H000149'""", Boolean.class)).isTrue();
+        assertThat(demoDb.queryForObject("select count(*) from citizen_accounts where status <> 'ACTIVE'",
+                Integer.class)).isZero();
+    }
+
     private static DataSource dataSource(String url) {
         return new DriverManagerDataSource(url, POSTGRES.getUsername(), POSTGRES.getPassword());
     }

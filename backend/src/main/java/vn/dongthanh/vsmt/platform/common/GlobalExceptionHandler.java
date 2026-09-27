@@ -64,6 +64,11 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.NOT_FOUND, ex.getCode(), ex.getMessage());
     }
 
+    @ExceptionHandler(UnauthorizedException.class)
+    ResponseEntity<ApiError> unauthorizedRule(UnauthorizedException ex) {
+        return error(HttpStatus.UNAUTHORIZED, ex.getCode(), ex.getMessage());
+    }
+
     @ExceptionHandler({NoResourceFoundException.class, NoHandlerFoundException.class})
     ResponseEntity<ApiError> noResource(Exception ex) {
         return error(HttpStatus.NOT_FOUND, NOT_FOUND, "Không tìm thấy địa chỉ yêu cầu.");

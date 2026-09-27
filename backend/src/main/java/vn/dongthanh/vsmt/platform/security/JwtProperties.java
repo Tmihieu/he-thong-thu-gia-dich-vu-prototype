@@ -19,10 +19,12 @@ import jakarta.validation.constraints.Size;
 public record JwtProperties(
         @NotBlank(message = "Thiếu JWT_SECRET") @Size(min = 32, message = "JWT_SECRET phải có ít nhất 32 ký tự") String secret,
         @NotNull @DefaultValue("8h") Duration accessTokenTtl,
+        @NotNull @DefaultValue("7d") Duration citizenTokenTtl,
         @NotBlank @DefaultValue("vsmt") String issuer) {
 
     @Override
     public String toString() {
-        return "JwtProperties[secret=***, accessTokenTtl=" + accessTokenTtl + ", issuer=" + issuer + "]";
+        return "JwtProperties[secret=***, accessTokenTtl=" + accessTokenTtl + ", citizenTokenTtl=" + citizenTokenTtl
+                + ", issuer=" + issuer + "]";
     }
 }

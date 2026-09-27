@@ -12,7 +12,10 @@ import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.platform.domain.User;
 
-/** Phát access token HS256 có claim {@code sub} (id), {@code username}, {@code role}, {@code companyId}. */
+/**
+ * Phát access token HS256. Token nội bộ có claim {@code sub} (id user), {@code username}, {@code role},
+ * {@code companyId}; token người dân có {@code kind = CITIZEN}, {@code sub} (id tài khoản), {@code subjectId}.
+ */
 @Service
 @RequiredArgsConstructor
 public class JwtService {
@@ -35,6 +38,22 @@ public class JwtService {
         }
         JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
         String token = encoder.encode(JwtEncoderParameters.from(header, claims.build())).getTokenValue();
+        return new IssuedToken(token, expiresAt);
+    }
+
+    public IssuedToken issueCitizen(Long accountId, Long subjectId) {
+        Instant now = Instant.now();
+        Instant expiresAt = now.plus(props.citizenTokenTtl());
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuer(props.issuer())
+                .subject(String.valueOf(accountId))
+                .issuedAt(now)
+                .expiresAt(expiresAt)
+                .claim(CurrentCitizen.CLAIM_KIND, CurrentCitizen.KIND_CITIZEN)
+                .claim(CurrentCitizen.CLAIM_SUBJECT_ID, subjectId)
+                .build();
+        JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
+        String token = encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
         return new IssuedToken(token, expiresAt);
     }
 

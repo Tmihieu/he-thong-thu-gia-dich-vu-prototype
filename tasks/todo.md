@@ -557,15 +557,15 @@
   - **File dự kiến:** `MIG/V17__…sql` + `SEED/V17_1__seed_schedules.sql`, `BE/masterdata/domain/CollectionSchedule.java` (+ repo), `BE/masterdata/api/ScheduleController.java`, `BT/masterdata/CollectionScheduleIT.java`
   - **Kích thước:** S
 
-- [ ] **T39 — Tài khoản người dân, đăng nhập OTP cố định, API hộ và khoản** · `citizen-app` · M · P0 · **[cần hỏi trước: G8; O7 mặc định OTP cố định]**
+- [x] **T39 — Tài khoản người dân, đăng nhập OTP cố định, API hộ và khoản** · `citizen-app` · M · P0 · ~~[cần hỏi trước: G8; O7]~~ G8, O7 đã chốt ở DD · **xong 27/09/2026**: token người dân chung khóa JWT nhưng có claim `kind=CITIZEN` + `subjectId`, principal `CurrentCitizen`; `/api/citizen/**` chỉ nhận token người dân, API nội bộ trả 403 với token người dân và ngược lại; OTP `123456` (biến `CITIZEN_DEMO_OTP`), token người dân sống 7 ngày; SĐT sai và OTP sai trả cùng lỗi `INVALID_OTP`; nhận SĐT dạng `+84`/có khoảng trắng; tài khoản bị khóa bị chặn ngay cả khi token còn hạn; thêm `GET /api/citizen/charges/{id}` (khoản hộ khác → 404) cho T42; seed 6 tài khoản (hộ demo có 2 thành viên, D11); nối FK `citizen_accounts` cho `notifications`, `complaints`, `complaint_events`
   - **Mô tả:** Tạo `MIG/V18__citizen_accounts.sql` và entity `CitizenAccount` (SĐT, gắn một `ServiceSubject`, trạng thái). Seed tài khoản cho `DTH-H000128` và vài hộ khác (SĐT giả). `POST /api/citizen/auth/otp/request` (mô phỏng, không gửi SMS) và `POST /api/citizen/auth/otp/verify` (mã cố định lấy từ cấu hình) → JWT vai trò CITIZEN gắn `subjectId`. `GET /api/citizen/me` (hồ sơ hộ); `GET /api/citizen/charges` (khoản chưa đóng + lịch sử, từ `Charge`). Người dân chỉ thấy hộ của mình.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Đăng nhập bằng SĐT + OTP cố định; sai OTP → 401 (IT)
-    - [ ] Dân hộ A gọi dữ liệu hộ B → 403/404 (IT phạm vi)
-    - [ ] Khoản trả về khớp khoản xã đã phát hành cho hộ đó
+    - [x] Đăng nhập bằng SĐT + OTP cố định; sai OTP → 401 (IT)
+    - [x] Dân hộ A gọi dữ liệu hộ B → 403/404 (IT phạm vi)
+    - [x] Khoản trả về khớp khoản xã đã phát hành cho hộ đó
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=CitizenAuthIT,CitizenApiIT`
-    - [ ] `cd backend && ./mvnw verify`
+    - [x] `cd backend && ./mvnw test -Dtest=CitizenAuthIT,CitizenApiIT`
+    - [x] `cd backend && ./mvnw verify`
   - **Phụ thuộc:** T06, T15, T18, H2
   - **File dự kiến:** `MIG/V18__…sql` + `SEED/V18_1__seed_citizens.sql`, `BE/citizen/domain/CitizenAccount.java` (+ repo), `BE/citizen/service/CitizenAuthService.java`, `BE/citizen/api/CitizenController.java` (+ DTO), `BT/citizen/{CitizenAuthIT,CitizenApiIT}.java`
   - **Kích thước:** M

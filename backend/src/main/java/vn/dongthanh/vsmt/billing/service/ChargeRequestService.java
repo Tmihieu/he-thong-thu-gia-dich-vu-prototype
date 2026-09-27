@@ -221,6 +221,20 @@ public class ChargeRequestService {
         return charges.search(periodId, areaId, status, subjectId, companyId, page);
     }
 
+    /** Mọi khoản của một đối tượng, kỳ mới trước (app người dân; phạm vi hộ kiểm ở module citizen). */
+    @Transactional(readOnly = true)
+    public List<Charge> chargesOfSubject(Long subjectId) {
+        return charges.findBySubjectIdWithPeriod(subjectId);
+    }
+
+    /** Một khoản của đối tượng; khoản của đối tượng khác trả 404 như không tồn tại. */
+    @Transactional(readOnly = true)
+    public Charge chargeOfSubject(Long chargeId, Long subjectId) {
+        return charges.findByIdWithDetails(chargeId)
+                .filter(c -> c.getSubject().getId().equals(subjectId))
+                .orElseThrow(() -> new NotFoundException("CHARGE_NOT_FOUND", "Không tìm thấy khoản thu."));
+    }
+
     public record RequestSummary(ChargeRequest request, long chargeCount, long exemptCount, long totalAmount) {
     }
 
