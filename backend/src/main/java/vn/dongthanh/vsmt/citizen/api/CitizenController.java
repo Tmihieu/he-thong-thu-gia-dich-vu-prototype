@@ -91,7 +91,9 @@ public class CitizenController {
     public CitizenPaymentResponse pay(@AuthenticationPrincipal CurrentCitizen citizen,
             @Valid @RequestBody CitizenPaymentRequest request) {
         PaymentOutcome outcome = payments.pay(citizen, request.chargeId(), request.amount(), request.clientRequestId());
-        return new CitizenPaymentResponse(outcome.replayed(), PaymentConfirmationDto.of(outcome.payment()));
+        // Nạp lại kèm khoản: bản ghi trả về khi gửi lại cùng clientRequestId chưa nạp khoản, không đọc được ngoài transaction.
+        return new CitizenPaymentResponse(outcome.replayed(),
+                PaymentConfirmationDto.of(payments.confirmation(citizen, outcome.payment().getId())));
     }
 
     @Operation(summary = "Các xác nhận thanh toán của hộ (mọi hình thức), mới nhất trước")
