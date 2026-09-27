@@ -142,14 +142,6 @@ export function useOpenPeriod() {
   });
 }
 
-export function useStartCollecting() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: number) => api.post<Period>(`/api/masterdata/periods/${id}/start`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: masterdataKeys.periods }),
-  });
-}
-
 /** Phiên bản biểu giá đã ban hành có hiệu lực vào ngày ISO {@code date} (khớp TariffService ở backend). */
 export function tariffOn(versions: TariffVersion[], date: string): TariffVersion | undefined {
   const covering = versions.filter(

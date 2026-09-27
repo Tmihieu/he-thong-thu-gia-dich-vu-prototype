@@ -39,7 +39,6 @@ import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentCommand;
 import vn.dongthanh.vsmt.masterdata.domain.FeeType;
 import vn.dongthanh.vsmt.masterdata.domain.FeeTypeRepository;
 import vn.dongthanh.vsmt.masterdata.domain.PricingMode;
-import vn.dongthanh.vsmt.masterdata.service.PeriodService;
 import vn.dongthanh.vsmt.remittance.domain.ReceiptMethod;
 import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService;
 import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService.IssueReceiptCommand;
@@ -64,7 +63,6 @@ class MoneyConcurrencyIT extends IntegrationTest {
     @Autowired TransactionTemplate tx;
     @Autowired JdbcTemplate jdbc;
     @Autowired ObjectMapper json;
-    @Autowired PeriodService periods;
     @Autowired PeriodLockService periodLock;
     @Autowired CompanyReceiptService receipts;
     @Autowired ChargeRequestService chargeRequests;
@@ -83,7 +81,6 @@ class MoneyConcurrencyIT extends IntegrationTest {
         cleaner.truncateAll();
         tx.executeWithoutResult(s -> {
             fx.build();
-            periods.startCollecting(fx.october.getId(), fx.actor(fx.admin));
             extra = feeTypes.save(FeeType.create("EXTRA", "Phụ phí", PricingMode.FIXED, 10_000L));
         });
         chargeId = fx.chargeId("DTH-H000001"); // 80.000 đ, KV07 của thu07

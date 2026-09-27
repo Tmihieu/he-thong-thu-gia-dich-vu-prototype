@@ -9,7 +9,6 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   CREATE_CONTRACT: 'Đăng ký dịch vụ',
   UPDATE_CONTRACT: 'Sửa đăng ký dịch vụ',
   OPEN_PERIOD: 'Mở kỳ thu',
-  START_COLLECTING_PERIOD: 'Bắt đầu thu',
   LOCK_PERIOD: 'Khóa kỳ thu',
   ISSUE_CHARGE_REQUEST: 'Phát hành phiếu yêu cầu thu',
   RECORD_PAYMENT: 'Ghi nhận thanh toán',

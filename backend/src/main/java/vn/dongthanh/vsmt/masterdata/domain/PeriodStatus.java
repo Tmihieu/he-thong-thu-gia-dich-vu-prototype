@@ -1,8 +1,7 @@
 package vn.dongthanh.vsmt.masterdata.domain;
 
-/** Vòng đời kỳ thu: Đã mở → Đang thu → Đã khóa, không quay lại. */
+/** Vòng đời kỳ thu: mở kỳ là Đang thu luôn (không có bước "Bắt đầu thu", người dùng chốt 28/09/2026) → Đã khóa. */
 public enum PeriodStatus {
-    OPEN("Đã mở"),
     COLLECTING("Đang thu"),
     LOCKED("Đã khóa");
 

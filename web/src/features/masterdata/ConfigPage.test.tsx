@@ -16,7 +16,7 @@ const tariffs = [
 ];
 const period = {
   id: 7, code: '2026-09', periodType: 'MONTH', label: 'Tháng 09/2026', startDate: '2026-09-01', endDate: '2026-09-30',
-  openDate: '2026-09-01', dueDate: '2026-09-30', tariffVersionId: 1, tariffVersionCode: 'BG-65-2026', status: 'OPEN',
+  openDate: '2026-09-01', dueDate: '2026-09-30', tariffVersionId: 1, tariffVersionCode: 'BG-65-2026', status: 'COLLECTING',
   lockedAt: null, note: null,
 };
 
@@ -51,24 +51,30 @@ describe('Cấu hình · kỳ thu', () => {
     expect(JSON.parse(String((post![1] as RequestInit).body))).toMatchObject({ type: 'MONTH', number: 10, dueDate: '2026-10-31' });
   });
 
-  it('bấm "Bắt đầu thu" gọi API của đúng kỳ và tải lại danh sách', async () => {
-    let status = 'OPEN';
-    const fetchFn = mockApi({
+  it('mở kỳ xong thì kỳ ở trạng thái "Đang thu" ngay, không có bước "Bắt đầu thu"', async () => {
+    const october = { ...period, id: 8, code: '2026-10', label: 'Tháng 10/2026', startDate: '2026-10-01', endDate: '2026-10-31' };
+    let list: unknown[] = [];
+    mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, admin),
-      'GET /api/masterdata/periods': () => jsonResponse(200, [{ ...period, status }]),
+      'GET /api/masterdata/periods': () => jsonResponse(200, list),
       'GET /api/masterdata/tariffs': () => jsonResponse(200, tariffs),
-      'POST /api/masterdata/periods/7/start': () => {
-        status = 'COLLECTING';
-        return jsonResponse(200, { ...period, status });
+      'POST /api/masterdata/periods': () => {
+        list = [october];
+        return jsonResponse(201, october);
       },
     });
     renderApp('/admin/config');
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Bắt đầu thu' }));
+    await userEvent.click(await screen.findByRole('button', { name: /Mở kỳ/ }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('Năm'), { target: { value: '2026' } });
+    await pickOption(within(dialog).getByRole('combobox', { name: 'Tháng' }), 'Tháng 10');
+    pickDate(within(dialog).getByLabelText('Hạn công ty nộp xã'), '31/10/2026');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Mở kỳ' }));
 
-    expect(await screen.findByText('Đang thu')).toBeInTheDocument();
+    expect(await screen.findByText('Tháng 10/2026')).toBeInTheDocument();
+    expect(screen.getByText('Đang thu')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Bắt đầu thu' })).not.toBeInTheDocument();
-    expect(fetchFn.mock.calls.some(([url]) => String(url) === '/api/masterdata/periods/7/start')).toBe(true);
   });
 
   it('tab biểu giá hiện phiên bản và đơn giá theo nhóm', async () => {

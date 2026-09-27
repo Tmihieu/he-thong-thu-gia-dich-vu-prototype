@@ -10,7 +10,7 @@ import { ChargeRequestForm } from './ChargeRequestForm';
 const periods: Period[] = [
   {
     id: 5, code: '2026-10', periodType: 'MONTH', label: 'Tháng 10/2026', startDate: '2026-10-01', endDate: '2026-10-31',
-    openDate: '2026-10-01', dueDate: '2026-10-31', tariffVersionId: 1, tariffVersionCode: 'BG-65-2026', status: 'OPEN',
+    openDate: '2026-10-01', dueDate: '2026-10-31', tariffVersionId: 1, tariffVersionCode: 'BG-65-2026', status: 'COLLECTING',
     lockedAt: null, note: null,
   },
   {

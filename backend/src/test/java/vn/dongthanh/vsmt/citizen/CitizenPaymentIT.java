@@ -142,7 +142,6 @@ class CitizenPaymentIT extends IntegrationTest {
     @Test
     void lockedPeriodReturns422() throws Exception {
         var october = periods.findById(fx.october.getId()).orElseThrow();
-        october.startCollecting();
         october.lock(OffsetDateTime.now(), fx.officer.getId());
         periods.flush();
 

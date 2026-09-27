@@ -22,7 +22,7 @@ import vn.dongthanh.vsmt.platform.security.CurrentUser;
 import vn.dongthanh.vsmt.platform.service.AuditService;
 
 /**
- * Mở kỳ thu và bắt đầu thu (quản trị, G1). Kỳ gắn phiên bản biểu giá có hiệu lực tại ngày đầu kỳ.
+ * Mở kỳ thu (quản trị, G1), kỳ vào thẳng Đang thu. Kỳ gắn phiên bản biểu giá có hiệu lực tại ngày đầu kỳ.
  * Khóa kỳ do cán bộ xã làm ở T32.
  */
 @Service
@@ -56,16 +56,6 @@ public class PeriodService {
         CollectionPeriod saved = periods.save(period);
         audit.record(actor, "OPEN_PERIOD", ENTITY, saved.getCode(), null, snapshot(saved));
         return saved;
-    }
-
-    public CollectionPeriod startCollecting(Long id, CurrentUser actor) {
-        actor.requireRole(Role.ADMIN);
-        CollectionPeriod period = get(id);
-        PeriodStatus before = period.getStatus();
-        period.startCollecting();
-        audit.record(actor, "START_COLLECTING_PERIOD", ENTITY, period.getCode(), Map.of("status", before),
-                Map.of("status", period.getStatus()));
-        return period;
     }
 
     /**

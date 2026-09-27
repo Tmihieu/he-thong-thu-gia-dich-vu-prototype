@@ -372,14 +372,14 @@ Hộ gia đình / hộ kinh doanh / doanh nghiệp. Hiển thị chung form "H�
 | Ngày mở            | `open_date`         | `date`              | Có       | Xã       | 2026-10-01            | Demo |                                                   |
 | Hạn công ty nộp xã | `due_date` | `date` | Có | Xã | 2026-10-31 | Demo | `≥ open_date`. Chỉ dùng cho công ty nộp xã; hạn hộ đóng nằm ở phiếu YCT (G16) |
 | Biểu giá áp dụng   | `tariff_version_id` | `FK→TariffVersion`  | Có       | Hệ thống | 1                     | Demo | Mặc định phiên bản `ACTIVE` tại `start_date`      |
-| Trạng thái | `status` | `enum PeriodStatus` | Có | Hệ thống | `OPEN` | Demo | Quản trị mở kỳ và bắt đầu thu; cán bộ xã khóa kỳ (G1) |
+| Trạng thái | `status` | `enum PeriodStatus` | Có | Hệ thống | `COLLECTING` | Demo | Quản trị mở kỳ là Đang thu luôn (P1, §5.0); cán bộ xã khóa kỳ (G1) |
 | Khóa lúc           | `locked_at`         | `timestamp`         | Không    | Hệ thống |                       | Demo |                                                   |
 | Người khóa         | `locked_by`         | `FK→User`           | Không    | Hệ thống |                       | Demo |                                                   |
 | Ghi chú            | `note`              | `text`              | Không    | Xã       |                       | Demo |                                                   |
 
 
 **Enum `PeriodType`:** `MONTH` Tháng · `QUARTER` Quý
-**Enum `PeriodStatus`:** `OPEN` Đã mở → `COLLECTING` Đang thu → `LOCKED` Đã khóa (không quay lại)
+**Enum `PeriodStatus`:** `COLLECTING` Đang thu (ngay khi mở) → `LOCKED` Đã khóa (không quay lại). Bỏ `OPEN` Đã mở từ 28/09/2026 (P1, §5.0; migration V22)
 
 **Khóa/ràng buộc:** `code` duy nhất. Kỳ tháng và kỳ quý có thể cùng tồn tại; chống thu trùng xử lý ở `Charge`.
 
@@ -1120,6 +1120,8 @@ Người duyệt trả lời trực tiếp trong mục 5.1–5.3; ba chỗ trả
 | T47 (3, 4) | **27/09/2026.** Ảnh bài chợ **không bắt buộc** (theo data dictionary, không theo dấu * của prototype); tối đa 5 ảnh, ≤ 5 MB/ảnh, chỉ JPEG/PNG/WebP | `MarketPost.photo_urls` |
 | T53 | **27/09/2026.** Lịch sử hộ của người đi thu giữ theo **một kỳ** (một khoản), xem kỳ khác bằng ô chọn kỳ; không gộp các kỳ như prototype | T53 |
 | T51 (C1) | **27/09/2026.** Cắt màn quản trị tài khoản khỏi demo, dùng tài khoản seed (plan C1) | T51 |
+| P1 | **28/09/2026.** Quản trị bấm mở kỳ là bắt đầu thu luôn: kỳ vào thẳng `COLLECTING`, bỏ trạng thái `OPEN` và bước "Bắt đầu thu" (API `POST /periods/{id}/start`). Kỳ `OPEN` trên CSDL cũ chuyển sang `COLLECTING` ở V22 | `CollectionPeriod.status` |
+| P2 | **28/09/2026.** Công ty báo sai sót phiếu thu sau khi kỳ đã khóa: chấp nhận cho demo là xã chỉ đóng sai sót kèm ghi chú, không lập được phiếu mới cho kỳ đã khóa (giới hạn đã biết của G6) | `ReceiptIssue`, G6 |
 
 ### 5.1 Khoảng trống trong SPEC (G1–G16, từ `tasks/plan.md` §9)
 

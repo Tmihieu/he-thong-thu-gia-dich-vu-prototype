@@ -129,8 +129,6 @@ class ChargeEligibilityTest {
     @Test
     void lockedPeriodCannotBeBilled() {
         assertThatCode(() -> ChargeEligibility.requireBillable(october)).doesNotThrowAnyException();
-        october.startCollecting();
-        assertThatCode(() -> ChargeEligibility.requireBillable(october)).doesNotThrowAnyException();
 
         ReflectionTestUtils.setField(october, "status", vn.dongthanh.vsmt.masterdata.domain.PeriodStatus.LOCKED);
         assertThatThrownBy(() -> ChargeEligibility.requireBillable(october))

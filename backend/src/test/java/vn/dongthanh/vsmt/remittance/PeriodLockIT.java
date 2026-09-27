@@ -18,7 +18,6 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.transaction.annotation.Transactional;
 
-import vn.dongthanh.vsmt.masterdata.service.PeriodService;
 import vn.dongthanh.vsmt.platform.domain.User;
 import vn.dongthanh.vsmt.remittance.domain.ReceiptMethod;
 import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService;
@@ -34,13 +33,11 @@ class PeriodLockIT extends IntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
     @Autowired CollectionFixture fx;
-    @Autowired PeriodService periods;
     @Autowired CompanyReceiptService receipts;
 
     @BeforeEach
     void seed() {
         fx.build();
-        periods.startCollecting(fx.october.getId(), fx.actor(fx.admin));
     }
 
     @Test

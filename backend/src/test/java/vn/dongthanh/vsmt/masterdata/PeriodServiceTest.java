@@ -11,7 +11,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
-import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,7 +68,7 @@ class PeriodServiceTest {
         assertThat(p.getEndDate()).isEqualTo(LocalDate.of(2026, 10, 31));
         assertThat(p.getOpenDate()).isEqualTo(LocalDate.of(2026, 10, 1));
         assertThat(p.getDueDate()).isEqualTo(LocalDate.of(2026, 10, 31));
-        assertThat(p.getStatus()).isEqualTo(PeriodStatus.OPEN);
+        assertThat(p.getStatus()).isEqualTo(PeriodStatus.COLLECTING);
         verify(audit).record(eq(admin), eq("OPEN_PERIOD"), eq("CollectionPeriod"), eq("2026-10"), eq(null), any());
     }
 
@@ -119,30 +118,6 @@ class PeriodServiceTest {
     }
 
     @Test
-    void startCollectingMovesOpenToCollectingAndAudits() {
-        CollectionPeriod p = openOctober();
-        when(periods.findByIdWithTariff(10L)).thenReturn(Optional.of(p));
-
-        service.startCollecting(10L, admin);
-
-        assertThat(p.getStatus()).isEqualTo(PeriodStatus.COLLECTING);
-        verify(audit).record(eq(admin), eq("START_COLLECTING_PERIOD"), eq("CollectionPeriod"), eq("2026-10"), any(),
-                any());
-    }
-
-    @Test
-    void invalidTransitionIsRejectedWith422Code() {
-        CollectionPeriod p = openOctober();
-        p.startCollecting();
-        when(periods.findByIdWithTariff(10L)).thenReturn(Optional.of(p));
-
-        assertThatThrownBy(() -> service.startCollecting(10L, admin))
-                .isExactlyInstanceOf(BusinessRuleException.class)
-                .hasMessageContaining("Đang thu")
-                .extracting("code").isEqualTo("PERIOD_INVALID_TRANSITION");
-    }
-
-    @Test
     void dueDateBeforeOpenDateIsRejected() {
         assertThatThrownBy(() -> service.open(new OpenPeriodCommand(PeriodType.MONTH, 2026, 10,
                 LocalDate.of(2026, 10, 5), LocalDate.of(2026, 10, 4), null), admin))
@@ -159,14 +134,8 @@ class PeriodServiceTest {
     }
 
     @Test
-    void onlyAdminOpensAndStartsPeriods() {
+    void onlyAdminOpensPeriods() {
         assertThatThrownBy(() -> service.open(new OpenPeriodCommand(PeriodType.MONTH, 2026, 10, null,
                 LocalDate.of(2026, 10, 31), null), officer)).isInstanceOf(AccessDeniedException.class);
-        assertThatThrownBy(() -> service.startCollecting(10L, officer)).isInstanceOf(AccessDeniedException.class);
-    }
-
-    private CollectionPeriod openOctober() {
-        return service.open(new OpenPeriodCommand(PeriodType.MONTH, 2026, 10, null, LocalDate.of(2026, 10, 31), null),
-                admin);
     }
 }

@@ -49,7 +49,6 @@ class PeriodLockServiceTest {
         TariffVersion bg = TariffVersion.create("BG", "QĐ", LocalDate.of(2026, 9, 1), null, TariffStatus.ACTIVE);
         october = CollectionPeriod.open(PeriodType.MONTH, 2026, 10, null, LocalDate.of(2026, 10, 31), bg);
         ReflectionTestUtils.setField(october, "id", 10L);
-        october.startCollecting();
         when(periods.findByIdForUpdate(10L)).thenReturn(Optional.of(october));
     }
 

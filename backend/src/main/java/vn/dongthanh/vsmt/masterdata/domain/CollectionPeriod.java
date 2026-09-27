@@ -21,7 +21,7 @@ import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 
 /**
  * Kỳ thu tháng ({@code 2026-10}) hoặc quý ({@code 2026-Q4}). Mã, tên và ngày đầu/cuối kỳ sinh từ loại + năm + số.
- * Trạng thái chỉ đi tới: OPEN → COLLECTING → LOCKED.
+ * Trạng thái chỉ đi tới: COLLECTING (ngay khi mở) → LOCKED.
  */
 @Getter
 @Entity
@@ -96,14 +96,8 @@ public class CollectionPeriod extends BaseEntity {
         }
         p.dueDate = dueDate;
         p.tariffVersion = tariffVersion;
-        p.status = PeriodStatus.OPEN;
+        p.status = PeriodStatus.COLLECTING;
         return p;
-    }
-
-    /** Quản trị bắt đầu thu: chỉ từ trạng thái Đã mở. */
-    public void startCollecting() {
-        requireStatus(PeriodStatus.OPEN, PeriodStatus.COLLECTING);
-        status = PeriodStatus.COLLECTING;
     }
 
     /** Cán bộ xã khóa kỳ (G1): chỉ từ Đang thu; sau khóa không phát hành, ghi thu, lập phiếu thu cho kỳ. */

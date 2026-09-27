@@ -46,6 +46,7 @@ Dựng lại prototype HTML/JS v3.1 thành monorepo `backend/` (Spring Boot + Po
 | V9 | T20 | collector_assignments | | V19 | T40 | payments → citizen_accounts (FK) |
 | V10 | T21 | payments, collection_visits | | V20 | T47 | market_posts, market_comments |
 | | | | | V21 | T45 | bulky_waste_requests |
+| | | | | V22 | P1 | collection_periods: bỏ `OPEN` (mở kỳ là Đang thu) |
 
 > 27/09/2026: T40 đã dùng V19 nên T45 dời sang V21 (T47 giữ V20). V22 trở đi để dành cho sửa đổi sau; task nào lấy số mới thì ghi vào bảng này trước khi tạo file. Hai luồng có thể merge lệch thứ tự (vd. V11 của luồng B vào `main` trước V10 của luồng A). Test không bị ảnh hưởng vì Testcontainers luôn tạo CSDL mới, nhưng CSDL trên máy dev sẽ báo lỗi validate. Khi gặp lỗi đó, reset bằng `docker compose down -v && docker compose up -d db` (dữ liệu chỉ là seed). Nếu cần sửa schema đã chạy, luôn tạo migration mới, không sửa file cũ (SPEC §8).
 

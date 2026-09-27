@@ -19,9 +19,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.masterdata.domain.CompanyRepository;
 import vn.dongthanh.vsmt.masterdata.domain.TariffGroup;
@@ -55,9 +52,6 @@ class PeriodApiIT extends IntegrationTest {
     @Autowired
     JdbcTemplate jdbc;
 
-    @Autowired
-    ObjectMapper json;
-
     String admin;
     String officer;
     String company;
@@ -84,22 +78,18 @@ class PeriodApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$.startDate").value("2026-10-01"))
                 .andExpect(jsonPath("$.openDate").value("2026-10-01"))
                 .andExpect(jsonPath("$.tariffVersionCode").value("BG-IT-2026"))
-                .andExpect(jsonPath("$.status").value("OPEN"));
+                .andExpect(jsonPath("$.status").value("COLLECTING"));
 
         assertThat(jdbc.queryForObject("select actor_username from audit_logs"
                 + " where action = 'OPEN_PERIOD' and entity_id = '2026-10'", String.class)).isEqualTo("admin_it");
     }
 
     @Test
-    void communeOfficerAndCompanyCannotOpenOrStartPeriods() throws Exception {
+    void communeOfficerAndCompanyCannotOpenPeriods() throws Exception {
         open(officer, "MONTH", 10, "2026-10-31")
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
         open(company, "QUARTER", 4, "2026-12-31").andExpect(status().isForbidden());
-
-        long id = idOf(open(admin, "MONTH", 11, "2026-11-30"));
-        mvc.perform(post("/api/masterdata/periods/" + id + "/start").header(HttpHeaders.AUTHORIZATION, officer))
-                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -108,19 +98,6 @@ class PeriodApiIT extends IntegrationTest {
         open(admin, "MONTH", 10, "2026-11-15")
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("PERIOD_ALREADY_EXISTS"));
-    }
-
-    @Test
-    void startCollectingThenStartingAgainIs422() throws Exception {
-        long id = idOf(open(admin, "QUARTER", 4, "2026-12-31"));
-
-        mvc.perform(post("/api/masterdata/periods/" + id + "/start").header(HttpHeaders.AUTHORIZATION, admin))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("COLLECTING"))
-                .andExpect(jsonPath("$.tariffVersionCode").value("BG-IT-2026"));
-        mvc.perform(post("/api/masterdata/periods/" + id + "/start").header(HttpHeaders.AUTHORIZATION, admin))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("PERIOD_INVALID_TRANSITION"));
     }
 
     @Test
@@ -154,12 +131,6 @@ class PeriodApiIT extends IntegrationTest {
         String body = "{\"type\":\"%s\",\"year\":2026,\"number\":%d,\"dueDate\":\"%s\"}".formatted(type, number, dueDate);
         return mvc.perform(post("/api/masterdata/periods").header(HttpHeaders.AUTHORIZATION, token)
                 .contentType(MediaType.APPLICATION_JSON).content(body));
-    }
-
-    private long idOf(ResultActions result) throws Exception {
-        JsonNode node = json.readTree(result.andExpect(status().isCreated()).andReturn().getResponse()
-                .getContentAsString());
-        return node.get("id").asLong();
     }
 
     private String token(String username, Role role, Long companyId) {

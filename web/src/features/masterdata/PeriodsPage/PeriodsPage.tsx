@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { ApiError } from '../../../api/client';
 import { DateText } from '../../../shared/DateText';
 import { PERIOD_STATUS_LABELS, PERIOD_TYPE_LABELS, STATUS_COLORS } from '../../../shared/labels';
-import { type Period, useOpenPeriod, usePeriods, useStartCollecting, useTariffs } from '../api';
+import { type Period, useOpenPeriod, usePeriods, useTariffs } from '../api';
 import { OpenPeriodForm } from './OpenPeriodForm';
 
 function errorMessage(err: unknown): string | null {
@@ -13,13 +13,12 @@ function errorMessage(err: unknown): string | null {
   return err instanceof ApiError ? err.message : 'Thao tác không thành công. Vui lòng thử lại.';
 }
 
-/** Danh sách kỳ thu, mở kỳ, bắt đầu thu (quản trị, §10 bước 1). */
+/** Danh sách kỳ thu và mở kỳ (quản trị, §10 bước 1); mở kỳ là Đang thu luôn. */
 export function PeriodsPage() {
   const { message } = App.useApp();
   const periods = usePeriods();
   const tariffs = useTariffs();
   const openPeriod = useOpenPeriod();
-  const start = useStartCollecting();
   const [formOpen, setFormOpen] = useState(false);
 
   function closeForm() {
@@ -34,11 +33,6 @@ export function PeriodsPage() {
           Mở kỳ
         </Button>
       </Space>
-      {start.error && (
-        <div role="alert" style={{ color: '#cf1322', marginBottom: 12 }}>
-          {errorMessage(start.error)}
-        </div>
-      )}
       <Table<Period>
         rowKey="id"
         loading={periods.isLoading}
@@ -63,21 +57,6 @@ export function PeriodsPage() {
             title: 'Trạng thái',
             dataIndex: 'status',
             render: (s: Period['status']) => <Tag color={STATUS_COLORS[s]}>{PERIOD_STATUS_LABELS[s]}</Tag>,
-          },
-          {
-            title: '',
-            render: (_, p) =>
-              p.status === 'OPEN' ? (
-                <Button
-                  size="small"
-                  loading={start.isPending && start.variables === p.id}
-                  onClick={() =>
-                    start.mutate(p.id, { onSuccess: () => message.success(`Kỳ ${p.label} đã bắt đầu thu`) })
-                  }
-                >
-                  Bắt đầu thu
-                </Button>
-              ) : null,
           },
         ]}
       />

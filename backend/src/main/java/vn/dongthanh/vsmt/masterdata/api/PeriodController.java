@@ -53,18 +53,12 @@ public class PeriodController {
         return PeriodDto.of(periods.get(id));
     }
 
-    @Operation(summary = "Mở kỳ thu tháng/quý (quản trị); gắn biểu giá có hiệu lực tại ngày đầu kỳ")
+    @Operation(summary = "Mở kỳ thu tháng/quý (quản trị), vào thẳng Đang thu; gắn biểu giá có hiệu lực tại ngày đầu kỳ")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public PeriodDto open(@Valid @RequestBody OpenPeriodRequest req, @AuthenticationPrincipal CurrentUser actor) {
         return PeriodDto.of(periods.open(new OpenPeriodCommand(req.type(), req.year(), req.number(), req.openDate(),
                 req.dueDate(), req.note()), actor));
-    }
-
-    @Operation(summary = "Bắt đầu thu (quản trị): Đã mở → Đang thu")
-    @PostMapping("/{id}/start")
-    public PeriodDto start(@PathVariable Long id, @AuthenticationPrincipal CurrentUser actor) {
-        return PeriodDto.of(periods.startCollecting(id, actor));
     }
 
     public record OpenPeriodRequest(

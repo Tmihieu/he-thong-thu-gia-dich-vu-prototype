@@ -9,7 +9,7 @@ import { jsonResponse, mockApi, renderApp } from '../../test/renderApp';
 const officer = { id: 2, username: 'canbo_xa', fullName: 'Nguyễn Thị Mẫu', role: 'COMMUNE_OFFICER', companyId: null };
 const period = {
   id: 5, code: '2026-10', periodType: 'MONTH', label: 'Tháng 10/2026', startDate: '2026-10-01', endDate: '2026-10-31',
-  openDate: '2026-10-01', dueDate: '2026-10-31', tariffVersionId: 1, tariffVersionCode: 'BG-65-2026', status: 'OPEN',
+  openDate: '2026-10-01', dueDate: '2026-10-31', tariffVersionId: 1, tariffVersionCode: 'BG-65-2026', status: 'COLLECTING',
   lockedAt: null, note: null,
 };
 const feeTypes = [{ id: 1, code: 'ENV', name: 'Phí vệ sinh môi trường (CTRSH)', pricingMode: 'TARIFF', defaultPrice: null, active: true }];

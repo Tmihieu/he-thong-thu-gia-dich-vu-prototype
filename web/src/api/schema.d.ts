@@ -240,25 +240,8 @@ export interface paths {
         /** Danh sách kỳ thu, mới nhất trước; có date thì chỉ các kỳ chứa ngày đó */
         get: operations["list_3"];
         put?: never;
-        /** Mở kỳ thu tháng/quý (quản trị); gắn biểu giá có hiệu lực tại ngày đầu kỳ */
+        /** Mở kỳ thu tháng/quý (quản trị), vào thẳng Đang thu; gắn biểu giá có hiệu lực tại ngày đầu kỳ */
         post: operations["open"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/masterdata/periods/{id}/start": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Bắt đầu thu (quản trị): Đã mở → Đang thu */
-        post: operations["start"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1660,7 +1643,7 @@ export interface components {
             /** @example BG-65-2026 */
             tariffVersionCode: string;
             /** @enum {string} */
-            status: "OPEN" | "COLLECTING" | "LOCKED";
+            status: "COLLECTING" | "LOCKED";
             /** Format: date-time */
             lockedAt: string | null;
             note: string | null;
@@ -3319,28 +3302,6 @@ export interface operations {
         responses: {
             /** @description Created */
             201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["PeriodDto"];
-                };
-            };
-        };
-    };
-    start: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
                 headers: {
                     [name: string]: unknown;
                 };
