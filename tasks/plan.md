@@ -43,10 +43,11 @@ Dựng lại prototype HTML/JS v3.1 thành monorepo `backend/` (Spring Boot + Po
 | V6 | T13 | area_assignments | | V16 | T36 | complaints, complaint_events |
 | V7 | T15 | service_subjects, service_contracts | | V17 | T38 | collection_schedules |
 | V8 | T18 | charge_requests, charges | | V18 | T39 | citizen_accounts |
-| V9 | T20 | collector_assignments | | V19 | T45 | bulky_waste_requests |
+| V9 | T20 | collector_assignments | | V19 | T40 | payments → citizen_accounts (FK) |
 | V10 | T21 | payments, collection_visits | | V20 | T47 | market_posts, market_comments |
+| | | | | V21 | T45 | bulky_waste_requests |
 
-> V21 trở đi để dành cho sửa đổi sau. Hai luồng có thể merge lệch thứ tự (vd. V11 của luồng B vào `main` trước V10 của luồng A). Test không bị ảnh hưởng vì Testcontainers luôn tạo CSDL mới, nhưng CSDL trên máy dev sẽ báo lỗi validate. Khi gặp lỗi đó, reset bằng `docker compose down -v && docker compose up -d db` (dữ liệu chỉ là seed). Nếu cần sửa schema đã chạy, luôn tạo migration mới, không sửa file cũ (SPEC §8).
+> 27/09/2026: T40 đã dùng V19 nên T45 dời sang V21 (T47 giữ V20). V22 trở đi để dành cho sửa đổi sau; task nào lấy số mới thì ghi vào bảng này trước khi tạo file. Hai luồng có thể merge lệch thứ tự (vd. V11 của luồng B vào `main` trước V10 của luồng A). Test không bị ảnh hưởng vì Testcontainers luôn tạo CSDL mới, nhưng CSDL trên máy dev sẽ báo lỗi validate. Khi gặp lỗi đó, reset bằng `docker compose down -v && docker compose up -d db` (dữ liệu chỉ là seed). Nếu cần sửa schema đã chạy, luôn tạo migration mới, không sửa file cũ (SPEC §8).
 
 ---
 
@@ -219,6 +220,43 @@ Một người, nhưng có thể mở **2 phiên Claude** trên 2 git worktree:
 - **Bắt buộc tuần tự:** migration theo số phiên bản; mọi thứ phụ thuộc T24 (sổ công ty–kỳ); T32 khóa kỳ chạy sau khi phiếu thu và ghi nhận thu đã xong.
 - **Cần thống nhất trước:** task phát thông báo (T34, T35, T36) gọi `NotificationService.publish(...)`, hợp đồng này chốt ở T23 trước rồi mới chạy song song.
 - **Kéo sớm nếu dư sức:** T37, T38, T39 có thể kéo lên cuối tuần 3 ở luồng B để giảm tải tuần 4 (tuần 4 đang có 14 task).
+
+### 6.1 Hai luồng cho phần còn lại (chốt 27/09/2026)
+
+**Chia theo tính năng, mỗi luồng làm trọn backend + web + mobile của tính năng mình.** Không phải chờ nhau giữa backend và mobile, và mỗi luồng chỉ tạo file trong vùng tính năng của mình.
+
+| | Luồng A | Luồng B |
+|---|---|---|
+| Thư mục | thư mục chính của repo | worktree riêng (mỗi task một worktree) |
+| Tính năng | thanh toán + lịch (T42), khiếu nại người dân (T43), thông báo người dân (T44), rác cồng kềnh (T45 → T46) | chợ đồ cũ (T47 → T48), người đi thu lịch sử/báo sai (T53), nhật ký (T52), Docker (T49 phần hạ tầng), dọn code, quản trị tài khoản (T51, sau khi T52 vào `main`) |
+| Sở hữu file | package `citizen` phần của mình, `mobile/src/features/{citizen,payment,schedule,auth}/**`, `(tabs)/{_layout,index,notifications,account}.tsx`, `mobile/src/shared/labels.ts` | `citizen/**/Market*`, `PhotoStorage` + `/api/citizen/photos` (T45 dùng lại), `mobile/src/app/market/**`, `(tabs)/market.tsx`, `mobile/src/features/market/**`, `collection/**`, `platform/**` (T51, T52), Docker |
+
+Cuối cùng làm chung: phần rà seed của T49 (sau khi T42–T48 vào `main`) rồi T50 diễn tập (cần người dùng).
+
+**Quy trình mỗi task.** Chất lượng giữ nguyên "Tiêu chuẩn hoàn thành chung" ở đầu `todo.md`.
+1. Tạo nhánh từ `main` mới nhất: `git switch -c feat/tXX-ten main`. Không commit thẳng lên `main`.
+2. Làm và kiểm chứng theo tiêu chí của task, sau đó review diff (`/agent-skills:review`) trước khi tick.
+3. Trước khi gộp: `git rebase main`, rồi **chạy lại đủ kiểm chứng** vì `main` có thể đã đổi: backend `./mvnw verify`; web `npm run lint && npm test && npm run build`; mobile `npm run typecheck && npm test`.
+4. Gộp, chỉ fast-forward. Từ worktree đang ở nhánh task: `git fetch . feat/tXX-ten:main`. Từ thư mục đang đứng trên `main`: `git merge --ff-only feat/tXX-ten`. Git báo *non-fast-forward* nghĩa là `main` vừa có commit mới, quay lại bước 3. Git báo *checked out* nghĩa là thư mục kia đang đứng trên `main`, đợi nó chuyển nhánh hoặc gộp từ thư mục đó.
+5. Gộp từng task ngay khi xong, không dồn, để luồng kia rebase sớm và conflict nhỏ.
+
+**File dùng chung, xử lý khi conflict.**
+- `tasks/todo.md`: mỗi luồng chỉ sửa dòng task của mình; khác đoạn thì git tự gộp.
+- `web/src/api/schema.d.ts`, `mobile/src/api/schema.d.ts`: sinh lại từ backend của chính worktree mình sau khi rebase, không sửa tay kể cả khi conflict.
+- `mobile/package.json`, `app.json`: T46 và T48 đều cần `expo-image-picker`; luồng gộp sau giữ một bản.
+- `web/src/app/routes.tsx`: T45, T51, T52 đều thêm route; conflict thì giữ cả hai.
+- Migration: theo bảng ở mục 2 (T47 = V20, T45 = V21; số mới ghi vào bảng trước khi tạo file).
+- `SecurityConfig`: `/api/citizen/**` đã chặn chung cho người dân (T39), task người dân mới không phải sửa.
+
+**Giới hạn máy: một việc nặng một lúc.** Máy dev có 7,3 GB RAM và ổ C gần đầy. Ngày 27/09 hai phiên cùng chạy nhiều `./mvnw verify` (Testcontainers), `npm ci` và `docker compose up --build` làm Docker treo, CSDL `vsmt-db-1` của luồng kia bị khởi động lại, test kẹt IO nên kết quả không tin được. Vì vậy chỉ viết code, đọc và review là làm song song; còn việc nặng (`./mvnw verify`, docker build, `expo export`, `npm ci`) thì hai luồng lần lượt, không chạy cùng lúc. Trước việc nặng kiểm ổ C còn trên 3 GB. Song song ở đây là để hai luồng cùng viết code; lượt kiểm chứng vẫn phải đủ, chỉ xếp hàng.
+
+**Chạy thử song song không giẫm nhau.** Hai nhánh có migration khác nhau, dùng chung một CSDL sẽ lỗi Flyway validate, nên mỗi luồng một CSDL và một cổng:
+- Luồng A như cũ: `docker compose up -d db` (5432), backend 8080, web 5173.
+- Luồng B: `POSTGRES_PORT=5436 docker compose -p vsmt-b up -d db`, rồi trong `backend/` của worktree chạy `POSTGRES_PORT=5436 SERVER_PORT=8083 ./mvnw spring-boot:run`. Trên PowerShell đặt biến bằng `$env:POSTGRES_PORT=5436; $env:SERVER_PORT=8083`. Mobile trỏ `EXPO_PUBLIC_API_URL=http://<IP LAN>:8083`, sinh kiểu bằng `npx --yes openapi-typescript@7.13.0 http://localhost:8083/v3/api-docs -o src/api/schema.d.ts`. Sau rebase mà gặp lỗi Flyway validate thì `docker compose -p vsmt-b down -v` rồi dựng lại (dữ liệu chỉ là seed).
+
+**Kiểm tích hợp sớm, không đợi T50.** Mỗi khi một tính năng vào `main`, chạy tay bước §10 tương ứng trên `main`: T42 là bước 4; T43 và T44 là bước 6; T45 + T46 và T47 + T48 là bước 7.
+
+**Quyết định đã có, không phải hỏi lại:** G7 (chỉ thông báo, không entity), G10 (`expo-image-picker` đã duyệt), G13 (rác cồng kềnh không vào phiếu YCT), C4/C5 không cắt (có bình luận, ảnh thật). Còn chờ người dùng: giữ hay cắt T51.
 
 ---
 

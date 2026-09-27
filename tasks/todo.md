@@ -633,7 +633,7 @@
   - **Kích thước:** S
 
 - [ ] **T45 — Rác cồng kềnh: backend và màn công ty báo phí** · `citizen-app` · M · P0 (§10 bước 7) · **O5 mặc định (không sinh Charge)** · **[cần hỏi trước: G13]**
-  - **Mô tả:** Tạo `MIG/V19__bulky_waste_requests.sql` và entity `BulkyWasteRequest` (loại vật dụng, số lượng, địa chỉ, ngày mong muốn, ảnh (tùy C5), công ty phụ trách = `companyOf(khu vực)`, phí công ty báo, trạng thái `PENDING → QUOTED → COLLECTED / CANCELLED`). API cho dân (tạo, xem, hủy) và cho công ty (danh sách của mình, báo phí, đánh dấu đã thu gom). Mỗi lần đổi trạng thái phát thông báo cho dân. Web công ty: màn "Rác cồng kềnh" có form báo phí. Phí **không** sinh `Charge` (O5).
+  - **Mô tả:** Tạo `MIG/V21__bulky_waste_requests.sql` và entity `BulkyWasteRequest` (loại vật dụng, số lượng, địa chỉ, ngày mong muốn, ảnh (tùy C5), công ty phụ trách = `companyOf(khu vực)`, phí công ty báo, trạng thái `PENDING → QUOTED → COLLECTED / CANCELLED`). API cho dân (tạo, xem, hủy) và cho công ty (danh sách của mình, báo phí, đánh dấu đã thu gom). Mỗi lần đổi trạng thái phát thông báo cho dân. Web công ty: màn "Rác cồng kềnh" có form báo phí. Phí **không** sinh `Charge` (O5).
   - **Tiêu chí nghiệm thu:**
     - [ ] IT: dân tạo → yêu cầu gán DV01 → DV01 báo phí → dân thấy "Đã báo phí"; dv02 không thấy yêu cầu này
     - [ ] Không có `Charge` nào được tạo từ yêu cầu (IT)
@@ -641,7 +641,7 @@
   - **Kiểm chứng:**
     - [ ] `cd backend && ./mvnw test -Dtest=BulkyWasteIT`; web lint/test/build
   - **Phụ thuộc:** T13, T23, T39, T08
-  - **File dự kiến:** `MIG/V19__…sql`, `BE/citizen/domain/BulkyWasteRequest.java` (+ repo), `BE/citizen/service/BulkyWasteService.java` + `api/BulkyWasteController.java`, `BT/citizen/BulkyWasteIT.java`, `WEB/features/citizen/BulkyRequestsPage/{BulkyRequestsPage.tsx,QuoteForm.test.tsx}`
+  - **File dự kiến:** `MIG/V21__…sql`, `BE/citizen/domain/BulkyWasteRequest.java` (+ repo), `BE/citizen/service/BulkyWasteService.java` + `api/BulkyWasteController.java`, `BT/citizen/BulkyWasteIT.java`, `WEB/features/citizen/BulkyRequestsPage/{BulkyRequestsPage.tsx,QuoteForm.test.tsx}`
   - **Kích thước:** M
 
 - [ ] **T46 — Mobile: đăng ký rác cồng kềnh và theo dõi trạng thái** · `citizen-app` · S · P0 (§10 bước 7)
