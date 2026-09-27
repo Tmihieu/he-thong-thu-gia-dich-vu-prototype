@@ -93,4 +93,34 @@ describe('Rác cồng kềnh: màn công ty', () => {
     await userEvent.click(screen.getByText('Đã báo phí (1)'));
     expect(await screen.findByRole('button', { name: 'Đã thu gom' })).toBeInTheDocument();
   });
+
+  it('mở từ thông báo (?id=) thì dòng đó hiện ở trang đầu dù nằm sau 20 dòng', async () => {
+    const many = Array.from({ length: 25 }, (_, i) => ({ ...request, id: 100 + i, code: `CK-1026-${100 + i}` }));
+    mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, manager),
+      'GET /api/bulky-requests': () => jsonResponse(200, many),
+    });
+    renderApp('/company/bulky?id=124');
+    expect(await screen.findByText('CK-1026-124')).toBeInTheDocument();
+  });
+
+  it('báo phí lỗi vì hộ vừa hủy thì tải lại danh sách, bỏ nút thao tác cũ', async () => {
+    let current: BulkyRequest = request;
+    mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, manager),
+      'GET /api/bulky-requests': () => jsonResponse(200, [current]),
+      'POST /api/bulky-requests/6/quote': () => {
+        current = { ...request, status: 'CANCELLED', cancelReason: 'Đã tự xử lý' };
+        return jsonResponse(422, { code: 'BULKY_STATUS_INVALID',
+          message: 'Yêu cầu CK-1026-006 đang ở trạng thái "Đã hủy", không báo phí được.' });
+      },
+    });
+    renderApp('/company/bulky');
+    await userEvent.click(await screen.findByRole('button', { name: 'Báo phí' }));
+    await userEvent.type(await screen.findByLabelText('Phí thu gom'), '200000');
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi báo phí' }));
+
+    expect(await screen.findByText(/đang ở trạng thái "Đã hủy"/)).toBeInTheDocument();
+    expect(await screen.findByText('Chờ xác nhận (0)')).toBeInTheDocument();
+  });
 });

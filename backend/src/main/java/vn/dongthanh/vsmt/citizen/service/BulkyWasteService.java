@@ -47,6 +47,8 @@ public class BulkyWasteService {
     static final String COMPANY_SCREEN = "company.bulky";
     static final DateTimeFormatter CODE_TOKEN = DateTimeFormatter.ofPattern("MMyy");
     static final DateTimeFormatter VN_DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    static final int MAX_DAYS_AHEAD = 90;
+    static final int MAX_OPEN_PER_HOUSEHOLD = 5;
 
     private final BulkyWasteRequestRepository requests;
     private final CitizenQueryService citizens;
@@ -64,13 +66,18 @@ public class BulkyWasteService {
         CitizenAccount account = citizens.requireActive(citizen);
         ServiceSubject subject = account.getSubject();
         LocalDate today = LocalDate.now(clock);
-        if (cmd.preferredDate().isBefore(today)) {
-            throw new BusinessRuleException("BULKY_DATE_PAST", "Ngày mong muốn không được trước hôm nay.");
+        requireDateWindow(cmd.preferredDate(), today, "Ngày mong muốn");
+        String prefix = "CK-" + today.format(CODE_TOKEN) + "-";
+        // Tuần tự hóa việc tạo trong tháng: không trùng số mã, không vượt giới hạn yêu cầu đang mở khi gửi dồn.
+        requests.lockCodePrefix(prefix);
+        if (requests.countBySubjectIdAndStatusIn(subject.getId(), List.of(BulkyStatus.PENDING, BulkyStatus.QUOTED))
+                >= MAX_OPEN_PER_HOUSEHOLD) {
+            throw new BusinessRuleException("BULKY_TOO_MANY_OPEN", "Hộ đang có " + MAX_OPEN_PER_HOUSEHOLD
+                    + " yêu cầu chưa xong. Vui lòng chờ công ty xử lý hoặc hủy bớt trước khi đăng ký thêm.");
         }
         Company company = assignments.companyOf(subject.getArea().getId(), today).map(masterData::companyInfo)
                 .orElseThrow(() -> new BusinessRuleException("BULKY_NO_COMPANY",
                         "Khu vực của hộ chưa có công ty thu gom phụ trách. Vui lòng liên hệ UBND xã."));
-        String prefix = "CK-" + today.format(CODE_TOKEN) + "-";
         String address = blankToNull(cmd.address());
         BulkyWasteRequest request = requests.save(BulkyWasteRequest.builder()
                 .code(prefix + "%03d".formatted(requests.maxCodeNumber(prefix) + 1))
@@ -84,6 +91,7 @@ public class BulkyWasteService {
                 cmd.quantity() + " × " + itemLabel(cmd.itemType()) + " · mong muốn " + cmd.preferredDate().format(VN_DATE)
                         + " · " + request.getAddress(),
                 link(COMPANY_SCREEN, request)), null);
+        audit.recordCitizen(account.getPhone(), "CREATE_BULKY", ENTITY, request.getCode(), null, state(request));
         return request;
     }
 
@@ -102,7 +110,10 @@ public class BulkyWasteService {
 
     public BulkyWasteRequest cancelByCitizen(CurrentCitizen citizen, Long id, String reason) {
         BulkyWasteRequest request = getOfCitizen(citizen, id);
+        Map<String, Object> before = state(request);
         request.cancel(reason);
+        audit.recordCitizen(request.getCitizenAccount().getPhone(), "CITIZEN_CANCEL_BULKY", ENTITY, request.getCode(),
+                before, state(request));
         notifications.publish(NotificationCommand.toCompany(request.getCompany().getId(), Role.COMPANY_MANAGER, NotificationKind.INFO,
                 "Hộ hủy yêu cầu rác cồng kềnh " + request.getCode(), "Lý do: " + request.getCancelReason(),
                 link(COMPANY_SCREEN, request)), null);
@@ -120,9 +131,7 @@ public class BulkyWasteService {
         BulkyWasteRequest request = loadForCompany(id, actor);
         request.requireStatus(BulkyStatus.PENDING, "báo phí");
         LocalDate scheduled = scheduledDate != null ? scheduledDate : request.getPreferredDate();
-        if (scheduled.isBefore(LocalDate.now(clock))) {
-            throw new BusinessRuleException("BULKY_DATE_PAST", "Ngày hẹn thu gom không được trước hôm nay.");
-        }
+        requireDateWindow(scheduled, LocalDate.now(clock), "Ngày hẹn thu gom");
         Map<String, Object> before = state(request);
         request.quote(fee, scheduled, OffsetDateTime.now(clock));
         audit.record(actor, "QUOTE_BULKY_FEE", ENTITY, request.getCode(), before, state(request));
@@ -197,6 +206,15 @@ public class BulkyWasteService {
         }
         String joined = String.join("\n", urls.stream().map(String::trim).filter(s -> !s.isEmpty()).toList());
         return joined.isEmpty() ? null : joined;
+    }
+
+    private static void requireDateWindow(LocalDate date, LocalDate today, String label) {
+        if (date.isBefore(today)) {
+            throw new BusinessRuleException("BULKY_DATE_PAST", label + " không được trước hôm nay.");
+        }
+        if (date.isAfter(today.plusDays(MAX_DAYS_AHEAD))) {
+            throw new BusinessRuleException("BULKY_DATE_TOO_FAR", label + " không được quá " + MAX_DAYS_AHEAD + " ngày tới.");
+        }
     }
 
     private static NotFoundException notFound() {

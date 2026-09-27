@@ -37,7 +37,7 @@ public final class BulkyDtos {
     }
 
     public record QuoteBulkyRequest(
-            @Positive(message = "phải lớn hơn 0") long fee,
+            @Positive(message = "phải lớn hơn 0") @Max(value = 50_000_000, message = "tối đa 50.000.000 đ") long fee,
             @Schema(description = "Để trống = ngày hộ mong muốn") LocalDate scheduledDate) {
     }
 

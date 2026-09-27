@@ -235,6 +235,41 @@ class BulkyWasteIT extends IntegrationTest {
     }
 
     @Test
+    void datesFeeAndOpenRequestsHaveUpperBounds() throws Exception {
+        citizen(citizenA, post("/api/citizen/bulky-requests"), "{\"itemType\": \"DEBRIS\", \"quantity\": 1, \"preferredDate\": \"2026-12-31\"}")
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("BULKY_DATE_TOO_FAR"));
+
+        long first = create(citizenA);
+        internal(fx.dv01Manager, post("/api/bulky-requests/{id}/quote", first), "{\"fee\": 50000001}")
+                .andExpect(status().isBadRequest());
+        internal(fx.dv01Manager, post("/api/bulky-requests/{id}/quote", first), "{\"fee\": 150000, \"scheduledDate\": \"2027-01-15\"}")
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("BULKY_DATE_TOO_FAR"));
+
+        for (int i = 1; i < 5; i++) {
+            create(citizenA);
+        }
+        citizen(citizenA, post("/api/citizen/bulky-requests"), "{\"itemType\": \"DEBRIS\", \"quantity\": 1, \"preferredDate\": \"2026-10-18\"}")
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("BULKY_TOO_MANY_OPEN"));
+        // Hủy bớt một yêu cầu thì đăng ký tiếp được.
+        citizen(citizenA, post("/api/citizen/bulky-requests/{id}/cancel", first), "{\"reason\": \"Đăng ký trùng\"}")
+                .andExpect(status().isOk());
+        create(citizenA);
+    }
+
+    @Test
+    void citizenCreateAndCancelAreAudited() throws Exception {
+        long id = create(citizenA);
+        citizen(citizenA, post("/api/citizen/bulky-requests/{id}/cancel", id), "{\"reason\": \"Đã tự xử lý\"}")
+                .andExpect(status().isOk());
+        assertThat(jdbc.queryForList("select action || ':' || actor_username from audit_logs where entity_type = 'BulkyWasteRequest'"
+                + " order by id", String.class))
+                .containsExactly("CREATE_BULKY:citizen:0902000001", "CITIZEN_CANCEL_BULKY:citizen:0902000001");
+    }
+
+    @Test
     void areaWithoutCompanyIsRejected() throws Exception {
         Area kv24 = areas.save(Area.create("KV24", "Tổ 24", fx.kv07.getDistrict()));
         ServiceSubject orphan = ServiceSubject.create("NB-H000999", SubjectType.HOUSEHOLD, "Hộ chưa có công ty", "Số 9", kv24);

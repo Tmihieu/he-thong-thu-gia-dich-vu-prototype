@@ -33,6 +33,12 @@ export function BulkyRequestsPage() {
   const [params] = useSearchParams();
   const focusId = Number(params.get('id')) || null;
   const [filter, setFilter] = useState<Filter>(focusId ? 'ALL' : 'PENDING');
+  // Bấm thông báo khi màn đang mở (đổi ?id=) cũng chuyển sang "Tất cả" để thấy dòng được mở.
+  const [seenFocusId, setSeenFocusId] = useState(focusId);
+  if (focusId !== seenFocusId) {
+    setSeenFocusId(focusId);
+    if (focusId) setFilter('ALL');
+  }
   const [quoting, setQuoting] = useState<BulkyRequest | null>(null);
   const [rejecting, setRejecting] = useState<BulkyRequest | null>(null);
   const requests = useBulkyRequests();
@@ -40,6 +46,12 @@ export function BulkyRequestsPage() {
   const collect = useCollectBulky();
   const cancel = useCancelBulky();
   const items = useMemo(() => requests.data ?? [], [requests.data]);
+  const visible = useMemo(() => {
+    const list = items.filter((r) => filter === 'ALL' || r.status === filter);
+    // Dòng mở từ thông báo đưa lên đầu, không bị lọt sang trang 2.
+    const focused = list.find((r) => r.id === focusId);
+    return focused ? [focused, ...list.filter((r) => r !== focused)] : list;
+  }, [items, filter, focusId]);
   const count = (f: Filter) => items.filter((r) => f === 'ALL' || r.status === f).length;
   const label = (f: Filter) => (f === 'ALL' ? 'Tất cả' : BULKY_STATUS_LABELS[f]);
 
@@ -60,7 +72,7 @@ export function BulkyRequestsPage() {
       <Table<BulkyRequest>
         rowKey="id"
         loading={requests.isLoading}
-        dataSource={items.filter((r) => filter === 'ALL' || r.status === filter)}
+        dataSource={visible}
         pagination={{ pageSize: 20, hideOnSinglePage: true }}
         locale={{ emptyText: 'Không có yêu cầu' }}
         onRow={(r) => (r.id === focusId ? { style: { background: '#e6f4ff' } } : {})}
@@ -114,7 +126,7 @@ export function BulkyRequestsPage() {
               r.status === 'PENDING' || r.status === 'QUOTED' ? (
                 <Space size={4} wrap>
                   {r.status === 'PENDING' ? (
-                    <Button size="small" type="primary" onClick={() => { quote.reset(); setQuoting(r); }}>
+                    <Button size="small" type="primary" onClick={() => { quote.reset(); collect.reset(); setQuoting(r); }}>
                       Báo phí
                     </Button>
                   ) : (
@@ -129,7 +141,7 @@ export function BulkyRequestsPage() {
                       <Button size="small" type="primary">Đã thu gom</Button>
                     </Popconfirm>
                   )}
-                  <Button size="small" danger onClick={() => { cancel.reset(); setRejecting(r); }}>
+                  <Button size="small" danger onClick={() => { cancel.reset(); collect.reset(); setRejecting(r); }}>
                     Từ chối
                   </Button>
                 </Space>

@@ -125,6 +125,32 @@ class CitizenApiNoTransactionIT extends IntegrationTest {
         return ok(req.contentType(MediaType.APPLICATION_JSON).content(content));
     }
 
+    @Test
+    void concurrentBulkyRequestsGetDistinctCodes() throws Exception {
+        var pool = java.util.concurrent.Executors.newFixedThreadPool(4);
+        try {
+            var start = new java.util.concurrent.CountDownLatch(1);
+            var results = new java.util.ArrayList<java.util.concurrent.Future<Integer>>();
+            for (int i = 0; i < 4; i++) {
+                results.add(pool.submit(() -> {
+                    start.await();
+                    return mvc.perform(post("/api/citizen/bulky-requests").header(HttpHeaders.AUTHORIZATION, token)
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content("{\"itemType\":\"DEBRIS\",\"quantity\":1,\"preferredDate\":\"2026-10-18\"}"))
+                            .andReturn().getResponse().getStatus();
+                }));
+            }
+            start.countDown();
+            for (var r : results) {
+                org.assertj.core.api.Assertions.assertThat(r.get()).isEqualTo(201);
+            }
+        } finally {
+            pool.shutdown();
+        }
+        ok(get("/api/citizen/bulky-requests")).andExpect(jsonPath("$[*].code",
+                org.hamcrest.Matchers.containsInAnyOrder("CK-1026-001", "CK-1026-002", "CK-1026-003", "CK-1026-004")));
+    }
+
     private org.springframework.test.web.servlet.ResultActions company(String bearer, MockHttpServletRequestBuilder req)
             throws Exception {
         return mvc.perform(req.header(HttpHeaders.AUTHORIZATION, bearer)).andExpect(status().isOk());

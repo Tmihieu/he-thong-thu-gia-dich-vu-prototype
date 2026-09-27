@@ -1,5 +1,6 @@
 package vn.dongthanh.vsmt.citizen.domain;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,4 +27,10 @@ public interface BulkyWasteRequestRepository extends JpaRepository<BulkyWasteReq
     @Query(value = "select coalesce(max(cast(substring(code, length(:prefix) + 1) as integer)), 0)"
             + " from bulky_waste_requests where code like :prefix || '%'", nativeQuery = true)
     int maxCodeNumber(String prefix);
+
+    /** Khóa theo tiền tố mã tới hết transaction, để hai hộ đăng ký cùng lúc không lấy trùng số. */
+    @Query(value = "select count(*) from pg_advisory_xact_lock(hashtext(:prefix))", nativeQuery = true)
+    long lockCodePrefix(String prefix);
+
+    long countBySubjectIdAndStatusIn(Long subjectId, Collection<BulkyStatus> statuses);
 }
