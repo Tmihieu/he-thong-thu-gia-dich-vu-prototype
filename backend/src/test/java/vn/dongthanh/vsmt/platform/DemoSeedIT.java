@@ -181,6 +181,19 @@ class DemoSeedIT extends IntegrationTest {
                 Integer.class)).isZero();
     }
 
+    @Test
+    void demoProfileSeedsMarketPostsAndComments() {
+        // Seed gắn người đăng theo SĐT: SĐT lệch thì dòng bị bỏ im lặng, nên đếm đủ bài và bình luận.
+        assertThat(demoDb.queryForList("select code || ':' || status from market_posts order by code", String.class))
+                .containsExactly("CDC-033:CLOSED", "CDC-035:OPEN", "CDC-039:OPEN", "CDC-041:OPEN");
+        // CDC-035 của hộ kịch bản demo để thử đóng bài (D9).
+        assertThat(demoDb.queryForObject("""
+                select s.code from market_posts p join citizen_accounts a on a.id = p.author_id
+                join service_subjects s on s.id = a.subject_id where p.code = 'CDC-035'""", String.class))
+                .isEqualTo("DTH-H000128");
+        assertThat(demoDb.queryForObject("select count(*) from market_comments", Integer.class)).isEqualTo(3);
+    }
+
     private static DataSource dataSource(String url) {
         return new DriverManagerDataSource(url, POSTGRES.getUsername(), POSTGRES.getPassword());
     }

@@ -12,12 +12,16 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -27,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Đổi mọi lỗi thành {@link ApiError} {@code {code, message}} với mã HTTP thống nhất:
  * 400 dữ liệu gửi lên sai, 401 chưa đăng nhập, 403 không đủ quyền, 404 không tìm thấy,
- * 409 xung đột, 422 vi phạm quy tắc nghiệp vụ, 500 lỗi hệ thống.
+ * 405/415 sai phương thức/định dạng, 409 xung đột, 422 vi phạm quy tắc nghiệp vụ, 500 lỗi hệ thống.
  */
 @Slf4j
 @RestControllerAdvice
@@ -40,6 +44,7 @@ public class GlobalExceptionHandler {
     public static final String FORBIDDEN = "FORBIDDEN";
     public static final String NOT_FOUND = "NOT_FOUND";
     public static final String CONFLICT = "CONFLICT";
+    public static final String FILE_TOO_LARGE = "FILE_TOO_LARGE";
     public static final String INTERNAL_ERROR = "INTERNAL_ERROR";
 
     @ExceptionHandler(BusinessRuleException.class)
@@ -111,9 +116,28 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class,
-            MissingServletRequestParameterException.class, HandlerMethodValidationException.class})
+            MissingServletRequestParameterException.class, MissingServletRequestPartException.class,
+            HandlerMethodValidationException.class})
     ResponseEntity<ApiError> unreadable(Exception ex) {
         return error(HttpStatus.BAD_REQUEST, VALIDATION_ERROR, "Dữ liệu gửi lên sai định dạng hoặc thiếu tham số.");
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    ResponseEntity<ApiError> methodNotAllowed(HttpRequestMethodNotSupportedException ex) {
+        return error(HttpStatus.METHOD_NOT_ALLOWED, VALIDATION_ERROR, "Địa chỉ này không hỗ trợ phương thức đã gọi.");
+    }
+
+    /** Vd. gửi JSON vào API tải ảnh (chỉ nhận multipart/form-data). */
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    ResponseEntity<ApiError> unsupportedMediaType(HttpMediaTypeNotSupportedException ex) {
+        return error(HttpStatus.UNSUPPORTED_MEDIA_TYPE, VALIDATION_ERROR,
+                "Định dạng dữ liệu gửi lên không được hỗ trợ.");
+    }
+
+    /** Vượt {@code spring.servlet.multipart.*} trong application.yml, bị chặn trước khi tới controller. */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    ResponseEntity<ApiError> uploadTooLarge(MaxUploadSizeExceededException ex) {
+        return error(HttpStatus.UNPROCESSABLE_ENTITY, FILE_TOO_LARGE, "Tệp tải lên vượt quá dung lượng cho phép.");
     }
 
     @ExceptionHandler(Exception.class)

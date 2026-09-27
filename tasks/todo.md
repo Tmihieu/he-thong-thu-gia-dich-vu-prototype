@@ -657,13 +657,13 @@
   - **File dự kiến:** `MOB/app/bulky/{new,index,[id]}.tsx`, `MOB/src/features/bulky/validate.ts` + test
   - **Kích thước:** S
 
-- [ ] **T47 — Chợ đồ cũ: backend (bài đăng, bình luận)** · `citizen-app` · M · P0 (§10 bước 7) · **O6 mặc định (không kiểm duyệt)**
+- [x] **T47 — Chợ đồ cũ: backend (bài đăng, bình luận)** · `citizen-app` · M · P0 (§10 bước 7) · **O6 mặc định (không kiểm duyệt)** · **xong 27/09/2026** (test tự động; không có tiêu chí kiểm tay, còn chờ người dùng chốt 4 điểm cuối dòng): mã `CDC-nnn`; API `/api/citizen/market/posts` (danh sách mặc định chỉ bài `OPEN`, lọc `type`; chi tiết kèm bình luận cũ trước; đăng bài; `/{id}/status` chỉ người đăng, người khác → 403; `/{id}/comments`), người đăng/bình luận hiện "tên · tổ", không lộ SĐT; ảnh tải riêng qua `POST /api/citizen/photos` (multipart, lưu ổ đĩa local `vsmt.upload-dir`, không thêm dependency), nhận dạng JPEG/PNG/WebP theo nội dung file, bài chỉ nhận **tên ảnh** đã lưu (không nhận URL tự do), tối đa 5 ảnh theo form prototype; `GET /api/citizen/photos/{name}` chỉ nhận token người dân; ảnh quá 5 MB → 422 `FILE_TOO_LARGE` (một mã cho cả giới hạn multipart của Tomcat lẫn kiểm ở service, T48 bắt mã này), Tomcat đọc bỏ body tới 50 MB để app nhận được 422 thay vì mất kết nối; sai Content-Type/phương thức trả 415/405 `VALIDATION_ERROR` thay vì 500 (toàn app); seed `V20_1` 4 bài + 3 bình luận giả, `CDC-035` của hộ `DTH-H000128` để thử đóng bài; `MarketIT` chạy ngoài transaction của test như server thật (bắt lỗi proxy lười). Khi gộp: `V20` đứng sau `V21` (T45) nên CSDL dev đã migrate tới `V21` phải tạo lại (`docker compose down -v && docker compose up -d db`, dữ liệu chỉ là seed); đã sinh lại `schema.d.ts` web + mobile. **Chờ người dùng chốt:** (1) có cho mở lại bài đã đóng không — code hiện cho đổi qua lại `OPEN`/`CLOSED`, D9 chỉ nói "người đăng tự đóng"; (2) có cho bình luận bài đã đóng không — hiện cho; (3) 5 MB/ảnh và chỉ nhận JPEG/PNG/WebP là giá trị tạm (ảnh HEIC của iPhone bị 422 `PHOTO_TYPE_INVALID` nếu app không đổi sang JPEG); (4) prototype đánh dấu ảnh bắt buộc (*), data dictionary ghi không bắt buộc — backend theo data dictionary
   - **Mô tả:** Tạo `MIG/V20__market.sql` và hai entity: `MarketPost` (tiêu đề, loại Cho tặng / Trao đổi, mô tả, ảnh (tùy C5), nơi nhận, trạng thái, người đăng) và `MarketComment` (bỏ nếu chọn C4). API: danh sách, chi tiết, đăng bài, đổi trạng thái (chỉ chủ bài), bình luận. Không kiểm duyệt (O6). Ảnh: nếu không chọn C5 thì dùng upload multipart lưu ổ đĩa local; **cần hỏi trước** nếu phải thêm dependency.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Đăng bài, xem danh sách/chi tiết, bình luận qua API (IT)
-    - [ ] Chỉ chủ bài đổi được trạng thái bài (IT)
+    - [x] Đăng bài, xem danh sách/chi tiết, bình luận qua API (IT) (`MarketIT`, 9 test)
+    - [x] Chỉ chủ bài đổi được trạng thái bài (IT) (`MarketIT.onlyAuthorChangesStatusAndClosedPostsLeaveDefaultList`)
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=MarketIT`
+    - [x] `cd backend && ./mvnw test -Dtest=MarketIT,DemoSeedIT,GlobalExceptionHandlerTest` (9 + 9 + 10 test); `./mvnw verify` (152 unit + 177 IT); sau khi sinh lại schema: web lint/test/build (116 test), mobile typecheck/jest (60 test)
   - **Phụ thuộc:** T39, H2
   - **File dự kiến:** `MIG/V20__market.sql`, `BE/citizen/domain/{MarketPost,MarketComment}.java` (+ repo), `BE/citizen/service/MarketService.java`, `BE/citizen/api/MarketController.java`, `BT/citizen/MarketIT.java`
   - **Kích thước:** M

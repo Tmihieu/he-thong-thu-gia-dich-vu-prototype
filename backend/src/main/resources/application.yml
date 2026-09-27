@@ -21,9 +21,20 @@ spring:
     locations: classpath:db/migration
   jackson:
     time-zone: Asia/Ho_Chi_Minh
+  servlet:
+    multipart:
+      # Ảnh người dân (PhotoStorage): một ảnh mỗi lần tải, tối đa 5 MB.
+      max-file-size: 5MB
+      max-request-size: 6MB
   autoconfigure:
     # Không dùng tài khoản mặc định của Spring Security; đăng nhập qua AuthService + JWT.
     exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+
+server:
+  tomcat:
+    # Ảnh quá cỡ bị chặn trước khi đọc hết body; mặc định Tomcat chỉ đọc bỏ 2 MB còn lại rồi cắt kết nối, app nhận
+    # "Network request failed" thay vì 422 FILE_TOO_LARGE. Ảnh chụp đầy đủ độ phân giải hiếm khi quá 50 MB.
+    max-swallow-size: 50MB
 
 springdoc:
   swagger-ui:
@@ -40,6 +51,9 @@ vsmt:
   citizen:
     # OTP cố định mô phỏng (O7): không gửi SMS, không phải bí mật; ghi ở docs/demo-accounts.md.
     demo-otp: ${CITIZEN_DEMO_OTP:123456}
+  # Thư mục lưu ảnh người dân tải lên (chợ đồ cũ, rác cồng kềnh); đường dẫn tương đối tính từ thư mục chạy
+  # backend. Không commit (xem .gitignore).
+  upload-dir: ${UPLOAD_DIR:uploads}
 
 ---
 # Profile demo: nạp thêm seed dữ liệu giả (db/seed). Mặc định khi ./mvnw spring-boot:run.

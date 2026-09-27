@@ -12,6 +12,8 @@ Thumbs.db
 
 # Build / phụ thuộc
 backend/target/
+# Ảnh người dân tải lên khi chạy dev (vsmt.upload-dir)
+backend/uploads/
 node_modules/
 dist/
 .expo/

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -84,6 +85,24 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void wrongMethodOrContentTypeReturns405Or415NotServerError() throws Exception {
+        mvc.perform(get("/validate"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.code").value(GlobalExceptionHandler.VALIDATION_ERROR));
+        mvc.perform(post("/validate").contentType(MediaType.TEXT_PLAIN).content("x"))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.code").value(GlobalExceptionHandler.VALIDATION_ERROR));
+    }
+
+    /** Đường thật của ảnh quá cỡ trên Tomcat (MockMvc không áp giới hạn multipart). */
+    @Test
+    void uploadOverMultipartLimitReturns422FileTooLarge() throws Exception {
+        mvc.perform(get("/too-large"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value(GlobalExceptionHandler.FILE_TOO_LARGE));
+    }
+
+    @Test
     void unexpectedErrorReturns500WithoutLeakingDetails() throws Exception {
         mvc.perform(get("/boom"))
                 .andExpect(status().isInternalServerError())
@@ -122,6 +141,11 @@ class GlobalExceptionHandlerTest {
         @PostMapping("/validate")
         String validate(@Valid @RequestBody AmountRequest body) {
             return "ok";
+        }
+
+        @GetMapping("/too-large")
+        String tooLarge() {
+            throw new MaxUploadSizeExceededException(5L * 1024 * 1024);
         }
 
         @GetMapping("/boom")
