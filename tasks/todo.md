@@ -686,7 +686,7 @@
   - **File dự kiến:** `MOB/app/market/{index,new,[id]}.tsx`, `MOB/src/features/market/validate.ts` + test
   - **Kích thước:** M
 
-- [ ] **T49 — `docker compose up --build` chạy db + backend + web; rà seed theo §10** · `platform` · M · P0 (§10 bước 9)
+- [ ] **T49 — `docker compose up --build` chạy db + backend + web; rà seed theo §10** · `platform` · M · P0 (§10 bước 9) · **phần hạ tầng viết xong 27/09/2026 trên nhánh feat/t49-docker (chưa merge main; chưa chạy thử được `docker compose up --build` vì máy hết đĩa, Docker treo); còn rà seed §10 sau T39–T48**
   - **Mô tả:** Viết `backend/Dockerfile` (multi-stage, JRE 21) và `web/Dockerfile` (build Vite + nginx proxy `/api`), thêm service `backend` và `web` vào `docker-compose.yml` (profile `demo`, biến từ `.env`). Rà seed khớp kịch bản §10: có kỳ 10/2026 chưa mở, KV24 chưa phân công, DV01 + người đi thu KV07/KV09, hộ `DTH-H000128` có tài khoản dân; không có dữ liệu thật. Ghi `docs/demo-runbook.md` (lệnh chạy, tài khoản, thứ tự §10). Nếu chọn C7 thì chỉ viết runbook chạy dev.
   - **Tiêu chí nghiệm thu:**
     - [ ] Máy sạch: `docker compose up --build` → web ở http://localhost:5173 (hoặc cổng đã ghi) đăng nhập được

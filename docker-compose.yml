@@ -21,5 +21,31 @@ services:
       retries: 10
       start_period: 10s
 
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: db
+      # Cổng của db trong mạng compose; ${POSTGRES_PORT} là cổng mở ra máy host.
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      CITIZEN_DEMO_OTP: ${CITIZEN_DEMO_OTP:-123456}
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      # App mobile (Expo Go) gọi thẳng backend qua IP LAN của laptop.
+      - "${BACKEND_PORT:-8080}:8080"
+
+  web:
+    build: ./web
+    depends_on:
+      - backend
+    ports:
+      - "${WEB_PORT:-5173}:80"
+
 volumes:
   vsmt-db-data:
