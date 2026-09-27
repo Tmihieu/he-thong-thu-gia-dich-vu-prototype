@@ -63,8 +63,8 @@ function api() {
     'GET /api/remittance/ledger': () =>
       jsonResponse(200, [{ companyId: 1, companyCode: 'DV01', companyName: 'Công ty MTĐT Đông Thạnh', periodId: 10,
         due: 1_600_000, chargeCount: 20, collected: 1_200_000, received: 1_000_000, receiptCount: 1, remaining: 600_000,
-        gap: -200_000, previousDebt: 0, overdue: false, collectionRate: 75, lowCollectionRate: false, progress: 'PARTIAL',
-        reconciliation: 'PENDING' }]),
+        gap: -200_000, previousDebt: 0, overdue: false, collectionRate: 75, lowCollectionRate: false, remittedRate: 62.5,
+        lowRemittedRate: false, progress: 'PARTIAL', reconciliation: 'PENDING' }]),
     'GET /api/collection/cash/held': () =>
       jsonResponse(200, [
         { collectorId: 21, collectorUsername: 'thu07', collectorName: 'Nguyễn Thành Mẫu', collectedCash: 240_000,

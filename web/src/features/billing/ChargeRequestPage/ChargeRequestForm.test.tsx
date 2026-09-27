@@ -88,4 +88,19 @@ describe('ChargeRequestForm', () => {
     expect(await screen.findByLabelText('Đơn giá')).toBeInTheDocument();
     expect(screen.getByText(/giá mặc định 50\.000/)).toBeInTheDocument();
   });
+
+  it('đơn giá nhập tay không bao giờ được gửi là 0', async () => {
+    const onPreview = renderForm();
+    await pickOption(screen.getByRole('combobox', { name: 'Kỳ thu' }), 'Tháng 10/2026 (BG-65-2026)');
+    await pickOption(screen.getByRole('combobox', { name: 'Loại phí' }), 'Phụ phí dịch vụ phát sinh');
+    pickDate(screen.getByLabelText('Hạn hộ đóng'), '25/10/2026');
+    await userEvent.type(await screen.findByLabelText('Đơn giá'), '0');
+    await userEvent.click(screen.getByRole('button', { name: 'Xem trước' }));
+
+    // Ô số (min 1) nâng 0 lên 1 khi rời ô, hoặc form báo lỗi: cách nào cũng không gửi đơn giá 0.
+    await waitFor(() =>
+      expect(onPreview.mock.calls.length > 0 || screen.queryByText('Đơn giá phải lớn hơn 0') !== null).toBe(true),
+    );
+    expect(onPreview).not.toHaveBeenCalledWith(expect.objectContaining({ unitPrice: 0 }));
+  });
 });

@@ -41,6 +41,13 @@ public interface ChargeRepository extends JpaRepository<Charge, Long> {
             + " join fetch c.period p join fetch c.feeType f join fetch c.chargeRequest r where c.id = :id")
     Optional<Charge> findByIdWithDetails(Long id);
 
+    /**
+     * Khóa dòng khoản tới hết transaction (SELECT … FOR UPDATE, chỉ bảng charges): gọi trước khi nạp khoản để
+     * entity đọc sau khóa là bản mới nhất.
+     */
+    @Query(value = "select id from charges where id = :id for update", nativeQuery = true)
+    Optional<Long> lockById(Long id);
+
     @Query("select c from Charge c join fetch c.period p join fetch c.feeType f where c.subject.id = :subjectId"
             + " order by p.startDate desc, f.code, c.id")
     List<Charge> findBySubjectIdWithPeriod(Long subjectId);

@@ -21,6 +21,10 @@ public interface CollectionPeriodRepository extends JpaRepository<CollectionPeri
     @Query("select p from CollectionPeriod p where p.id = :id")
     Optional<CollectionPeriod> findByIdForUpdate(Long id);
 
+    /** Trạng thái kỳ đọc thẳng CSDL, khóa dòng FOR SHARE tới hết transaction (xem PeriodGuard). */
+    @Query(value = "select status from collection_periods where id = :id for share", nativeQuery = true)
+    String lockStatusForShare(Long id);
+
     @Query("select p from CollectionPeriod p join fetch p.tariffVersion where p.id = :id")
     Optional<CollectionPeriod> findByIdWithTariff(Long id);
 

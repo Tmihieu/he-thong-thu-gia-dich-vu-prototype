@@ -21,7 +21,10 @@ function sum(rows: LedgerRow[], key: 'due' | 'collected' | 'received' | 'remaini
   return rows.reduce((t, r) => t + r[key], 0);
 }
 
-/** Tiến độ thu theo công ty và theo tổ (§10 bước 5, R13): trạng thái nộp, cờ tỷ lệ thu dưới 45%, nợ kỳ trước. */
+/**
+ * Tiến độ thu theo công ty và theo tổ (§10 bước 5, R13): trạng thái nộp, nợ kỳ trước, cờ dưới 45% như prototype —
+ * công ty theo đã nộp về xã / phải thu, tổ theo đã thu / phải thu.
+ */
 export function ProgressPage() {
   const [periodId, setPeriodId] = useState<number>();
   const [reminding, setReminding] = useState<number | null>(null);
@@ -91,9 +94,21 @@ export function ProgressPage() {
         columns={[
           { title: 'Công ty', render: (_, r) => `${r.companyCode} · ${r.companyName}` },
           { title: 'Phải thu', dataIndex: 'due', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-          { title: 'Đã thu', dataIndex: 'collected', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-          { title: 'Tỷ lệ thu', render: (_, r) => <Rate rate={r.collectionRate} low={r.lowCollectionRate} /> },
+          {
+            title: 'Đã thu',
+            dataIndex: 'collected',
+            align: 'right',
+            render: (v: number, r) => (
+              <>
+                <MoneyText value={v} />
+                <div>
+                  <Typography.Text type="secondary">{`${r.collectionRate.toLocaleString('vi-VN')}% đã thu`}</Typography.Text>
+                </div>
+              </>
+            ),
+          },
           { title: 'Đã nộp về xã', dataIndex: 'received', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Tỷ lệ nộp', render: (_, r) => <Rate rate={r.remittedRate} low={r.lowRemittedRate} /> },
           { title: 'Còn phải nộp', dataIndex: 'remaining', align: 'right', render: (v: number) => <MoneyText value={v} strong /> },
           {
             title: 'Nợ kỳ trước',

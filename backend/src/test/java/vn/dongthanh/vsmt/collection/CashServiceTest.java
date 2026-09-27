@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -18,6 +19,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -89,6 +91,15 @@ class CashServiceTest {
                 .extracting("code").isEqualTo("HANDOVER_AMOUNT_INVALID");
         assertThatThrownBy(() -> service.handover(21L, -5, null, null, manager))
                 .extracting("code").isEqualTo("HANDOVER_AMOUNT_INVALID");
+    }
+
+    @Test
+    void handoverLocksTheCollectorBeforeReadingCashHeld() {
+        service.handover(21L, 10_000, null, null, manager);
+
+        InOrder order = inOrder(handovers, payments);
+        order.verify(handovers).lockCashOf(21L);
+        order.verify(payments).sumCashByCollector(21L);
     }
 
     @Test

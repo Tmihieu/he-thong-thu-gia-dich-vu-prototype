@@ -9,7 +9,8 @@ import { IssueReceiptForm } from './IssueReceiptForm';
 const row = {
   companyId: 1, companyCode: 'DV01', companyName: 'Công ty MTĐT Đông Thạnh', periodId: 10, due: 1_600_000, chargeCount: 20,
   collected: 1_200_000, received: 1_000_000, receiptCount: 1, remaining: 600_000, gap: -200_000, previousDebt: 0,
-  overdue: false, collectionRate: 75, lowCollectionRate: false, progress: 'PARTIAL' as const, reconciliation: 'PENDING' as const,
+  overdue: false, collectionRate: 75, lowCollectionRate: false, remittedRate: 62.5, lowRemittedRate: false,
+  progress: 'PARTIAL' as const, reconciliation: 'PENDING' as const,
 };
 const norm = { normalizer: (s: string) => s.replace(/\s+/g, ' ').trim() };
 

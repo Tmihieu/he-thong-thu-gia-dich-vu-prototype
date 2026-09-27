@@ -10,6 +10,11 @@ public interface CashHandoverRepository extends JpaRepository<CashHandover, Long
     @Query("select coalesce(sum(h.amount), 0) from CashHandover h where h.collector.id = :collectorId")
     long sumByCollector(Long collectorId);
 
+    /** Khóa theo người đi thu tới hết transaction, để hai lần bàn giao song song không cùng vượt tiền đang giữ. */
+    @Query(value = "select count(*) from pg_advisory_xact_lock("
+            + "hashtext('cash-held-' || cast(:collectorId as text)))", nativeQuery = true)
+    long lockCashOf(Long collectorId);
+
     @Query("select h from CashHandover h join fetch h.collector where h.company.id = :companyId"
             + " and (:collectorId is null or h.collector.id = :collectorId) order by h.handoverDate desc, h.id desc")
     List<CashHandover> findForCompany(Long companyId, Long collectorId);

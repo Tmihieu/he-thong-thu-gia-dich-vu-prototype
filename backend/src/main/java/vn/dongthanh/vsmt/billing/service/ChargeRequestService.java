@@ -44,6 +44,7 @@ import vn.dongthanh.vsmt.masterdata.domain.ServiceContract;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceContractRepository;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubject;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubjectRepository;
+import vn.dongthanh.vsmt.masterdata.service.PeriodGuard;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 import vn.dongthanh.vsmt.platform.common.NotFoundException;
 import vn.dongthanh.vsmt.platform.domain.Role;
@@ -73,6 +74,7 @@ public class ChargeRequestService {
     private final ServiceContractRepository contracts;
     private final ChargeCalculator calculator;
     private final ChargeEligibility eligibility;
+    private final PeriodGuard periodGuard;
     private final AuditService audit;
     private final Clock clock;
 
@@ -92,10 +94,9 @@ public class ChargeRequestService {
     }
 
     private record Plan(CollectionPeriod period, FeeType feeType, Set<Area> scopeAreas, Company scopeCompany,
-            LocalDate issueDate, Long unitPrice, List<Planned> charges, List<SkippedLine> skipped) {
+            LocalDate issueDate, Long unitPrice, List<Planned> charges, long total, List<SkippedLine> skipped) {
 
         IssueResult result(String requestCode) {
-            long total = charges.stream().mapToLong(p -> p.amount().amount()).reduce(0L, Math::addExact);
             int exempt = (int) charges.stream().filter(p -> p.amount().exempt()).count();
             int warnings = (int) skipped.stream().filter(s -> s.reason().warning()).count();
             return new IssueResult(requestCode, charges.size(), exempt, total, warnings, skipped);
@@ -113,6 +114,7 @@ public class ChargeRequestService {
             return plan.result(null);
         }
         CollectionPeriod period = plan.period();
+        periodGuard.requireOpen(period);
         String token = period.documentToken();
         String code = "YCT-%s-%02d".formatted(token, requests.countByPeriodId(period.getId()) + 1);
         ChargeRequest request = requests.save(ChargeRequest.issue(code, period, plan.feeType(), cmd.scopeType(),
@@ -129,6 +131,10 @@ public class ChargeRequestService {
         after.put("period", period.getCode());
         after.put("feeType", plan.feeType().getCode());
         after.put("scope", cmd.scopeType());
+        after.put("areas", plan.scopeAreas().stream().map(Area::getCode).toList());
+        after.put("company", plan.scopeCompany() == null ? null : plan.scopeCompany().getCode());
+        after.put("unitPrice", plan.unitPrice());
+        after.put("issueDate", plan.issueDate());
         after.put("dueDate", cmd.dueDate());
         after.put("chargeCount", result.chargeCount());
         after.put("exemptCount", result.exemptCount());
@@ -145,6 +151,10 @@ public class ChargeRequestService {
         FeeType feeType = feeTypes.findById(cmd.feeTypeId())
                 .filter(FeeType::isActive)
                 .orElseThrow(() -> new NotFoundException("FEE_TYPE_NOT_FOUND", "Không tìm thấy loại phí đang dùng."));
+        if (cmd.dueDate().isBefore(period.getOpenDate())) {
+            throw new BusinessRuleException("CHARGE_DUE_BEFORE_OPEN",
+                    "Hạn hộ đóng không được trước ngày mở kỳ " + period.getCode() + ".");
+        }
         if (cmd.dueDate().isAfter(period.getDueDate())) {
             throw new BusinessRuleException("CHARGE_DUE_AFTER_PERIOD",
                     "Hạn hộ đóng không được sau hạn công ty nộp xã của kỳ " + period.getCode() + ".");
@@ -196,20 +206,27 @@ public class ChargeRequestService {
 
         List<Planned> planned = new ArrayList<>();
         List<SkippedLine> skipped = new ArrayList<>();
+        long total = 0;
         for (ServiceSubject s : inScope) {
             Company company = companyByArea.get(s.getArea().getId());
             Decision d = eligibility.decide(s, contractsBySubject.getOrDefault(s.getId(), List.of()),
                     company == null ? null : company.getId(), coverages.getOrDefault(s.getId(), List.of()), period,
                     issueDate);
             if (d instanceof Eligible e) {
-                planned.add(new Planned(s, e.contract(), company,
-                        calculator.calculate(feeType, period, e.contract(), unitPrice)));
+                try {
+                    ChargeAmount amount = calculator.calculate(feeType, period, e.contract(), unitPrice);
+                    total = Math.addExact(total, amount.amount());
+                    planned.add(new Planned(s, e.contract(), company, amount));
+                } catch (ArithmeticException overflow) {
+                    // Chặn ở kế hoạch nên xem trước cũng báo, và phát hành không ghi gì.
+                    throw new BusinessRuleException("CHARGE_AMOUNT_TOO_LARGE", "Tổng tiền vượt giới hạn tính toán.");
+                }
             } else if (d instanceof Skipped k) {
                 skipped.add(new SkippedLine(s.getId(), s.getCode(), s.getName(), s.getArea().getCode(), k.reason(),
                         k.message()));
             }
         }
-        return new Plan(period, feeType, scopeAreas, scopeCompany, issueDate, unitPrice, planned, skipped);
+        return new Plan(period, feeType, scopeAreas, scopeCompany, issueDate, unitPrice, planned, total, skipped);
     }
 
     @Transactional(readOnly = true)

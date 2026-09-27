@@ -13,8 +13,11 @@ public interface AreaAssignmentRepository extends JpaRepository<AreaAssignment, 
             + " where a.area.id = :areaId order by a.validFrom desc")
     List<AreaAssignment> findHistory(Long areaId);
 
-    /** Phân công có hiệu lực vào ngày {@code date} (mỗi khu vực tối đa một), lọc theo công ty nếu có. */
-    @Query("select a from AreaAssignment a join fetch a.area ar join fetch a.company c"
+    /**
+     * Phân công có hiệu lực vào ngày {@code date} (mỗi khu vực tối đa một), lọc theo công ty nếu có. Nạp luôn địa bàn:
+     * khu vực nạp ở đây là bản dùng chung cho cả transaction, controller còn đọc mã địa bàn sau khi transaction đóng.
+     */
+    @Query("select a from AreaAssignment a join fetch a.area ar join fetch ar.district join fetch a.company c"
             + " where a.validFrom <= :date and (a.validTo is null or a.validTo >= :date)"
             + " and (:companyId is null or c.id = :companyId) order by ar.code")
     List<AreaAssignment> findActiveOn(LocalDate date, Long companyId);

@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -177,6 +178,35 @@ class ChargeRequestServiceIT extends IntegrationTest {
 
         assertThat(jdbc.queryForList("select code from charges order by code", String.class))
                 .containsExactly("KT-1026-DTH-H000128-EX", "KT-1026-DTH-H000129-EX", "KT-1026-DTH-H000130-EX");
+        Map<String, Object> audit = jdbc.queryForMap("select after_data ->> 'unitPrice' as price,"
+                + " after_data ->> 'areas' as areas, after_data ->> 'company' as company,"
+                + " after_data ->> 'issueDate' as issued from audit_logs where action = 'ISSUE_CHARGE_REQUEST'");
+        assertThat(audit).containsEntry("price", "150000").containsEntry("areas", "[\"KV07\"]")
+                .containsEntry("issued", "2026-10-01");
+        assertThat(audit.get("company")).isNull();
+    }
+
+    @Test
+    void totalOverflowIs422AlreadyInPreviewAndNothingIsIssued() throws Exception {
+        // Mỗi khoản vừa kiểu long, nhưng cộng hai khoản không miễn là tràn.
+        String body = request(october, extra, "ALL", "\"unitPrice\":9223372036854775807,", "2026-10-25");
+        preview(officer, body)
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("CHARGE_AMOUNT_TOO_LARGE"))
+                .andExpect(jsonPath("$.message").value("Tổng tiền vượt giới hạn tính toán."));
+        publish(officer, body)
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("CHARGE_AMOUNT_TOO_LARGE"));
+        assertThat(count("charges")).isZero();
+        assertThat(count("charge_requests")).isZero();
+    }
+
+    @Test
+    void enteredPriceZeroIs422() throws Exception {
+        preview(officer, request(october, extra, "ALL", "\"unitPrice\":0,", "2026-10-25"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("CHARGE_PRICE_INVALID"))
+                .andExpect(jsonPath("$.message").value("Đơn giá phải lớn hơn 0."));
     }
 
     @Test
@@ -203,6 +233,11 @@ class ChargeRequestServiceIT extends IntegrationTest {
         preview(officer, request(october, env, "ALL", "", "2026-11-05"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("CHARGE_DUE_AFTER_PERIOD"));
+        // Ngày mở kỳ 10/2026 là 01/10 (mở kỳ không nhập ngày mở): trước đó bị chặn như form web.
+        publish(officer, request(october, env, "ALL", "", "2026-09-30"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("CHARGE_DUE_BEFORE_OPEN"));
+        preview(officer, request(october, env, "ALL", "", "2026-10-01")).andExpect(status().isOk());
         preview(officer, request(october, env, "AREAS", "\"areaIds\":[],", "2026-10-25"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("CHARGE_SCOPE_INVALID"));

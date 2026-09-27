@@ -43,11 +43,11 @@ public class AreaProgressService {
             long subjectCount) {
 
         public double collectionRate() {
-            return due == 0 ? 0.0 : Math.round(collected * 1000.0 / due) / 10.0;
+            return CompanyLedgerService.percent(collected, due);
         }
 
         public boolean lowCollectionRate() {
-            return due > 0 && collectionRate() < CompanyLedgerService.LOW_RATE_PERCENT;
+            return due > 0 && CompanyLedgerService.lowRate(collected, due);
         }
     }
 

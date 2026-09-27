@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -23,6 +24,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -39,12 +41,14 @@ import vn.dongthanh.vsmt.collection.domain.PaymentMethod;
 import vn.dongthanh.vsmt.collection.domain.PaymentRepository;
 import vn.dongthanh.vsmt.collection.domain.VisitResult;
 import vn.dongthanh.vsmt.collection.service.CollectionService;
+import vn.dongthanh.vsmt.collection.service.CollectionService.CitizenPaymentCommand;
 import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentCommand;
 import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentOutcome;
 import vn.dongthanh.vsmt.collection.service.CollectionService.VisitCommand;
 import vn.dongthanh.vsmt.collection.service.CollectorAssignmentService;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
+import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository;
 import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.masterdata.domain.District;
 import vn.dongthanh.vsmt.masterdata.domain.FeeType;
@@ -57,6 +61,7 @@ import vn.dongthanh.vsmt.masterdata.domain.SubjectType;
 import vn.dongthanh.vsmt.masterdata.domain.TariffGroup;
 import vn.dongthanh.vsmt.masterdata.domain.TariffStatus;
 import vn.dongthanh.vsmt.masterdata.domain.TariffVersion;
+import vn.dongthanh.vsmt.masterdata.service.PeriodGuard;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 import vn.dongthanh.vsmt.platform.common.NotFoundException;
 import vn.dongthanh.vsmt.platform.domain.Role;
@@ -73,9 +78,11 @@ class CollectionServiceTest {
     final ChargeRepository charges = mock(ChargeRepository.class);
     final CollectorAssignmentService scope = mock(CollectorAssignmentService.class);
     final UserRepository users = mock(UserRepository.class);
+    final CollectionPeriodRepository periods = mock(CollectionPeriodRepository.class);
     final AuditService audit = mock(AuditService.class);
     final Clock clock = Clock.fixed(Instant.parse("2026-10-12T10:40:00Z"), ZoneId.of("Asia/Ho_Chi_Minh"));
-    final CollectionService service = new CollectionService(payments, visits, charges, scope, users, audit, clock);
+    final CollectionService service = new CollectionService(payments, visits, charges, scope, users,
+            new PeriodGuard(periods), audit, clock);
 
     final Company dv01 = withId(Company.create("DV01", "Công ty Một", "A", "0900000001", LocalDate.of(2026, 1, 1)), 1L);
     final CurrentUser collector = new CurrentUser(21L, "thu07", Role.COLLECTOR, 1L);
@@ -88,6 +95,8 @@ class CollectionServiceTest {
     void setUp() {
         TariffVersion bg = TariffVersion.create("BG", "QĐ", LocalDate.of(2026, 9, 1), null, TariffStatus.ACTIVE);
         october = CollectionPeriod.open(PeriodType.MONTH, 2026, 10, null, LocalDate.of(2026, 10, 31), bg);
+        // Trạng thái kỳ đọc lại từ CSDL (FOR SHARE) giả lập bằng trạng thái của entity.
+        when(periods.lockStatusForShare(any())).thenAnswer(inv -> october.getStatus().name());
         charge = newCharge(new ChargeAmount(TariffGroup.HH_3_PLUS, 80_000, 1, 80_000, false), 900L);
         when(charges.findByIdWithDetails(900L)).thenReturn(Optional.of(charge));
         when(payments.save(any(Payment.class))).thenAnswer(inv -> {
@@ -120,8 +129,48 @@ class CollectionServiceTest {
         ArgumentCaptor<Map<String, Object>> after = ArgumentCaptor.forClass(Map.class);
         verify(audit).record(eq(collector), eq("RECORD_PAYMENT"), eq("Charge"), eq(charge.getCode()), before.capture(),
                 after.capture());
-        assertThat(before.getValue()).containsEntry("status", ChargeStatus.UNPAID).containsEntry("paidAmount", 0L);
-        assertThat(after.getValue()).containsEntry("status", ChargeStatus.PAID).containsEntry("paidAmount", 80_000L);
+        assertThat(before.getValue()).containsEntry("status", ChargeStatus.UNPAID).containsEntry("paidAmount", 0L)
+                .containsEntry("chargeAmount", 80_000L);
+        assertThat(after.getValue()).containsEntry("status", ChargeStatus.PAID).containsEntry("paidAmount", 80_000L)
+                .containsEntry("chargeAmount", 80_000L).containsEntry("paymentAmount", 80_000L);
+    }
+
+    @Test
+    void auditKeepsChargeAmountApartFromThisPaymentAmount() {
+        service.recordPayment(cash(30_000, "req-1"), collector);
+        service.recordCitizenPayment(new CitizenPaymentCommand(900L, 128L, 77L, "0902000001", 50_000, "app-1"));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> staffAfter = ArgumentCaptor.forClass(Map.class);
+        verify(audit).record(eq(collector), eq("RECORD_PAYMENT"), eq("Charge"), eq(charge.getCode()), any(),
+                staffAfter.capture());
+        assertThat(staffAfter.getValue()).containsEntry("chargeAmount", 80_000L).containsEntry("paymentAmount", 30_000L)
+                .containsEntry("paidAmount", 30_000L).doesNotContainKey("amount");
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> citizenBefore = ArgumentCaptor.forClass(Map.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> citizenAfter = ArgumentCaptor.forClass(Map.class);
+        verify(audit).recordCitizen(eq("0902000001"), eq("RECORD_CITIZEN_PAYMENT"), eq("Charge"), eq(charge.getCode()),
+                citizenBefore.capture(), citizenAfter.capture());
+        assertThat(citizenBefore.getValue()).containsEntry("chargeAmount", 80_000L)
+                .containsEntry("paidAmount", 30_000L);
+        assertThat(citizenAfter.getValue()).containsEntry("chargeAmount", 80_000L)
+                .containsEntry("paymentAmount", 50_000L).containsEntry("paidAmount", 80_000L).doesNotContainKey("amount");
+    }
+
+    @Test
+    void chargeRowIsLockedBeforeItIsLoadedAndBeforeTheRequestIdIsChecked() {
+        service.recordPayment(cash(30_000, "req-1"), collector);
+        service.recordCitizenPayment(new CitizenPaymentCommand(900L, 128L, 77L, "0902000001", 50_000, "app-1"));
+
+        InOrder order = inOrder(charges, payments);
+        order.verify(charges).lockById(900L);
+        order.verify(charges).findByIdWithDetails(900L);
+        order.verify(payments).findByClientRequestId("req-1");
+        order.verify(charges).lockById(900L);
+        order.verify(charges).findByIdWithDetails(900L);
+        order.verify(payments).findByClientRequestId("app-1");
     }
 
     @Test
@@ -202,6 +251,29 @@ class CollectionServiceTest {
         assertThatThrownBy(() -> service.recordVisit(visit(VisitResult.APPOINTMENT, null, "v-4"), collector))
                 .extracting("code").isEqualTo("VISIT_REVISIT_DATE_REQUIRED");
         verify(audit, never()).record(any(), anyString(), anyString(), any(), any(), any());
+    }
+
+    @Test
+    void replayIsReturnedOnlyInsideTheCallersScope() {
+        CollectionVisit firstVisit = service.recordVisit(visit(VisitResult.ABSENT, null, "v-1"), collector).visit();
+        when(visits.findByClientRequestId("v-1")).thenReturn(Optional.of(firstVisit));
+        Payment first = service.recordPayment(cash(80_000, "req-1"), collector).payment();
+        when(payments.findByClientRequestId("req-1")).thenReturn(Optional.of(first));
+
+        CurrentUser otherCollector = new CurrentUser(22L, "thu09", Role.COLLECTOR, 1L);
+        doThrow(new NotFoundException("CHARGE_NOT_FOUND", "x")).when(scope).requireInScope(charge, otherCollector);
+        assertThatThrownBy(() -> service.recordPayment(cash(80_000, "req-1"), otherCollector))
+                .isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> service.recordVisit(visit(VisitResult.ABSENT, null, "v-1"), otherCollector))
+                .isInstanceOf(NotFoundException.class);
+
+        CurrentUser otherCompany = new CurrentUser(6L, "dv07", Role.COMPANY_MANAGER, 7L);
+        assertThatThrownBy(() -> service.recordPayment(cash(80_000, "req-1"), otherCompany))
+                .isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> service.recordVisit(visit(VisitResult.ABSENT, null, "v-1"), otherCompany))
+                .isInstanceOf(NotFoundException.class);
+
+        assertThat(service.recordPayment(cash(80_000, "req-1"), collector).replayed()).isTrue();
     }
 
     @Test

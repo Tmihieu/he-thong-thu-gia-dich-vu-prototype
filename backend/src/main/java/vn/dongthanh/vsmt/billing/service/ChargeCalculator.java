@@ -15,7 +15,7 @@ import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
  * Quy tắc R1, tính số tiền một khoản (không đụng CSDL):
  * <ul>
  * <li>Phí theo biểu giá: đơn giá tháng của nhóm giá (theo biểu giá gắn với kỳ) × (kỳ quý ? 3 : 1).</li>
- * <li>Phí giá cố định: giá nhập, không nhập thì giá mặc định; luôn 1 tháng.</li>
+ * <li>Phí giá cố định: giá nhập (phải &gt; 0), không nhập thì giá mặc định; luôn 1 tháng.</li>
  * <li>Hợp đồng miễn 100%: số tiền 0 (vẫn chụp đơn giá).</li>
  * </ul>
  * Tiền là số nguyên VND; tràn số báo lỗi thay vì quay vòng.
@@ -37,8 +37,8 @@ public class ChargeCalculator {
                     .getMonthlyTotal();
             months = period.getPeriodType() == PeriodType.QUARTER ? 3 : 1;
         } else {
-            if (enteredPrice != null && enteredPrice < 0) {
-                throw new BusinessRuleException("CHARGE_PRICE_INVALID", "Đơn giá không được âm.");
+            if (enteredPrice != null && enteredPrice <= 0) {
+                throw new BusinessRuleException("CHARGE_PRICE_INVALID", "Đơn giá phải lớn hơn 0.");
             }
             unitPrice = enteredPrice != null ? enteredPrice : feeType.getDefaultPrice();
             months = 1;

@@ -82,8 +82,8 @@ public class ChargeEligibility {
         return new Eligible(contract.get(), companyIdOnIssue);
     }
 
-    /** Chặn lập khoản cho kỳ đã khóa. */
+    /** Chặn lập khoản cho kỳ đã khóa (theo kỳ đã nạp; phát hành còn khóa dòng kỳ qua {@link PeriodGuard}). */
     public static void requireBillable(CollectionPeriod period) {
-        PeriodGuard.requireOpen(period);
+        PeriodGuard.requireOpenAsLoaded(period);
     }
 }

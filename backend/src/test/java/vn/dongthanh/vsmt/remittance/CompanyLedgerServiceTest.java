@@ -25,6 +25,7 @@ import vn.dongthanh.vsmt.masterdata.domain.CompanyRepository;
 import vn.dongthanh.vsmt.masterdata.domain.PeriodType;
 import vn.dongthanh.vsmt.masterdata.domain.TariffStatus;
 import vn.dongthanh.vsmt.masterdata.domain.TariffVersion;
+import vn.dongthanh.vsmt.remittance.service.AreaProgressService.AreaProgress;
 import vn.dongthanh.vsmt.remittance.service.CompanyLedgerService;
 import vn.dongthanh.vsmt.remittance.service.CompanyLedgerService.LedgerRow;
 import vn.dongthanh.vsmt.remittance.service.LedgerQueries;
@@ -90,6 +91,33 @@ class CompanyLedgerServiceTest {
         assertThat(r.lowCollectionRate()).isFalse();
         assertThat(rows.get(1).collectionRate()).isZero();
         assertThat(rows.get(1).lowCollectionRate()).isTrue();
+        assertThat(r.remittedRate()).isEqualTo(62.5);
+        assertThat(r.lowRemittedRate()).isFalse();
+        assertThat(rows.get(1).remittedRate()).isZero();
+        assertThat(rows.get(1).lowRemittedRate()).isTrue();
+    }
+
+    @Test
+    void companyFlagFollowsRemittedAndRatesAreComparedExactlyNotAfterRounding() {
+        // Công ty đã thu 75% nhưng mới nộp 359.999 / 800.000 = 44,9999% (hiện "45,0"): cờ công ty bật theo đã nộp.
+        due(10L, 1L, 800_000, 10);
+        when(queries.collectedByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 600_000, 8)));
+        when(remitted.receivedByCompany(10L)).thenReturn(Map.of(1L, new RemittedTotals.Received(359_999, 1)));
+        LedgerRow row = service("2026-10-15").row(1L, 10L);
+        assertThat(row.collectionRate()).isEqualTo(75.0);
+        assertThat(row.lowCollectionRate()).isFalse();
+        assertThat(row.remittedRate()).isEqualTo(45.0);
+        assertThat(row.lowRemittedRate()).isTrue();
+
+        when(remitted.receivedByCompany(10L)).thenReturn(Map.of(1L, new RemittedTotals.Received(360_000, 1)));
+        assertThat(service("2026-10-15").row(1L, 10L).lowRemittedRate()).isFalse();
+        when(queries.collectedByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 359_999, 5)));
+        assertThat(service("2026-10-15").row(1L, 10L).lowCollectionRate()).isTrue();
+
+        // Cấp tổ vẫn theo đã thu / phải thu.
+        assertThat(new AreaProgress(null, null, 800_000, 359_999, 10, 5, 10).lowCollectionRate()).isTrue();
+        assertThat(new AreaProgress(null, null, 800_000, 360_000, 10, 5, 10).lowCollectionRate()).isFalse();
+        assertThat(new AreaProgress(null, null, 0, 0, 0, 0, 10).lowCollectionRate()).isFalse();
     }
 
     @Test

@@ -67,7 +67,7 @@ public class CompanyReceiptService {
         actor.requireRole(Role.COMMUNE_OFFICER);
         CollectionPeriod period = periods.findByIdForUpdate(cmd.periodId())
                 .orElseThrow(() -> new NotFoundException("PERIOD_NOT_FOUND", "Không tìm thấy kỳ thu."));
-        PeriodGuard.requireOpen(period);
+        PeriodGuard.requireOpenAsLoaded(period);
         Company company = companies.findById(cmd.companyId())
                 .orElseThrow(() -> new NotFoundException("COMPANY_NOT_FOUND", "Không tìm thấy công ty."));
         LocalDate today = LocalDate.now(clock);

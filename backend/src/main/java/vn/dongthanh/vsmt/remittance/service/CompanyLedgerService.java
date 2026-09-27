@@ -33,6 +33,8 @@ import vn.dongthanh.vsmt.remittance.service.RemittedTotals.Received;
  * <li>Công ty đã thu (R8, G4): Σ thanh toán. Đã nộp về xã (R7): Σ phiếu thu. Còn phải nộp = phải thu − đã nộp.</li>
  * <li>Nợ kỳ trước (R9–R11): Σ max(0, phải thu − đã nộp) các kỳ khác đã hết hạn. Quá hạn: hạn kỳ &lt; hôm nay và còn nộp.</li>
  * <li>Tiến độ (R13) và đối soát (R14, chênh lệch = đã nộp − đã thu) như prototype.</li>
+ * <li>Cờ dưới 45% ở cấp công ty (màn tiến độ của xã) tính theo đã nộp về xã / phải thu như prototype; tỷ lệ đã thu
+ * và cờ của nó vẫn giữ cho màn tổng quan của công ty.</li>
  * </ul>
  */
 @Service
@@ -40,7 +42,7 @@ import vn.dongthanh.vsmt.remittance.service.RemittedTotals.Received;
 @Transactional(readOnly = true)
 public class CompanyLedgerService {
 
-    static final double LOW_RATE_PERCENT = 45.0;
+    static final long LOW_RATE_PERCENT = 45;
 
     private final LedgerQueries queries;
     private final RemittedTotals remitted;
@@ -50,8 +52,8 @@ public class CompanyLedgerService {
 
     public record LedgerRow(Long companyId, String companyCode, String companyName, Long periodId, long due,
             long chargeCount, long collected, long received, long receiptCount, long remaining, long gap,
-            long previousDebt, boolean overdue, double collectionRate, boolean lowCollectionRate, Progress progress,
-            Reconciliation reconciliation) {
+            long previousDebt, boolean overdue, double collectionRate, boolean lowCollectionRate, double remittedRate,
+            boolean lowRemittedRate, Progress progress, Reconciliation reconciliation) {
     }
 
     /** Mọi công ty có khoản, thanh toán, phiếu thu trong kỳ hoặc còn nợ kỳ trước; sắp theo mã công ty. */
@@ -142,7 +144,6 @@ public class CompanyLedgerService {
         long gap = received - collected;
         boolean pastDue = period.getDueDate().isBefore(today);
         boolean overdue = pastDue && remaining > 0;
-        double rate = due == 0 ? 0.0 : Math.round(collected * 1000.0 / due) / 10.0;
 
         Progress progress;
         if (remaining <= 0) {
@@ -165,9 +166,21 @@ public class CompanyLedgerService {
             reconciliation = Reconciliation.MATCHED;
         }
 
+        // Phải thu 0 thì tỷ lệ 0% và vẫn gắn cờ, như prototype.
         return new LedgerRow(company.getId(), company.getCode(), company.getName(), period.getId(), due, chargeCount,
-                collected, received, receiptCount, remaining, gap, previousDebt, overdue, rate,
-                rate < LOW_RATE_PERCENT, progress, reconciliation);
+                collected, received, receiptCount, remaining, gap, previousDebt, overdue, percent(collected, due),
+                due == 0 || lowRate(collected, due), percent(received, due), due == 0 || lowRate(received, due),
+                progress, reconciliation);
+    }
+
+    /** Phần trăm làm tròn 1 chữ số để hiển thị; 0 khi phải thu 0. */
+    static double percent(long part, long due) {
+        return due == 0 ? 0.0 : Math.round(part * 1000.0 / due) / 10.0;
+    }
+
+    /** Dưới 45%, so bằng số nguyên (không so số đã làm tròn: 44,96% hiện "45,0" nhưng vẫn thấp). */
+    static boolean lowRate(long part, long due) {
+        return part * 100 < LOW_RATE_PERCENT * due;
     }
 
     private Map<Long, Long> previousDebts(Long currentPeriodId, LocalDate today) {

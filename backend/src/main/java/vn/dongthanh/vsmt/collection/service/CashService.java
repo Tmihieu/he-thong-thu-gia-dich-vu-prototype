@@ -71,6 +71,9 @@ public class CashService {
         if (handoverDate.isAfter(today)) {
             throw new BusinessRuleException("HANDOVER_DATE_INVALID", "Ngày bàn giao không được sau hôm nay.");
         }
+        // Lần bàn giao song song cho cùng người chờ lần trước commit rồi mới tính. Ghi thu tiền mặt không cần khóa này:
+        // nó chỉ làm tiền đang giữ tăng, nên số tính ở đây không bao giờ lớn hơn thực tế.
+        handovers.lockCashOf(collector.getId());
         long held = payments.sumCashByCollector(collector.getId()) - handovers.sumByCollector(collector.getId());
         if (amount <= 0 || amount > held) {
             throw new BusinessRuleException("HANDOVER_AMOUNT_INVALID", "Số tiền bàn giao phải lớn hơn 0 và không vượt"

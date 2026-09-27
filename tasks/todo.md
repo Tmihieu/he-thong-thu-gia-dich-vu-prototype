@@ -529,6 +529,7 @@
   - [ ] §10 bước 8: khóa kỳ khi còn nợ bị chặn, có lý do
   - [ ] Coverage service `billing`/`collection`/`remittance` ≥ 80% (nếu có JaCoCo, G10)
   - [ ] `/agent-skills:review` trên toàn bộ luồng tiền; sửa các phát hiện mức Critical/Important trước khi sang tuần 4
+    - Review luồng tiền 28/09/2026 (nhánh `fix/money-concurrency`): đã sửa I1–I3 (khóa kỳ FOR SHARE khi ghi, khóa dòng khoản khi thu, khóa người đi thu khi bàn giao), M2–M5 (M3: tràn tổng tiền → 422 `CHARGE_AMOUNT_TOO_LARGE`), M8, audit thu tiền tách `chargeAmount`/`paymentAmount`, nạp sẵn địa bàn cho area-progress và tìm hồ sơ hộ của công ty; người dùng chốt: I4 chặn đơn giá nhập tay 0 đ (422, web min 1), cờ < 45% cấp công ty theo đã nộp về xã / phải thu (màn tiến độ hiện % đã nộp), cấp tổ giữ đã thu / phải thu; còn M6, M7, M9 ghi nhận
 
 ---
 

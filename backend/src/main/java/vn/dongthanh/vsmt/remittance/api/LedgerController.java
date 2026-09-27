@@ -89,14 +89,17 @@ public class LedgerController {
             @Schema(requiredMode = RequiredMode.REQUIRED) boolean overdue,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã thu / phải thu (%)") double collectionRate,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Tỷ lệ thu dưới 45%") boolean lowCollectionRate,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã nộp về xã / phải thu (%)") double remittedRate,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Tỷ lệ đã nộp dưới 45% (cờ ở màn tiến độ)")
+            boolean lowRemittedRate,
             @Schema(requiredMode = RequiredMode.REQUIRED) Progress progress,
             @Schema(requiredMode = RequiredMode.REQUIRED) Reconciliation reconciliation) {
 
         static LedgerRowDto of(LedgerRow r) {
             return new LedgerRowDto(r.companyId(), r.companyCode(), r.companyName(), r.periodId(), r.due(),
                     r.chargeCount(), r.collected(), r.received(), r.receiptCount(), r.remaining(), r.gap(),
-                    r.previousDebt(), r.overdue(), r.collectionRate(), r.lowCollectionRate(), r.progress(),
-                    r.reconciliation());
+                    r.previousDebt(), r.overdue(), r.collectionRate(), r.lowCollectionRate(), r.remittedRate(),
+                    r.lowRemittedRate(), r.progress(), r.reconciliation());
         }
     }
 }

@@ -134,10 +134,15 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
           <DatePicker format="DD/MM/YYYY" placeholder="dd/mm/yyyy" />
         </Form.Item>
         {feeType?.pricingMode === 'FIXED' && (
-          <Form.Item label="Đơn giá (đ)" name="unitPrice" extra={`Để trống thì dùng giá mặc định ${feeType.defaultPrice?.toLocaleString('vi-VN') ?? ''} đ`}>
+          <Form.Item
+            label="Đơn giá (đ)"
+            name="unitPrice"
+            extra={`Để trống thì dùng giá mặc định ${feeType.defaultPrice?.toLocaleString('vi-VN') ?? ''} đ`}
+            rules={[{ type: 'number', min: 1, message: 'Đơn giá phải lớn hơn 0' }]}
+          >
             <InputNumber<number>
               aria-label="Đơn giá"
-              min={0}
+              min={1}
               step={1000}
               style={{ width: 200 }}
               formatter={(v) => (v === undefined || v === null || `${v}` === '' ? '' : Number(v).toLocaleString('vi-VN'))}

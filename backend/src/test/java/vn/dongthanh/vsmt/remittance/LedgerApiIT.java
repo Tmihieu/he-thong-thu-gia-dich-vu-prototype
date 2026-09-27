@@ -57,6 +57,8 @@ class LedgerApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$[0].gap").value(-80_000))
                 .andExpect(jsonPath("$[0].collectionRate").value(25.0))
                 .andExpect(jsonPath("$[0].lowCollectionRate").value(true))
+                .andExpect(jsonPath("$[0].remittedRate").value(0.0))
+                .andExpect(jsonPath("$[0].lowRemittedRate").value(true))
                 .andExpect(jsonPath("$[0].progress").value("NOT_PAID"))
                 .andExpect(jsonPath("$[0].reconciliation").value("PENDING"))
                 .andExpect(jsonPath("$[1].due").value(160_000));

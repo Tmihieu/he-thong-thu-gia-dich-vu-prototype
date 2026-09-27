@@ -83,11 +83,13 @@ class ChargeCalculatorTest {
                 .isEqualTo(new ChargeAmount(null, 150_000L, 1, 150_000L, false));
         assertThat(calculator.calculate(extra, october, contract(TariffGroup.HH_3_PLUS, false), null))
                 .isEqualTo(new ChargeAmount(null, 50_000L, 1, 50_000L, false));
-        assertThat(calculator.calculate(extra, october, contract(TariffGroup.HH_3_PLUS, false), 0L).amount()).isZero();
     }
 
     @Test
-    void negativeEnteredPriceIsRejected() {
+    void zeroOrNegativeEnteredPriceIsRejected() {
+        assertThatThrownBy(() -> calculator.calculate(extra, october, contract(TariffGroup.HH_3_PLUS, false), 0L))
+                .hasMessage("Đơn giá phải lớn hơn 0.")
+                .extracting("code").isEqualTo("CHARGE_PRICE_INVALID");
         assertThatThrownBy(() -> calculator.calculate(extra, october, contract(TariffGroup.HH_3_PLUS, false), -1L))
                 .extracting("code").isEqualTo("CHARGE_PRICE_INVALID");
     }

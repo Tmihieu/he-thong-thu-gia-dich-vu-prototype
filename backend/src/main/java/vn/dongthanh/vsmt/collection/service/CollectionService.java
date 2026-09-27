@@ -37,8 +37,9 @@ import vn.dongthanh.vsmt.platform.service.AuditService;
 /**
  * Ghi nhận kết quả thu (R20, G4): thanh toán tiền mặt / chuyển khoản và lượt ghé không thu được.
  * Người đi thu chỉ ghi cho khoản trong tổ được giao; quản lý công ty ghi thay cho hộ của công ty mình (phải chọn
- * người đi thu đang giữ tiền). Gửi lại cùng {@code clientRequestId} trả kết quả cũ. Khoản chuyển Đã thu khi tổng
- * thanh toán bằng số tiền khoản; thu vượt số còn thiếu bị chặn. Kỳ đã khóa hoặc khoản miễn thì không ghi được.
+ * người đi thu đang giữ tiền). Gửi lại cùng {@code clientRequestId} trả kết quả cũ (sau khi kiểm phạm vi). Khoản
+ * chuyển Đã thu khi tổng thanh toán bằng số tiền khoản; thu vượt số còn thiếu bị chặn. Kỳ đã khóa hoặc khoản miễn thì
+ * không ghi được.
  */
 @Service
 @RequiredArgsConstructor
@@ -52,6 +53,7 @@ public class CollectionService {
     private final ChargeRepository charges;
     private final CollectorAssignmentService scope;
     private final UserRepository users;
+    private final PeriodGuard periodGuard;
     private final AuditService audit;
     private final Clock clock;
 
@@ -80,11 +82,14 @@ public class CollectionService {
 
     public PaymentOutcome recordPayment(PaymentCommand cmd, CurrentUser actor) {
         actor.requireRole(Role.COLLECTOR, Role.COMPANY_MANAGER);
+        // Khóa dòng khoản TRƯỚC khi nạp: lần thu song song cùng khoản chờ lần trước commit rồi mới đọc trạng thái,
+        // tổng đã thu và clientRequestId, nên không thu vượt và gửi trùng thì trả bản ghi cũ.
+        charges.lockById(cmd.chargeId());
+        Charge charge = loadInScope(cmd.chargeId(), actor);
         Optional<Payment> existing = payments.findByClientRequestId(cmd.clientRequestId());
         if (existing.isPresent()) {
             return replay(existing.get(), cmd.chargeId());
         }
-        Charge charge = loadInScope(cmd.chargeId(), actor);
         requireCollectable(charge);
         if (cmd.method() == PaymentMethod.APP_SIMULATED) {
             throw new BusinessRuleException("PAYMENT_METHOD_INVALID",
@@ -108,12 +113,12 @@ public class CollectionService {
                 .note(blankToNull(cmd.note())).clientRequestId(cmd.clientRequestId())
                 .build());
         long paidAfter = paidBefore + cmd.amount();
-        if (paidAfter == charge.getAmount()) {
+        if (paidAfter >= charge.getAmount()) {
             charge.markPaid(now);
         }
         Map<String, Object> after = state(charge, paidAfter);
         after.put("payment", code);
-        after.put("amount", cmd.amount());
+        after.put("paymentAmount", cmd.amount());
         after.put("method", cmd.method());
         audit.record(actor, "RECORD_PAYMENT", ENTITY, charge.getCode(), before, after);
         return new PaymentOutcome(payment, charge, paidAfter, charge.getAmount() - paidAfter, false);
@@ -124,6 +129,10 @@ public class CollectionService {
      * còn thiếu (công ty vừa thu một phần thì app phải tải lại), trả đủ thì khoản chuyển Đã thu.
      */
     public PaymentOutcome recordCitizenPayment(CitizenPaymentCommand cmd) {
+        charges.lockById(cmd.chargeId());
+        Charge charge = charges.findByIdWithDetails(cmd.chargeId())
+                .filter(c -> c.getSubject().getId().equals(cmd.subjectId()))
+                .orElseThrow(() -> new NotFoundException("CHARGE_NOT_FOUND", "Không tìm thấy khoản thu."));
         Optional<Payment> existing = payments.findByClientRequestId(cmd.clientRequestId());
         if (existing.isPresent()) {
             if (!Objects.equals(existing.get().getCitizenAccountId(), cmd.citizenAccountId())) {
@@ -131,9 +140,6 @@ public class CollectionService {
             }
             return replay(existing.get(), cmd.chargeId());
         }
-        Charge charge = charges.findByIdWithDetails(cmd.chargeId())
-                .filter(c -> c.getSubject().getId().equals(cmd.subjectId()))
-                .orElseThrow(() -> new NotFoundException("CHARGE_NOT_FOUND", "Không tìm thấy khoản thu."));
         requireCollectable(charge);
 
         long paidBefore = payments.sumByChargeId(charge.getId());
@@ -153,7 +159,7 @@ public class CollectionService {
         charge.markPaid(now);
         Map<String, Object> after = state(charge, charge.getAmount());
         after.put("payment", code);
-        after.put("amount", remaining);
+        after.put("paymentAmount", remaining);
         after.put("method", PaymentMethod.APP_SIMULATED);
         audit.recordCitizen(cmd.citizenPhone(), "RECORD_CITIZEN_PAYMENT", ENTITY, charge.getCode(), before, after);
         return new PaymentOutcome(payment, charge, charge.getAmount(), 0, false);
@@ -175,6 +181,7 @@ public class CollectionService {
 
     public VisitOutcome recordVisit(VisitCommand cmd, CurrentUser actor) {
         actor.requireRole(Role.COLLECTOR, Role.COMPANY_MANAGER);
+        Charge charge = loadInScope(cmd.chargeId(), actor);
         Optional<CollectionVisit> existing = visits.findByClientRequestId(cmd.clientRequestId());
         if (existing.isPresent()) {
             if (!existing.get().getCharge().getId().equals(cmd.chargeId())) {
@@ -182,7 +189,6 @@ public class CollectionService {
             }
             return new VisitOutcome(existing.get(), true);
         }
-        Charge charge = loadInScope(cmd.chargeId(), actor);
         requireCollectable(charge);
         if (cmd.result() == VisitResult.APPOINTMENT && cmd.revisitDate() == null) {
             throw new BusinessRuleException("VISIT_REVISIT_DATE_REQUIRED", "Hẹn lại phải có ngày hẹn.");
@@ -239,8 +245,8 @@ public class CollectionService {
         return charge;
     }
 
-    private static void requireCollectable(Charge charge) {
-        PeriodGuard.requireOpen(charge.getPeriod());
+    private void requireCollectable(Charge charge) {
+        periodGuard.requireOpen(charge.getPeriod());
         if (charge.getStatus() == ChargeStatus.EXEMPT) {
             throw new BusinessRuleException("CHARGE_EXEMPT", "Khoản " + charge.getCode() + " được miễn, không thu.");
         }
@@ -271,7 +277,7 @@ public class CollectionService {
     private static Map<String, Object> state(Charge charge, long paid) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("status", charge.getStatus());
-        m.put("amount", charge.getAmount());
+        m.put("chargeAmount", charge.getAmount());
         m.put("paidAmount", paid);
         return m;
     }

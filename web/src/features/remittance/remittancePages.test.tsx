@@ -17,11 +17,12 @@ const periods = [
 const dv01 = {
   companyId: 1, companyCode: 'DV01', companyName: 'Công ty MTĐT Đông Thạnh', periodId: 10, due: 1_600_000, chargeCount: 20,
   collected: 1_200_000, received: 1_000_000, receiptCount: 1, remaining: 600_000, gap: -200_000, previousDebt: 0,
-  overdue: false, collectionRate: 75, lowCollectionRate: false, progress: 'PARTIAL', reconciliation: 'PENDING',
+  overdue: false, collectionRate: 75, lowCollectionRate: false, remittedRate: 62.5, lowRemittedRate: false, progress: 'PARTIAL',
+  reconciliation: 'PENDING',
 };
 const dv07 = { ...dv01, companyId: 7, companyCode: 'DV07', companyName: 'Công ty Xanh Sài Gòn', due: 800_000, collected: 200_000,
   received: 0, receiptCount: 0, remaining: 800_000, gap: -200_000, previousDebt: 150_000, collectionRate: 25,
-  lowCollectionRate: true, progress: 'OVERDUE', reconciliation: 'MISMATCH' };
+  lowCollectionRate: true, remittedRate: 0, lowRemittedRate: true, progress: 'OVERDUE', reconciliation: 'MISMATCH' };
 const areas = [
   { areaId: 7, areaCode: 'KV07', areaName: 'Tổ dân phố 07', districtCode: 'DTH', companyId: 1, companyCode: 'DV01', due: 800_000,
     collected: 640_000, chargeCount: 10, paidCount: 8, subjectCount: 10, collectionRate: 80, lowCollectionRate: false, noCompany: false },
@@ -62,6 +63,25 @@ describe('Tiến độ thu', () => {
     await userEvent.click(screen.getAllByRole('button', { name: /mở rộng|expand/i })[0]!);
     expect(await screen.findByText('KV07 · Tổ dân phố 07')).toBeInTheDocument();
     expect(screen.getByText('8/10')).toBeInTheDocument();
+  });
+
+  it('cờ dưới 45% của công ty theo đã nộp về xã / phải thu, hiện % đã nộp; % đã thu nằm ở cột Đã thu', async () => {
+    // Đã thu 75% (không thấp) nhưng mới nộp 37,5%: cờ phải bật.
+    const dv03 = { ...dv01, companyId: 3, companyCode: 'DV03', companyName: 'Công ty Ba', due: 800_000, collected: 600_000,
+      received: 300_000, remaining: 500_000, gap: -300_000, collectionRate: 75, lowCollectionRate: false,
+      remittedRate: 37.5, lowRemittedRate: true };
+    mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
+      'GET /api/masterdata/periods': () => jsonResponse(200, periods),
+      'GET /api/remittance/ledger': () => jsonResponse(200, [dv03]),
+      'GET /api/remittance/area-progress': () => jsonResponse(200, []),
+    });
+    renderApp('/commune/progress');
+
+    const row = (await screen.findByText('DV03 · Công ty Ba')).closest('tr')!;
+    expect(within(row).getByText('37,5%')).toBeInTheDocument();
+    expect(within(row).getByText('75% đã thu')).toBeInTheDocument();
+    expect(row.querySelector('.ant-progress-status-exception')).not.toBeNull();
   });
 });
 
