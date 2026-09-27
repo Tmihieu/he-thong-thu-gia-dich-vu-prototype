@@ -724,12 +724,15 @@
   - **File dự kiến:** `BE/platform/service/UserAdminService.java`, `BE/platform/api/UserAdminController.java`, `BT/platform/UserAdminIT.java`, `WEB/features/platform/AccountsPage/{AccountsPage.tsx,AccountForm.test.tsx}`
   - **Kích thước:** M
 
-- [ ] **T52 — Màn nhật ký (xem audit log)** · `platform` · S · P2 (C2)
+- [ ] **T52 — Màn nhật ký (xem audit log)** · `platform` · S · P2 (C2) · **code xong 27/09/2026, chờ kiểm chứng ở bước gộp và người dùng xem tay**: `AuditLogQueryService.search` chỉ cho ADMIN; lọc ngày theo giờ Việt Nam, `to` gồm trọn ngày; tên đăng nhập "chứa chuỗi" so bằng `locate` (không `like`) nên `_`/`%` trong `canbo_xa…` không thành ký tự đại diện; hành động so đúng mã; mới nhất trước, sắp xếp cố định ở server. Web `/admin/logs`: mã hành động và loại đối tượng hiện nhãn tiếng Việt (`WEB/features/platform/labels.ts`; nhãn đối tượng lấy theo tiêu đề entity trong data dictionary, nhãn hành động theo chữ trên nút các màn; mã chưa có nhãn thì hiện nguyên mã, di chuột lên nhãn thấy mã), lọc hành động bằng danh sách chọn có tìm kiếm; mở dòng xem JSON trước/sau; vai trò `CITIZEN`/`SYSTEM` có nhãn. **Task sau thêm mã audit mới (T47, T53…) thì bổ sung nhãn vào `labels.ts`.**
   - **Mô tả:** `GET /api/platform/audit-logs` (ADMIN, lọc theo thời gian/người/hành động, phân trang). Web: bảng nhật ký, xem trước/sau.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Lập phiếu thu xong thấy dòng `ISSUE_COMPANY_RECEIPT` kèm trước/sau
-    - [ ] Không phải ADMIN → 403 (IT)
-  - **Kiểm chứng:** `cd backend && ./mvnw test -Dtest=AuditLogApiIT`; web lint/test/build
+    - [x] Lập phiếu thu xong thấy dòng `ISSUE_COMPANY_RECEIPT` kèm trước/sau (phiếu thu là tạo mới nên "trước" rỗng theo data dictionary; `RECORD_PAYMENT` có đủ trước/sau — `AuditLogApiIT` kiểm cả hai) (kiểm chứng ở bước gộp)
+    - [x] Không phải ADMIN → 403 (`AuditLogApiIT.nonAdminIsForbidden`) (kiểm chứng ở bước gộp)
+  - **Kiểm chứng:**
+    - [ ] `cd backend && ./mvnw verify` (gồm `AuditLogApiIT`: lọc ngày giờ VN bằng mốc cố định 23:59/00:00, `_` không là ký tự đại diện, phân trang)
+    - [ ] `cd web && npm run gen:api && npm run lint && npm test && npm run build` (test `AuditLogPage.test.tsx`: nhãn tiếng Việt, chọn hành động gửi đúng mã)
+    - [ ] Thủ công: đăng nhập quản trị, mở "Nhật ký", lọc theo ngày/người/hành động, mở một dòng xem trước/sau
   - **Phụ thuộc:** T07, T08
   - **File dự kiến:** `BE/platform/api/AuditLogController.java`, `BT/platform/AuditLogApiIT.java`, `WEB/features/platform/AuditLogPage/AuditLogPage.tsx`
   - **Kích thước:** S

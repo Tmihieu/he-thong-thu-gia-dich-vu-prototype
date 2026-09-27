@@ -13,6 +13,7 @@ import { AreasPage } from '../features/masterdata/AreasPage/AreasPage';
 import { ConfigPage } from '../features/masterdata/ConfigPage';
 import { SubjectsPage } from '../features/masterdata/SubjectsPage/SubjectsPage';
 import { NotificationCenterPage } from '../features/notifications/NotificationCenterPage';
+import { AuditLogPage } from '../features/platform/AuditLogPage/AuditLogPage';
 import { ProgressPage } from '../features/remittance/ProgressPage/ProgressPage';
 import { ReconciliationPage } from '../features/remittance/ReconciliationPage/ReconciliationPage';
 import { LoginPage } from './auth/LoginPage';
@@ -25,6 +26,7 @@ import { NotFoundPage, RootRedirect, UnderConstructionPage } from './pages/Statu
 /** Màn đã làm, theo `vai trò:đường dẫn menu`; màn chưa có trong đây hiển thị "Đang xây dựng". */
 const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'ADMIN:config': <ConfigPage />,
+  'ADMIN:logs': <AuditLogPage />,
   'COMMUNE_OFFICER:areas': <AreasPage />,
   'COMMUNE_OFFICER:subjects': <SubjectsPage />,
   'COMMUNE_OFFICER:charges': <ChargesHubPage />,

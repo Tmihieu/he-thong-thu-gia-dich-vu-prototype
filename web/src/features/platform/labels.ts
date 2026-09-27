@@ -1,0 +1,41 @@
+/** Nhãn mã hành động backend ghi vào nhật ký; mã mới chưa có ở đây thì màn nhật ký hiện nguyên mã. */
+export const AUDIT_ACTION_LABELS: Record<string, string> = {
+  ASSIGN_AREA: 'Phân công khu vực cho công ty',
+  ASSIGN_COLLECTOR: 'Phân tổ cho người đi thu',
+  END_COLLECTOR_ASSIGNMENT: 'Kết thúc phân tổ',
+  CREATE_SUBJECT: 'Thêm đối tượng',
+  UPDATE_SUBJECT: 'Sửa đối tượng',
+  END_SUBJECT: 'Ngừng cung cấp dịch vụ',
+  CREATE_CONTRACT: 'Đăng ký dịch vụ',
+  UPDATE_CONTRACT: 'Sửa đăng ký dịch vụ',
+  OPEN_PERIOD: 'Mở kỳ thu',
+  START_COLLECTING_PERIOD: 'Bắt đầu thu',
+  LOCK_PERIOD: 'Khóa kỳ thu',
+  ISSUE_CHARGE_REQUEST: 'Phát hành phiếu yêu cầu thu',
+  RECORD_PAYMENT: 'Ghi nhận thanh toán',
+  RECORD_CITIZEN_PAYMENT: 'Người dân thanh toán trên app',
+  RECEIVE_CASH_HANDOVER: 'Nhận bàn giao tiền mặt',
+  ISSUE_COMPANY_RECEIPT: 'Lập phiếu thu cho công ty',
+  REPORT_RECEIPT_ISSUE: 'Báo sai sót phiếu thu',
+  RESOLVE_RECEIPT_ISSUE: 'Xử lý sai sót phiếu thu',
+  CREATE_PAYMENT_REMINDER: 'Gửi nhắc nộp',
+  QUOTE_BULKY_FEE: 'Báo phí rác cồng kềnh',
+  COLLECT_BULKY: 'Thu gom rác cồng kềnh',
+  CANCEL_BULKY: 'Từ chối yêu cầu rác cồng kềnh',
+};
+
+/** Tên đối tượng theo tiêu đề entity trong data dictionary. */
+export const AUDIT_ENTITY_LABELS: Record<string, string> = {
+  AreaAssignment: 'Phân công khu vực cho công ty',
+  CollectorAssignment: 'Phân tổ cho người đi thu',
+  ServiceSubject: 'Đối tượng sử dụng dịch vụ',
+  ServiceContract: 'Đăng ký dịch vụ',
+  CollectionPeriod: 'Kỳ thu',
+  ChargeRequest: 'Phiếu yêu cầu thu',
+  Charge: 'Khoản phải thu của hộ',
+  CashHandover: 'Bàn giao tiền mặt',
+  CompanyReceipt: 'Phiếu thu xã lập cho công ty',
+  ReceiptIssue: 'Báo sai sót phiếu thu',
+  PaymentReminder: 'Nhắc nộp',
+  BulkyWasteRequest: 'Đăng ký thu gom rác cồng kềnh',
+};
