@@ -127,7 +127,8 @@ export function useBulkyRequest(id: number) {
     queryKey: citizenKeys.bulkyOne(id),
     queryFn: () => citizenApi.bulkyRequest(id),
     enabled: Number.isFinite(id),
-    refetchInterval: 30_000,
+    // Đã thu gom / đã hủy thì không còn gì để chờ.
+    refetchInterval: (q) => (q.state.data?.status === 'PENDING' || q.state.data?.status === 'QUOTED' ? 30_000 : false),
   });
 }
 
@@ -139,6 +140,8 @@ function useBulkyMutation<V>(fn: (v: V) => Promise<BulkyRequest>) {
       queryClient.setQueryData(citizenKeys.bulkyOne(r.id), r);
       void queryClient.invalidateQueries({ queryKey: citizenKeys.bulky, exact: true });
     },
+    // Lỗi thường do công ty vừa đổi trạng thái: tải lại để thẻ thao tác không còn hiện sai.
+    onError: () => void queryClient.invalidateQueries({ queryKey: citizenKeys.bulky }),
   });
 }
 

@@ -43,7 +43,8 @@ function useBulkyMutation<V>(fn: (v: V) => Promise<BulkyRequest>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: fn,
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: bulkyKeys.all }),
+    // Cả khi lỗi: yêu cầu có thể vừa bị hộ hủy, tải lại để bỏ nút thao tác cũ.
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: bulkyKeys.all }),
   });
 }
 

@@ -201,6 +201,40 @@ class BulkyWasteIT extends IntegrationTest {
     }
 
     @Test
+    void photoUrlsMustBeHttpLinks() throws Exception {
+        for (String photos : new String[] {"[null]", "[\"javascript:alert(1)\"]", "[\"https://a.vn/x\\ny.jpg\"]",
+                "[\"https://a.vn/" + "x".repeat(500) + "\"]"}) {
+            citizen(citizenA, post("/api/citizen/bulky-requests"),
+                    "{\"itemType\": \"DEBRIS\", \"quantity\": 1, \"preferredDate\": \"2026-10-18\", \"photoUrls\": " + photos + "}")
+                    .andExpect(status().isBadRequest());
+        }
+        citizen(citizenA, post("/api/citizen/bulky-requests"),
+                "{\"itemType\": \"DEBRIS\", \"quantity\": 1, \"preferredDate\": \"2026-10-18\", \"photoUrls\": [\"https://a.vn/x.jpg\"]}")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.photoUrls[0]").value("https://a.vn/x.jpg"));
+    }
+
+    @Test
+    void companyNotificationsGoToManagersOnly() throws Exception {
+        long id = create(citizenA);
+        citizen(citizenA, post("/api/citizen/bulky-requests/{id}/cancel", id), "{\"reason\": \"Đã tự xử lý\"}")
+                .andExpect(status().isOk());
+        assertThat(jdbc.queryForList("select recipient_role from notifications where recipient_company_id = ?",
+                String.class, fx.dv01.getId())).hasSize(2).containsOnly("COMPANY_MANAGER");
+    }
+
+    @Test
+    void quoteOnCancelledRequestReportsStatusInVietnameseBeforeDate() throws Exception {
+        long id = create(citizenA);
+        citizen(citizenA, post("/api/citizen/bulky-requests/{id}/cancel", id), "{\"reason\": \"Đã tự xử lý\"}")
+                .andExpect(status().isOk());
+        internal(fx.dv01Manager, post("/api/bulky-requests/{id}/quote", id), "{\"fee\": 150000, \"scheduledDate\": \"2026-09-30\"}")
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("BULKY_STATUS_INVALID"))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("\"Đã hủy\"")));
+    }
+
+    @Test
     void areaWithoutCompanyIsRejected() throws Exception {
         Area kv24 = areas.save(Area.create("KV24", "Tổ 24", fx.kv07.getDistrict()));
         ServiceSubject orphan = ServiceSubject.create("NB-H000999", SubjectType.HOUSEHOLD, "Hộ chưa có công ty", "Số 9", kv24);

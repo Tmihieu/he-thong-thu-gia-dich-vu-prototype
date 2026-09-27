@@ -103,6 +103,15 @@ class CitizenApiNoTransactionIT extends IntegrationTest {
                 "{\"itemType\":\"MATTRESS\",\"quantity\":1,\"preferredDate\":\"2026-10-18\"}")).get("id").asLong();
         ok(get("/api/citizen/bulky-requests")).andExpect(jsonPath("$[0].companyName").isNotEmpty());
         ok(get("/api/citizen/bulky-requests/" + bulkyId)).andExpect(jsonPath("$.areaCode").value("KV07"));
+
+        // Màn công ty (T45) cũng dựng DTO ngoài transaction.
+        String dv01 = fx.bearer(fx.dv01Manager);
+        long quotedId = body(ok(post("/api/citizen/bulky-requests"),
+                "{\"itemType\":\"FURNITURE\",\"quantity\":2,\"preferredDate\":\"2026-10-18\"}")).get("id").asLong();
+        company(dv01, get("/api/bulky-requests")).andExpect(jsonPath("$[0].subjectCode").value("DTH-H000001"));
+        company(dv01, post("/api/bulky-requests/" + quotedId + "/quote").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"fee\":150000}")).andExpect(jsonPath("$.status").value("QUOTED"));
+        company(dv01, post("/api/bulky-requests/" + quotedId + "/collected")).andExpect(jsonPath("$.status").value("COLLECTED"));
         ok(post("/api/citizen/bulky-requests/" + bulkyId + "/cancel"), "{\"reason\":\"Đã tự xử lý\"}")
                 .andExpect(jsonPath("$.status").value("CANCELLED"));
     }
@@ -114,6 +123,11 @@ class CitizenApiNoTransactionIT extends IntegrationTest {
     private org.springframework.test.web.servlet.ResultActions ok(MockHttpServletRequestBuilder req, String content)
             throws Exception {
         return ok(req.contentType(MediaType.APPLICATION_JSON).content(content));
+    }
+
+    private org.springframework.test.web.servlet.ResultActions company(String bearer, MockHttpServletRequestBuilder req)
+            throws Exception {
+        return mvc.perform(req.header(HttpHeaders.AUTHORIZATION, bearer)).andExpect(status().isOk());
     }
 
     private JsonNode body(org.springframework.test.web.servlet.ResultActions result) throws Exception {

@@ -129,10 +129,10 @@ public class BulkyWasteRequest extends BaseEntity {
         this.status = BulkyStatus.CANCELLED;
     }
 
-    private void requireStatus(BulkyStatus expected, String action) {
+    public void requireStatus(BulkyStatus expected, String action) {
         if (status != expected) {
             throw new BusinessRuleException("BULKY_STATUS_INVALID",
-                    "Yêu cầu " + code + " đang ở trạng thái " + status + ", không " + action + " được.");
+                    "Yêu cầu " + code + " đang ở trạng thái \"" + status.label() + "\", không " + action + " được.");
         }
     }
 }

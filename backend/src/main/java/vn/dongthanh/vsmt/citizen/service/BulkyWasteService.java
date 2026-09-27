@@ -79,7 +79,7 @@ public class BulkyWasteService {
                 .address(address != null ? address : subject.getAddress()).preferredDate(cmd.preferredDate())
                 .preferredSlot(cmd.preferredSlot()).photoUrls(joinUrls(cmd.photoUrls())).company(company)
                 .build());
-        notifications.publish(NotificationCommand.toCompany(company.getId(), null, NotificationKind.INFO,
+        notifications.publish(NotificationCommand.toCompany(company.getId(), Role.COMPANY_MANAGER, NotificationKind.INFO,
                 "Yêu cầu rác cồng kềnh mới " + request.getCode() + " · " + subject.getCode(),
                 cmd.quantity() + " × " + itemLabel(cmd.itemType()) + " · mong muốn " + cmd.preferredDate().format(VN_DATE)
                         + " · " + request.getAddress(),
@@ -103,7 +103,7 @@ public class BulkyWasteService {
     public BulkyWasteRequest cancelByCitizen(CurrentCitizen citizen, Long id, String reason) {
         BulkyWasteRequest request = getOfCitizen(citizen, id);
         request.cancel(reason);
-        notifications.publish(NotificationCommand.toCompany(request.getCompany().getId(), null, NotificationKind.INFO,
+        notifications.publish(NotificationCommand.toCompany(request.getCompany().getId(), Role.COMPANY_MANAGER, NotificationKind.INFO,
                 "Hộ hủy yêu cầu rác cồng kềnh " + request.getCode(), "Lý do: " + request.getCancelReason(),
                 link(COMPANY_SCREEN, request)), null);
         return request;
@@ -118,6 +118,7 @@ public class BulkyWasteService {
 
     public BulkyWasteRequest quote(Long id, long fee, LocalDate scheduledDate, CurrentUser actor) {
         BulkyWasteRequest request = loadForCompany(id, actor);
+        request.requireStatus(BulkyStatus.PENDING, "báo phí");
         LocalDate scheduled = scheduledDate != null ? scheduledDate : request.getPreferredDate();
         if (scheduled.isBefore(LocalDate.now(clock))) {
             throw new BusinessRuleException("BULKY_DATE_PAST", "Ngày hẹn thu gom không được trước hôm nay.");

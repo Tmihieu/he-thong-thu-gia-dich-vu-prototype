@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import vn.dongthanh.vsmt.citizen.domain.BulkyItemType;
@@ -25,12 +26,14 @@ public final class BulkyDtos {
 
     public record CreateBulkyRequest(
             @NotNull(message = "không được để trống") BulkyItemType itemType,
-            @Size(max = 255) String itemDescription,
-            @Min(value = 1, message = "phải từ 1 trở lên") @Max(99) int quantity,
-            @Schema(description = "Để trống = địa chỉ hộ") @Size(max = 255) String address,
+            @Size(max = 255, message = "tối đa 255 ký tự") String itemDescription,
+            @Min(value = 1, message = "phải từ 1 trở lên") @Max(value = 99, message = "tối đa 99") int quantity,
+            @Schema(description = "Để trống = địa chỉ hộ") @Size(max = 255, message = "tối đa 255 ký tự") String address,
             @NotNull(message = "không được để trống") LocalDate preferredDate,
             DaySlot preferredSlot,
-            @Schema(description = "Đường dẫn ảnh (tùy chọn, chưa có upload trong demo)") @Size(max = 5) List<String> photoUrls) {
+            @Schema(description = "Đường dẫn ảnh (tùy chọn, chưa có upload trong demo)") @Size(max = 5, message = "tối đa 5 ảnh")
+            List<@NotBlank(message = "không được để trống") @Size(max = 500, message = "tối đa 500 ký tự")
+                    @Pattern(regexp = "https?://\\S+", message = "phải là đường dẫn http(s)") String> photoUrls) {
     }
 
     public record QuoteBulkyRequest(
@@ -39,7 +42,7 @@ public final class BulkyDtos {
     }
 
     public record CancelBulkyRequest(
-            @NotBlank(message = "không được để trống") @Size(max = 255) String reason) {
+            @NotBlank(message = "không được để trống") @Size(max = 255, message = "tối đa 255 ký tự") String reason) {
     }
 
     public record BulkyRequestDto(
