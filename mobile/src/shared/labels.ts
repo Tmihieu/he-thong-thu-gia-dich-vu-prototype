@@ -83,3 +83,26 @@ export const COMPLAINT_EVENT_LABELS: Record<ComplaintEventType, string> = {
   COMPANY_REPLIED: 'Công ty phản hồi',
   CLOSED: 'Xã đóng phản ánh',
 };
+
+export type BulkyItemType = Schemas['BulkyRequestDto']['itemType'];
+export type BulkyStatus = Schemas['BulkyRequestDto']['status'];
+export type DaySlot = NonNullable<Schemas['BulkyRequestDto']['preferredSlot']>;
+
+export const BULKY_ITEM_LABELS: Record<BulkyItemType, string> = {
+  MATTRESS: 'Nệm, chăn ga khối lớn',
+  FURNITURE: 'Tủ, bàn, ghế, sofa',
+  LARGE_APPLIANCE: 'Thiết bị điện lớn (tủ lạnh, máy giặt)',
+  DEBRIS: 'Xà bần, cành cây lớn',
+};
+
+export const BULKY_STATUS_LABELS: Record<BulkyStatus, string> = {
+  PENDING: 'Chờ công ty báo phí',
+  QUOTED: 'Đã báo phí',
+  COLLECTED: 'Đã thu gom',
+  CANCELLED: 'Đã hủy',
+};
+
+export const DAY_SLOT_LABELS: Record<DaySlot, string> = {
+  MORNING: 'Buổi sáng',
+  AFTERNOON: 'Buổi chiều',
+};

@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ApiError } from '../../api/client';
 import { useSession } from '../../features/auth/SessionProvider';
-import { summarizeCharges, useCharges, useComplaints, useProfile } from '../../features/citizen/api';
+import { BulkyCard } from '../../features/bulky/BulkyCard';
+import { summarizeCharges, useBulkyRequests, useCharges, useComplaints, useProfile } from '../../features/citizen/api';
 import { ComplaintCard } from '../../features/complaints/ComplaintCard';
 import { formatDate, formatMoney, initials } from '../../shared/format';
 import { colors, radius, spacing } from '../../shared/theme';
@@ -16,7 +17,7 @@ type IconName = keyof typeof Ionicons.glyphMap;
 const SHORTCUTS: { label: string; icon: IconName; href: Href }[] = [
   { label: 'Khoản phí\nphải đóng', icon: 'wallet-outline', href: '/charges' },
   { label: 'Gửi phản ánh\nkiến nghị', icon: 'chatbubble-ellipses-outline', href: '/complaints/new' },
-  { label: 'Đăng ký\nrác cồng kềnh', icon: 'cube-outline', href: { pathname: '/coming-soon', params: { title: 'Rác cồng kềnh' } } },
+  { label: 'Đăng ký\nrác cồng kềnh', icon: 'cube-outline', href: '/bulky' },
   { label: 'Chợ\nđồ cũ', icon: 'storefront-outline', href: '/market' },
   { label: 'Lịch\nthu gom', icon: 'calendar-outline', href: '/schedule' },
   { label: 'Xác nhận\nthanh toán', icon: 'receipt-outline', href: '/confirmations' },
@@ -28,15 +29,18 @@ export default function HomeScreen() {
   const profile = useProfile();
   const charges = useCharges();
   const complaints = useComplaints();
+  const bulky = useBulkyRequests();
   const summary = summarizeCharges(charges.data);
   const latestComplaint = complaints.data?.[0] ?? null;
   const openComplaint = latestComplaint && latestComplaint.status !== 'RESOLVED' ? latestComplaint : null;
+  const openBulky = bulky.data?.find((r) => r.status === 'PENDING' || r.status === 'QUOTED') ?? null;
   const subject = profile.data?.subject;
   const refreshing = profile.isFetching || charges.isFetching;
   const refresh = () => {
     void profile.refetch();
     void charges.refetch();
     void complaints.refetch();
+    void bulky.refetch();
   };
 
   return (
@@ -122,7 +126,8 @@ export default function HomeScreen() {
           </Pressable>
         ) : null}
         {openComplaint ? <ComplaintCard c={openComplaint} /> : null}
-        {summary.overdueCount === 0 && !openComplaint ? (
+        {openBulky ? <BulkyCard r={openBulky} /> : null}
+        {summary.overdueCount === 0 && !openComplaint && !openBulky ? (
           <Card>
             <Text style={styles.cardStrong}>Không có việc cần xử lý</Text>
             <Text style={styles.cardText}>Phản ánh đang xử lý và rác cồng kềnh đã đăng ký sẽ hiện ở đây.</Text>

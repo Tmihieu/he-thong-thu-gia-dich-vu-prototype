@@ -644,13 +644,14 @@
   - **File dự kiến:** `MIG/V21__…sql`, `BE/citizen/domain/BulkyWasteRequest.java` (+ repo), `BE/citizen/service/BulkyWasteService.java` + `api/BulkyWasteController.java`, `BT/citizen/BulkyWasteIT.java`, `WEB/features/citizen/BulkyRequestsPage/{BulkyRequestsPage.tsx,QuoteForm.test.tsx}`
   - **Kích thước:** M
 
-- [ ] **T46 — Mobile: đăng ký rác cồng kềnh và theo dõi trạng thái** · `citizen-app` · S · P0 (§10 bước 7)
+- [ ] **T46 — Mobile: đăng ký rác cồng kềnh và theo dõi trạng thái** · `citizen-app` · S · P0 (§10 bước 7) · **code xong 27/09/2026 trừ ảnh, chờ người dùng kiểm tay**: chọn ngày mong muốn bằng 14 ô ngày từ hôm nay (không thêm thư viện lịch), buổi sáng/chiều tùy chọn; chi tiết poll 30 giây để thấy công ty báo phí; dân hủy kèm lý do khi chưa thu gom; yêu cầu đang mở hiện ở "Việc của bạn" trang chủ; thông báo `citizen.bulkyDetail` mở đúng yêu cầu. **Còn thiếu ảnh:** chờ T47 (luồng B) đưa `/api/citizen/photos` + `expo-image-picker` vào `main`, khi đó thêm chọn ảnh ở form và đường cho công ty xem ảnh (xem ghi chú T45)
   - **Mô tả:** Form đăng ký (4 loại vật dụng, số lượng, địa chỉ mặc định theo hộ, ngày mong muốn, ảnh theo C5). Danh sách và chi tiết có trạng thái và phí công ty báo.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Dân đăng ký → DV01 báo phí trên web → app hiện "Đã báo phí" kèm số tiền
-    - [ ] Validation form (ngày mong muốn ≥ hôm nay, số lượng > 0) có test Jest
+    - [ ] Dân đăng ký → DV01 báo phí trên web → app hiện "Đã báo phí" kèm số tiền — API đã kiểm bằng `BulkyWasteIT`; chờ người dùng chạy tay (SĐT `0902000128`, OTP `123456`, web `dv01`)
+    - [x] Validation form (ngày mong muốn ≥ hôm nay, số lượng > 0) có test Jest (`features/bulky/validate.test.ts`)
   - **Kiểm chứng:**
-    - [ ] `cd mobile && npm run gen:api && npm test`; thủ công §10 bước 7 (phần rác cồng kềnh)
+    - [x] `cd mobile && npm run gen:api && npm test` (60 test) + `npm run typecheck` + `expo export`
+    - [ ] Thủ công §10 bước 7 (phần rác cồng kềnh) — chờ người dùng
   - **Phụ thuộc:** T45, T41
   - **File dự kiến:** `MOB/app/bulky/{new,index,[id]}.tsx`, `MOB/src/features/bulky/validate.ts` + test
   - **Kích thước:** S
