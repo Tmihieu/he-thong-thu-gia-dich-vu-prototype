@@ -27,6 +27,8 @@ class VietnameseMoneyWordsTest {
             "4200000|Bốn triệu hai trăm nghìn đồng",
             "1266000|Một triệu hai trăm sáu mươi sáu nghìn đồng",
             "1000001|Một triệu không trăm linh một đồng",
+            "1005000|Một triệu không trăm linh năm nghìn đồng",
+            "21000000|Hai mươi mốt triệu đồng",
             "2000500000|Hai tỷ năm trăm nghìn đồng",
             "3000000000000|Ba nghìn tỷ đồng",
     })
