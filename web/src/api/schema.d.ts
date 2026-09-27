@@ -835,6 +835,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/platform/audit-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Nhật ký thao tác (quản trị), mới nhất trước. Lọc theo ngày giờ Việt Nam (gồm trọn ngày 'to'), tên đăng nhập người thao tác (chứa chuỗi), mã hành động (đúng mã) */
+        get: operations["search_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/notifications": {
         parameters: {
             query?: never;
@@ -2396,6 +2413,35 @@ export interface components {
             lowCollectionRate: boolean;
             /** @description Tổ chưa có công ty (R13) */
             noCompany: boolean;
+        };
+        AuditLogDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: date-time */
+            occurredAt: string;
+            actorUsername: string;
+            /** @description Vai trò lúc thao tác; SYSTEM cho tác vụ tự động */
+            actorRole: string;
+            /** @example ISSUE_COMPANY_RECEIPT */
+            action: string;
+            /** @example CompanyReceipt */
+            entityType: string;
+            /** @example PT-CT-1026-001 */
+            entityId: string;
+            /** @description JSON trạng thái trước */
+            beforeData: string | null;
+            /** @description JSON trạng thái sau */
+            afterData: string | null;
+            ipAddress: string | null;
+        };
+        AuditLogPageDto: {
+            items: components["schemas"]["AuditLogDto"][];
+            /** Format: int64 */
+            total: number;
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
         };
         NotificationPageDto: {
             items: components["schemas"]["NotificationDto"][];
@@ -4268,6 +4314,33 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MeResponse"];
+                };
+            };
+        };
+    };
+    search_1: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+                actorUsername?: string;
+                action?: string;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AuditLogPageDto"];
                 };
             };
         };
