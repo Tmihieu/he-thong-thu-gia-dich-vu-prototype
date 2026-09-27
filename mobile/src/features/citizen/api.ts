@@ -12,6 +12,9 @@ export type OtpRequestResponse = S['OtpRequestResponse'];
 export type PaymentConfirmation = S['PaymentConfirmationDto'];
 export type CitizenPaymentResponse = S['CitizenPaymentResponse'];
 export type CitizenSchedule = S['CitizenScheduleDto'];
+export type CitizenComplaint = S['CitizenComplaintDto'];
+export type CitizenComplaintDetail = S['CitizenComplaintDetailDto'];
+export type SubmitComplaintRequest = S['SubmitComplaintRequest'];
 
 export const citizenApi = {
   requestOtp: (phone: string) => api.post<OtpRequestResponse>('/api/citizen/auth/otp/request', { phone }),
@@ -24,6 +27,9 @@ export const citizenApi = {
   confirmations: () => api.get<PaymentConfirmation[]>('/api/citizen/payments'),
   confirmation: (id: number) => api.get<PaymentConfirmation>(`/api/citizen/payments/${id}/confirmation`),
   schedule: () => api.get<CitizenSchedule>('/api/citizen/schedule'),
+  complaints: () => api.get<CitizenComplaint[]>('/api/citizen/complaints'),
+  complaint: (id: number) => api.get<CitizenComplaintDetail>(`/api/citizen/complaints/${id}`),
+  submitComplaint: (body: SubmitComplaintRequest) => api.post<CitizenComplaintDetail>('/api/citizen/complaints', body),
 };
 
 export const citizenKeys = {
@@ -33,6 +39,8 @@ export const citizenKeys = {
   confirmations: ['citizen', 'confirmations'] as const,
   confirmation: (id: number) => ['citizen', 'confirmations', id] as const,
   schedule: ['citizen', 'schedule'] as const,
+  complaints: ['citizen', 'complaints'] as const,
+  complaint: (id: number) => ['citizen', 'complaints', id] as const,
 };
 
 export function useProfile() {
@@ -61,6 +69,31 @@ export function useConfirmation(id: number) {
 
 export function useSchedule() {
   return useQuery({ queryKey: citizenKeys.schedule, queryFn: citizenApi.schedule, staleTime: 10 * 60_000 });
+}
+
+export function useComplaints() {
+  return useQuery({ queryKey: citizenKeys.complaints, queryFn: citizenApi.complaints });
+}
+
+/** Chi tiết phản ánh; poll 30 giây để timeline theo kịp xã / công ty (không có push thật). */
+export function useComplaint(id: number) {
+  return useQuery({
+    queryKey: citizenKeys.complaint(id),
+    queryFn: () => citizenApi.complaint(id),
+    enabled: Number.isFinite(id),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useSubmitComplaint() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: citizenApi.submitComplaint,
+    onSuccess: (detail) => {
+      queryClient.setQueryData(citizenKeys.complaint(detail.complaint.id), detail);
+      void queryClient.invalidateQueries({ queryKey: citizenKeys.complaints });
+    },
+  });
 }
 
 /**

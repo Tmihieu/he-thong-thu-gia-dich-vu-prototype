@@ -608,15 +608,15 @@
   - **File dự kiến:** `MOB/app/pay/[chargeId].tsx`, `MOB/app/confirmations/{index,[id]}.tsx`, `MOB/app/(tabs)/schedule.tsx`
   - **Kích thước:** M
 
-- [ ] **T43 — Mobile: gửi khiếu nại, danh sách, timeline** · `citizen-app` · M · P0 (§10 bước 6)
+- [ ] **T43 — Mobile: gửi khiếu nại, danh sách, timeline** · `citizen-app` · M · P0 (§10 bước 6) · **code xong 27/09/2026, chờ người dùng chạy tay §10 bước 6**: `ComplaintService.submitFromApp` (kênh APP, mốc SUBMITTED do người dân, tóm tắt cắt 120 ký tự từ nội dung, vị trí mặc định = địa chỉ hộ, báo cán bộ xã "Phản ánh mới từ app…"; công ty chỉ thấy khi xã chuyển, G12); `listOfCitizen`/`getOfCitizen` chỉ trả mốc `visible_to_citizen`; API `POST/GET /api/citizen/complaints`, `GET /{id}`; app: chi tiết poll 30 giây để timeline theo kịp xã/công ty, thẻ phản ánh đang xử lý hiện ở "Việc của bạn" trang chủ
   - **Mô tả:** Backend: `POST/GET /api/citizen/complaints` trong package `citizen`, gọi service public của complaints (T36) với kênh APP, người gửi là hộ đang đăng nhập. Mobile: form gửi (loại, nội dung), danh sách, chi tiết có timeline (dữ liệu event thật, đồng bộ trạng thái xã/công ty).
   - **Tiêu chí nghiệm thu:**
-    - [ ] Dân gửi khiếu nại → xuất hiện ở màn xã (T37); xã chuyển DV01, DV01 phản hồi, xã đóng → timeline trên app hiện đủ bước
-    - [ ] Dân không xem được khiếu nại của hộ khác (IT)
-    - [ ] Validation form (nội dung bắt buộc) có test Jest
+    - [ ] Dân gửi khiếu nại → xuất hiện ở màn xã (T37); xã chuyển DV01, DV01 phản hồi, xã đóng → timeline trên app hiện đủ bước — API đã kiểm bằng `CitizenComplaintIT.timelineFollowsCommuneAndCompanySteps…` (4 mốc); chờ người dùng chạy tay trên app + web
+    - [x] Dân không xem được khiếu nại của hộ khác (IT, kể cả hộ cùng tổ)
+    - [x] Validation form (nội dung bắt buộc) có test Jest (`features/complaints/validate.test.ts`)
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw test -Dtest=CitizenComplaintIT`
-    - [ ] `cd mobile && npm run gen:api && npm test`
+    - [x] `cd backend && ./mvnw test -Dtest=CitizenComplaintIT` (+ `ComplaintFlowIT`, `ComplaintServiceTest`)
+    - [x] `cd mobile && npm run gen:api && npm test` + `npm run typecheck` + `expo export`
   - **Phụ thuộc:** T41, T36
   - **File dự kiến:** `BE/citizen/api/CitizenComplaintController.java`, `BT/citizen/CitizenComplaintIT.java`, `MOB/app/complaints/{index,new,[id]}.tsx`
   - **Kích thước:** M

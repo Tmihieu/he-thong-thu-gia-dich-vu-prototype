@@ -18,6 +18,11 @@ public interface ComplaintRepository extends JpaRepository<Complaint, Long> {
             + " where c.id = :id")
     Optional<Complaint> findByIdWithDetails(Long id);
 
+    /** Khiếu nại do một tài khoản người dân gửi, mới nhất trước (T43). */
+    @Query("select c from Complaint c join fetch c.area left join fetch c.subject left join fetch c.forwardedCompany"
+            + " where c.citizenAccountId = :citizenAccountId order by c.receivedDate desc, c.id desc")
+    List<Complaint> findByCitizenAccountId(Long citizenAccountId);
+
     /** Số lớn nhất đang dùng sau tiền tố (vd. {@code KN-1026-}); 0 nếu chưa có. */
     @Query(value = "select coalesce(max(cast(substring(code, length(:prefix) + 1) as integer)), 0)"
             + " from complaints where code like :prefix || '%'", nativeQuery = true)

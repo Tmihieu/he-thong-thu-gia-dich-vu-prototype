@@ -105,6 +105,61 @@ public class ComplaintService {
         return complaint;
     }
 
+    /** Phản ánh người dân gửi từ app (T43): danh tính lấy từ tài khoản, hộ và khu vực lấy từ hộ gắn với tài khoản. */
+    public record CitizenSubmission(Long citizenAccountId, String displayName, String phone, Long subjectId,
+            ComplaintCategory category, String content, String location) {
+    }
+
+    static final int SUMMARY_MAX = 120;
+
+    /**
+     * Người dân gửi phản ánh từ app: kênh APP, mốc đầu timeline là SUBMITTED do người dân, trạng thái Mới;
+     * báo cho cán bộ xã (công ty phụ trách chỉ biết khi xã chuyển, G12). Tóm tắt cắt từ nội dung.
+     */
+    public ComplaintDetail submitFromApp(CitizenSubmission cmd) {
+        ServiceSubject subject = subjects.findByIdWithArea(cmd.subjectId())
+                .orElseThrow(() -> new NotFoundException("SUBJECT_NOT_FOUND", "Không tìm thấy hộ của tài khoản."));
+        LocalDate today = LocalDate.now(clock);
+        String content = cmd.content().trim();
+        String location = blankToNull(cmd.location());
+        String prefix = "KN-" + today.format(CODE_TOKEN) + "-";
+        Complaint complaint = complaints.save(Complaint.builder()
+                .code(prefix + "%03d".formatted(complaints.maxCodeNumber(prefix) + 1))
+                .receivedDate(today).complainantName(cmd.displayName()).complainantPhone(cmd.phone())
+                .citizenAccountId(cmd.citizenAccountId()).subject(subject).area(subject.getArea())
+                .channel(ComplaintChannel.APP).category(cmd.category()).summary(summarize(content)).content(content)
+                .location(location != null ? location : subject.getAddress())
+                .build());
+        ComplaintEvent submitted = events.save(ComplaintEvent.byCitizen(complaint, OffsetDateTime.now(clock),
+                cmd.citizenAccountId(), cmd.displayName(), "Người dân gửi phản ánh qua ứng dụng"));
+        notifications.publish(NotificationCommand.toRole(Role.COMMUNE_OFFICER, NotificationKind.COMPLAINT,
+                "Phản ánh mới từ app " + complaint.getCode() + " · " + complaint.getComplainantName(),
+                complaint.getSummary(), link("commune.complaints", complaint)), null);
+        return new ComplaintDetail(complaint, List.of(submitted));
+    }
+
+    /** Phản ánh của một tài khoản người dân, mới nhất trước. */
+    @Transactional(readOnly = true)
+    public List<Complaint> listOfCitizen(Long citizenAccountId) {
+        return complaints.findByCitizenAccountId(citizenAccountId);
+    }
+
+    /** Một phản ánh của tài khoản người dân, chỉ kèm mốc timeline hiển thị cho dân; của tài khoản khác → 404. */
+    @Transactional(readOnly = true)
+    public ComplaintDetail getOfCitizen(Long id, Long citizenAccountId) {
+        Complaint complaint = complaints.findByIdWithDetails(id)
+                .filter(c -> citizenAccountId.equals(c.getCitizenAccountId()))
+                .orElseThrow(ComplaintService::notFound);
+        return new ComplaintDetail(complaint, events.findByComplaintIdOrderByOccurredAtAscIdAsc(id).stream()
+                .filter(ComplaintEvent::isVisibleToCitizen).toList());
+    }
+
+    /** Tóm tắt = dòng đầu của nội dung, tối đa {@link #SUMMARY_MAX} ký tự. */
+    static String summarize(String content) {
+        String line = content.replaceAll("\\s+", " ").trim();
+        return line.length() <= SUMMARY_MAX ? line : line.substring(0, SUMMARY_MAX - 3).stripTrailing() + "…";
+    }
+
     /** Chuyển công ty xử lý; để trống công ty thì lấy công ty đang phụ trách khu vực. Hạn = hôm nay + 3 ngày. */
     public Complaint forward(Long id, Long companyId, String note, CurrentUser actor) {
         actor.requireRole(Role.COMMUNE_OFFICER);

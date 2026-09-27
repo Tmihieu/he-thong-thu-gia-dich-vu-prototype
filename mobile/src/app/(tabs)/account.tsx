@@ -41,6 +41,12 @@ export default function AccountScreen() {
             onPress={() => router.push('/schedule')}
           />
           <NavRow
+            icon={<Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.primary} />}
+            title="Phản ánh, kiến nghị"
+            subtitle="Thu chậm, sai mức phí, vấn đề khác"
+            onPress={() => router.push('/complaints')}
+          />
+          <NavRow
             icon={<Ionicons name="receipt-outline" size={20} color={colors.primary} />}
             title="Xác nhận thanh toán"
             subtitle="Các lần đã thanh toán"

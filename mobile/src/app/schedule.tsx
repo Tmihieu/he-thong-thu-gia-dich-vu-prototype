@@ -60,7 +60,7 @@ export default function ScheduleScreen() {
           <Button
             title="Báo thu gom sai lịch"
             variant="ghost"
-            onPress={() => router.push({ pathname: '/coming-soon', params: { title: 'Gửi phản ánh' } })}
+            onPress={() => router.push('/complaints/new')}
           />
         </>
       ) : null}

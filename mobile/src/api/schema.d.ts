@@ -457,6 +457,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/citizen/complaints": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Phản ánh của hộ, mới nhất trước */
+        get: operations["list_5"];
+        put?: never;
+        /** Gửi phản ánh (kênh APP); vị trí để trống thì lấy địa chỉ hộ */
+        post: operations["submit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/citizen/auth/otp/verify": {
         parameters: {
             query?: never;
@@ -619,7 +637,7 @@ export interface paths {
             cookie?: never;
         };
         /** Thông báo của người đang đăng nhập (theo vai trò, công ty, cá nhân), mới nhất trước */
-        get: operations["list_5"];
+        get: operations["list_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -977,6 +995,23 @@ export interface paths {
         };
         /** Hồ sơ hộ của tài khoản đang đăng nhập */
         get: operations["me_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/citizen/complaints/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chi tiết phản ánh kèm timeline (của hộ khác trả 404) */
+        get: operations["get_4"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1643,6 +1678,53 @@ export interface components {
             subjectAddress: string;
             /** @description Công ty phụ trách khoản */
             companyName: string;
+        };
+        SubmitComplaintRequest: {
+            /** @enum {string} */
+            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "OTHER";
+            content: string;
+            /** @description Nơi xảy ra sự việc; để trống = địa chỉ hộ */
+            location?: string;
+        };
+        CitizenComplaintDetailDto: {
+            complaint: components["schemas"]["CitizenComplaintDto"];
+            events: components["schemas"]["CitizenComplaintEventDto"][];
+        };
+        CitizenComplaintDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example KN-1026-001 */
+            code: string;
+            /** Format: date */
+            receivedDate: string;
+            /** @enum {string} */
+            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "OTHER";
+            summary: string;
+            content: string;
+            location: string | null;
+            /** @example KV07 */
+            areaCode: string;
+            areaName: string;
+            /** @enum {string} */
+            status: "NEW" | "PROCESSING" | "RESOLVED";
+            forwardedCompanyName: string | null;
+            /** Format: date */
+            deadline: string | null;
+            /** @description Chưa giải quyết và đã qua hạn */
+            overdue: boolean;
+            resolution: string | null;
+            /** Format: date-time */
+            resolvedAt: string | null;
+        };
+        CitizenComplaintEventDto: {
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            eventType: "SUBMITTED" | "RECEIVED" | "FORWARDED" | "COMPANY_REPLIED" | "CLOSED";
+            /** Format: date-time */
+            occurredAt: string;
+            actorLabel: string;
+            content: string;
         };
         OtpVerifyRequest: {
             /** @example 0902000128 */
@@ -3077,6 +3159,50 @@ export interface operations {
             };
         };
     };
+    list_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CitizenComplaintDto"][];
+                };
+            };
+        };
+    };
+    submit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitComplaintRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CitizenComplaintDetailDto"];
+                };
+            };
+        };
+    };
     verifyOtp: {
         parameters: {
             query?: never;
@@ -3303,7 +3429,7 @@ export interface operations {
             };
         };
     };
-    list_5: {
+    list_6: {
         parameters: {
             query?: {
                 unreadOnly?: boolean;
@@ -3780,6 +3906,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CitizenProfileDto"];
+                };
+            };
+        };
+    };
+    get_4: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CitizenComplaintDetailDto"];
                 };
             };
         };

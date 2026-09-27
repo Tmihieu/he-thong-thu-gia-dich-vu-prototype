@@ -57,3 +57,29 @@ export const WEEKDAY_LABELS: Record<number, string> = {
   6: 'Thứ 7',
   7: 'Chủ nhật',
 };
+
+export type ComplaintCategory = Schemas['CitizenComplaintDto']['category'];
+export type ComplaintStatus = Schemas['CitizenComplaintDto']['status'];
+export type ComplaintEventType = Schemas['CitizenComplaintEventDto']['eventType'];
+
+export const COMPLAINT_CATEGORY_LABELS: Record<ComplaintCategory, string> = {
+  LATE_COLLECTION: 'Thu gom chậm hoặc không đúng lịch',
+  OVERCHARGE: 'Thu phí cao hơn định mức',
+  POLLUTION_POINT: 'Điểm tập kết gây ô nhiễm',
+  STAFF_ATTITUDE: 'Thái độ nhân viên thu gom',
+  OTHER: 'Vấn đề khác',
+};
+
+export const COMPLAINT_STATUS_LABELS: Record<ComplaintStatus, string> = {
+  NEW: 'Đã gửi',
+  PROCESSING: 'Đang xử lý',
+  RESOLVED: 'Đã giải quyết',
+};
+
+export const COMPLAINT_EVENT_LABELS: Record<ComplaintEventType, string> = {
+  SUBMITTED: 'Bạn gửi phản ánh',
+  RECEIVED: 'Xã tiếp nhận',
+  FORWARDED: 'Xã chuyển công ty xử lý',
+  COMPANY_REPLIED: 'Công ty phản hồi',
+  CLOSED: 'Xã đóng phản ánh',
+};

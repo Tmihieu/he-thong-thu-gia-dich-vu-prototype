@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ApiError } from '../../api/client';
 import { useSession } from '../../features/auth/SessionProvider';
-import { summarizeCharges, useCharges, useProfile } from '../../features/citizen/api';
+import { summarizeCharges, useCharges, useComplaints, useProfile } from '../../features/citizen/api';
+import { ComplaintCard } from '../../features/complaints/ComplaintCard';
 import { formatDate, formatMoney, initials } from '../../shared/format';
 import { colors, radius, spacing } from '../../shared/theme';
 import { Card, ErrorBox, Screen, SectionTitle, Tag } from '../../shared/ui';
@@ -14,7 +15,7 @@ type IconName = keyof typeof Ionicons.glyphMap;
 
 const SHORTCUTS: { label: string; icon: IconName; href: Href }[] = [
   { label: 'Khoản phí\nphải đóng', icon: 'wallet-outline', href: '/charges' },
-  { label: 'Gửi phản ánh\nkiến nghị', icon: 'chatbubble-ellipses-outline', href: { pathname: '/coming-soon', params: { title: 'Gửi phản ánh' } } },
+  { label: 'Gửi phản ánh\nkiến nghị', icon: 'chatbubble-ellipses-outline', href: '/complaints/new' },
   { label: 'Đăng ký\nrác cồng kềnh', icon: 'cube-outline', href: { pathname: '/coming-soon', params: { title: 'Rác cồng kềnh' } } },
   { label: 'Chợ\nđồ cũ', icon: 'storefront-outline', href: '/market' },
   { label: 'Lịch\nthu gom', icon: 'calendar-outline', href: '/schedule' },
@@ -26,12 +27,16 @@ export default function HomeScreen() {
   const { account } = useSession();
   const profile = useProfile();
   const charges = useCharges();
+  const complaints = useComplaints();
   const summary = summarizeCharges(charges.data);
+  const latestComplaint = complaints.data?.[0] ?? null;
+  const openComplaint = latestComplaint && latestComplaint.status !== 'RESOLVED' ? latestComplaint : null;
   const subject = profile.data?.subject;
   const refreshing = profile.isFetching || charges.isFetching;
   const refresh = () => {
     void profile.refetch();
     void charges.refetch();
+    void complaints.refetch();
   };
 
   return (
@@ -115,12 +120,17 @@ export default function HomeScreen() {
               <Text style={styles.cardText}>Vui lòng thanh toán sớm để công ty không phải đến thu tại nhà nhiều lần.</Text>
             </Card>
           </Pressable>
-        ) : (
+        ) : null}
+        {openComplaint ? <ComplaintCard c={openComplaint} /> : null}
+        {summary.overdueCount === 0 && !openComplaint ? (
           <Card>
             <Text style={styles.cardStrong}>Không có việc cần xử lý</Text>
-            <Text style={styles.cardText}>Phản ánh, rác cồng kềnh và thông báo sẽ hiện ở đây khi có.</Text>
+            <Text style={styles.cardText}>Phản ánh đang xử lý và rác cồng kềnh đã đăng ký sẽ hiện ở đây.</Text>
           </Card>
-        )}
+        ) : null}
+        <Pressable onPress={() => router.push('/complaints')} accessibilityRole="button">
+          <Text style={styles.link}>Xem tất cả phản ánh của bạn ›</Text>
+        </Pressable>
 
         {profile.data?.company ? (
           <>
@@ -162,4 +172,5 @@ const styles = StyleSheet.create({
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardStrong: { fontSize: 15, fontWeight: '700', color: colors.text },
   cardText: { fontSize: 14, color: colors.textMuted, lineHeight: 20 },
+  link: { color: colors.primary, fontWeight: '700', fontSize: 14, paddingVertical: spacing.xs },
 });
