@@ -123,6 +123,18 @@ describe('Người đi thu: danh sách thu', () => {
     expect(await screen.findByText('Đã thu 50.000 đ · Hộ Phạm Thị Dung', norm)).toBeInTheDocument();
   });
 
+  it('trình duyệt không có crypto.randomUUID (điện thoại mở qua http://<IP LAN>) vẫn ghi nhận được', async () => {
+    const real = globalThis.crypto;
+    vi.stubGlobal('crypto', { getRandomValues: real.getRandomValues.bind(real) });
+    const fetchFn = api();
+    renderApp('/collector/list');
+
+    const dialog = await openSheet('Hộ Nguyễn Văn An');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Xác nhận' }));
+    await waitFor(() => expect(posts(fetchFn, '/api/collection/payments')).toHaveLength(1));
+    expect(posts(fetchFn, '/api/collection/payments')[0]!.clientRequestId).toMatch(/^[0-9a-f]{32}$/);
+  });
+
   it('mạng lỗi thì gửi lại dùng requestId cũ; thu xong hộ khác thì requestId mới', async () => {
     let fail = true;
     const fetchFn = api({

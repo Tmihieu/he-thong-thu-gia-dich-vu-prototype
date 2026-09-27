@@ -27,7 +27,8 @@ const pendingRequestIds = new Map<string, string>();
 function requestIdFor(key: string): string {
   let id = pendingRequestIds.get(key);
   if (!id) {
-    id = crypto.randomUUID();
+    // Không dùng crypto.randomUUID: nó chỉ có trong secure context, điện thoại mở web qua http://<IP LAN> thì không có.
+    id = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('');
     pendingRequestIds.set(key, id);
   }
   return id;
