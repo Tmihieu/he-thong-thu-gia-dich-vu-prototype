@@ -57,6 +57,8 @@ function RootNavigator() {
         <Stack.Screen name="bulky/index" options={{ title: 'Rác cồng kềnh' }} />
         <Stack.Screen name="bulky/new" options={{ title: 'Đăng ký rác cồng kềnh' }} />
         <Stack.Screen name="bulky/[id]" options={{ title: 'Yêu cầu thu gom cồng kềnh' }} />
+        <Stack.Screen name="market/new" options={{ title: 'Đăng bài mới' }} />
+        <Stack.Screen name="market/[id]" options={{ title: 'Chi tiết bài đăng' }} />
         <Stack.Screen name="coming-soon" options={{ title: 'Đang xây dựng' }} />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>

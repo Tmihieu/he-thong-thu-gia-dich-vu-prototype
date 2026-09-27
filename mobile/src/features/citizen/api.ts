@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { api } from '../../api/client';
 import type { components } from '../../api/schema';
+import type { MarketPostType } from '../../shared/labels';
 import { completeRequest, requestIdFor } from '../payment/requestId';
 
 type S = components['schemas'];
@@ -20,6 +21,10 @@ export type CitizenNotificationPage = S['CitizenNotificationPageDto'];
 export type NotificationKind = CitizenNotification['kind'];
 export type BulkyRequest = S['BulkyRequestDto'];
 export type CreateBulkyRequest = S['CreateBulkyRequest'];
+export type MarketPost = S['MarketPostDto'];
+export type MarketPostDetail = S['MarketPostDetailDto'];
+export type MarketComment = S['MarketCommentDto'];
+export type CreateMarketPost = S['CreateMarketPostRequest'];
 
 export const citizenApi = {
   requestOtp: (phone: string) => api.post<OtpRequestResponse>('/api/citizen/auth/otp/request', { phone }),
@@ -44,6 +49,14 @@ export const citizenApi = {
   bulkyRequest: (id: number) => api.get<BulkyRequest>(`/api/citizen/bulky-requests/${id}`),
   createBulky: (body: CreateBulkyRequest) => api.post<BulkyRequest>('/api/citizen/bulky-requests', body),
   cancelBulky: (id: number, reason: string) => api.post<BulkyRequest>(`/api/citizen/bulky-requests/${id}/cancel`, { reason }),
+  // Backend mặc định chỉ trả bài đang đăng (OPEN), mới nhất trước.
+  marketPosts: (type?: MarketPostType) =>
+    api.get<S['MarketPostPageDto']>('/api/citizen/market/posts', { params: { type, size: 100 } }),
+  marketPost: (id: number) => api.get<MarketPostDetail>(`/api/citizen/market/posts/${id}`),
+  createMarketPost: (body: CreateMarketPost) => api.post<MarketPost>('/api/citizen/market/posts', body),
+  closeMarketPost: (id: number) => api.post<MarketPost>(`/api/citizen/market/posts/${id}/status`, { status: 'CLOSED' }),
+  commentMarketPost: (id: number, content: string) =>
+    api.post<MarketComment>(`/api/citizen/market/posts/${id}/comments`, { content }),
 };
 
 export const citizenKeys = {
@@ -59,6 +72,9 @@ export const citizenKeys = {
   unreadCount: ['citizen', 'notifications', 'unread-count'] as const,
   bulky: ['citizen', 'bulky'] as const,
   bulkyOne: (id: number) => ['citizen', 'bulky', id] as const,
+  market: ['citizen', 'market'] as const,
+  marketList: (type?: MarketPostType) => ['citizen', 'market', 'list', type ?? 'ALL'] as const,
+  marketPost: (id: number) => ['citizen', 'market', 'post', id] as const,
 };
 
 /** Không có push thật: tab Thông báo và badge poll theo chu kỳ này (SPEC §9.7). */
@@ -151,6 +167,56 @@ export function useCreateBulky() {
 
 export function useCancelBulky(id: number) {
   return useBulkyMutation((reason: string) => citizenApi.cancelBulky(id, reason));
+}
+
+export function useMarketPosts(type?: MarketPostType) {
+  return useQuery({
+    queryKey: citizenKeys.marketList(type),
+    queryFn: () => citizenApi.marketPosts(type),
+    select: (page) => page.items,
+  });
+}
+
+/** Chi tiết bài kèm bình luận; poll 30 giây khi bài còn mở để thấy bình luận mới (không có push thật). */
+export function useMarketPost(id: number) {
+  return useQuery({
+    queryKey: citizenKeys.marketPost(id),
+    queryFn: () => citizenApi.marketPost(id),
+    enabled: Number.isFinite(id),
+    refetchInterval: (q) => (q.state.data?.post.status === 'OPEN' ? 30_000 : false),
+  });
+}
+
+export function useCreateMarketPost() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: citizenApi.createMarketPost,
+    onSuccess: (post) => {
+      queryClient.setQueryData<MarketPostDetail>(citizenKeys.marketPost(post.id), { post, comments: [] });
+      void queryClient.invalidateQueries({ queryKey: [...citizenKeys.market, 'list'] });
+    },
+  });
+}
+
+/**
+ * Đóng bài (chỉ người đăng; không có mở lại). Thành công hay lỗi (vd. bài đã đóng ở máy khác) đều tải lại chi tiết
+ * và danh sách; trả promise để nút giữ trạng thái chờ tới khi màn đã cập nhật.
+ */
+export function useCloseMarketPost(id: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => citizenApi.closeMarketPost(id),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: citizenKeys.market }),
+  });
+}
+
+/** Bình luận; lỗi `MARKET_POST_CLOSED` (chủ bài vừa đóng) cũng tải lại để ẩn ô gửi. */
+export function useCommentMarketPost(id: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (content: string) => citizenApi.commentMarketPost(id, content),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: citizenKeys.market }),
+  });
 }
 
 export function useNotifications(kind?: NotificationKind) {

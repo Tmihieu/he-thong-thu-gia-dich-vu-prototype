@@ -117,6 +117,20 @@ export function Button({
   );
 }
 
+/** Ô chọn một trong nhiều (bộ lọc, loại trong form). */
+export function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={[styles.chip, selected && styles.chipSelected]}
+    >
+      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
+    </Pressable>
+  );
+}
+
 /** Hàng bấm được có tiêu đề, mô tả và mũi tên (như `.gr-row` của prototype). */
 export function NavRow({
   title,
@@ -210,6 +224,17 @@ const styles = StyleSheet.create({
   buttonPressed: { opacity: 0.75 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   buttonTextGhost: { color: colors.primary },
+  chip: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: colors.surface,
+  },
+  chipSelected: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+  chipText: { fontSize: 13, color: colors.text },
+  chipTextSelected: { color: colors.primaryDark, fontWeight: '700' },
   navRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 10 },
   navRowPressed: { opacity: 0.6 },
   navIcon: {

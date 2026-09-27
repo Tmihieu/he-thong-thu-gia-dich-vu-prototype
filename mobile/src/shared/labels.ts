@@ -106,3 +106,10 @@ export const DAY_SLOT_LABELS: Record<DaySlot, string> = {
   MORNING: 'Buổi sáng',
   AFTERNOON: 'Buổi chiều',
 };
+
+export type MarketPostType = Schemas['MarketPostDto']['postType'];
+
+export const MARKET_TYPE_LABELS: Record<MarketPostType, string> = {
+  GIVE: 'Cho tặng',
+  EXCHANGE: 'Trao đổi',
+};
