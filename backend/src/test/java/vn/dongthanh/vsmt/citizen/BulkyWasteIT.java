@@ -1,22 +1,34 @@
 package vn.dongthanh.vsmt.citizen;
 
+import static java.util.Collections.nCopies;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -53,9 +65,22 @@ class BulkyWasteIT extends IntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired ObjectMapper json;
 
+    static final byte[] JPEG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 0, 0x10, 'J', 'F', 'I', 'F'};
+
+    @Value("${vsmt.upload-dir}") String uploadDir;
+
     CitizenAccount citizenA;
     CitizenAccount citizenB;
     int chargesBefore;
+    /** Ảnh ghi ra đĩa không theo rollback của test: xóa sau mỗi test. */
+    final List<String> uploaded = new ArrayList<>();
+
+    @AfterEach
+    void deleteUploads() throws IOException {
+        for (String name : uploaded) {
+            Files.deleteIfExists(Path.of(uploadDir, name));
+        }
+    }
 
     @BeforeEach
     void setUp() {
@@ -201,17 +226,69 @@ class BulkyWasteIT extends IntegrationTest {
     }
 
     @Test
-    void photoUrlsMustBeHttpLinks() throws Exception {
-        for (String photos : new String[] {"[null]", "[\"javascript:alert(1)\"]", "[\"https://a.vn/x\\ny.jpg\"]",
-                "[\"https://a.vn/" + "x".repeat(500) + "\"]"}) {
-            citizen(citizenA, post("/api/citizen/bulky-requests"),
-                    "{\"itemType\": \"DEBRIS\", \"quantity\": 1, \"preferredDate\": \"2026-10-18\", \"photoUrls\": " + photos + "}")
+    void photoNamesMustBeUploadedPhotosNotUrls() throws Exception {
+        String photo = upload(citizenA);
+        for (String photos : new String[] {"[null]", "[\"https://a.vn/x.jpg\"]", "[\"../" + photo + "\"]",
+                json.writeValueAsString(nCopies(6, photo))}) {
+            citizen(citizenA, post("/api/citizen/bulky-requests"), withPhotos(photos))
                     .andExpect(status().isBadRequest());
         }
-        citizen(citizenA, post("/api/citizen/bulky-requests"),
-                "{\"itemType\": \"DEBRIS\", \"quantity\": 1, \"preferredDate\": \"2026-10-18\", \"photoUrls\": [\"https://a.vn/x.jpg\"]}")
+        citizen(citizenA, post("/api/citizen/bulky-requests"), withPhotos("[\"" + UUID.randomUUID() + ".jpg\"]"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("PHOTO_NOT_FOUND"));
+        assertThat(jdbc.queryForObject("select count(*) from bulky_waste_requests", Integer.class)).isZero();
+    }
+
+    @Test
+    void citizenAttachesUploadedPhotosAndServingCompanyOfficerAdminCanViewThem() throws Exception {
+        String photo = upload(citizenA);
+        // Tên trùng chỉ lưu một lần.
+        String body = citizen(citizenA, post("/api/citizen/bulky-requests"),
+                withPhotos(json.writeValueAsString(List.of(photo, photo))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.photoUrls[0]").value("https://a.vn/x.jpg"));
+                .andExpect(jsonPath("$.photoUrls").value(contains("/api/citizen/photos/" + photo)))
+                .andReturn().getResponse().getContentAsString();
+        long id = json.readTree(body).get("id").asLong();
+        String companyUrl = "/api/bulky-requests/" + id + "/photos/" + photo;
+
+        citizen(citizenA, get("/api/citizen/bulky-requests/{id}", id), null)
+                .andExpect(jsonPath("$.photoUrls").value(contains("/api/citizen/photos/" + photo)));
+        citizen(citizenA, get("/api/citizen/photos/{name}", photo), null)
+                .andExpect(status().isOk())
+                .andExpect(content().bytes(JPEG));
+        internal(fx.dv01Manager, get("/api/bulky-requests"), null)
+                .andExpect(jsonPath("$[0].photoUrls").value(contains(companyUrl)));
+        for (User reader : List.of(fx.dv01Manager, fx.officer, fx.admin)) {
+            internal(reader, get(companyUrl), null)
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentType(MediaType.IMAGE_JPEG))
+                    .andExpect(content().bytes(JPEG));
+        }
+    }
+
+    @Test
+    void companyPhotoIsOnlyServedForOwnRequestAndPhotosAttachedToIt() throws Exception {
+        String photoA = upload(citizenA);
+        String photoB = upload(citizenB);
+        String notAttached = upload(citizenA);
+        long idA = createWithPhoto(citizenA, photoA);
+        long idB = createWithPhoto(citizenB, photoB);
+        String path = "/api/bulky-requests/{id}/photos/{name}";
+
+        internal(fx.dv07Manager, get(path, idA, photoA), null)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("BULKY_REQUEST_NOT_FOUND"));
+        internal(fx.dv01Manager, get(path, idA, notAttached), null)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PHOTO_NOT_FOUND"));
+        // Ảnh của yêu cầu khác không đọc được qua yêu cầu mình phụ trách.
+        internal(fx.dv07Manager, get(path, idB, photoA), null)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PHOTO_NOT_FOUND"));
+        internal(fx.dv07Manager, get(path, idB, photoB), null).andExpect(status().isOk());
+        internal(fx.dv01Manager, get(path, 999_999, photoA), null).andExpect(status().isNotFound());
+        internal(fx.dv01Manager, get(path, idA, "evil.txt"), null).andExpect(status().isBadRequest());
+        citizen(citizenA, get(path, idA, photoA), null).andExpect(status().isForbidden());
     }
 
     @Test
@@ -282,6 +359,26 @@ class BulkyWasteIT extends IntegrationTest {
         citizen(citizen, post("/api/citizen/bulky-requests"), "{\"itemType\": \"DEBRIS\", \"quantity\": 1, \"preferredDate\": \"2026-10-18\"}")
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("BULKY_NO_COMPANY"));
+    }
+
+    private String upload(CitizenAccount citizen) throws Exception {
+        String body = citizen(citizen, multipart("/api/citizen/photos")
+                .file(new MockMultipartFile("file", "anh.jpg", MediaType.IMAGE_JPEG_VALUE, JPEG)), null)
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String name = json.readTree(body).get("name").asText();
+        uploaded.add(name);
+        return name;
+    }
+
+    private long createWithPhoto(CitizenAccount citizen, String photo) throws Exception {
+        String body = citizen(citizen, post("/api/citizen/bulky-requests"), withPhotos("[\"" + photo + "\"]"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        return json.readTree(body).get("id").asLong();
+    }
+
+    private static String withPhotos(String photoNamesJson) {
+        return "{\"itemType\": \"DEBRIS\", \"quantity\": 1, \"preferredDate\": \"2026-10-18\", \"photoNames\": "
+                + photoNamesJson + "}";
     }
 
     private long create(CitizenAccount citizen) throws Exception {

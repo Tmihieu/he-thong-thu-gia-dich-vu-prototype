@@ -17,6 +17,7 @@ import vn.dongthanh.vsmt.citizen.domain.BulkyItemType;
 import vn.dongthanh.vsmt.citizen.domain.BulkyStatus;
 import vn.dongthanh.vsmt.citizen.domain.BulkyWasteRequest;
 import vn.dongthanh.vsmt.citizen.domain.DaySlot;
+import vn.dongthanh.vsmt.citizen.service.PhotoStorage;
 
 /** DTO rác cồng kềnh dùng chung cho app người dân và web công ty. */
 public final class BulkyDtos {
@@ -31,9 +32,11 @@ public final class BulkyDtos {
             @Schema(description = "Để trống = địa chỉ hộ") @Size(max = 255, message = "tối đa 255 ký tự") String address,
             @NotNull(message = "không được để trống") LocalDate preferredDate,
             DaySlot preferredSlot,
-            @Schema(description = "Đường dẫn ảnh (tùy chọn, chưa có upload trong demo)") @Size(max = 5, message = "tối đa 5 ảnh")
-            List<@NotBlank(message = "không được để trống") @Size(max = 500, message = "tối đa 500 ký tự")
-                    @Pattern(regexp = "https?://\\S+", message = "phải là đường dẫn http(s)") String> photoUrls) {
+            @Schema(description = "Tên ảnh (trường name) trả về từ POST /api/citizen/photos, không nhận URL; tùy chọn")
+            @Size(max = 5, message = "tối đa 5 ảnh")
+            List<@NotNull(message = "không được để trống")
+                    @Pattern(regexp = PhotoStorage.NAME_PATTERN, message = "không phải tên ảnh đã tải lên") String>
+                    photoNames) {
     }
 
     public record QuoteBulkyRequest(
@@ -60,7 +63,9 @@ public final class BulkyDtos {
             @Schema(requiredMode = RequiredMode.REQUIRED) String address,
             @Schema(requiredMode = RequiredMode.REQUIRED) LocalDate preferredDate,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) DaySlot preferredSlot,
-            @Schema(requiredMode = RequiredMode.REQUIRED) List<String> photoUrls,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đường dẫn tương đối, cần token: app dân "
+                    + "/api/citizen/photos/{name}, web /api/bulky-requests/{id}/photos/{name}")
+            List<String> photoUrls,
             @Schema(requiredMode = RequiredMode.REQUIRED) Long companyId,
             @Schema(requiredMode = RequiredMode.REQUIRED) String companyName,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) Long quotedFee,
@@ -71,10 +76,17 @@ public final class BulkyDtos {
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String cancelReason,
             @Schema(requiredMode = RequiredMode.REQUIRED) OffsetDateTime createdAt) {
 
-        static BulkyRequestDto of(BulkyWasteRequest r) {
+        static BulkyRequestDto forCitizen(BulkyWasteRequest r) {
+            return of(r, r.getPhotoNames().stream().map(PhotoController::url).toList());
+        }
+
+        static BulkyRequestDto forCompany(BulkyWasteRequest r) {
+            return of(r, r.getPhotoNames().stream().map(n -> BulkyWasteController.photoUrl(r.getId(), n)).toList());
+        }
+
+        private static BulkyRequestDto of(BulkyWasteRequest r, List<String> photos) {
             var s = r.getSubject();
             var a = r.getCitizenAccount();
-            List<String> photos = r.getPhotoUrls() == null ? List.of() : List.of(r.getPhotoUrls().split("\n"));
             return new BulkyRequestDto(r.getId(), r.getCode(), s.getId(), s.getCode(), s.getName(), a.getDisplayName(),
                     a.getPhone(), s.getArea().getCode(), r.getItemType(), r.getItemDescription(), r.getQuantity(),
                     r.getAddress(), r.getPreferredDate(), r.getPreferredSlot(), photos, r.getCompany().getId(),

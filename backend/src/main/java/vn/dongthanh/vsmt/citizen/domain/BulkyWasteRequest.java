@@ -2,6 +2,7 @@ package vn.dongthanh.vsmt.citizen.domain;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -60,7 +61,10 @@ public class BulkyWasteRequest extends BaseEntity {
     @Column(length = 20)
     private DaySlot preferredSlot;
 
-    private String photoUrls;
+    /** Cột {@code photo_urls} lưu tên file trong PhotoStorage, mỗi dòng một tên (như chợ đồ cũ); URL dựng ở API. */
+    @Getter(AccessLevel.NONE)
+    @Column(name = "photo_urls")
+    private String photoNames;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "company_id", nullable = false, updatable = false)
@@ -83,7 +87,7 @@ public class BulkyWasteRequest extends BaseEntity {
     @Builder
     private BulkyWasteRequest(String code, CitizenAccount citizenAccount, ServiceSubject subject, BulkyItemType itemType,
             String itemDescription, int quantity, String address, LocalDate preferredDate, DaySlot preferredSlot,
-            String photoUrls, Company company) {
+            List<String> photoNames, Company company) {
         this.code = code;
         this.citizenAccount = citizenAccount;
         this.subject = subject;
@@ -93,9 +97,13 @@ public class BulkyWasteRequest extends BaseEntity {
         this.address = address;
         this.preferredDate = preferredDate;
         this.preferredSlot = preferredSlot;
-        this.photoUrls = photoUrls;
+        this.photoNames = photoNames == null || photoNames.isEmpty() ? null : String.join("\n", photoNames);
         this.company = company;
         this.status = BulkyStatus.PENDING;
+    }
+
+    public List<String> getPhotoNames() {
+        return photoNames == null ? List.of() : List.of(photoNames.split("\n"));
     }
 
     /** Công ty báo phí (> 0) và ngày hẹn; chỉ từ Chờ xác nhận. */

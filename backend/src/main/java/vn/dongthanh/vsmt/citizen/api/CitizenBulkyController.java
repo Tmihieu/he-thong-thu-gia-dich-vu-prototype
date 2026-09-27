@@ -32,32 +32,33 @@ public class CitizenBulkyController {
 
     private final BulkyWasteService bulky;
 
-    @Operation(summary = "Đăng ký thu gom rác cồng kềnh; công ty phụ trách khu vực của hộ nhận yêu cầu")
+    @Operation(summary = "Đăng ký thu gom rác cồng kềnh; công ty phụ trách khu vực của hộ nhận yêu cầu;"
+            + " ảnh là tên trả về từ POST /api/citizen/photos")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public BulkyRequestDto create(@AuthenticationPrincipal CurrentCitizen citizen,
             @Valid @RequestBody CreateBulkyRequest request) {
-        return BulkyRequestDto.of(bulky.create(citizen, new CreateCommand(request.itemType(), request.itemDescription(),
-                request.quantity(), request.address(), request.preferredDate(), request.preferredSlot(),
-                request.photoUrls())));
+        return BulkyRequestDto.forCitizen(bulky.create(citizen, new CreateCommand(request.itemType(),
+                request.itemDescription(), request.quantity(), request.address(), request.preferredDate(),
+                request.preferredSlot(), request.photoNames())));
     }
 
     @Operation(summary = "Yêu cầu của hộ, mới nhất trước")
     @GetMapping
     public List<BulkyRequestDto> list(@AuthenticationPrincipal CurrentCitizen citizen) {
-        return bulky.listOfCitizen(citizen).stream().map(BulkyRequestDto::of).toList();
+        return bulky.listOfCitizen(citizen).stream().map(BulkyRequestDto::forCitizen).toList();
     }
 
     @Operation(summary = "Chi tiết yêu cầu (của hộ khác trả 404)")
     @GetMapping("/{id}")
     public BulkyRequestDto get(@AuthenticationPrincipal CurrentCitizen citizen, @PathVariable Long id) {
-        return BulkyRequestDto.of(bulky.getOfCitizen(citizen, id));
+        return BulkyRequestDto.forCitizen(bulky.getOfCitizen(citizen, id));
     }
 
     @Operation(summary = "Hủy yêu cầu (khi chờ xác nhận hoặc đã báo phí), phải ghi lý do")
     @PostMapping("/{id}/cancel")
     public BulkyRequestDto cancel(@AuthenticationPrincipal CurrentCitizen citizen, @PathVariable Long id,
             @Valid @RequestBody CancelBulkyRequest request) {
-        return BulkyRequestDto.of(bulky.cancelByCitizen(citizen, id, request.reason()));
+        return BulkyRequestDto.forCitizen(bulky.cancelByCitizen(citizen, id, request.reason()));
     }
 }

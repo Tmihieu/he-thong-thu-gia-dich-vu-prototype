@@ -58,13 +58,7 @@ public class MarketService {
 
     public MarketPost create(CurrentCitizen citizen, CreatePostCommand cmd) {
         CitizenAccount author = citizens.requireActive(citizen);
-        List<String> names = cmd.photoNames() == null ? List.of() : cmd.photoNames().stream().distinct().toList();
-        for (String name : names) {
-            if (!photos.exists(name)) {
-                throw new BusinessRuleException("PHOTO_NOT_FOUND",
-                        "Ảnh \"" + name + "\" không tồn tại. Vui lòng tải ảnh lên lại.");
-            }
-        }
+        List<String> names = photos.requireStored(cmd.photoNames());
         posts.lockCodePrefix("CDC-");
         String code = "CDC-%03d".formatted(posts.maxCodeNumber() + 1);
         return posts.save(MarketPost.create(code, author, cmd.title().trim(), cmd.postType(),

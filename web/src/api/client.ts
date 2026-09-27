@@ -59,8 +59,9 @@ async function toApiError(res: Response): Promise<ApiError> {
   return new ApiError(res.status, `HTTP_${res.status}`, 'Máy chủ trả lỗi không mong đợi. Vui lòng thử lại.');
 }
 
-async function request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
-  const headers: Record<string, string> = { Accept: 'application/json' };
+async function request<T>(method: string, path: string, options: RequestOptions = {}, asBlob = false): Promise<T> {
+  // Tải file (ảnh) nhận mọi kiểu nội dung; lỗi vẫn là JSON {code, message}.
+  const headers: Record<string, string> = { Accept: asBlob ? '*/*' : 'application/json' };
   const token = tokenGetter();
   if (token) headers.Authorization = `Bearer ${token}`;
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';
@@ -82,6 +83,7 @@ async function request<T>(method: string, path: string, options: RequestOptions 
     if (res.status === 401 && token) unauthorizedHandler();
     throw await toApiError(res);
   }
+  if (asBlob) return (await res.blob()) as T;
   if (res.status === 204) return undefined as T;
   const text = await res.text();
   return (text ? JSON.parse(text) : undefined) as T;
@@ -93,4 +95,6 @@ export const api = {
   put: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('PUT', path, { ...options, body }),
   patch: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('PATCH', path, { ...options, body }),
   delete: <T>(path: string, options?: Omit<RequestOptions, 'body'>) => request<T>('DELETE', path, options),
+  /** GET trả Blob (ảnh cần token nên không gắn thẳng URL vào `<img>`). */
+  blob: (path: string, options?: Omit<RequestOptions, 'body'>) => request<Blob>('GET', path, options, true),
 };

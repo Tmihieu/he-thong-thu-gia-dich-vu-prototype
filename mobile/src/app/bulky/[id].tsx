@@ -5,6 +5,7 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { ApiError } from '../../api/client';
 import { BULKY_TONES } from '../../features/bulky/BulkyCard';
 import { useBulkyRequest, useCancelBulky } from '../../features/citizen/api';
+import { PhotoStrip } from '../../features/photos/PhotoStrip';
 import { formatDate, formatMoney } from '../../shared/format';
 import { BULKY_ITEM_LABELS, BULKY_STATUS_LABELS, DAY_SLOT_LABELS } from '../../shared/labels';
 import { colors, radius, spacing } from '../../shared/theme';
@@ -63,6 +64,7 @@ export default function BulkyDetailScreen() {
               value={`${formatDate(r.preferredDate)}${r.preferredSlot ? ` · ${DAY_SLOT_LABELS[r.preferredSlot]}` : ''}`}
             />
             <Line label="Công ty thu gom" value={r.companyName} />
+            {r.photoUrls.length > 0 ? <PhotoStrip urls={r.photoUrls} /> : null}
           </Card>
 
           <Card>

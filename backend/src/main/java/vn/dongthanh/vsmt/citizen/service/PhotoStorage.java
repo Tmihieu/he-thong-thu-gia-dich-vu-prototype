@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -77,6 +78,18 @@ public class PhotoStorage {
 
     public boolean exists(String name) {
         return name != null && NAME.matcher(name).matches() && Files.isRegularFile(dir.resolve(name));
+    }
+
+    /** Tên ảnh gắn vào bài đăng / yêu cầu: bỏ tên trùng, tên nào chưa được tải lên thì 422 {@code PHOTO_NOT_FOUND}. */
+    public List<String> requireStored(List<String> names) {
+        List<String> distinct = names == null ? List.of() : names.stream().distinct().toList();
+        for (String name : distinct) {
+            if (!exists(name)) {
+                throw new BusinessRuleException("PHOTO_NOT_FOUND",
+                        "Ảnh \"" + name + "\" không tồn tại. Vui lòng tải ảnh lên lại.");
+            }
+        }
+        return distinct;
     }
 
     public StoredPhoto load(String name) throws IOException {

@@ -727,7 +727,7 @@ Timeline lưu nối tiếp, không ghi đè. Không có `updated_at`, `updated_b
 | Địa chỉ thu gom     | `address`            | `text(255)`          | Có           | Người dân           | 12/5 đường Số 1         | Demo | Mặc định địa chỉ hộ                                  |
 | Ngày mong muốn      | `preferred_date`     | `date`               | Có           | Người dân           | 2026-10-18              | Demo |                                                      |
 | Buổi mong muốn      | `preferred_slot`     | `enum DaySlot`       | Không        | Người dân           | `MORNING`               | Thật |                                                      |
-| Ảnh                 | `photo_urls`         | `text` (danh sách)   | Không        | Người dân           |                         | Demo | Có thể dùng ảnh mẫu (plan C5)                        |
+| Ảnh                 | `photo_urls`         | `text` (danh sách)   | Không        | Người dân           |                         | Demo | Lưu tên ảnh đã tải qua `POST /api/citizen/photos` (tối đa 5, không nhận URL tự do); công ty xem qua `GET /api/bulky-requests/{id}/photos/{name}` (T46) |
 | Công ty phụ trách   | `company_id`         | `FK→Company`         | Có           | Hệ thống            | 1                       | Demo | Theo phân công khu vực của hộ tại ngày đăng ký       |
 | Phí công ty báo | `quoted_fee` | `money` | Có điều kiện | Công ty | 200000 | Demo | Bắt buộc khi `QUOTED`. Không sinh `Charge`, không nộp về xã (O5, G13) |
 | Báo phí lúc         | `quoted_at`          | `timestamp`          | Không        | Hệ thống            |                         | Demo |                                                      |

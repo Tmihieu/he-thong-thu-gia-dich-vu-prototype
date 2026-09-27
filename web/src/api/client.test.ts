@@ -56,6 +56,17 @@ describe('api client', () => {
     await expect(api.get('/api/x')).rejects.toMatchObject({ status: 0, code: 'NETWORK_ERROR' });
   });
 
+  it('blob gửi Bearer, nhận mọi kiểu nội dung và trả Blob', async () => {
+    setTokenGetter(() => 'abc');
+    const fetchFn = mockFetch(new Response('jpeg', { status: 200, headers: { 'Content-Type': 'image/jpeg' } }));
+
+    const blob = await api.blob('/api/bulky-requests/6/photos/a.jpg');
+
+    expect(blob.type).toBe('image/jpeg');
+    const [, init] = fetchFn.mock.calls[0] as unknown as [string, RequestInit];
+    expect(init.headers).toMatchObject({ Authorization: 'Bearer abc', Accept: '*/*' });
+  });
+
   it('204 trả undefined', async () => {
     mockFetch(new Response(null, { status: 204 }));
     await expect(api.delete('/api/x/1')).resolves.toBeUndefined();

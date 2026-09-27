@@ -5,6 +5,8 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ApiError } from '../../api/client';
 import { ADDRESS_MAX, isoDate, nextDays, shortDayLabel, validateBulky, type BulkyErrors } from '../../features/bulky/validate';
 import { useCreateBulky, useProfile } from '../../features/citizen/api';
+import { PhotoPickerField } from '../../features/photos/PhotoPickerField';
+import type { UploadedPhoto } from '../../features/photos/photos';
 import { BULKY_ITEM_LABELS, DAY_SLOT_LABELS, type BulkyItemType, type DaySlot } from '../../shared/labels';
 import { colors, radius, spacing } from '../../shared/theme';
 import { Button, Card, CardTitle, ErrorBox, Muted, Screen } from '../../shared/ui';
@@ -25,7 +27,7 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
   );
 }
 
-/** Form đăng ký như prototype `citizenBulkyNew`: loại, số lượng, địa chỉ (mặc định địa chỉ hộ), ngày, buổi. */
+/** Form đăng ký như prototype `citizenBulkyNew`: loại, số lượng, địa chỉ (mặc định địa chỉ hộ), ngày, buổi, ảnh. */
 export default function NewBulkyScreen() {
   const profile = useProfile();
   const create = useCreateBulky();
@@ -38,6 +40,8 @@ export default function NewBulkyScreen() {
   const [addressTouched, setAddressTouched] = useState(false);
   const [preferredDate, setPreferredDate] = useState<string | null>(null);
   const [slot, setSlot] = useState<DaySlot | null>(null);
+  const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
+  const [photosBusy, setPhotosBusy] = useState(false);
   const [errors, setErrors] = useState<BulkyErrors>({});
 
   const householdAddress = profile.data?.subject.address;
@@ -59,6 +63,7 @@ export default function NewBulkyScreen() {
         address: address.trim(),
         preferredDate,
         preferredSlot: slot ?? undefined,
+        photoNames: photos.map((p) => p.name),
       },
       { onSuccess: (r) => router.replace({ pathname: '/bulky/[id]', params: { id: String(r.id), fresh: '1' } }) },
     );
@@ -135,10 +140,17 @@ export default function NewBulkyScreen() {
         </View>
       </Card>
 
+      <Card>
+        <CardTitle>Ảnh vật dụng</CardTitle>
+        <Muted>Tối đa 5 ảnh, giúp công ty báo phí chính xác.</Muted>
+        <PhotoPickerField value={photos} onChange={setPhotos} max={5} onBusyChange={setPhotosBusy} />
+      </Card>
+
       {create.error ? (
         <ErrorBox message={create.error instanceof ApiError ? create.error.message : 'Gửi không thành công. Vui lòng thử lại.'} />
       ) : null}
-      <Button title="Gửi đăng ký" onPress={onSubmit} loading={create.isPending} />
+      {photosBusy ? <Muted>Đang tải ảnh lên, chờ xong rồi gửi.</Muted> : null}
+      <Button title="Gửi đăng ký" onPress={onSubmit} loading={create.isPending} disabled={photosBusy} />
     </Screen>
   );
 }

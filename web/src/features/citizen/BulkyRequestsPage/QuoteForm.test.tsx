@@ -94,6 +94,29 @@ describe('Rác cồng kềnh: màn công ty', () => {
     expect(await screen.findByRole('button', { name: 'Đã thu gom' })).toBeInTheDocument();
   });
 
+  it('ảnh hộ gửi: tải kèm token, hiện ảnh nhỏ, bấm xem lớn, rời màn thì thu hồi object URL', async () => {
+    const revoke = vi.fn();
+    Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:anh-1'), revokeObjectURL: revoke });
+    const photoUrl = '/api/bulky-requests/6/photos/3f1c2a9e-8b7d-4c6e-9f00-1a2b3c4d5e6f.jpg';
+    const fetchFn = mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, manager),
+      'GET /api/bulky-requests': () => jsonResponse(200, [{ ...request, photoUrls: [photoUrl] }]),
+      [`GET ${photoUrl}`]: () => new Response('jpeg', { status: 200, headers: { 'Content-Type': 'image/jpeg' } }),
+    });
+    const { unmount } = renderApp('/company/bulky');
+
+    const thumb = await screen.findByAltText('Ảnh 1 của CK-1026-006');
+    expect(thumb).toHaveAttribute('src', 'blob:anh-1');
+    const photoCall = fetchFn.mock.calls.find(([url]) => String(url) === photoUrl);
+    expect(photoCall?.[1]).toMatchObject({ headers: { Authorization: 'Bearer tok-dv01' } });
+
+    await userEvent.click(thumb);
+    await waitFor(() => expect(document.querySelector('.ant-image-preview-img')).toHaveAttribute('src', 'blob:anh-1'));
+
+    unmount();
+    expect(revoke).toHaveBeenCalledWith('blob:anh-1');
+  });
+
   it('mở từ thông báo (?id=) thì dòng đó hiện ở trang đầu dù nằm sau 20 dòng', async () => {
     const many = Array.from({ length: 25 }, (_, i) => ({ ...request, id: 100 + i, code: `CK-1026-${100 + i}` }));
     mockApi({

@@ -1,5 +1,6 @@
 package vn.dongthanh.vsmt.citizen.service;
 
+import java.io.IOException;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -18,6 +19,7 @@ import vn.dongthanh.vsmt.citizen.domain.BulkyWasteRequest;
 import vn.dongthanh.vsmt.citizen.domain.BulkyWasteRequestRepository;
 import vn.dongthanh.vsmt.citizen.domain.CitizenAccount;
 import vn.dongthanh.vsmt.citizen.domain.DaySlot;
+import vn.dongthanh.vsmt.citizen.service.PhotoStorage.StoredPhoto;
 import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubject;
 import vn.dongthanh.vsmt.masterdata.service.AreaAssignmentService;
@@ -57,10 +59,11 @@ public class BulkyWasteService {
     private final MasterDataQueryService masterData;
     private final NotificationService notifications;
     private final AuditService audit;
+    private final PhotoStorage photos;
     private final Clock clock;
 
     public record CreateCommand(BulkyItemType itemType, String itemDescription, int quantity, String address,
-            LocalDate preferredDate, DaySlot preferredSlot, List<String> photoUrls) {
+            LocalDate preferredDate, DaySlot preferredSlot, List<String> photoNames) {
     }
 
     public BulkyWasteRequest create(CurrentCitizen citizen, CreateCommand cmd) {
@@ -68,6 +71,7 @@ public class BulkyWasteService {
         ServiceSubject subject = account.getSubject();
         LocalDate today = LocalDate.now(clock);
         requireDateWindow(cmd.preferredDate(), today, "Ngày mong muốn");
+        List<String> photoNames = photos.requireStored(cmd.photoNames());
         String prefix = "CK-" + today.format(CODE_TOKEN) + "-";
         // Tuần tự hóa việc tạo trong tháng: không trùng số mã, không vượt giới hạn yêu cầu đang mở khi gửi dồn.
         requests.lockCodePrefix(prefix);
@@ -85,7 +89,7 @@ public class BulkyWasteService {
                 .citizenAccount(account).subject(subject).itemType(cmd.itemType())
                 .itemDescription(blankToNull(cmd.itemDescription())).quantity(cmd.quantity())
                 .address(address != null ? address : subject.getAddress()).preferredDate(cmd.preferredDate())
-                .preferredSlot(cmd.preferredSlot()).photoUrls(joinUrls(cmd.photoUrls())).company(company)
+                .preferredSlot(cmd.preferredSlot()).photoNames(photoNames).company(company)
                 .build());
         notifications.publish(NotificationCommand.toCompany(company.getId(), Role.COMPANY_MANAGER, NotificationKind.INFO,
                 "Yêu cầu rác cồng kềnh mới " + request.getCode() + " · " + subject.getCode(),
@@ -162,6 +166,22 @@ public class BulkyWasteService {
         return request;
     }
 
+    /**
+     * Ảnh hộ gửi kèm yêu cầu, cho web: công ty phụ trách, cán bộ xã và quản trị (như danh sách).
+     * Yêu cầu của công ty khác hoặc ảnh không thuộc yêu cầu → 404.
+     */
+    @Transactional(readOnly = true)
+    public StoredPhoto photoForCompany(Long id, String name, CurrentUser actor) throws IOException {
+        actor.requireRole(Role.COMPANY_MANAGER, Role.COMMUNE_OFFICER, Role.ADMIN);
+        BulkyWasteRequest request = requests.findById(id)
+                .filter(r -> actor.role() != Role.COMPANY_MANAGER || r.getCompany().getId().equals(actor.companyId()))
+                .orElseThrow(BulkyWasteService::notFound);
+        if (!request.getPhotoNames().contains(name)) {
+            throw new NotFoundException("PHOTO_NOT_FOUND", "Không tìm thấy ảnh.");
+        }
+        return photos.load(name);
+    }
+
     private BulkyWasteRequest loadForCompany(Long id, CurrentUser actor) {
         actor.requireRole(Role.COMPANY_MANAGER);
         return requests.findByIdWithDetails(id)
@@ -199,14 +219,6 @@ public class BulkyWasteService {
             case LARGE_APPLIANCE -> "thiết bị điện lớn";
             case DEBRIS -> "xà bần, cành cây lớn";
         };
-    }
-
-    private static String joinUrls(List<String> urls) {
-        if (urls == null || urls.isEmpty()) {
-            return null;
-        }
-        String joined = String.join("\n", urls.stream().map(String::trim).filter(s -> !s.isEmpty()).toList());
-        return joined.isEmpty() ? null : joined;
     }
 
     private static void requireDateWindow(LocalDate date, LocalDate today, String label) {
