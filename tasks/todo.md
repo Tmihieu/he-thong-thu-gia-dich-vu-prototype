@@ -595,15 +595,15 @@
   - **File dự kiến:** `MOB/app/(auth)/login.tsx`, `MOB/app/(tabs)/{_layout,index,household,charges}.tsx`, `MOB/src/shared/format.ts` + test
   - **Kích thước:** M
 
-- [ ] **T42 — Mobile: thanh toán mô phỏng, xác nhận thanh toán, lịch thu gom** · `citizen-app` · M · P0 (§10 bước 4)
+- [ ] **T42 — Mobile: thanh toán mô phỏng, xác nhận thanh toán, lịch thu gom** · `citizen-app` · M · P0 (§10 bước 4) · **code xong 27/09/2026, chờ người dùng thử §10 bước 4 trên điện thoại + web**: backend thêm `GET /api/citizen/schedule` (lịch tổ của hộ kèm công ty; `/api/masterdata/**` không nhận token người dân) + `CitizenScheduleIT`; màn cổng thanh toán ghi rõ "mô phỏng", số tiền gửi = số còn thiếu backend trả; `clientRequestId` giữ theo khoản tới khi thành công (`features/payment/requestId.ts`, có test) nên bấm hai lần không tạo 2 thanh toán; màn xác nhận không dùng chữ "biên lai" (O1); danh sách xác nhận gồm mọi hình thức (tại nhà, chuyển khoản, app)
   - **Mô tả:** Màn thanh toán (chọn khoản → màn "cổng thanh toán mô phỏng", có ghi rõ là mô phỏng → xác nhận). Màn "Xác nhận thanh toán" và danh sách xác nhận đã có (O1). Màn lịch thu gom của tổ (từ T38, hoặc dữ liệu tĩnh nếu chọn C8).
   - **Tiêu chí nghiệm thu:**
-    - [ ] Dân `DTH-H000128` thanh toán trên app → web DV01 thấy hộ này "Đã thu" (§10 bước 4)
-    - [ ] Bấm thanh toán hai lần không tạo 2 thanh toán
-    - [ ] Không có chữ "biên lai" trên màn xác nhận (O1)
+    - [ ] Dân `DTH-H000128` thanh toán trên app → web DV01 thấy hộ này "Đã thu" (§10 bước 4) — backend đã kiểm bằng `CitizenPaymentIT` (ledger + `/api/billing/charges` thấy PAID); chờ người dùng chạy tay
+    - [x] Bấm thanh toán hai lần không tạo 2 thanh toán (`requestId` giữ theo khoản + `CitizenPaymentIT.sameRequestIdTwiceCreatesOnePayment`; kiểm tay còn chờ)
+    - [x] Không có chữ "biên lai" trên màn xác nhận (O1) (màn `confirmations/[id]`; API kiểm bằng `CitizenPaymentIT`)
   - **Kiểm chứng:**
-    - [ ] `cd mobile && npm run gen:api && npm test`
-    - [ ] Thủ công: §10 bước 4 trên điện thoại + web
+    - [x] `cd mobile && npm run gen:api && npm test` (46 test) + `npm run typecheck` + `expo export`; `cd backend && ./mvnw test -Dtest=CitizenScheduleIT`
+    - [ ] Thủ công: §10 bước 4 trên điện thoại + web — chờ người dùng
   - **Phụ thuộc:** T41, T40, T38
   - **File dự kiến:** `MOB/app/pay/[chargeId].tsx`, `MOB/app/confirmations/{index,[id]}.tsx`, `MOB/app/(tabs)/schedule.tsx`
   - **Kích thước:** M

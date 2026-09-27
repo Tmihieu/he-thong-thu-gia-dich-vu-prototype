@@ -934,6 +934,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/citizen/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lịch thu gom của tổ hộ đang ở */
+        get: operations["schedule"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/citizen/payments/{id}/confirmation": {
         parameters: {
             query?: never;
@@ -2034,6 +2051,42 @@ export interface components {
              */
             held: number;
         };
+        CitizenScheduleDto: {
+            /** @example KV07 */
+            areaCode: string;
+            areaName: string;
+            districtName: string;
+            company: components["schemas"]["ServingCompanyDto"];
+            lines: components["schemas"]["ScheduleLineDto"][];
+        };
+        ScheduleLineDto: {
+            /**
+             * Format: int32
+             * @description 1 = Thứ 2 … 7 = Chủ nhật (ISO)
+             */
+            weekday: number;
+            /**
+             * Format: int32
+             * @description Null = hằng tuần; 1 = tuần đầu tháng
+             */
+            weekOfMonth: number | null;
+            /** @example 17:00:00 */
+            startTime: string;
+            /** @example 19:00:00 */
+            endTime: string;
+            /** @enum {string} */
+            wasteType: "HOUSEHOLD" | "HOUSEHOLD_RECYCLABLE" | "BULKY";
+            note: string | null;
+        };
+        ServingCompanyDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example DV01 */
+            code: string;
+            name: string;
+            contactName: string;
+            contactPhone: string;
+        };
         CitizenProfileDto: {
             /** Format: int64 */
             accountId: number;
@@ -2078,15 +2131,6 @@ export interface components {
             /** @example DTH */
             districtCode: string;
             districtName: string;
-        };
-        ServingCompanyDto: {
-            /** Format: int64 */
-            id: number;
-            /** @example DV01 */
-            code: string;
-            name: string;
-            contactName: string;
-            contactPhone: string;
         };
         CitizenChargeDto: {
             /** Format: int64 */
@@ -3674,6 +3718,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CashHeldDto"][];
+                };
+            };
+        };
+    };
+    schedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CitizenScheduleDto"];
                 };
             };
         };

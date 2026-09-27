@@ -17,8 +17,8 @@ const SHORTCUTS: { label: string; icon: IconName; href: Href }[] = [
   { label: 'Gửi phản ánh\nkiến nghị', icon: 'chatbubble-ellipses-outline', href: { pathname: '/coming-soon', params: { title: 'Gửi phản ánh' } } },
   { label: 'Đăng ký\nrác cồng kềnh', icon: 'cube-outline', href: { pathname: '/coming-soon', params: { title: 'Rác cồng kềnh' } } },
   { label: 'Chợ\nđồ cũ', icon: 'storefront-outline', href: '/market' },
-  { label: 'Lịch\nthu gom', icon: 'calendar-outline', href: { pathname: '/coming-soon', params: { title: 'Lịch thu gom' } } },
-  { label: 'Xác nhận\nthanh toán', icon: 'receipt-outline', href: { pathname: '/coming-soon', params: { title: 'Xác nhận thanh toán' } } },
+  { label: 'Lịch\nthu gom', icon: 'calendar-outline', href: '/schedule' },
+  { label: 'Xác nhận\nthanh toán', icon: 'receipt-outline', href: '/confirmations' },
 ];
 
 export default function HomeScreen() {
@@ -52,7 +52,11 @@ export default function HomeScreen() {
 
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.push('/charges')}
+          onPress={() =>
+            summary.next
+              ? router.push({ pathname: '/pay/[chargeId]', params: { chargeId: String(summary.next.id) } })
+              : router.push('/charges')
+          }
           style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
         >
           <Ionicons name="wallet-outline" size={22} color={colors.primaryDark} />
@@ -72,7 +76,7 @@ export default function HomeScreen() {
               <Text style={styles.ctaText}>Không có khoản nào cần đóng</Text>
             )}
           </View>
-          <Text style={styles.ctaLink}>Xem ›</Text>
+          <Text style={styles.ctaLink}>{summary.next ? 'Thanh toán ›' : 'Xem ›'}</Text>
         </Pressable>
       </View>
 

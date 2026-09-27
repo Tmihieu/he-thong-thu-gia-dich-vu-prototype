@@ -1,13 +1,17 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { api } from '../../api/client';
 import type { components } from '../../api/schema';
+import { completeRequest, requestIdFor } from '../payment/requestId';
 
 type S = components['schemas'];
 export type CitizenProfile = S['CitizenProfileDto'];
 export type CitizenCharge = S['CitizenChargeDto'];
 export type CitizenLoginResponse = S['CitizenLoginResponse'];
 export type OtpRequestResponse = S['OtpRequestResponse'];
+export type PaymentConfirmation = S['PaymentConfirmationDto'];
+export type CitizenPaymentResponse = S['CitizenPaymentResponse'];
+export type CitizenSchedule = S['CitizenScheduleDto'];
 
 export const citizenApi = {
   requestOtp: (phone: string) => api.post<OtpRequestResponse>('/api/citizen/auth/otp/request', { phone }),
@@ -15,12 +19,20 @@ export const citizenApi = {
   me: () => api.get<CitizenProfile>('/api/citizen/me'),
   charges: () => api.get<CitizenCharge[]>('/api/citizen/charges'),
   charge: (id: number) => api.get<CitizenCharge>(`/api/citizen/charges/${id}`),
+  pay: (chargeId: number, amount: number, clientRequestId: string) =>
+    api.post<CitizenPaymentResponse>('/api/citizen/payments', { chargeId, amount, clientRequestId }),
+  confirmations: () => api.get<PaymentConfirmation[]>('/api/citizen/payments'),
+  confirmation: (id: number) => api.get<PaymentConfirmation>(`/api/citizen/payments/${id}/confirmation`),
+  schedule: () => api.get<CitizenSchedule>('/api/citizen/schedule'),
 };
 
 export const citizenKeys = {
   me: ['citizen', 'me'] as const,
   charges: ['citizen', 'charges'] as const,
   charge: (id: number) => ['citizen', 'charges', id] as const,
+  confirmations: ['citizen', 'confirmations'] as const,
+  confirmation: (id: number) => ['citizen', 'confirmations', id] as const,
+  schedule: ['citizen', 'schedule'] as const,
 };
 
 export function useProfile() {
@@ -29,6 +41,43 @@ export function useProfile() {
 
 export function useCharges() {
   return useQuery({ queryKey: citizenKeys.charges, queryFn: citizenApi.charges });
+}
+
+export function useCharge(id: number) {
+  return useQuery({ queryKey: citizenKeys.charge(id), queryFn: () => citizenApi.charge(id), enabled: Number.isFinite(id) });
+}
+
+export function useConfirmations() {
+  return useQuery({ queryKey: citizenKeys.confirmations, queryFn: citizenApi.confirmations });
+}
+
+export function useConfirmation(id: number) {
+  return useQuery({
+    queryKey: citizenKeys.confirmation(id),
+    queryFn: () => citizenApi.confirmation(id),
+    enabled: Number.isFinite(id),
+  });
+}
+
+export function useSchedule() {
+  return useQuery({ queryKey: citizenKeys.schedule, queryFn: citizenApi.schedule, staleTime: 10 * 60_000 });
+}
+
+/**
+ * Thanh toán mô phỏng: `clientRequestId` giữ theo khoản tới khi thành công, nên bấm lại khi mạng chậm
+ * không tạo thanh toán thứ hai. Thành công thì làm mới khoản và danh sách xác nhận.
+ */
+export function usePay(chargeId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (amount: number) => citizenApi.pay(chargeId, amount, requestIdFor(chargeId)),
+    onSuccess: (res) => {
+      completeRequest(chargeId);
+      queryClient.setQueryData(citizenKeys.confirmation(res.confirmation.id), res.confirmation);
+      void queryClient.invalidateQueries({ queryKey: citizenKeys.charges });
+      void queryClient.invalidateQueries({ queryKey: citizenKeys.confirmations });
+    },
+  });
 }
 
 /** Khoản chưa đóng, hạn gần nhất trước; tổng còn phải đóng. */

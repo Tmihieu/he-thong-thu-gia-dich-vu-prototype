@@ -47,6 +47,10 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="charges" options={{ title: 'Khoản phí của hộ' }} />
         <Stack.Screen name="household" options={{ title: 'Thông tin hộ' }} />
+        <Stack.Screen name="pay/[chargeId]" options={{ title: 'Thanh toán phí' }} />
+        <Stack.Screen name="confirmations/index" options={{ title: 'Xác nhận thanh toán' }} />
+        <Stack.Screen name="confirmations/[id]" options={{ title: 'Xác nhận thanh toán' }} />
+        <Stack.Screen name="schedule" options={{ title: 'Lịch thu gom' }} />
         <Stack.Screen name="coming-soon" options={{ title: 'Đang xây dựng' }} />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>

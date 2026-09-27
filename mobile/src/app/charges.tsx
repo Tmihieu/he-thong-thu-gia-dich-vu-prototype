@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { ApiError } from '../api/client';
@@ -5,7 +6,7 @@ import { summarizeCharges, useCharges, type CitizenCharge } from '../features/ci
 import { formatDate, formatMoney } from '../shared/format';
 import { CHARGE_STATUS_LABELS } from '../shared/labels';
 import { colors, spacing } from '../shared/theme';
-import { Card, Empty, ErrorBox, Line, Loading, Muted, Screen, SectionTitle, Tag, type Tone } from '../shared/ui';
+import { Button, Card, Empty, ErrorBox, Line, Loading, Muted, Screen, SectionTitle, Tag, type Tone } from '../shared/ui';
 
 function statusTone(c: CitizenCharge): Tone {
   if (c.status === 'PAID') return 'success';
@@ -35,6 +36,10 @@ function UnpaidCard({ c }: { c: CitizenCharge }) {
         <Line label="Còn phải đóng" value={formatMoney(c.remainingAmount)} bold />
         <Line label="Mã khoản" value={c.code} />
       </View>
+      <Button
+        title="Thanh toán (mô phỏng)"
+        onPress={() => router.push({ pathname: '/pay/[chargeId]', params: { chargeId: String(c.id) } })}
+      />
     </Card>
   );
 }
@@ -57,7 +62,7 @@ function HistoryRow({ c }: { c: CitizenCharge }) {
   );
 }
 
-/** Khoản phí của hộ: phần cần đóng (hạn gần trước) và lịch sử. Nút thanh toán mô phỏng thêm ở T42. */
+/** Khoản phí của hộ: phần cần đóng (hạn gần trước, có nút thanh toán mô phỏng) và lịch sử. */
 export default function ChargesScreen() {
   const charges = useCharges();
   const summary = summarizeCharges(charges.data);

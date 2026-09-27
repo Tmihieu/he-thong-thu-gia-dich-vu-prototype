@@ -38,12 +38,13 @@ export default function AccountScreen() {
             icon={<Ionicons name="business-outline" size={20} color={colors.primary} />}
             title="Đơn vị thu gom phụ trách"
             subtitle={company ? `${company.name} · ${company.contactPhone}` : 'Khu vực chưa có công ty phụ trách'}
+            onPress={() => router.push('/schedule')}
           />
           <NavRow
             icon={<Ionicons name="receipt-outline" size={20} color={colors.primary} />}
             title="Xác nhận thanh toán"
             subtitle="Các lần đã thanh toán"
-            onPress={() => router.push({ pathname: '/coming-soon', params: { title: 'Xác nhận thanh toán' } })}
+            onPress={() => router.push('/confirmations')}
           />
         </Card>
 

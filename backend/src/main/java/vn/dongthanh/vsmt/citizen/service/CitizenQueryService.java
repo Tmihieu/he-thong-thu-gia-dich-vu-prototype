@@ -15,6 +15,8 @@ import vn.dongthanh.vsmt.citizen.domain.CitizenAccount;
 import vn.dongthanh.vsmt.citizen.domain.CitizenAccountRepository;
 import vn.dongthanh.vsmt.collection.service.CollectionService;
 import vn.dongthanh.vsmt.collection.service.CollectionService.ChargeProgress;
+import vn.dongthanh.vsmt.masterdata.domain.Area;
+import vn.dongthanh.vsmt.masterdata.domain.CollectionSchedule;
 import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceContract;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubject;
@@ -49,6 +51,15 @@ public class CitizenQueryService {
         Company company = areaAssignments.companyOf(subject.getArea().getId(), today)
                 .map(masterData::companyInfo).orElse(null);
         return new Profile(account, subject, contract, company);
+    }
+
+    /** Lịch thu gom của tổ hộ đang ở, kèm công ty đang phụ trách (null nếu tổ chưa có công ty). */
+    public AreaSchedule schedule(CurrentCitizen citizen) {
+        CitizenAccount account = requireActive(citizen);
+        Area area = account.getSubject().getArea();
+        Company company = areaAssignments.companyOf(area.getId(), LocalDate.now(clock))
+                .map(masterData::companyInfo).orElse(null);
+        return new AreaSchedule(area, company, masterData.schedulesOf(area.getId()));
     }
 
     public List<ChargeView> charges(CurrentCitizen citizen) {
@@ -86,5 +97,8 @@ public class CitizenQueryService {
     }
 
     public record ChargeView(Charge charge, long paidAmount, long remainingAmount, boolean overdue) {
+    }
+
+    public record AreaSchedule(Area area, Company company, List<CollectionSchedule> lines) {
     }
 }
