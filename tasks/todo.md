@@ -582,15 +582,15 @@
   - **File dự kiến:** `BE/citizen/service/CitizenPaymentService.java`, `BE/citizen/api/CitizenController.java`, `BT/citizen/CitizenPaymentIT.java`
   - **Kích thước:** S
 
-- [ ] **T41 — Mobile: đăng nhập, trang chủ, thông tin hộ, khoản phải đóng** · `citizen-app` · M · P0
+- [ ] **T41 — Mobile: đăng nhập, trang chủ, thông tin hộ, khoản phải đóng** · `citizen-app` · M · P0 · **code xong 27/09/2026, chờ người dùng thử trên Expo Go**: thanh tab theo đúng prototype (Trang chủ · Chợ đồ cũ · Thông báo · Tài khoản; hai tab sau là màn "Đang xây dựng" chờ T44/T48), nên Khoản phí (`src/app/charges.tsx`) và Thông tin hộ (`src/app/household.tsx`) là màn đẩy từ Trang chủ/Tài khoản thay vì tab như file dự kiến; bảo vệ đăng nhập bằng `Stack.Protected` của Expo Router 57 + `SessionProvider` (SecureStore, 401 → tự đăng xuất); định dạng tiền/ngày tự viết (không dayjs/Intl vì Hermes), cùng bộ ca test với web; 36 test Jest (client, kết nối, định dạng, kiểm tra SĐT/OTP, gộp khoản)
   - **Mô tả:** Màn đăng nhập (SĐT → OTP), token lưu bằng `expo-secure-store` (nếu được duyệt ở G10). Tab điều hướng. Trang chủ (tổng phải đóng, lối tắt). Thông tin hộ. Khoản phải đóng + lịch sử. Tham chiếu `prototype/` app người dân.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Đăng nhập hộ `DTH-H000128` trên Expo Go; thấy đúng hồ sơ và khoản xã đã phát hành
-    - [ ] Tiền định dạng `1.234.567 đ`, ngày `dd/MM/yyyy` (test Jest cho hàm định dạng)
-    - [ ] Hết phiên → quay về màn đăng nhập
+    - [ ] Đăng nhập hộ `DTH-H000128` trên Expo Go; thấy đúng hồ sơ và khoản xã đã phát hành — chờ người dùng (SĐT `0902000128`, OTP `123456`)
+    - [x] Tiền định dạng `1.234.567 đ`, ngày `dd/MM/yyyy` (test Jest cho hàm định dạng)
+    - [x] Hết phiên → quay về màn đăng nhập (`SessionProvider`: 401 hoặc token quá hạn lưu → xóa phiên; kiểm tay còn chờ)
   - **Kiểm chứng:**
-    - [ ] `cd mobile && npm run gen:api && npm test`
-    - [ ] Thủ công: `npx expo start` trên điện thoại
+    - [x] `cd mobile && npm run gen:api && npm test` (+ `npm run typecheck`, `expo export`)
+    - [ ] Thủ công: `npx expo start` trên điện thoại — chờ người dùng
   - **Phụ thuộc:** T22, T39
   - **File dự kiến:** `MOB/app/(auth)/login.tsx`, `MOB/app/(tabs)/{_layout,index,household,charges}.tsx`, `MOB/src/shared/format.ts` + test
   - **Kích thước:** M

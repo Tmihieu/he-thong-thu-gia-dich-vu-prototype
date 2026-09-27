@@ -439,6 +439,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/citizen/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Các xác nhận thanh toán của hộ (mọi hình thức), mới nhất trước */
+        get: operations["confirmations"];
+        put?: never;
+        /** Thanh toán mô phỏng một khoản của hộ (trả đúng số còn thiếu) */
+        post: operations["pay_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/citizen/auth/otp/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Xác nhận SĐT + OTP, nhận access token người dân */
+        post: operations["verifyOtp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/citizen/auth/otp/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Yêu cầu mã OTP (mô phỏng, không gửi SMS) */
+        post: operations["requestOtp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/billing/charge-requests": {
         parameters: {
             query?: never;
@@ -712,6 +764,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/masterdata/areas/{id}/schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lịch thu gom của khu vực */
+        get: operations["schedules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/masterdata/areas/{areaId}/assignments": {
         parameters: {
             query?: never;
@@ -865,6 +934,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/citizen/payments/{id}/confirmation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Xác nhận thanh toán (không phải biên lai pháp lý, O1) */
+        get: operations["confirmation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/citizen/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Hồ sơ hộ của tài khoản đang đăng nhập */
+        get: operations["me_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/citizen/charges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Các khoản của hộ (chưa đóng và lịch sử), kỳ mới trước */
+        get: operations["charges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/citizen/charges/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chi tiết một khoản của hộ (khoản của hộ khác trả 404) */
+        get: operations["charge"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/billing/charges": {
         parameters: {
             query?: never;
@@ -873,7 +1010,7 @@ export interface paths {
             cookie?: never;
         };
         /** Khoản phải thu; công ty chỉ thấy khoản của công ty mình */
-        get: operations["charges"];
+        get: operations["charges_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1447,6 +1584,85 @@ export interface components {
             amount: number;
             note: string | null;
         };
+        CitizenPaymentRequest: {
+            /** Format: int64 */
+            chargeId: number;
+            /**
+             * Format: int64
+             * @description Phải bằng đúng số còn thiếu của khoản
+             */
+            amount?: number;
+            /** @description Mã do app sinh cho mỗi lần bấm thanh toán; gửi lại cùng mã không tạo thanh toán thứ hai */
+            clientRequestId: string;
+        };
+        CitizenPaymentResponse: {
+            /** @description true: yêu cầu gửi lại, trả thanh toán đã có */
+            replayed: boolean;
+            confirmation: components["schemas"]["PaymentConfirmationDto"];
+        };
+        PaymentConfirmationDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example TT-1026-000123 */
+            code: string;
+            /** Format: date-time */
+            paidAt: string;
+            /** Format: int64 */
+            amount: number;
+            /** @enum {string} */
+            method: "CASH" | "TRANSFER" | "APP_SIMULATED";
+            /** Format: int64 */
+            chargeId: number;
+            chargeCode: string;
+            /** @enum {string} */
+            chargeStatus: "UNPAID" | "PAID" | "EXEMPT";
+            /** Format: int64 */
+            chargeAmount: number;
+            periodCode: string;
+            periodLabel: string;
+            feeTypeName: string;
+            subjectCode: string;
+            subjectName: string;
+            subjectAddress: string;
+            /** @description Công ty phụ trách khoản */
+            companyName: string;
+        };
+        OtpVerifyRequest: {
+            /** @example 0902000128 */
+            phone: string;
+            otp: string;
+        };
+        CitizenAccountDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example 0902000128 */
+            phone: string;
+            displayName: string;
+            /** Format: int64 */
+            subjectId: number;
+            /** @example DTH-H000128 */
+            subjectCode: string;
+            subjectName: string;
+        };
+        CitizenLoginResponse: {
+            accessToken: string;
+            /** @example Bearer */
+            tokenType: string;
+            /** Format: date-time */
+            expiresAt: string;
+            account: components["schemas"]["CitizenAccountDto"];
+        };
+        OtpRequest: {
+            /** @example 0902000128 */
+            phone: string;
+        };
+        OtpRequestResponse: {
+            /** @description Luôn true: không gửi SMS thật (O7) */
+            simulated: boolean;
+            message: string;
+            /** Format: int32 */
+            expiresInSeconds: number;
+        };
         IssueRequest: {
             /** Format: int64 */
             periodId: number;
@@ -1706,6 +1922,30 @@ export interface components {
              */
             subjectCount: number;
         };
+        CollectionScheduleDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            areaId: number;
+            /**
+             * Format: int32
+             * @description 1 = Thứ 2 … 7 = Chủ nhật (ISO)
+             * @example 3
+             */
+            weekday: number;
+            /**
+             * Format: int32
+             * @description Null = hằng tuần; 1 = tuần đầu tháng
+             */
+            weekOfMonth: number | null;
+            /** @example 17:00:00 */
+            startTime: string;
+            /** @example 19:00:00 */
+            endTime: string;
+            /** @enum {string} */
+            wasteType: "HOUSEHOLD" | "HOUSEHOLD_RECYCLABLE" | "BULKY";
+            note: string | null;
+        };
         ChargeDto: {
             /** Format: int64 */
             id: number;
@@ -1793,6 +2033,93 @@ export interface components {
              * @description Đang giữ
              */
             held: number;
+        };
+        CitizenProfileDto: {
+            /** Format: int64 */
+            accountId: number;
+            phone: string;
+            displayName: string;
+            subject: components["schemas"]["HouseholdDto"];
+            /** @description Hợp đồng hiệu lực hôm nay; null nếu chưa có */
+            contract: components["schemas"]["HouseholdContractDto"];
+            /** @description Công ty đang phụ trách khu vực; null nếu khu vực chưa có công ty */
+            company: components["schemas"]["ServingCompanyDto"];
+        };
+        HouseholdContractDto: {
+            contractNo: string;
+            /** @enum {string} */
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_GENERATOR" | "BY_VOLUME";
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo: string | null;
+            exempt: boolean;
+            exemptReason: string | null;
+        };
+        HouseholdDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example DTH-H000128 */
+            code: string;
+            name: string;
+            /** @enum {string} */
+            subjectType: "HOUSEHOLD" | "BUSINESS_HOUSEHOLD" | "ENTERPRISE";
+            address: string;
+            phone: string | null;
+            /** @enum {string} */
+            status: "ACTIVE" | "PENDING" | "ENDED";
+            /** Format: int32 */
+            memberCount: number | null;
+            /** Format: int64 */
+            areaId: number;
+            /** @example KV07 */
+            areaCode: string;
+            areaName: string;
+            /** @example DTH */
+            districtCode: string;
+            districtName: string;
+        };
+        ServingCompanyDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example DV01 */
+            code: string;
+            name: string;
+            contactName: string;
+            contactPhone: string;
+        };
+        CitizenChargeDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example KT-1026-DTH-H000128 */
+            code: string;
+            /** Format: int64 */
+            periodId: number;
+            /** @example 2026-10 */
+            periodCode: string;
+            /** @example Tháng 10/2026 */
+            periodLabel: string;
+            /** @example ENV */
+            feeTypeCode: string;
+            feeTypeName: string;
+            /** Format: int64 */
+            amount: number;
+            /** Format: int64 */
+            paidAmount: number;
+            /** Format: int64 */
+            remainingAmount: number;
+            /** Format: date */
+            coverageFrom: string;
+            /** Format: date */
+            coverageTo: string;
+            /** Format: date */
+            dueDate: string;
+            /** @enum {string} */
+            status: "UNPAID" | "PAID" | "EXEMPT";
+            /** @description Chưa thu và đã qua hạn đóng */
+            overdue: boolean;
+            /** Format: date-time */
+            paidAt: string | null;
         };
         ChargeRequestDto: {
             /** Format: int64 */
@@ -2662,6 +2989,98 @@ export interface operations {
             };
         };
     };
+    confirmations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PaymentConfirmationDto"][];
+                };
+            };
+        };
+    };
+    pay_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CitizenPaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CitizenPaymentResponse"];
+                };
+            };
+        };
+    };
+    verifyOtp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OtpVerifyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CitizenLoginResponse"];
+                };
+            };
+        };
+    };
+    requestOtp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OtpRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["OtpRequestResponse"];
+                };
+            };
+        };
+    };
     requests: {
         parameters: {
             query?: {
@@ -3031,6 +3450,28 @@ export interface operations {
             };
         };
     };
+    schedules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CollectionScheduleDto"][];
+                };
+            };
+        };
+    };
     history: {
         parameters: {
             query?: never;
@@ -3237,7 +3678,91 @@ export interface operations {
             };
         };
     };
+    confirmation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PaymentConfirmationDto"];
+                };
+            };
+        };
+    };
+    me_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CitizenProfileDto"];
+                };
+            };
+        };
+    };
     charges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CitizenChargeDto"][];
+                };
+            };
+        };
+    };
+    charge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CitizenChargeDto"];
+                };
+            };
+        };
+    };
+    charges_1: {
         parameters: {
             query?: {
                 periodId?: number;

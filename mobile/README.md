@@ -21,7 +21,8 @@ Expo SDK 57 · React Native 0.86 · TypeScript · Expo Router (màn hình trong 
    npm install
    npx expo start
    ```
-   Quét mã QR (Android: trong Expo Go; iPhone: bằng app Camera). Màn đầu tiên là **Kiểm tra kết nối**: thấy "Kết nối thành công" là điện thoại đã gọi được backend.
+   Quét mã QR (Android: trong Expo Go; iPhone: bằng app Camera). Màn đầu tiên là **Đăng nhập**; bấm "Kiểm tra kết nối máy chủ" ở cuối màn để chắc điện thoại gọi được backend ("Kết nối thành công").
+6. Đăng nhập bằng số điện thoại của một hộ demo và **OTP cố định `123456`** (không gửi SMS): danh sách ở `docs/demo-accounts.md`, hộ của kịch bản demo là `0902000128` (DTH-H000128). Phiên lưu trong SecureStore 7 ngày; hết hạn hoặc tài khoản bị khóa thì app tự về màn đăng nhập.
 
 ### Khi không kết nối được
 
@@ -39,4 +40,6 @@ npx expo-doctor     # kiểm tra phiên bản phụ thuộc so với SDK
 ```
 
 - Cài thêm thư viện bằng `npx expo install <gói>` để lấy đúng bản tương thích SDK 57.
+- Đóng gói thử không cần điện thoại: `NODE_OPTIONS=--max-old-space-size=8192 npx expo export --platform android --output-dir <thư mục tạm>` (Metro cần heap lớn hơn mặc định của Node, nếu không sẽ báo "out of memory").
+- Màn hình: `src/app/login.tsx` (SĐT → OTP) · `src/app/(tabs)/` bốn tab như prototype (Trang chủ, Chợ đồ cũ, Thông báo, Tài khoản) · `src/app/charges.tsx` khoản phí · `src/app/household.tsx` thông tin hộ · `src/app/connection.tsx` kiểm tra kết nối. Phiên đăng nhập: `src/features/auth/`.
 - `gen:api` gọi `npx openapi-typescript@7.13.0` (cùng bản với web) thay vì cài vào `devDependencies`, vì openapi-typescript 7 chỉ nhận TypeScript 5 còn SDK 57 dùng TypeScript 6.
