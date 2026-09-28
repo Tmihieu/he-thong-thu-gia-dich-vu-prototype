@@ -1122,6 +1122,8 @@ Người duyệt trả lời trực tiếp trong mục 5.1–5.3; ba chỗ trả
 | T51 (C1) | **27/09/2026.** Cắt màn quản trị tài khoản khỏi demo, dùng tài khoản seed (plan C1) | T51 |
 | P1 | **28/09/2026.** Quản trị bấm mở kỳ là bắt đầu thu luôn: kỳ vào thẳng `COLLECTING`, bỏ trạng thái `OPEN` và bước "Bắt đầu thu" (API `POST /periods/{id}/start`). Kỳ `OPEN` trên CSDL cũ chuyển sang `COLLECTING` ở V22 | `CollectionPeriod.status` |
 | P2 | **28/09/2026.** Công ty báo sai sót phiếu thu sau khi kỳ đã khóa: chấp nhận cho demo là xã chỉ đóng sai sót kèm ghi chú, không lập được phiếu mới cho kỳ đã khóa (giới hạn đã biết của G6) | `ReceiptIssue`, G6 |
+| P3 | **28/09/2026.** Phí giá cố định: đơn giá nhập tay phải > 0; nhập 0 → 422 `CHARGE_PRICE_INVALID` (trước đây sinh khoản 0 đ "Chưa thu" không ai thu được). Không đặt trần đơn giá; tổng tiền tràn số → 422 `CHARGE_AMOUNT_TOO_LARGE` | `ChargeRequest.unit_price`, `Charge.amount` |
+| P4 | **28/09/2026.** Cờ dưới 45% ở màn Tiến độ: cấp **công ty** theo đã nộp về xã / phải thu (như prototype), cấp **tổ** theo đã thu / phải thu; so bằng số nguyên, không so số đã làm tròn | R13, màn Tiến độ |
 
 ### 5.1 Khoảng trống trong SPEC (G1–G16, từ `tasks/plan.md` §9)
 
