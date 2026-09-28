@@ -642,6 +642,7 @@
     - [x] Validation form báo phí (phí > 0) có test component (`QuoteForm.test.tsx`, kèm form từ chối và luồng màn công ty)
   - **Kiểm chứng:**
     - [x] `cd backend && ./mvnw test -Dtest=BulkyWasteIT` (7 test); web lint/test/build (111 test)
+    - [x] Gộp lô 2 kèm ảnh T46 (28/09/2026): `./mvnw verify` đầy đủ 155 unit + 194 IT xanh (`BulkyWasteIT` 14 test, `CitizenApiNoTransactionIT` 6 test); schema web + mobile sinh lại; web lint + Vitest (106 test / 25 file) + build xanh
   - **Phụ thuộc:** T13, T23, T39, T08
   - **File dự kiến:** `MIG/V21__…sql`, `BE/citizen/domain/BulkyWasteRequest.java` (+ repo), `BE/citizen/service/BulkyWasteService.java` + `api/BulkyWasteController.java`, `BT/citizen/BulkyWasteIT.java`, `WEB/features/citizen/BulkyRequestsPage/{BulkyRequestsPage.tsx,QuoteForm.test.tsx}`
   - **Kích thước:** M
@@ -653,6 +654,7 @@
     - [x] Validation form (ngày mong muốn ≥ hôm nay, số lượng > 0) có test Jest (`features/bulky/validate.test.ts`)
   - **Kiểm chứng:**
     - [x] `cd mobile && npm run gen:api && npm test` (60 test) + `npm run typecheck` + `expo export`
+    - [x] Gộp lô 2 có ảnh (28/09/2026): schema sinh lại (`photoNames`, `GET /api/bulky-requests/{id}/photos/{name}`); mobile typecheck + Jest (80 test / 12 file) + `expo export` android xanh; backend `./mvnw verify` đầy đủ 155 unit + 194 IT xanh (`BulkyWasteIT` 14 test); web lint + Vitest (106 test) + build xanh
     - [ ] Thủ công §10 bước 7 (phần rác cồng kềnh, kèm ảnh: `dv01` thấy ảnh nhỏ ở `/company/bulky`, bấm xem lớn) — chờ người dùng
   - **Phụ thuộc:** T45, T41
   - **File dự kiến:** `MOB/app/bulky/{new,index,[id]}.tsx`, `MOB/src/features/bulky/validate.ts` + test
@@ -663,20 +665,22 @@
   - **Tiêu chí nghiệm thu:**
     - [x] Đăng bài, xem danh sách/chi tiết, bình luận qua API (IT) (`MarketIT`, 9 test)
     - [x] Chỉ chủ bài đổi được trạng thái bài (IT) (`MarketIT.onlyAuthorClosesPostOnceWithoutReopeningAndClosedPostsLeaveDefaultList`)
-    - [ ] Đóng bài một chiều, bài đã đóng không nhận bình luận (IT `MarketIT.onlyAuthorClosesPostOnceWithoutReopeningAndClosedPostsLeaveDefaultList`, `MarketIT.closedPostTakesNoNewComments`); API chợ gọi ngoài transaction như server thật (`CitizenApiNoTransactionIT.marketFlowLoadsOutsideTestTransaction`); sinh lại `schema.d.ts` web + mobile (đổi mô tả endpoint đóng bài) — chờ chạy khi gộp
+    - [x] Đóng bài một chiều, bài đã đóng không nhận bình luận (IT `MarketIT.onlyAuthorClosesPostOnceWithoutReopeningAndClosedPostsLeaveDefaultList`, `MarketIT.closedPostTakesNoNewComments`; `MarketIT` 10 test); API chợ gọi ngoài transaction như server thật (`CitizenApiNoTransactionIT.marketFlowLoadsOutsideTestTransaction`, đăng bài đồng thời ra mã khác nhau `concurrentMarketPostsGetDistinctCodes`); ổ chứa ảnh còn < 1 GB → 422 `STORAGE_FULL` (`PhotoStorageTest`); đã sinh lại `schema.d.ts` web + mobile (đổi mô tả endpoint đóng bài) — xanh khi gộp lô 2 (28/09/2026)
   - **Kiểm chứng:**
     - [x] `cd backend && ./mvnw test -Dtest=MarketIT,DemoSeedIT,GlobalExceptionHandlerTest` (9 + 9 + 10 test); `./mvnw verify` (152 unit + 177 IT); sau khi sinh lại schema: web lint/test/build (116 test), mobile typecheck/jest (60 test)
+    - [x] Gộp lô 2 (28/09/2026): `./mvnw verify` đầy đủ 155 unit + 194 IT xanh (kể cả `CollectionNoTransactionIT`, `PhotoStorageTest`); web lint + Vitest (106 test) + build; mobile typecheck + Jest (80 test) + `expo export` android
   - **Phụ thuộc:** T39, H2
   - **File dự kiến:** `MIG/V20__market.sql`, `BE/citizen/domain/{MarketPost,MarketComment}.java` (+ repo), `BE/citizen/service/MarketService.java`, `BE/citizen/api/MarketController.java`, `BT/citizen/MarketIT.java`
   - **Kích thước:** M
 
-- [ ] **T48 — Mobile: chợ đồ cũ** · `citizen-app` · M · P0 (§10 bước 7)
+- [ ] **T48 — Mobile: chợ đồ cũ** · `citizen-app` · M · P0 (§10 bước 7) · **code xong 28/09/2026, test tự động xanh khi gộp lô 2; chờ người dùng thử tay**: tab "Chợ đồ cũ" liệt kê bài đang đăng, lọc Tất cả / Cho tặng / Trao đổi, kéo để tải lại; chi tiết có ảnh, bình luận (bài đã đóng thì ẩn ô bình luận, trên iOS ô bình luận không bị bàn phím che), chủ bài đóng bài sau khi xác nhận (không mở lại); form đăng bài: tên, hình thức, mô tả bắt buộc, nơi nhận và ảnh không bắt buộc (tối đa 5). Ảnh dùng chung với T46 ở `features/photos` (`pickPhotos`, `uploadPhoto` qua `api.upload` có token, `PhotoPickerField` khóa nút gửi khi đang tải, `PhotoStrip`); iOS đổi ảnh HEIC sang dạng tương thích trước khi tải. `expo-image-picker` ~57.0.20 (dependency đã duyệt G10) khóa bằng `npx expo install`, plugin `app.json` chỉ xin quyền thư viện ảnh (tắt camera, micro)
   - **Mô tả:** Danh sách (lọc Cho tặng / Trao đổi), chi tiết có bình luận, form đăng bài.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Dân đăng một bài trên điện thoại, bài hiện trong danh sách (§10 bước 7)
-    - [ ] Validation form đăng bài (tiêu đề, loại bắt buộc) có test Jest
+    - [ ] Dân đăng một bài trên điện thoại, bài hiện trong danh sách (§10 bước 7) — chờ người dùng
+    - [x] Validation form đăng bài (tiêu đề, loại bắt buộc) có test Jest (`features/market/validate.test.ts`; luồng chọn/tải ảnh ở `features/photos/photos.test.ts`, upload ở `api/client.test.ts`)
   - **Kiểm chứng:**
-    - [ ] `cd mobile && npm run gen:api && npm test`; thủ công trên Expo Go
+    - [x] Gộp lô 2 (28/09/2026): `npm run gen:api` + `npm run typecheck` + `npx jest` (80 test / 12 file) + `npx expo export --platform android` xanh
+    - [ ] Thủ công trên Expo Go (SĐT `0902000128`, OTP `123456`): đăng bài có ảnh, lọc, bình luận, đóng bài `CDC-035`; bình luận trên iPhone không bị bàn phím che — chờ người dùng
   - **Phụ thuộc:** T47, T41
   - **File dự kiến:** `MOB/app/market/{index,new,[id]}.tsx`, `MOB/src/features/market/validate.ts` + test
   - **Kích thước:** M
