@@ -35,6 +35,7 @@ import vn.dongthanh.vsmt.platform.domain.User;
 import vn.dongthanh.vsmt.platform.domain.UserRepository;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
 import vn.dongthanh.vsmt.platform.service.AuditService;
+import vn.dongthanh.vsmt.platform.service.UserReassignedEvent;
 
 /**
  * Phân tổ cho người đi thu (quản lý công ty). Công ty chỉ phân tổ đang được phân công cho mình, cho người đi thu
@@ -121,6 +122,20 @@ public class CollectorAssignmentService {
             Map<String, Object> before = snapshot(a);
             a.closeOn(e.fromDate().minusDays(1));
             audit.recordSystem("END_COLLECTOR_ASSIGNMENT", ENTITY, a.getArea().getCode(), before, snapshot(a));
+        }
+    }
+
+    /** T51: người đi thu còn phân tổ thì không đổi vai trò / công ty được, công ty phải kết thúc phân tổ trước. */
+    @EventListener
+    public void onUserReassigned(UserReassignedEvent e) {
+        if (!e.wasCollector()) {
+            return;
+        }
+        List<String> areas = assignments.findActiveOfCollector(e.userId(), today()).stream()
+                .map(a -> a.getArea().getCode()).toList();
+        if (!areas.isEmpty()) {
+            throw new BusinessRuleException("COLLECTOR_HAS_ASSIGNMENTS", e.username() + " đang được phân tổ "
+                    + String.join(", ", areas) + "; công ty kết thúc phân tổ trước khi đổi vai trò hoặc công ty.");
         }
     }
 

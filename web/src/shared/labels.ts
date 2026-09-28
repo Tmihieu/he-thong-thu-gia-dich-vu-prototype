@@ -16,8 +16,15 @@ export type ReceiptMethod = Schemas['ReceiptDto']['method'];
 export type PaymentMethod = Schemas['PaymentDto']['method'];
 export type ReceiptIssueType = Schemas['IssueDto']['issueType'];
 export type ReceiptIssueStatus = Schemas['IssueDto']['status'];
+export type CompanyType = NonNullable<Schemas['CompanyDto']['orgType']>;
 
 /** Nhãn tiếng Việt cho enum của backend (SPEC §6: enum lưu chuỗi, nhãn ở frontend). */
+export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
+  COMPANY: 'Công ty',
+  COOPERATIVE: 'Hợp tác xã',
+  PUBLIC_UNIT: 'Đơn vị sự nghiệp công',
+};
+
 export const TARIFF_GROUP_LABELS: Record<TariffGroup, string> = {
   HH_UP_TO_2: 'HGĐ ≤ 2 người',
   HH_3_PLUS: 'HGĐ ≥ 3 người',

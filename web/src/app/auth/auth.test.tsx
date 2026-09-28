@@ -75,12 +75,12 @@ describe('bảo vệ route', () => {
     expect(await screen.findByText('Bạn không có quyền truy cập trang này.')).toBeInTheDocument();
   });
 
-  it('đúng vai trò thì thấy layout và trang đang xây dựng', async () => {
+  it('đúng vai trò thì thấy layout và trang của vai trò', async () => {
     sessionStorage.setItem(TOKEN_KEY, 'tok-canbo');
     mockApi({ 'GET /api/platform/auth/me': () => jsonResponse(200, officer) });
     renderApp('/commune/companies');
 
-    expect(await screen.findByText(/Đang xây dựng/)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Công ty môi trường' })).toBeInTheDocument();
     expect(within(screen.getByRole('menu', { name: 'Menu chính' })).getByText('Hồ sơ hộ')).toBeInTheDocument();
   });
 

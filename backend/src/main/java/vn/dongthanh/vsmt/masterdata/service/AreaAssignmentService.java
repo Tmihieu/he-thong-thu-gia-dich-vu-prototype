@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
+import vn.dongthanh.vsmt.masterdata.domain.ActiveStatus;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
 import vn.dongthanh.vsmt.masterdata.domain.AreaAssignment;
 import vn.dongthanh.vsmt.masterdata.domain.AreaAssignmentRepository;
@@ -54,6 +55,9 @@ public class AreaAssignmentService {
         actor.requireRole(Role.COMMUNE_OFFICER);
         Company company = companies.findById(cmd.companyId())
                 .orElseThrow(() -> new NotFoundException("COMPANY_NOT_FOUND", "Không tìm thấy công ty."));
+        if (company.getStatus() != ActiveStatus.ACTIVE) {
+            throw new BusinessRuleException("COMPANY_INACTIVE", company.getCode() + " đang tạm ngưng, không phân công khu vực được.");
+        }
         List<Long> ids = new ArrayList<>(new LinkedHashSet<>(cmd.areaIds()));
         Map<Long, Area> found = areas.findAllById(ids).stream().collect(Collectors.toMap(Area::getId, Function.identity()));
         if (found.size() != ids.size()) {

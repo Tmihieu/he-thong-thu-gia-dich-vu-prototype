@@ -11,7 +11,7 @@ Dùng khi chạy tay kịch bản §10. Cách chạy và điều kiện seed: `d
 - Bước 2 phân công KV24 cho **DV01**.
 - Bước 5: nhắc nộp → lập phiếu thu **hết 919.000 kỳ 09** → lập phiếu **một phần kỳ 10**.
 
-**Không phải lỗi:** menu "Công ty" (cán bộ xã) và "Tài khoản" (quản trị) hiện "Đang xây dựng" (T51 đã cắt). Phí rác cồng kềnh không sinh khoản thu (O5). Không có chữ "biên lai" trong app (O1).
+**Không phải lỗi:** Phí rác cồng kềnh không sinh khoản thu (O5). Không có chữ "biên lai" trong app (O1).
 
 ## Web
 

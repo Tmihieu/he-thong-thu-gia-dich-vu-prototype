@@ -1,5 +1,12 @@
 /** Nhãn mã hành động backend ghi vào nhật ký; mã mới chưa có ở đây thì màn nhật ký hiện nguyên mã. */
 export const AUDIT_ACTION_LABELS: Record<string, string> = {
+  CREATE_USER: 'Tạo tài khoản',
+  UPDATE_USER: 'Sửa tài khoản',
+  LOCK_USER: 'Khóa tài khoản',
+  UNLOCK_USER: 'Mở khóa tài khoản',
+  RESET_PASSWORD: 'Đặt lại mật khẩu',
+  CREATE_COMPANY: 'Thêm công ty',
+  UPDATE_COMPANY: 'Sửa thông tin công ty',
   ASSIGN_AREA: 'Phân công khu vực cho công ty',
   ASSIGN_COLLECTOR: 'Phân tổ cho người đi thu',
   END_COLLECTOR_ASSIGNMENT: 'Kết thúc phân tổ',
@@ -28,6 +35,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
 
 /** Tên đối tượng theo tiêu đề entity trong data dictionary. */
 export const AUDIT_ENTITY_LABELS: Record<string, string> = {
+  User: 'Tài khoản',
+  Company: 'Công ty môi trường',
   AreaAssignment: 'Phân công khu vực cho công ty',
   CollectorAssignment: 'Phân tổ cho người đi thu',
   ServiceSubject: 'Đối tượng sử dụng dịch vụ',

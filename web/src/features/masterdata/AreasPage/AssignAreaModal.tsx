@@ -16,6 +16,8 @@ interface Props {
   areas: Area[];
   companies: Company[];
   initialAreaIds: number[];
+  /** Mở từ màn Công ty thì chọn sẵn công ty đó. */
+  initialCompanyId?: number;
   submitting?: boolean;
   error?: string | null;
   onSubmit: (req: AssignRequest) => void;
@@ -23,7 +25,7 @@ interface Props {
 }
 
 /** Popup phân công một hoặc nhiều tổ cho một công ty (§10 bước 2). Phân công cũ backend tự đóng. */
-export function AssignAreaModal({ open, areas, companies, initialAreaIds, submitting, error, onSubmit, onCancel }: Props) {
+export function AssignAreaModal({ open, areas, companies, initialAreaIds, initialCompanyId, submitting, error, onSubmit, onCancel }: Props) {
   const [form] = Form.useForm<FormValues>();
 
   function finish(values: FormValues) {
@@ -52,7 +54,7 @@ export function AssignAreaModal({ open, areas, companies, initialAreaIds, submit
         layout="vertical"
         requiredMark={false}
         preserve={false}
-        initialValues={{ areaIds: initialAreaIds }}
+        initialValues={{ areaIds: initialAreaIds, companyId: initialCompanyId }}
         onFinish={finish}
       >
         {error && <Alert type="error" showIcon message={error} role="alert" style={{ marginBottom: 16 }} />}

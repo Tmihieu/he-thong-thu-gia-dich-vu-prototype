@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/platform/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sửa họ tên, vai trò, công ty, liên hệ (tên đăng nhập không đổi) */
+        put: operations["updateUser"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/masterdata/subjects/{id}": {
         parameters: {
             query?: never;
@@ -32,6 +49,24 @@ export interface paths {
         get?: never;
         /** Sửa hợp đồng: nhóm giá, hiệu lực, miễn 100% */
         put: operations["updateContract"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/companies/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chi tiết công ty (công ty khác trả 404) */
+        get: operations["company"];
+        /** Sửa thông tin công ty (cán bộ xã) */
+        put: operations["updateCompany"];
         post?: never;
         delete?: never;
         options?: never;
@@ -121,6 +156,75 @@ export interface paths {
         put?: never;
         /** Khóa kỳ (cán bộ xã); còn công ty chưa nộp đủ thì 422 kèm danh sách công ty và số nợ */
         post: operations["lock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Danh sách tài khoản web (chỉ quản trị) */
+        get: operations["listUsers"];
+        put?: never;
+        /** Tạo tài khoản; vai trò công ty / người đi thu bắt buộc chọn công ty */
+        post: operations["createUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/users/{id}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mở khóa tài khoản */
+        post: operations["unlockUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/users/{id}/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Đặt lại mật khẩu */
+        post: operations["resetUserPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/users/{id}/lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Khóa tài khoản (không đăng nhập được nữa) */
+        post: operations["lockUser"];
         delete?: never;
         options?: never;
         head?: never;
@@ -242,6 +346,24 @@ export interface paths {
         put?: never;
         /** Mở kỳ thu tháng/quý (quản trị), vào thẳng Đang thu; gắn biểu giá có hiệu lực tại ngày đầu kỳ */
         post: operations["open"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/companies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Danh sách công ty (công ty chỉ thấy công ty của mình) */
+        get: operations["companies"];
+        put?: never;
+        /** Thêm công ty (cán bộ xã); mã DVnn tự sinh */
+        post: operations["createCompany"];
         delete?: never;
         options?: never;
         head?: never;
@@ -937,40 +1059,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/masterdata/companies": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Danh sách công ty (công ty chỉ thấy công ty của mình) */
-        get: operations["companies"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/masterdata/companies/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Chi tiết công ty (công ty khác trả 404) */
-        get: operations["company"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/masterdata/areas": {
         parameters: {
             query?: never;
@@ -1417,6 +1505,34 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        UpdateUserRequest: {
+            fullName: string;
+            /** @enum {string} */
+            role: "COMMUNE_OFFICER" | "COMPANY_MANAGER" | "COLLECTOR" | "ADMIN";
+            /** Format: int64 */
+            companyId?: number;
+            phone?: string;
+            /** Format: email */
+            email?: string;
+            organization?: string;
+        };
+        UserDto: {
+            /** Format: int64 */
+            id: number;
+            username: string;
+            fullName: string;
+            /** @enum {string} */
+            role: "COMMUNE_OFFICER" | "COMPANY_MANAGER" | "COLLECTOR" | "ADMIN";
+            /** Format: int64 */
+            companyId: number | null;
+            phone: string | null;
+            email: string | null;
+            organization: string | null;
+            /** @enum {string} */
+            status: "ACTIVE" | "LOCKED";
+            /** Format: date-time */
+            lastLoginAt: string | null;
+        };
         ContractRequest: {
             /** @enum {string} */
             tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_GENERATOR" | "BY_VOLUME";
@@ -1486,6 +1602,52 @@ export interface components {
             note: string | null;
             currentContract: components["schemas"]["ContractDto"];
             contracts: components["schemas"]["ContractDto"][];
+        };
+        CompanyRequest: {
+            name: string;
+            contactName: string;
+            contactPhone: string;
+            /**
+             * @description Để trống = Hoạt động
+             * @enum {string}
+             */
+            status?: "ACTIVE" | "INACTIVE";
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string;
+            /** @enum {string} */
+            orgType?: "COMPANY" | "COOPERATIVE" | "PUBLIC_UNIT";
+            taxCode?: string;
+            address?: string;
+            /** Format: email */
+            email?: string;
+            communeContractNo?: string;
+            bankAccount?: string;
+            bankName?: string;
+        };
+        CompanyDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example DV01 */
+            code: string;
+            name: string;
+            contactName: string;
+            contactPhone: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo: string | null;
+            /** @enum {string|null} */
+            orgType: "COMPANY" | "COOPERATIVE" | "PUBLIC_UNIT" | null;
+            taxCode: string | null;
+            address: string | null;
+            email: string | null;
+            communeContractNo: string | null;
+            bankAccount: string | null;
+            bankName: string | null;
         };
         CreateReminderRequest: {
             /** Format: int64 */
@@ -1647,6 +1809,23 @@ export interface components {
             /** Format: date-time */
             lockedAt: string | null;
             note: string | null;
+        };
+        CreateUserRequest: {
+            /** @example thu07b */
+            username: string;
+            fullName: string;
+            /** @enum {string} */
+            role: "COMMUNE_OFFICER" | "COMPANY_MANAGER" | "COLLECTOR" | "ADMIN";
+            /** Format: int64 */
+            companyId?: number;
+            phone?: string;
+            /** Format: email */
+            email?: string;
+            organization?: string;
+            password: string;
+        };
+        PasswordRequest: {
+            password: string;
         };
         LoginRequest: {
             username: string;
@@ -2519,29 +2698,6 @@ export interface components {
             /** Format: int32 */
             sortOrder: number | null;
         };
-        CompanyDto: {
-            /** Format: int64 */
-            id: number;
-            /** @example DV01 */
-            code: string;
-            name: string;
-            contactName: string;
-            contactPhone: string;
-            /** @enum {string} */
-            status: "ACTIVE" | "INACTIVE";
-            /** Format: date */
-            validFrom: string;
-            /** Format: date */
-            validTo: string | null;
-            /** @enum {string|null} */
-            orgType: "COMPANY" | "COOPERATIVE" | "PUBLIC_UNIT" | null;
-            taxCode: string | null;
-            address: string | null;
-            email: string | null;
-            communeContractNo: string | null;
-            bankAccount: string | null;
-            bankName: string | null;
-        };
         AreaDto: {
             /** Format: int64 */
             id: number;
@@ -2842,6 +2998,32 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    updateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UserDto"];
+                };
+            };
+        };
+    };
     get: {
         parameters: {
             query?: never;
@@ -2912,6 +3094,54 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ContractDto"];
+                };
+            };
+        };
+    };
+    company: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CompanyDto"];
+                };
+            };
+        };
+    };
+    updateCompany: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CompanyDto"];
                 };
             };
         };
@@ -3099,6 +3329,120 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PeriodDto"];
+                };
+            };
+        };
+    };
+    listUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UserDto"][];
+                };
+            };
+        };
+    };
+    createUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateUserRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UserDto"];
+                };
+            };
+        };
+    };
+    unlockUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UserDto"];
+                };
+            };
+        };
+    };
+    resetUserPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UserDto"];
+                };
+            };
+        };
+    };
+    lockUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UserDto"];
                 };
             };
         };
@@ -3314,6 +3658,50 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PeriodDto"];
+                };
+            };
+        };
+    };
+    companies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CompanyDto"][];
+                };
+            };
+        };
+    };
+    createCompany: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanyRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CompanyDto"];
                 };
             };
         };
@@ -4454,48 +4842,6 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["DistrictDto"][];
-                };
-            };
-        };
-    };
-    companies: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["CompanyDto"][];
-                };
-            };
-        };
-    };
-    company: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["CompanyDto"];
                 };
             };
         };

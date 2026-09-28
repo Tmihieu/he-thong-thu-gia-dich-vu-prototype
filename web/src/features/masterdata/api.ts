@@ -11,6 +11,7 @@ export type OpenPeriodRequest = components['schemas']['OpenPeriodRequest'];
 export type District = components['schemas']['DistrictDto'];
 export type Area = components['schemas']['AreaDto'];
 export type Company = components['schemas']['CompanyDto'];
+export type CompanyRequest = components['schemas']['CompanyRequest'];
 export type AreaAssignment = components['schemas']['AreaAssignmentDto'];
 export type AssignRequest = components['schemas']['AssignRequest'];
 export type Subject = components['schemas']['SubjectDto'];
@@ -77,6 +78,21 @@ export function useAreaHistory(areaId: number | null) {
     queryFn: () => api.get<AreaAssignment[]>(`/api/masterdata/areas/${areaId}/assignments`),
     enabled: areaId !== null,
   });
+}
+
+function useCompanyMutation<V>(fn: (v: V) => Promise<Company>) {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: fn, onSuccess: () => qc.invalidateQueries({ queryKey: masterdataKeys.companies }) });
+}
+
+export function useCreateCompany() {
+  return useCompanyMutation((body: CompanyRequest) => api.post<Company>('/api/masterdata/companies', body));
+}
+
+export function useUpdateCompany() {
+  return useCompanyMutation(({ id, body }: { id: number; body: CompanyRequest }) =>
+    api.put<Company>(`/api/masterdata/companies/${id}`, body),
+  );
 }
 
 export function useAssignAreas() {

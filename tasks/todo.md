@@ -721,13 +721,13 @@
 
 ## Dự phòng P2 — chỉ làm khi còn thời gian hoặc khi người dùng quyết định giữ (xem plan.md §7)
 
-- [ ] **T51 — Màn quản trị tài khoản** · `platform` · M · P2 (C1) · **Cắt khỏi demo theo quyết định người dùng 27/09/2026** (dùng tài khoản seed, data dictionary §5.0)
+- [x] **T51 — Màn quản trị tài khoản + màn Công ty của cán bộ xã** · `platform` · M · P2 (C1) · **27/09/2026 cắt, 28/09/2026 người dùng cho làm lại; xong 28/09/2026** (mặc định ở data dictionary §5.0 dòng T51): quản trị tạo / sửa vai trò + công ty / khóa / mở khóa / đặt lại mật khẩu, mọi thao tác có nhật ký, không ghi mật khẩu; người đi thu còn phân tổ thì không đổi vai trò / công ty (sự kiện `UserReassignedEvent`, module collection chặn). Màn Công ty (cán bộ xã): danh sách lọc Hoạt động / Tạm ngưng, thêm / sửa (mã `DVnn` tự sinh), ngăn chi tiết có tiến độ nộp theo kỳ + khu vực đang phụ trách + phân công khu vực; công ty Tạm ngưng không nhận phân công. Bỏ trang "Đang xây dựng" (mọi menu đã có màn)
   - **Mô tả:** API quản trị user (`GET/POST/PUT /api/platform/users`, khóa/mở khóa, đặt lại mật khẩu, gán vai trò + công ty), chỉ ADMIN, ghi audit. Web: bảng tài khoản + form.
   - **Tiêu chí nghiệm thu:**
-    - [ ] Quản trị tạo tài khoản COLLECTOR cho DV01; tài khoản đó đăng nhập được
-    - [ ] Không phải ADMIN → 403 (IT); tài khoản bị khóa không đăng nhập được (IT)
-    - [ ] Validation form (COMPANY_MANAGER/COLLECTOR bắt buộc có công ty) có test component
-  - **Kiểm chứng:** `cd backend && ./mvnw test -Dtest=UserAdminIT`; web lint/test/build
+    - [x] Quản trị tạo tài khoản COLLECTOR cho DV01; tài khoản đó đăng nhập được
+    - [x] Không phải ADMIN → 403 (IT); tài khoản bị khóa không đăng nhập được (IT)
+    - [x] Validation form (COMPANY_MANAGER/COLLECTOR bắt buộc có công ty) có test component
+  - **Kiểm chứng:** `UserAdminIT` 6, `CompanyApiIT` 3 + IT/unit liên quan (auth, phân công khu vực, phân tổ, phạm vi) xanh; web typecheck, lint, test `platform`/`masterdata`/`app` 43; mobile typecheck; chạy trên docker: API tạo/khóa/403/thêm công ty/chặn phân công công ty tạm ngưng đúng, 2 màn mới không lỗi console
   - **Phụ thuộc:** T06, T07, T08, T09
   - **File dự kiến:** `BE/platform/service/UserAdminService.java`, `BE/platform/api/UserAdminController.java`, `BT/platform/UserAdminIT.java`, `WEB/features/platform/AccountsPage/{AccountsPage.tsx,AccountForm.test.tsx}`
   - **Kích thước:** M

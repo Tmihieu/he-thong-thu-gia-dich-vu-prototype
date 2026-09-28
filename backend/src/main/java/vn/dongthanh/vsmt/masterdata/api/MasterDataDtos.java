@@ -5,6 +5,11 @@ import java.time.LocalTime;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import vn.dongthanh.vsmt.masterdata.domain.ActiveStatus;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionSchedule;
@@ -12,6 +17,7 @@ import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.masterdata.domain.CompanyType;
 import vn.dongthanh.vsmt.masterdata.domain.District;
 import vn.dongthanh.vsmt.masterdata.domain.WasteType;
+import vn.dongthanh.vsmt.masterdata.service.CompanyService.CompanyCommand;
 
 public final class MasterDataDtos {
 
@@ -84,6 +90,28 @@ public final class MasterDataDtos {
             return new CompanyDto(c.getId(), c.getCode(), c.getName(), c.getContactName(), c.getContactPhone(),
                     c.getStatus(), c.getValidFrom(), c.getValidTo(), c.getOrgType(), c.getTaxCode(), c.getAddress(),
                     c.getEmail(), c.getCommuneContractNo(), c.getBankAccount(), c.getBankName());
+        }
+    }
+
+    public record CompanyRequest(
+            @Schema(requiredMode = RequiredMode.REQUIRED) @NotBlank(message = "không được để trống") @Size(max = 200) String name,
+            @Schema(requiredMode = RequiredMode.REQUIRED) @NotBlank(message = "không được để trống") @Size(max = 100) String contactName,
+            @Schema(requiredMode = RequiredMode.REQUIRED) @NotBlank(message = "không được để trống")
+            @Pattern(regexp = "^[0-9]{9,15}$", message = "chỉ gồm 9–15 chữ số") String contactPhone,
+            @Schema(description = "Để trống = Hoạt động") ActiveStatus status,
+            @Schema(requiredMode = RequiredMode.REQUIRED) @NotNull(message = "không được để trống") LocalDate validFrom,
+            LocalDate validTo,
+            CompanyType orgType,
+            @Pattern(regexp = "^$|^[0-9-]{10,14}$", message = "10–14 chữ số") String taxCode,
+            @Size(max = 255) String address,
+            @Email(message = "không đúng định dạng") @Size(max = 100) String email,
+            @Size(max = 50) String communeContractNo,
+            @Size(max = 50) String bankAccount,
+            @Size(max = 100) String bankName) {
+
+        public CompanyCommand toCommand() {
+            return new CompanyCommand(name, contactName, contactPhone, status, validFrom, validTo, orgType, taxCode,
+                    address, email, communeContractNo, bankAccount, bankName);
         }
     }
 }

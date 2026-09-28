@@ -61,18 +61,22 @@ public class User extends BaseEntity {
     private OffsetDateTime lastLoginAt;
 
     public static User create(String username, String fullName, Role role, Long companyId, String passwordHash) {
+        User user = new User();
+        user.username = username;
+        user.fullName = fullName;
+        user.assignRole(role, companyId);
+        user.passwordHash = passwordHash;
+        user.status = UserStatus.ACTIVE;
+        return user;
+    }
+
+    public void assignRole(Role role, Long companyId) {
         if (role.belongsToCompany() != (companyId != null)) {
             throw new IllegalArgumentException("Vai trò " + role + " "
                     + (role.belongsToCompany() ? "bắt buộc" : "không được") + " gắn công ty");
         }
-        User user = new User();
-        user.username = username;
-        user.fullName = fullName;
-        user.role = role;
-        user.companyId = companyId;
-        user.passwordHash = passwordHash;
-        user.status = UserStatus.ACTIVE;
-        return user;
+        this.role = role;
+        this.companyId = companyId;
     }
 
     public boolean isActive() {

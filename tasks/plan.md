@@ -268,7 +268,7 @@ Nếu chỉ làm **một luồng**, 50 task P0/P1 **không vừa** 4 tuần mộ
 
 | # | Đề xuất cắt/hoãn | Tiết kiệm | Ảnh hưởng |
 |---|---|---|---|
-| C1 | T51 Màn quản trị tài khoản → dùng tài khoản seed | 1 task | Không ảnh hưởng §10; lệch SPEC §9.2 (màn quản trị tài khoản) |
+| C1 | ~~T51 Màn quản trị tài khoản → dùng tài khoản seed~~ **Không cắt nữa** (28/09/2026 làm lại cùng màn Công ty) | 1 task | — |
 | C2 | T52 Màn nhật ký audit → audit vẫn ghi DB, xem bằng SQL | 1 task | Không ảnh hưởng §10 |
 | C3 | T53 Lịch sử hộ + báo sai thông tin hộ (người đi thu) | 1 task | Lệch SPEC §9.5 một phần |
 | C4 | Bình luận chợ đồ cũ (`MarketComment`) trong T47/T48 | ~0,5 task | §10 bước 7 chỉ cần đăng bài |

@@ -21,9 +21,6 @@ export function NotFoundPage() {
   return <Result status="404" title="404" subTitle="Không tìm thấy trang." extra={<HomeButton />} />;
 }
 
-export function UnderConstructionPage({ title }: { title: string }) {
-  return <Result status="info" title={title} subTitle="Đang xây dựng. Màn hình này sẽ có trong các task tiếp theo." />;
-}
 
 export function FullPageSpin() {
   return (
