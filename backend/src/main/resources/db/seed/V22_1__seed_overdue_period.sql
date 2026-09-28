@@ -96,16 +96,19 @@ from (
                               'status', 'COLLECTING') as after_data
     union all
     select timestamptz '2026-09-01 08:00+07', 'canbo_xa', 'ISSUE_CHARGE_REQUEST', 'ChargeRequest', 'YCT-0926-01', null,
-           jsonb_build_object('period', '2026-09', 'feeType', 'ENV', 'scope', 'COMPANY', 'dueDate', '2026-09-20',
+           jsonb_build_object('period', '2026-09', 'feeType', 'ENV', 'scope', 'COMPANY',
+                              'areas', '[]'::jsonb, 'company', 'DV01', 'unitPrice', null,
+                              'issueDate', '2026-09-01', 'dueDate', '2026-09-20',
                               'chargeCount', count(*), 'exemptCount', count(*) filter (where status = 'EXEMPT'),
                               'totalAmount', sum(amount))
     from charges where code like 'KT-0926-%'
     union all
-    -- Mỗi khoản chỉ một lần thanh toán nên trước đó đã thu 0; "amount" sau là số tiền lần thu như service ghi.
+    -- Mỗi khoản chỉ một lần thanh toán nên trước đó đã thu 0; khóa như CollectionService.state + số tiền lần thu.
     select p.paid_at, cu.username, 'RECORD_PAYMENT', 'Charge', c.code,
-           jsonb_build_object('status', 'UNPAID', 'amount', c.amount, 'paidAmount', 0),
+           jsonb_build_object('status', 'UNPAID', 'chargeAmount', c.amount, 'paidAmount', 0),
            jsonb_build_object('status', case when p.amount = c.amount then 'PAID' else 'UNPAID' end,
-                              'amount', p.amount, 'paidAmount', p.amount, 'payment', p.code, 'method', p.method)
+                              'chargeAmount', c.amount, 'paidAmount', p.amount, 'payment', p.code,
+                              'paymentAmount', p.amount, 'method', p.method)
     from payments p join charges c on c.id = p.charge_id join users cu on cu.id = p.collector_id
     where p.code like 'TT-0926-%'
     union all

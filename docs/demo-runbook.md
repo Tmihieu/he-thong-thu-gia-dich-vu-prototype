@@ -20,7 +20,7 @@ Chạy kịch bản SPEC §10 trên laptop bằng dữ liệu seed giả (profil
    docker compose up
    ```
    Máy khỏe thì gộp thành `docker compose up --build`. Lần đầu mất vài phút (tải image, thư viện Maven và npm). Backend chạy Flyway và nạp seed demo khi khởi động; xong khi log có `Started VsmtApplication`.
-4. **Nên chạy từ CSDL sạch** (`docker compose down -v` rồi `docker compose up`): volume `vsmt-db-data` dùng chung với CSDL dev. CSDL đó đã từng thử tay trong tháng 09 (mở kỳ 09/2026, ghi thu `TT-0926-…`, bàn giao `BG-0926-…`, phiếu thu `PT-CT-0926-…`) thì seed kỳ cũ (`V21_1`) báo lỗi Flyway trùng mã, backend không lên; đã mở kỳ 10/2026 thì §10 bước 1 báo "Kỳ 2026-10 đã được mở". Cả hai trường hợp: `down -v`.
+4. **Nên chạy từ CSDL sạch** (`docker compose down -v` rồi `docker compose up`): volume `vsmt-db-data` dùng chung với CSDL dev. CSDL đó đã từng thử tay trong tháng 09 (mở kỳ 09/2026, ghi thu `TT-0926-…`, bàn giao `BG-0926-…`, phiếu thu `PT-CT-0926-…`) thì seed kỳ cũ (`V22_1`) báo lỗi Flyway trùng mã, backend không lên; đã mở kỳ 10/2026 thì §10 bước 1 báo "Kỳ 2026-10 đã được mở". Cả hai trường hợp: `down -v`.
 
 | Thành phần | Địa chỉ |
 |---|---|
@@ -66,11 +66,11 @@ Mọi tên, SĐT, địa chỉ là dữ liệu giả ("Mẫu", đầu số `0902
 | KV24 chưa có công ty (bước 2) | `V6_1`: 23 tổ còn lại đã phân công, hiệu lực 01/09–31/12/2026 |
 | DV01 phụ trách KV07, KV09; người đi thu `thu07`, `thu09` (bước 3) | `V6_1`, `V9_1` |
 | Hộ `DTH-H000128` (KV07, DV01) có tài khoản app (bước 4) | `V18_1` |
-| **Kỳ cũ 09/2026 đã quá hạn, DV01 còn nợ** (bước 5 nhắc nộp) | `V21_1`, xem dưới |
+| **Kỳ cũ 09/2026 đã quá hạn, DV01 còn nợ** (bước 5 nhắc nộp) | `V22_1`, xem dưới |
 | Chợ đồ cũ có bài giả; `CDC-035` của hộ kịch bản đang mở, `CDC-033` đã đóng (bước 7) | `V20_1` |
 | Lịch thu gom mọi tổ | `V17_1` |
 
-**Kỳ cũ 09/2026** (`V21_1`): trạng thái Đang thu, hạn công ty nộp xã **25/09/2026** — đã quá hạn cả ngày làm seed lẫn ngày demo 21/10. Chỉ phát hành cho DV01 (phiếu `YCT-0926-01`, phạm vi công ty):
+**Kỳ cũ 09/2026** (`V22_1`): trạng thái Đang thu, hạn công ty nộp xã **25/09/2026** — đã quá hạn cả ngày làm seed lẫn ngày demo 21/10. Chỉ phát hành cho DV01 (phiếu `YCT-0926-01`, phạm vi công ty):
 
 | DV01 · kỳ 09/2026 | Số tiền |
 |---|---|

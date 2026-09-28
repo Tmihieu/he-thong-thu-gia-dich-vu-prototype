@@ -20,7 +20,7 @@ Dùng khi chạy tay kịch bản §10. Cách chạy và điều kiện seed: `d
 | 1 | `admin` | Cấu hình → Kỳ thu → **Mở kỳ** tháng 10/2026, hạn công ty nộp xã sau ngày demo (vd. 31/10/2026) | Dòng "Tháng 10/2026" trạng thái **Đang thu**, biểu giá `BG-65-2026`; không có nút "Bắt đầu thu" | ☐ | ☐ |
 | 2a | `canbo_xa` | Khu vực → KV24 → **Phân công** → DV01 | KV24 hiện DV01 | ☐ | ☐ |
 | 2b | `canbo_xa` | Khoản thu → Phiếu YCT: kỳ 10/2026, phí vệ sinh môi trường, toàn xã, hạn hộ đóng ≤ hạn kỳ → **Xem trước** → **Phát hành** | Xem trước không còn cảnh báo "chưa có công ty phụ trách"; phát hành ra mã `YCT-1026-01`; tab Khoản thu có khoản `KT-1026-…` | ☐ | ☐ |
-| 3a | `dv01` | Khu vực được giao → Phân tổ | `thu07` ↔ KV07, `thu09` ↔ KV09; KV24 chưa có người, phân được | ☐ | ☐ |
+| 3a | `dv01` | Khu vực được giao → Phân tổ → phân **KV24** cho `thu07` | Trước: `thu07` ↔ KV07, `thu09` ↔ KV09, KV24 chưa có người. Sau: KV24 ↔ `thu07` | ☐ | ☐ |
 | 3b | `thu07` (điện thoại, `http://<IP LAN>:5173`) | Danh sách thu (kỳ 10/2026): ghi **2 hộ tiền mặt**, **1 hộ vắng** | 2 hộ thành Đã thu, 1 hộ có lượt vắng; Tiền mặt đang giữ = tổng 2 hộ | ☐ | ☐ |
 | 3c | `dv01` | Khu vực được giao → Tổng quan → **Nhận tiền mặt** của `thu07` | `thu07` → Tiền mặt: đang giữ về **0** | ☐ | ☐ |
 | 3d | `thu07` | Chọn kỳ **09/2026** → hộ `DTH-H000122` → Lịch sử; một hộ → **Báo sai thông tin** | Lịch sử: vắng 08/09, thu 10/09. `canbo_xa` và `dv01` có thông báo ở chuông | ☐ | ☐ |

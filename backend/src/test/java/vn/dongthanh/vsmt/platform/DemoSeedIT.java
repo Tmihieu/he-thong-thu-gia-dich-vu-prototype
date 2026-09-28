@@ -241,6 +241,14 @@ class DemoSeedIT extends IntegrationTest {
                 "OPEN_PERIOD", "ISSUE_CHARGE_REQUEST", "RECORD_PAYMENT", "RECORD_PAYMENT", "RECORD_PAYMENT",
                 "RECORD_PAYMENT", "RECORD_PAYMENT", "RECORD_PAYMENT", "RECORD_PAYMENT", "RECORD_PAYMENT",
                 "RECEIVE_CASH_HANDOVER", "RECEIVE_CASH_HANDOVER", "ISSUE_COMPANY_RECEIPT");
+        // Cùng khóa JSON như CollectionService/ChargeRequestService ghi, để màn Nhật ký hiện như dòng thật.
+        assertThat(demoDb.queryForObject("""
+                select count(*) from audit_logs where action = 'RECORD_PAYMENT'
+                and before_data ? 'chargeAmount' and after_data ? 'chargeAmount' and after_data ? 'paymentAmount'
+                and not after_data ? 'amount'""", Integer.class)).isEqualTo(8);
+        assertThat(demoDb.queryForObject(
+                "select after_data ->> 'company' from audit_logs where action = 'ISSUE_CHARGE_REQUEST'", String.class))
+                .isEqualTo("DV01");
     }
 
     private static DataSource dataSource(String url) {
