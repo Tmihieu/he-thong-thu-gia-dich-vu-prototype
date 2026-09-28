@@ -9,7 +9,7 @@ import { BulkyCard } from '../../features/bulky/BulkyCard';
 import { summarizeCharges, useBulkyRequests, useCharges, useComplaints, useProfile } from '../../features/citizen/api';
 import { ComplaintCard } from '../../features/complaints/ComplaintCard';
 import { formatDate, formatMoney, initials } from '../../shared/format';
-import { colors, radius, spacing } from '../../shared/theme';
+import { cardShadow, colors, radius, spacing } from '../../shared/theme';
 import { Card, ErrorBox, Screen, SectionTitle, Tag } from '../../shared/ui';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -68,7 +68,7 @@ export default function HomeScreen() {
           }
           style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
         >
-          <Ionicons name="wallet-outline" size={22} color={colors.primaryDark} />
+          <Ionicons name="wallet-outline" size={22} color="#fff" />
           <View style={styles.flex}>
             {charges.isPending ? (
               <Text style={styles.ctaText}>Đang tải khoản phí…</Text>
@@ -156,26 +156,27 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   screen: { padding: 0, gap: 0 },
-  hero: { backgroundColor: colors.chrome, padding: spacing.lg, gap: spacing.lg, borderBottomLeftRadius: radius.lg, borderBottomRightRadius: radius.lg },
+  // Hero xanh gr-800; thân nền nhạt bo góc trên 22px trồi lên đè mép dưới hero (`.gr-hero` + `.gr-body`).
+  hero: { backgroundColor: colors.chrome, paddingHorizontal: 18, paddingBottom: spacing.xl + radius.lg, gap: spacing.lg },
   heroTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  avatar: { width: 48, height: 48, borderRadius: radius.pill, backgroundColor: '#ffffff33', alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#fff', fontWeight: '800', fontSize: 18 },
-  heroSmall: { color: colors.heroText, fontSize: 13 },
-  heroName: { color: '#fff', fontSize: 18, fontWeight: '700' },
-  cta: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md },
-  ctaText: { fontSize: 15, color: colors.text },
-  ctaAmount: { fontWeight: '800', color: colors.primaryDark },
-  ctaSub: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
-  ctaLink: { color: colors.primary, fontWeight: '700' },
+  avatar: { width: 48, height: 48, borderRadius: radius.pill, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', ...cardShadow },
+  avatarText: { color: colors.primary, fontWeight: '800', fontSize: 15 },
+  heroSmall: { color: colors.heroText, fontSize: 12 },
+  heroName: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  cta: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.accent, borderRadius: 26, paddingHorizontal: 16, paddingVertical: 10 },
+  ctaText: { fontSize: 13, fontWeight: '800', color: '#fff' },
+  ctaAmount: { fontWeight: '800', color: '#fff' },
+  ctaSub: { fontSize: 12, color: '#eafaf1', marginTop: 2 },
+  ctaLink: { color: '#fff', fontWeight: '800' },
   pressed: { opacity: 0.7 },
-  body: { padding: spacing.lg, gap: spacing.md },
+  body: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, marginTop: -radius.lg, padding: spacing.lg, paddingBottom: spacing.xl * 2, gap: spacing.md },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: spacing.lg },
   gridItem: { width: '31%', alignItems: 'center', gap: spacing.sm },
-  circle: { width: 52, height: 52, borderRadius: radius.pill, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  gridLabel: { fontSize: 12, color: colors.text, textAlign: 'center', lineHeight: 16 },
+  circle: { width: 62, height: 62, borderRadius: radius.pill, backgroundColor: colors.iconBg, borderWidth: 1, borderColor: '#e6ebe7', alignItems: 'center', justifyContent: 'center' },
+  gridLabel: { fontSize: 12, fontWeight: '600', color: colors.text, textAlign: 'center', lineHeight: 16 },
   overdueCard: { borderColor: colors.danger },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardStrong: { fontSize: 15, fontWeight: '700', color: colors.text },
-  cardText: { fontSize: 14, color: colors.textMuted, lineHeight: 20 },
+  cardStrong: { fontSize: 14, fontWeight: '800', color: colors.text },
+  cardText: { fontSize: 13, color: '#3f4d46', lineHeight: 19 },
   link: { color: colors.primary, fontWeight: '700', fontSize: 14, paddingVertical: spacing.xs },
 });
