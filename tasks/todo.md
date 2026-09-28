@@ -699,14 +699,14 @@
   - **File dự kiến:** `backend/Dockerfile`, `web/Dockerfile` (+ `web/nginx.conf`), `docker-compose.yml`, `docs/demo-runbook.md`, `SEED/V22_1__seed_overdue_period.sql`, `BT/platform/DemoSeedIT.java`
   - **Kích thước:** M
 
-- [ ] **T50 — Diễn tập kịch bản demo §10 và sửa lỗi chặn** · `platform` · M · P0 · checklist chạy tay (web + app, 2 lần): `tasks/t50-checklist.md`
+- [ ] **T50 — Diễn tập kịch bản demo §10 và sửa lỗi chặn** · `platform` · M · P0 · checklist chạy tay (web + app, 2 lần): `tasks/t50-checklist.md` · **28/09/2026 phần tự động đạt**: §10 bước 1–8 qua API trên CSDL sạch 36/36; Chrome headless mở 18 màn web của 4 vai trò trước và sau kịch bản, không lỗi console/exception/request ≥ 400, số liệu khớp runbook; còn chờ người dùng bấm tay form/popup web và app Expo Go (2 lần)
   - **Mô tả:** Chạy §10 bước 1–9 hai lần từ CSDL sạch. Ghi lỗi vào `tasks/demo-issues.md`, phân loại chặn / không chặn. Lỗi chặn nào lớn hơn S thì tách thành task mới trong todo (dùng `/agent-skills:test` theo Prove-It). Kiểm tra console trình duyệt và log Expo không có lỗi.
   - **Tiêu chí nghiệm thu:**
     - [ ] Hai lần chạy liên tiếp §10 bước 1–9 không có lỗi chặn
     - [ ] Console web không lỗi; không có dữ liệu thật
     - [ ] Người dùng xác nhận danh sách lỗi không chặn còn lại
   - **Kiểm chứng:**
-    - [ ] `cd backend && ./mvnw verify`; web lint/test/build; `cd mobile && npm test`
+    - [x] `cd backend && ./mvnw verify` (158 unit + 202 IT); web lint, test 108, build; `schema.d.ts` web và mobile khớp API; mobile typecheck, jest 80
     - [ ] Thủ công: §10 theo `docs/demo-runbook.md`
   - **Phụ thuộc:** T49
   - **File dự kiến:** `tasks/demo-issues.md`, cộng các file cần sửa (mỗi bản sửa một commit)
