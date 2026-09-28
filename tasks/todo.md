@@ -699,7 +699,7 @@
   - **File dự kiến:** `backend/Dockerfile`, `web/Dockerfile` (+ `web/nginx.conf`), `docker-compose.yml`, `docs/demo-runbook.md`, `SEED/V21_1__seed_overdue_period.sql`, `BT/platform/DemoSeedIT.java`
   - **Kích thước:** M
 
-- [ ] **T50 — Diễn tập kịch bản demo §10 và sửa lỗi chặn** · `platform` · M · P0
+- [ ] **T50 — Diễn tập kịch bản demo §10 và sửa lỗi chặn** · `platform` · M · P0 · checklist chạy tay (web + app, 2 lần): `tasks/t50-checklist.md`
   - **Mô tả:** Chạy §10 bước 1–9 hai lần từ CSDL sạch. Ghi lỗi vào `tasks/demo-issues.md`, phân loại chặn / không chặn. Lỗi chặn nào lớn hơn S thì tách thành task mới trong todo (dùng `/agent-skills:test` theo Prove-It). Kiểm tra console trình duyệt và log Expo không có lỗi.
   - **Tiêu chí nghiệm thu:**
     - [ ] Hai lần chạy liên tiếp §10 bước 1–9 không có lỗi chặn
