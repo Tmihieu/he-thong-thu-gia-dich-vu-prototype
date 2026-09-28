@@ -552,7 +552,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Đổi trạng thái bài (chỉ người đăng, D9) */
+        /** Đóng bài (chỉ người đăng, không mở lại) */
         post: operations["changeStatus"];
         delete?: never;
         options?: never;
@@ -605,7 +605,7 @@ export interface paths {
         /** Yêu cầu của hộ, mới nhất trước */
         get: operations["list_7"];
         put?: never;
-        /** Đăng ký thu gom rác cồng kềnh; công ty phụ trách khu vực của hộ nhận yêu cầu */
+        /** Đăng ký thu gom rác cồng kềnh; công ty phụ trách khu vực của hộ nhận yêu cầu; ảnh là tên trả về từ POST /api/citizen/photos */
         post: operations["create_4"];
         delete?: never;
         options?: never;
@@ -1396,6 +1396,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/bulky-requests/{id}/photos/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tải ảnh hộ gửi kèm yêu cầu (công ty phụ trách; xã / quản trị chỉ xem) */
+        get: operations["photo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/billing/charges": {
         parameters: {
             query?: never;
@@ -2171,8 +2188,8 @@ export interface components {
             preferredDate: string;
             /** @enum {string} */
             preferredSlot?: "MORNING" | "AFTERNOON";
-            /** @description Đường dẫn ảnh (tùy chọn, chưa có upload trong demo) */
-            photoUrls?: string[];
+            /** @description Tên ảnh (trường name) trả về từ POST /api/citizen/photos, không nhận URL; tùy chọn */
+            photoNames?: string[];
         };
         BulkyRequestDto: {
             /** Format: int64 */
@@ -2198,6 +2215,7 @@ export interface components {
             preferredDate: string;
             /** @enum {string|null} */
             preferredSlot: "MORNING" | "AFTERNOON" | null;
+            /** @description Đường dẫn tương đối, cần token: app dân /api/citizen/photos/{name}, web /api/bulky-requests/{id}/photos/{name} */
             photoUrls: string[];
             /** Format: int64 */
             companyId: number;
@@ -5041,6 +5059,29 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["BulkyRequestDto"][];
+                };
+            };
+        };
+    };
+    photo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
                 };
             };
         };
