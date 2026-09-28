@@ -176,7 +176,7 @@
   - **Mô tả:** Tạo `MIG/V5__collection_periods.sql` và entity `CollectionPeriod` (mã `2026-10` hoặc `2026-Q4`, loại MONTH/QUARTER, ngày mở, hạn công ty nộp xã, phiên bản biểu giá, trạng thái `OPEN → COLLECTING → LOCKED`, lockedAt/lockedBy). `PeriodService`: `open(type, month|quarter, dueDate)` gắn phiên bản biểu giá đang hiệu lực (T10); `startCollecting`; truy vấn kỳ theo ngày. Chuyển sang `LOCKED` thuộc T32. Test viết trước: mở tháng; mở quý; mở trùng kỳ bị chặn; chuyển trạng thái sai (vd. COLLECTING → OPEN) → 422; phiên bản biểu giá gắn đúng. Mọi thao tác ghi audit. Ai được mở/khóa kỳ theo trả lời G1; mặc định để hỏi: `ADMIN` mở kỳ (§10 bước 1).
   - **Tiêu chí nghiệm thu:**
     - [x] Test đơn vị cho 5 trường hợp trên viết trước và xanh
-    - [x] API `POST /api/masterdata/periods`, `POST /periods/{id}/start`, `GET /periods`; sai vai trò → 403 (IT)
+    - [x] API `POST /api/masterdata/periods`, `GET /periods`; sai vai trò → 403 (IT) (`POST /periods/{id}/start` đã bỏ 28/09/2026 theo §5.0 P1)
     - [x] Mở kỳ có bản ghi audit
   - **Kiểm chứng:**
     - [x] `cd backend && ./mvnw test -Dtest=PeriodServiceTest,PeriodApiIT`
@@ -193,7 +193,7 @@
     - [x] Lỗi 422 từ backend (mở trùng kỳ) hiện đúng thông báo tiếng Việt (backend trả 409 cho trùng kỳ, xem T11)
   - **Kiểm chứng:**
     - [x] `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
-    - [ ] Thủ công: đăng nhập `admin`, mở kỳ 10/2026, bấm "Bắt đầu thu" — chờ người dùng
+    - [ ] Thủ công: đăng nhập `admin`, mở kỳ 10/2026, kỳ hiện "Đang thu" ngay (không còn nút "Bắt đầu thu") — chờ người dùng
   - **Phụ thuộc:** T08, T11
   - **File dự kiến:** `WEB/features/masterdata/PeriodsPage/{PeriodsPage.tsx,OpenPeriodForm.tsx,OpenPeriodForm.test.tsx}`, `WEB/features/masterdata/TariffsPage/TariffsPage.tsx`, `WEB/features/masterdata/api.ts`
   - **Kích thước:** M
@@ -528,7 +528,7 @@
   - [ ] §10 bước 5: lập phiếu một phần, in phiếu; tiến độ và đối soát "Đang nộp"; ba màn cùng số; nhắc nộp → chuông DV01; DV01 báo sai sót → xã xử lý
   - [ ] §10 bước 8: khóa kỳ khi còn nợ bị chặn, có lý do
   - [ ] Coverage service `billing`/`collection`/`remittance` ≥ 80% (nếu có JaCoCo, G10)
-  - [ ] `/agent-skills:review` trên toàn bộ luồng tiền; sửa các phát hiện mức Critical/Important trước khi sang tuần 4
+  - [x] `/agent-skills:review` trên toàn bộ luồng tiền; sửa các phát hiện mức Critical/Important trước khi sang tuần 4 (gộp lô 3, 28/09/2026: backend 158 unit + 201 IT gồm `MoneyConcurrencyIT`, `AreaScopedApiNoTransactionIT`; web 108; mobile 80 — đều xanh)
     - Review luồng tiền 28/09/2026 (nhánh `fix/money-concurrency`): đã sửa I1–I3 (khóa kỳ FOR SHARE khi ghi, khóa dòng khoản khi thu, khóa người đi thu khi bàn giao), M2–M5 (M3: tràn tổng tiền → 422 `CHARGE_AMOUNT_TOO_LARGE`), M8, audit thu tiền tách `chargeAmount`/`paymentAmount`, nạp sẵn địa bàn cho area-progress và tìm hồ sơ hộ của công ty; người dùng chốt: I4 chặn đơn giá nhập tay 0 đ (422, web min 1), cờ < 45% cấp công ty theo đã nộp về xã / phải thu (màn tiến độ hiện % đã nộp), cấp tổ giữ đã thu / phải thu; còn M6, M7, M9 ghi nhận
 
 ---
