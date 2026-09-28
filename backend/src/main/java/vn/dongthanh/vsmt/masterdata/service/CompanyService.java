@@ -66,7 +66,9 @@ public class CompanyService {
         if (cmd.validTo() != null && cmd.validTo().isBefore(cmd.validFrom())) {
             throw new BusinessRuleException("COMPANY_VALIDITY", "Hiệu lực đến không được trước hiệu lực từ.");
         }
-        c.setStatus(cmd.status() == null ? ActiveStatus.ACTIVE : cmd.status());
+        if (cmd.status() != null) {
+            c.setStatus(cmd.status());
+        }
         c.setValidTo(cmd.validTo());
         c.setOrgType(cmd.orgType());
         c.setTaxCode(blankToNull(cmd.taxCode()));

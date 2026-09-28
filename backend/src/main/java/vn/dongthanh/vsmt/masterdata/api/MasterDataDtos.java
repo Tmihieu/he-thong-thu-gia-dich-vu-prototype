@@ -98,7 +98,7 @@ public final class MasterDataDtos {
             @Schema(requiredMode = RequiredMode.REQUIRED) @NotBlank(message = "không được để trống") @Size(max = 100) String contactName,
             @Schema(requiredMode = RequiredMode.REQUIRED) @NotBlank(message = "không được để trống")
             @Pattern(regexp = "^[0-9]{9,15}$", message = "chỉ gồm 9–15 chữ số") String contactPhone,
-            @Schema(description = "Để trống = Hoạt động") ActiveStatus status,
+            @Schema(description = "Để trống: thêm mới là Hoạt động, sửa thì giữ nguyên") ActiveStatus status,
             @Schema(requiredMode = RequiredMode.REQUIRED) @NotNull(message = "không được để trống") LocalDate validFrom,
             LocalDate validTo,
             CompanyType orgType,

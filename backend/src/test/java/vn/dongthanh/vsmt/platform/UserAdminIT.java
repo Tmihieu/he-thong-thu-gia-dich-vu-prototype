@@ -20,6 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import vn.dongthanh.vsmt.collection.domain.PaymentMethod;
+import vn.dongthanh.vsmt.collection.service.CollectionService;
+import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentCommand;
 import vn.dongthanh.vsmt.support.CollectionFixture;
 import vn.dongthanh.vsmt.support.DatabaseCleaner;
 import vn.dongthanh.vsmt.support.FixedClockConfig;
@@ -35,6 +38,7 @@ class UserAdminIT extends IntegrationTest {
     @Autowired CollectionFixture fx;
     @Autowired DatabaseCleaner cleaner;
     @Autowired JdbcTemplate jdbc;
+    @Autowired CollectionService collection;
 
     String admin;
 
@@ -140,6 +144,34 @@ class UserAdminIT extends IntegrationTest {
         send(put("/api/platform/users/%d".formatted(fx.admin.getId())), """
                 {"fullName":"Quản trị","role":"COMMUNE_OFFICER"}""")
                 .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("CANNOT_CHANGE_OWN_ROLE"));
+    }
+
+    @Test
+    void collectorWithFutureAssignmentOrUnhandedCashCannotMove() throws Exception {
+        String toDv07 = """
+                {"fullName":"X","role":"COLLECTOR","companyId":%d}""".formatted(fx.dv07.getId());
+        // Phân tổ bắt đầu sau hôm nay (01/10) vẫn chặn.
+        jdbc.update("update collector_assignments set valid_from = '2026-11-01' where collector_id = ?", fx.thu09.getId());
+        send(put("/api/platform/users/%d".formatted(fx.thu09.getId())), toDv07)
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("COLLECTOR_HAS_ASSIGNMENTS"));
+
+        // Hết phân tổ nhưng còn giữ tiền mặt chưa bàn giao.
+        collection.recordPayment(new PaymentCommand(fx.chargeId("DTH-H000001"), 80_000, PaymentMethod.CASH, "p-1",
+                null, null, null), fx.actor(fx.thu07));
+        jdbc.update("update collector_assignments set valid_to = '2026-09-30' where collector_id = ?", fx.thu07.getId());
+        send(put("/api/platform/users/%d".formatted(fx.thu07.getId())), toDv07)
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("COLLECTOR_HOLDS_CASH"));
+    }
+
+    @Test
+    void passwordOver72BytesIsRejectedNot500() throws Exception {
+        // 30 chữ "ậ" = 30 ký tự nhưng 90 byte.
+        send(post("/api/platform/users"), """
+                {"username":"dai","fullName":"A","role":"ADMIN","password":"%s"}""".formatted("ậ".repeat(30)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("PASSWORD_TOO_LONG"));
     }
 
     private ResultActions createCollector(String username) throws Exception {

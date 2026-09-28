@@ -20,8 +20,10 @@ import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.billing.domain.Charge;
 import vn.dongthanh.vsmt.billing.domain.ChargeRepository;
 import vn.dongthanh.vsmt.billing.domain.ChargeStatus;
+import vn.dongthanh.vsmt.collection.domain.CashHandoverRepository;
 import vn.dongthanh.vsmt.collection.domain.CollectorAssignment;
 import vn.dongthanh.vsmt.collection.domain.CollectorAssignmentRepository;
+import vn.dongthanh.vsmt.collection.domain.PaymentRepository;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
 import vn.dongthanh.vsmt.masterdata.domain.AreaRepository;
 import vn.dongthanh.vsmt.masterdata.domain.Company;
@@ -29,6 +31,7 @@ import vn.dongthanh.vsmt.masterdata.domain.CompanyRepository;
 import vn.dongthanh.vsmt.masterdata.service.AreaAssignmentService;
 import vn.dongthanh.vsmt.masterdata.service.AreaReassignedEvent;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
+import vn.dongthanh.vsmt.platform.common.Money;
 import vn.dongthanh.vsmt.platform.common.NotFoundException;
 import vn.dongthanh.vsmt.platform.domain.Role;
 import vn.dongthanh.vsmt.platform.domain.User;
@@ -50,6 +53,8 @@ public class CollectorAssignmentService {
     static final String ENTITY = "CollectorAssignment";
 
     private final CollectorAssignmentRepository assignments;
+    private final PaymentRepository payments;
+    private final CashHandoverRepository handovers;
     private final UserRepository users;
     private final AreaRepository areas;
     private final CompanyRepository companies;
@@ -125,17 +130,25 @@ public class CollectorAssignmentService {
         }
     }
 
-    /** T51: người đi thu còn phân tổ thì không đổi vai trò / công ty được, công ty phải kết thúc phân tổ trước. */
+    /**
+     * T51: người đi thu còn phân tổ (kể cả phân tổ bắt đầu sau hôm nay) hoặc còn giữ tiền mặt chưa bàn giao thì không
+     * đổi vai trò / công ty được: tiền và phạm vi đang gắn với công ty cũ.
+     */
     @EventListener
     public void onUserReassigned(UserReassignedEvent e) {
         if (!e.wasCollector()) {
             return;
         }
-        List<String> areas = assignments.findActiveOfCollector(e.userId(), today()).stream()
+        List<String> areas = assignments.findOpenOfCollector(e.userId(), today()).stream()
                 .map(a -> a.getArea().getCode()).toList();
         if (!areas.isEmpty()) {
             throw new BusinessRuleException("COLLECTOR_HAS_ASSIGNMENTS", e.username() + " đang được phân tổ "
                     + String.join(", ", areas) + "; công ty kết thúc phân tổ trước khi đổi vai trò hoặc công ty.");
+        }
+        long held = payments.sumCashByCollector(e.userId()) - handovers.sumByCollector(e.userId());
+        if (held > 0) {
+            throw new BusinessRuleException("COLLECTOR_HOLDS_CASH", e.username() + " còn giữ " + Money.format(held)
+                    + " tiền mặt; công ty nhận bàn giao trước khi đổi vai trò hoặc công ty.");
         }
     }
 

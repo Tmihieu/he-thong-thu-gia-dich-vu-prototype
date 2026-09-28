@@ -1608,7 +1608,7 @@ export interface components {
             contactName: string;
             contactPhone: string;
             /**
-             * @description Để trống = Hoạt động
+             * @description Để trống: thêm mới là Hoạt động, sửa thì giữ nguyên
              * @enum {string}
              */
             status?: "ACTIVE" | "INACTIVE";

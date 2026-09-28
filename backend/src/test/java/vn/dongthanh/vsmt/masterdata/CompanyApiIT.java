@@ -83,6 +83,10 @@ class CompanyApiIT extends IntegrationTest {
         send(put("/api/masterdata/companies/" + fx.dv07.getId()), officer, BODY.formatted("null", "\"INACTIVE\""))
                 .andExpect(status().isOk());
 
+        // Sửa mà không gửi trạng thái thì giữ Tạm ngưng.
+        send(put("/api/masterdata/companies/" + fx.dv07.getId()), officer, BODY.formatted("null", "null"))
+                .andExpect(jsonPath("$.status").value("INACTIVE"));
+
         send(post("/api/masterdata/area-assignments"), officer,
                 "{\"areaIds\":[%d],\"companyId\":%d,\"fromDate\":\"2026-11-01\"}".formatted(fx.kv07.getId(), fx.dv07.getId()))
                 .andExpect(status().isUnprocessableEntity())

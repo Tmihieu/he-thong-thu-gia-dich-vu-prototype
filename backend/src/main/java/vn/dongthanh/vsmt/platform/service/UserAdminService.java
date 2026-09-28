@@ -1,5 +1,6 @@
 package vn.dongthanh.vsmt.platform.service;
 
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -57,7 +58,7 @@ public class UserAdminService {
             throw new ConflictException("USERNAME_TAKEN", "Tên đăng nhập " + normalized + " đã có.");
         }
         User user = User.create(normalized, cmd.fullName().trim(), cmd.role(), requireCompany(cmd),
-                passwords.encode(password));
+                encode(password));
         apply(user, cmd);
         User saved = users.save(user);
         audit.record(actor, "CREATE_USER", ENTITY, saved.getUsername(), null, snapshot(saved));
@@ -98,9 +99,17 @@ public class UserAdminService {
     public User resetPassword(Long id, String password, CurrentUser actor) {
         actor.requireRole(Role.ADMIN);
         User user = find(id);
-        user.setPasswordHash(passwords.encode(password));
+        user.setPasswordHash(encode(password));
         audit.record(actor, "RESET_PASSWORD", ENTITY, user.getUsername(), null, null);
         return user;
+    }
+
+    /** bcrypt chỉ nhận 72 byte; chữ có dấu chiếm 2–3 byte nên @Size(max = 72) ký tự chưa đủ chặn. */
+    private String encode(String password) {
+        if (password.getBytes(StandardCharsets.UTF_8).length > 72) {
+            throw new BusinessRuleException("PASSWORD_TOO_LONG", "Mật khẩu quá dài (chữ có dấu tính 2–3 ký tự); hãy rút ngắn.");
+        }
+        return passwords.encode(password);
     }
 
     private static Long requireCompany(UserCommand cmd) {

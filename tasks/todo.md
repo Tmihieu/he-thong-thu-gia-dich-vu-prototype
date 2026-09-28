@@ -727,7 +727,7 @@
     - [x] Quản trị tạo tài khoản COLLECTOR cho DV01; tài khoản đó đăng nhập được
     - [x] Không phải ADMIN → 403 (IT); tài khoản bị khóa không đăng nhập được (IT)
     - [x] Validation form (COMPANY_MANAGER/COLLECTOR bắt buộc có công ty) có test component
-  - **Kiểm chứng:** `UserAdminIT` 6, `CompanyApiIT` 3 + IT/unit liên quan (auth, phân công khu vực, phân tổ, phạm vi) xanh; web typecheck, lint, test `platform`/`masterdata`/`app` 43; mobile typecheck; chạy trên docker: API tạo/khóa/403/thêm công ty/chặn phân công công ty tạm ngưng đúng, 2 màn mới không lỗi console
+  - **Kiểm chứng:** `UserAdminIT` 8, `CompanyApiIT` 3 (sau review: chặn đổi công ty khi còn tiền mặt / phân tổ tương lai, mật khẩu > 72 byte) + IT/unit liên quan (auth, phân công khu vực, phân tổ, phạm vi) xanh; web typecheck, lint, test `platform`/`masterdata`/`app` 43; mobile typecheck; chạy trên docker: API tạo/khóa/403/thêm công ty/chặn phân công công ty tạm ngưng đúng, 2 màn mới không lỗi console
   - **Phụ thuộc:** T06, T07, T08, T09
   - **File dự kiến:** `BE/platform/service/UserAdminService.java`, `BE/platform/api/UserAdminController.java`, `BT/platform/UserAdminIT.java`, `WEB/features/platform/AccountsPage/{AccountsPage.tsx,AccountForm.test.tsx}`
   - **Kích thước:** M

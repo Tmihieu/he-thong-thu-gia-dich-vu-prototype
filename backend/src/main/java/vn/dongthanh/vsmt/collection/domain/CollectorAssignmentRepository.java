@@ -31,6 +31,10 @@ public interface CollectorAssignmentRepository extends JpaRepository<CollectorAs
             + " and (a.validTo is null or a.validTo >= :date) order by ar.code")
     List<CollectorAssignment> findActiveOfCollector(Long collectorId, LocalDate date);
 
+    /** Phân tổ của người đi thu còn hiệu lực tại hoặc sau {@code date}, kể cả phân tổ bắt đầu trong tương lai. */
+    @Query(FETCH + " where a.collector.id = :collectorId and (a.validTo is null or a.validTo >= :date) order by ar.code")
+    List<CollectorAssignment> findOpenOfCollector(Long collectorId, LocalDate date);
+
     /** Phân tổ của một công ty ở một tổ còn hiệu lực tại hoặc sau {@code date} (để kết thúc khi đổi công ty, G14). */
     @Query("select a from CollectorAssignment a where a.area.id = :areaId and a.company.id = :companyId"
             + " and (a.validTo is null or a.validTo >= :date)")
