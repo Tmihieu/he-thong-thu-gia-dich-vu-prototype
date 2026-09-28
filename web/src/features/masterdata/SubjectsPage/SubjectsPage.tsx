@@ -135,7 +135,7 @@ export function SubjectsPage() {
           },
           { title: 'Tên', dataIndex: 'name' },
           { title: 'Loại', dataIndex: 'subjectType', render: (t: Subject['subjectType']) => SUBJECT_TYPE_LABELS[t] },
-          { title: 'Tổ', dataIndex: 'areaCode' },
+          { title: 'Tổ/Ấp/Thôn', dataIndex: 'areaCode' },
           { title: 'SĐT', dataIndex: 'phone', render: (p: string | null) => p ?? '—' },
           {
             title: 'Nhóm giá',

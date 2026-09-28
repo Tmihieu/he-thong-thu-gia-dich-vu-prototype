@@ -79,7 +79,7 @@ class SubjectServiceTest {
 
     @Test
     void businessHouseholdCodeUsesKdPrefixWithFiveDigits() {
-        SubjectCommand kd = new SubjectCommand(SubjectType.BUSINESS_HOUSEHOLD, "Cửa hàng Mẫu", "Số 1 đường Mẫu", 7L,
+        SubjectCommand kd = new SubjectCommand(SubjectType.BUSINESS_HOUSEHOLD, "Cửa hàng Mẫu", "Số 1", "đường Mẫu", 7L,
                 null, null, "Người Mẫu", null, null);
         assertThat(service.create(kd, null, officer).getCode()).isEqualTo("DTH-KD00001");
     }
@@ -136,12 +136,35 @@ class SubjectServiceTest {
         ServiceSubject s = service.create(household(), null, officer);
         when(subjects.findByIdWithArea(500L)).thenReturn(Optional.of(s));
 
-        service.update(500L, new SubjectCommand(SubjectType.HOUSEHOLD, "Tên Mới", "Số 9 đường Mẫu", 7L, "0902000999",
+        service.update(500L, new SubjectCommand(SubjectType.HOUSEHOLD, "Tên Mới", null, "Hẻm 3 ấp Mẫu", 7L, "0902000999",
                 4, null, null, "đổi chủ hộ"), officer);
 
         assertThat(s.getCode()).isEqualTo("DTH-H000128");
         assertThat(s.getName()).isEqualTo("Tên Mới");
         assertThat(s.getPhone()).isEqualTo("0902000999");
+        assertThat(s.getAddress()).isEqualTo("Hẻm 3 ấp Mẫu");
+    }
+
+    @Test
+    void householdNeedsMemberCountAndOpenContractGroupMustMatchIt() {
+        assertThat(service.create(household(), null, officer).getAddress()).isEqualTo("Số 12 đường Mẫu");
+        SubjectCommand noMembers = new SubjectCommand(SubjectType.HOUSEHOLD, "Mẫu", null, "đường Mẫu", 7L, null, null,
+                null, null, null);
+        assertThatThrownBy(() -> service.create(noMembers, null, officer)).extracting("code")
+                .isEqualTo("MEMBER_COUNT_REQUIRED");
+
+        ContractCommand upTo2 = new ContractCommand(TariffGroup.HH_UP_TO_2, LocalDate.of(2026, 1, 1), null, false, null,
+                null, null);
+        assertThatThrownBy(() -> service.create(household(), upTo2, officer)).extracting("code")
+                .isEqualTo("TARIFF_GROUP_MISMATCH");
+        SubjectCommand shop = new SubjectCommand(SubjectType.BUSINESS_HOUSEHOLD, "Cửa hàng", null, "đường Mẫu", 7L, null,
+                null, null, null, null);
+        assertThatThrownBy(() -> service.create(shop, contract("2026-01-01", null), officer)).extracting("code")
+                .isEqualTo("TARIFF_GROUP_MISMATCH");
+        // Hợp đồng đã đóng giữ nhóm cũ (số thành viên lúc đó), không kiểm.
+        ContractCommand closedUpTo2 = new ContractCommand(TariffGroup.HH_UP_TO_2, LocalDate.of(2026, 1, 1),
+                LocalDate.of(2026, 6, 30), false, null, null, null);
+        assertThat(service.create(household(), closedUpTo2, officer).getStatus()).isEqualTo(SubjectStatus.ACTIVE);
     }
 
     @Test
@@ -158,7 +181,7 @@ class SubjectServiceTest {
     }
 
     private static SubjectCommand household() {
-        return new SubjectCommand(SubjectType.HOUSEHOLD, "Nguyễn Văn Mẫu", "Số 12 đường Mẫu", 7L, "0902000128", 4,
+        return new SubjectCommand(SubjectType.HOUSEHOLD, "Nguyễn Văn Mẫu", "Số 12", "đường Mẫu", 7L, "0902000128", 4,
                 null, null, null);
     }
 

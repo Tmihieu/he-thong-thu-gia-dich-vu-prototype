@@ -48,7 +48,7 @@ public class SubjectService {
     private final AreaAssignmentService assignments;
     private final AuditService audit;
 
-    public record SubjectCommand(SubjectType type, String name, String address, Long areaId, String phone,
+    public record SubjectCommand(SubjectType type, String name, String houseNo, String street, Long areaId, String phone,
             Integer memberCount, String representativeName, String taxCode, String note) {
     }
 
@@ -66,9 +66,11 @@ public class SubjectService {
         int digits = 7 - cmd.type().codePrefix().length();
         String code = prefix + String.format("%0" + digits + "d", subjects.maxCodeNumber(prefix) + 1);
 
-        ServiceSubject subject = ServiceSubject.create(code, cmd.type(), cmd.name().trim(), cmd.address().trim(), area);
+        ServiceSubject subject = ServiceSubject.create(code, cmd.type(), cmd.name().trim(), blankToNull(cmd.houseNo()),
+                cmd.street().trim(), area);
         apply(subject, cmd, area);
         if (contract != null) {
+            requireGroupFits(subject, contract);
             // Kiểm tra hợp đồng trước khi lưu đối tượng để lỗi không để lại đối tượng dở dang.
             ServiceContract.create("tmp", subject, contract.tariffGroup(), contract.validFrom(), contract.validTo(),
                     contract.exempt(), contract.exemptReason(), contract.exemptDecisionNo());
@@ -88,7 +90,7 @@ public class SubjectService {
         Map<String, Object> before = snapshot(subject);
         subject.setSubjectType(cmd.type());
         subject.setName(cmd.name().trim());
-        subject.setAddress(cmd.address().trim());
+        subject.setAddressParts(blankToNull(cmd.houseNo()), cmd.street().trim());
         apply(subject, cmd, area(cmd.areaId()));
         audit.record(actor, "UPDATE_SUBJECT", SUBJECT, subject.getCode(), before, snapshot(subject));
         return subject;
@@ -129,6 +131,7 @@ public class SubjectService {
         ServiceContract contract = contracts.findById(contractId)
                 .orElseThrow(() -> new NotFoundException("CONTRACT_NOT_FOUND", "Không tìm thấy hợp đồng."));
         requireNoOverlap(contract.getSubject().getId(), cmd.validFrom(), cmd.validTo(), contract.getId());
+        requireGroupFits(contract.getSubject(), cmd);
         Map<String, Object> before = snapshot(contract);
         contract.change(cmd.tariffGroup(), cmd.validFrom(), cmd.validTo(), cmd.exempt(), cmd.exemptReason(),
                 cmd.exemptDecisionNo());
@@ -181,6 +184,7 @@ public class SubjectService {
 
     private ServiceContract saveContract(ServiceSubject subject, ContractCommand cmd, CurrentUser actor) {
         requireNoOverlap(subject.getId(), cmd.validFrom(), cmd.validTo(), null);
+        requireGroupFits(subject, cmd);
         String prefix = "ĐK-" + subject.getArea().getDistrict().getCode() + "-";
         String no = prefix + String.format("%04d", contracts.maxContractNumber(prefix) + 1);
         ServiceContract contract = ServiceContract.create(no, subject, cmd.tariffGroup(), cmd.validFrom(), cmd.validTo(),
@@ -205,7 +209,29 @@ public class SubjectService {
                 });
     }
 
+    /**
+     * Nhóm giá hộ gia đình phải khớp số thành viên hiện tại: ≤2 người → {@code HH_UP_TO_2}, ≥3 → {@code HH_3_PLUS}.
+     * Chỉ kiểm hợp đồng chưa có ngày kết thúc: hợp đồng đã đóng phản ánh số thành viên lúc đó.
+     */
+    private static void requireGroupFits(ServiceSubject s, ContractCommand cmd) {
+        boolean householdGroup = cmd.tariffGroup() == TariffGroup.HH_UP_TO_2 || cmd.tariffGroup() == TariffGroup.HH_3_PLUS;
+        if (!householdGroup || cmd.validTo() != null) {
+            return;
+        }
+        if (s.getSubjectType() != SubjectType.HOUSEHOLD) {
+            throw new BusinessRuleException("TARIFF_GROUP_MISMATCH", "Nhóm giá theo số người chỉ dùng cho hộ gia đình.");
+        }
+        TariffGroup expected = s.getMemberCount() <= 2 ? TariffGroup.HH_UP_TO_2 : TariffGroup.HH_3_PLUS;
+        if (cmd.tariffGroup() != expected) {
+            throw new BusinessRuleException("TARIFF_GROUP_MISMATCH", "Hộ có " + s.getMemberCount()
+                    + " thành viên phải áp nhóm " + (expected == TariffGroup.HH_UP_TO_2 ? "≤2 người" : "từ 3 người") + ".");
+        }
+    }
+
     private void apply(ServiceSubject s, SubjectCommand cmd, Area area) {
+        if (cmd.type() == SubjectType.HOUSEHOLD && cmd.memberCount() == null) {
+            throw new BusinessRuleException("MEMBER_COUNT_REQUIRED", "Hộ gia đình phải nhập số thành viên.");
+        }
         s.setArea(area);
         s.setPhone(blankToNull(cmd.phone()));
         s.setMemberCount(cmd.type() == SubjectType.HOUSEHOLD ? cmd.memberCount() : null);
@@ -235,7 +261,8 @@ public class SubjectService {
         m.put("code", s.getCode());
         m.put("type", s.getSubjectType());
         m.put("name", s.getName());
-        m.put("address", s.getAddress());
+        m.put("houseNo", s.getHouseNo());
+        m.put("street", s.getStreet());
         m.put("area", s.getArea().getCode());
         m.put("phone", s.getPhone());
         m.put("status", s.getStatus());

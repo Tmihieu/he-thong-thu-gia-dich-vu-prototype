@@ -9,7 +9,7 @@ import { jsonResponse, mockApi, renderApp } from '../../../test/renderApp';
 const officer = { id: 2, username: 'canbo_xa', fullName: 'Nguyễn Thị Mẫu', role: 'COMMUNE_OFFICER', companyId: null };
 const areas = [{ id: 7, code: 'KV07', name: 'Tổ dân phố 07', districtId: 1, districtCode: 'DTH', status: 'ACTIVE', subjectCount: 1 }];
 const subject = {
-  id: 128, code: 'DTH-H000128', subjectType: 'HOUSEHOLD', name: 'Nguyễn Văn Mẫu', address: 'Số 12 đường Mẫu',
+  id: 128, code: 'DTH-H000128', subjectType: 'HOUSEHOLD', name: 'Nguyễn Văn Mẫu', address: 'Số 12 đường Mẫu', houseNo: 'Số 12', street: 'đường Mẫu',
   areaId: 7, areaCode: 'KV07', districtCode: 'DTH', phone: '0902000128', status: 'ACTIVE', memberCount: 4,
   representativeName: null, taxCode: null, note: null,
   currentContract: { id: 62, contractNo: 'ĐK-DTH-0062', tariffGroup: 'HH_3_PLUS', validFrom: '2026-01-01', validTo: null,

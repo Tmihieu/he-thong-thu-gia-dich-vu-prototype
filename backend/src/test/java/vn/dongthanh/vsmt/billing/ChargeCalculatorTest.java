@@ -40,7 +40,7 @@ class ChargeCalculatorTest {
     final CollectionPeriod q4 = CollectionPeriod.open(PeriodType.QUARTER, 2026, 4, null, LocalDate.of(2026, 12, 31), bg65);
     final FeeType env = FeeType.create("ENV", "Phí VSMT", PricingMode.TARIFF, null);
     final FeeType extra = FeeType.create("EXTRA", "Phụ phí", PricingMode.FIXED, 50_000L);
-    final ServiceSubject subject = ServiceSubject.create("DTH-H000128", SubjectType.HOUSEHOLD, "Mẫu", "Số 1",
+    final ServiceSubject subject = ServiceSubject.create("DTH-H000128", SubjectType.HOUSEHOLD, "Mẫu", null, "Số 1",
             Area.create("KV07", "Tổ 07", District.create("DTH", "Đông Thạnh")));
 
     ServiceContract contract(TariffGroup group, boolean exempt) {

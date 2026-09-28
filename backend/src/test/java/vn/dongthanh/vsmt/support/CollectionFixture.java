@@ -111,7 +111,8 @@ public class CollectionFixture {
         for (Area area : List.of(kv07, kv09, kv12)) {
             for (int i = 0; i < 2; i++, n++) {
                 ServiceSubject s = ServiceSubject.create("DTH-H%06d".formatted(n), SubjectType.HOUSEHOLD,
-                        "Hộ mẫu " + n, "Số " + n, area);
+                        "Hộ mẫu " + n, null, "Số " + n, area);
+                s.setMemberCount(3);
                 s.setStatus(SubjectStatus.ACTIVE);
                 subjects.save(s);
                 contracts.save(ServiceContract.create("ĐK-FX-" + n, s, TariffGroup.HH_3_PLUS, LocalDate.of(2026, 1, 1),

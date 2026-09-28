@@ -352,7 +352,8 @@ class BulkyWasteIT extends IntegrationTest {
     @Test
     void areaWithoutCompanyIsRejected() throws Exception {
         Area kv24 = areas.save(Area.create("KV24", "Tổ 24", fx.kv07.getDistrict()));
-        ServiceSubject orphan = ServiceSubject.create("NB-H000999", SubjectType.HOUSEHOLD, "Hộ chưa có công ty", "Số 9", kv24);
+        ServiceSubject orphan = ServiceSubject.create("NB-H000999", SubjectType.HOUSEHOLD, "Hộ chưa có công ty", null, "Số 9", kv24);
+        orphan.setMemberCount(3);
         subjects.save(orphan);
         CitizenAccount citizen = accounts.save(CitizenAccount.create("0902000999", orphan, "Chủ hộ 24"));
 

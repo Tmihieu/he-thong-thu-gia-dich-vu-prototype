@@ -329,7 +329,7 @@ class CollectionServiceTest {
     private Charge newCharge(ChargeAmount amount, Long id) {
         District dth = District.create("DTH", "Đông Thạnh");
         Area kv07 = withId(Area.create("KV07", "Tổ 07", dth), 7L);
-        ServiceSubject s = withId(ServiceSubject.create("DTH-H000128", SubjectType.HOUSEHOLD, "Hộ", "Số 1", kv07), 128L);
+        ServiceSubject s = withId(ServiceSubject.create("DTH-H000128", SubjectType.HOUSEHOLD, "Hộ", null, "Số 1", kv07), 128L);
         ServiceContract c = ServiceContract.create("ĐK-1", s, TariffGroup.HH_3_PLUS, LocalDate.of(2026, 1, 1), null,
                 amount.exempt(), amount.exempt() ? "Hộ nghèo" : null, null);
         ChargeRequest req = ChargeRequest.issue("YCT-1026-01", october,

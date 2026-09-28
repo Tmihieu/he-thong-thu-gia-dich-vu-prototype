@@ -265,7 +265,8 @@ class ChargeRequestServiceIT extends IntegrationTest {
     }
 
     private void subject(String code, Area area, SubjectStatus status, TariffGroup group, boolean exempt) {
-        ServiceSubject s = ServiceSubject.create(code, SubjectType.HOUSEHOLD, "Hộ " + code, "Số 1", area);
+        ServiceSubject s = ServiceSubject.create(code, SubjectType.HOUSEHOLD, "Hộ " + code, null, "Số 1", area);
+        s.setMemberCount(3);
         s.setStatus(status);
         subjects.save(s);
         if (group != null) {

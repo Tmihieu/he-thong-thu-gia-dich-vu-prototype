@@ -1,17 +1,19 @@
 # Danh sách task: Demo thu giá dịch vụ VSMT
 
 > Kế hoạch tổng thể, đồ thị phụ thuộc, rủi ro và khoảng trống G1–G16: xem `tasks/plan.md`.
-> Mỗi task chạy trong một phiên Claude: `/agent-skills:build Txx` (task gắn **[TDD]** thì chạy `/agent-skills:test Txx` trước).
+> Mỗi task chạy trong một phiên Claude: `/agent-skills:build Txx` (task gắn **\[TDD\]** thì chạy `/agent-skills:test Txx` trước).
 > Chỉ tick `[x]` khi mọi tiêu chí nghiệm thu và mọi bước kiểm chứng đã đạt.
 
 ## Quy ước
 
 **Viết tắt đường dẫn**
+
 - `BE/` = `backend/src/main/java/vn/dongthanh/vsmt/` · `BT/` = `backend/src/test/java/vn/dongthanh/vsmt/`
 - `MIG/` = `backend/src/main/resources/db/migration/` · `SEED/` = `backend/src/main/resources/db/seed/`
 - `WEB/` = `web/src/` · `MOB/` = `mobile/`
 
 **Lệnh (SPEC §4).** Trên PowerShell thay `./mvnw` bằng `.\mvnw.cmd`.
+
 - Backend, test tập trung: `cd backend && ./mvnw test -Dtest=<TênTest>`
 - Backend, đầy đủ: `cd backend && ./mvnw verify`
 - Web: `cd web && npm run gen:api && npm run lint && npm run test && npm run build`
@@ -41,7 +43,7 @@
   - **Kích thước:** M (1 file nhưng nội dung dài). Bản `.xlsx` để sau (plan.md C9). Chạm O3: đánh dấu trường nào cần xin.
 
 - [ ] **T02 — Chuyển prototype vào `prototype/` và dựng docker-compose cho CSDL** · `platform` · S · P0
-  - **Mô tả:** `git mv index.html assets prototype/` (giữ nguyên đường dẫn tương đối). Tạo `docker-compose.yml` có service `db` (postgres:16, volume có tên, healthcheck `pg_isready`, biến lấy từ `.env`). Tạo `.env.example` (POSTGRES_DB/USER/PASSWORD, JWT_SECRET, chỉ chứa giá trị giả). Bổ sung `.gitignore`: `.env`, `backend/target/`, `node_modules/`, `dist/`, `.expo/`.
+  - **Mô tả:** `git mv index.html assets prototype/` (giữ nguyên đường dẫn tương đối). Tạo `docker-compose.yml` có service `db` (postgres:16, volume có tên, healthcheck `pg_isready`, biến lấy từ `.env`). Tạo `.env.example` (POSTGRES\_DB/USER/PASSWORD, JWT\_SECRET, chỉ chứa giá trị giả). Bổ sung `.gitignore`: `.env`, `backend/target/`, `node_modules/`, `dist/`, `.expo/`.
   - **Tiêu chí nghiệm thu:**
     - [ ] Mở `prototype/index.html` trên trình duyệt thấy giao diện như trước khi chuyển
     - [x] `docker compose up -d db` chạy và healthcheck ra healthy (26/09/2026, Docker Desktop 29.8.0)
@@ -74,12 +76,12 @@
     - [x] Khi backend đang chạy, `npm run gen:api` sinh ra `src/api/schema.d.ts`
   - **Kiểm chứng:**
     - [x] `cd web && npm install && npm run lint && npm run test && npm run build`
-    - [x] `cd web && npm run gen:api` (backend chạy từ T03); `npm run dev` mở http://localhost:5173
+    - [x] `cd web && npm run gen:api` (backend chạy từ T03); `npm run dev` mở [http://localhost:5173](http://localhost:5173)
   - **Phụ thuộc:** T02, T03 (cần OpenAPI cho `gen:api`)
   - **File dự kiến:** `web/package.json`, `web/vite.config.ts`, `web/tsconfig.json`, `WEB/main.tsx`, `WEB/app/App.tsx`, `WEB/api/client.ts`, `WEB/shared/{MoneyText,DateText}.tsx` + test
   - **Kích thước:** L. Scaffold.
 
-- [x] **H1 — [NGƯỜI DÙNG] Duyệt data dictionary Phần A và trả lời câu hỏi** · mục tiêu 25/09 · **đã duyệt 24/09/2026**, quyết định ở `docs/data-dictionary.md` §5.0
+- [x] **H1 — \[NGƯỜI DÙNG\] Duyệt data dictionary Phần A và trả lời câu hỏi** · mục tiêu 25/09 · **đã duyệt 24/09/2026**, quyết định ở `docs/data-dictionary.md` §5.0
   - Đọc Phần A của `docs/data-dictionary.md`. Trả lời tối thiểu G1, G3, G4, G5, G8, G9, G10, G11, G14, G15, G16. Ghi "Đã duyệt Phần A — ngày" ở đầu file.
   - **Chặn:** mọi task tạo entity/migration của Phần A (T05 trở đi).
   - **Phụ thuộc:** T01
@@ -137,7 +139,7 @@
   - **Kích thước:** M
 
 - [x] **T09 — Địa bàn, khu vực, công ty: seed, API đọc, phạm vi dữ liệu công ty** · `master-data` · M · P0 · **xong 26/09/2026**: công ty ngoài phạm vi trả 404 (không lộ tồn tại); khu vực đọc được với mọi vai trò nội bộ (lọc theo phân công ở T13)
-  - **Mô tả:** Tạo `MIG/V3__masterdata_districts_areas_companies.sql` (thêm FK `users.company_id`) và các entity `District`, `Area` (thuộc District), `Company` (tên, đầu mối, SĐT, trạng thái, hiệu lực). Seed `V3_1`: 3 địa bàn DTH/TTT/NB, 24 tổ KV01–KV24, 11 công ty DV01–DV11 (tên theo prototype-inventory §0, SĐT giả). Seed `V3_2`: tài khoản `dv01`…`dv11` (COMPANY_MANAGER). API: `GET /api/masterdata/districts`, `/areas`, `/companies`, `/companies/{id}`. Quản lý công ty chỉ đọc được công ty của mình. Đây là nơi chứng minh tiêu chí "công ty A không đọc được dữ liệu công ty B" của SPEC §9.2.
+  - **Mô tả:** Tạo `MIG/V3__masterdata_districts_areas_companies.sql` (thêm FK `users.company_id`) và các entity `District`, `Area` (thuộc District), `Company` (tên, đầu mối, SĐT, trạng thái, hiệu lực). Seed `V3_1`: 3 địa bàn DTH/TTT/NB, 24 tổ KV01–KV24, 11 công ty DV01–DV11 (tên theo prototype-inventory §0, SĐT giả). Seed `V3_2`: tài khoản `dv01`…`dv11` (COMPANY\_MANAGER). API: `GET /api/masterdata/districts`, `/areas`, `/companies`, `/companies/{id}`. Quản lý công ty chỉ đọc được công ty của mình. Đây là nơi chứng minh tiêu chí "công ty A không đọc được dữ liệu công ty B" của SPEC §9.2.
   - **Tiêu chí nghiệm thu:**
     - [x] Profile demo có đủ 3 địa bàn, 24 tổ, 11 công ty, 11 tài khoản công ty (IT trên seed)
     - [x] `dv01` gọi `GET /companies/DV02` → 403 hoặc 404 (IT phạm vi)
@@ -172,7 +174,7 @@
 
 ## Tuần 2 — Danh mục, lập khoản, bắt đầu thu (30/09 – 06/10)
 
-- [x] **T11 — Kỳ thu tháng/quý và vòng đời trạng thái (backend)** · `master-data` · M · P0 · **[TDD]** · **xong 26/09/2026**: `ADMIN` mở kỳ và bắt đầu thu (G1); trùng kỳ 409, chuyển sai 422; ngày mở mặc định = ngày đầu kỳ. **Sửa 28/09/2026 theo người dùng (data dictionary §5.0 P1):** mở kỳ là Đang thu luôn, bỏ `OPEN` và `POST /periods/{id}/start`, migration V22 (nhánh `fix/open-is-collecting`)
+- [x] **T11 — Kỳ thu tháng/quý và vòng đời trạng thái (backend)** · `master-data` · M · P0 · **\[TDD\]** · **xong 26/09/2026**: `ADMIN` mở kỳ và bắt đầu thu (G1); trùng kỳ 409, chuyển sai 422; ngày mở mặc định = ngày đầu kỳ. **Sửa 28/09/2026 theo người dùng (data dictionary §5.0 P1):** mở kỳ là Đang thu luôn, bỏ `OPEN` và `POST /periods/{id}/start`, migration V22 (nhánh `fix/open-is-collecting`)
   - **Mô tả:** Tạo `MIG/V5__collection_periods.sql` và entity `CollectionPeriod` (mã `2026-10` hoặc `2026-Q4`, loại MONTH/QUARTER, ngày mở, hạn công ty nộp xã, phiên bản biểu giá, trạng thái `OPEN → COLLECTING → LOCKED`, lockedAt/lockedBy). `PeriodService`: `open(type, month|quarter, dueDate)` gắn phiên bản biểu giá đang hiệu lực (T10); `startCollecting`; truy vấn kỳ theo ngày. Chuyển sang `LOCKED` thuộc T32. Test viết trước: mở tháng; mở quý; mở trùng kỳ bị chặn; chuyển trạng thái sai (vd. COLLECTING → OPEN) → 422; phiên bản biểu giá gắn đúng. Mọi thao tác ghi audit. Ai được mở/khóa kỳ theo trả lời G1; mặc định để hỏi: `ADMIN` mở kỳ (§10 bước 1).
   - **Tiêu chí nghiệm thu:**
     - [x] Test đơn vị cho 5 trường hợp trên viết trước và xanh
@@ -198,11 +200,11 @@
   - **File dự kiến:** `WEB/features/masterdata/PeriodsPage/{PeriodsPage.tsx,OpenPeriodForm.tsx,OpenPeriodForm.test.tsx}`, `WEB/features/masterdata/TariffsPage/TariffsPage.tsx`, `WEB/features/masterdata/api.ts`
   - **Kích thước:** M
 
-- [x] **T13 — Phân công khu vực có hiệu lực và lưu lịch sử (backend)** · `master-data` · M · P0 · **[TDD]** · **xong 26/09/2026**: exclusion constraint (btree_gist) + kiểm tra ở service; đổi công ty phát `AreaReassignedEvent` để T20 kết thúc phân tổ cũ (G14); thêm `GET /area-assignments?date` cho T14
+- [x] **T13 — Phân công khu vực có hiệu lực và lưu lịch sử (backend)** · `master-data` · M · P0 · **\[TDD\]** · **xong 26/09/2026**: exclusion constraint (btree\_gist) + kiểm tra ở service; đổi công ty phát `AreaReassignedEvent` để T20 kết thúc phân tổ cũ (G14); thêm `GET /area-assignments?date` cho T14
   - **Mô tả:** Tạo `MIG/V6__area_assignments.sql` và entity `AreaAssignment` (khu vực, công ty, từ ngày, đến ngày có thể null, ghi chú). `AreaAssignmentService.assign(areaIds[], companyId, fromDate, note)`: tự đóng phân công cũ (đến ngày = fromDate − 1), tạo bản ghi mới, giữ lịch sử. Mỗi khu vực tối đa 1 công ty trong cùng khoảng hiệu lực. `companyOf(areaId, date)` dùng cho billing và remittance. Seed `V6_1` theo prototype-inventory §0 (KV24 chưa có công ty). Test viết trước: phân công mới; đổi công ty giữ lịch sử và `companyOf` ngày cũ vẫn trả công ty cũ; phân công chồng lấn bị chặn; phân công nhiều tổ một lần; fromDate trước phân công hiện tại → 422. Có ghi audit.
   - **Tiêu chí nghiệm thu:**
     - [x] 5 test đơn vị trên viết trước và xanh
-    - [x] `POST /api/masterdata/area-assignments` (chỉ COMMUNE_OFFICER), `GET /areas/{id}/assignments` trả lịch sử (IT)
+    - [x] `POST /api/masterdata/area-assignments` (chỉ COMMUNE\_OFFICER), `GET /areas/{id}/assignments` trả lịch sử (IT)
     - [x] Ràng buộc chống chồng lấn có ở cả service lẫn CSDL (exclusion constraint hoặc kiểm tra trong transaction), có IT
   - **Kiểm chứng:**
     - [x] `cd backend && ./mvnw test -Dtest=AreaAssignmentServiceTest,AreaAssignmentIT`
@@ -250,7 +252,7 @@
   - **File dự kiến:** `WEB/features/masterdata/SubjectsPage/{SubjectsPage.tsx,SubjectProfileForm.tsx,SubjectProfileForm.test.tsx}`, `WEB/features/masterdata/api.ts`
   - **Kích thước:** M
 
-- [x] **T17 — Quy tắc tính khoản phải thu** · `billing` · S · P0 · **[TDD]** · **xong 26/09/2026**: hợp đồng và công ty xét tại ngày phát hành (G3); không có BULKY (G13); miễn 100% áp cho mọi loại phí như prototype R1
+- [x] **T17 — Quy tắc tính khoản phải thu** · `billing` · S · P0 · **\[TDD\]** · **xong 26/09/2026**: hợp đồng và công ty xét tại ngày phát hành (G3); không có BULKY (G13); miễn 100% áp cho mọi loại phí như prototype R1
   - **Mô tả:** Lớp thuần `ChargeCalculator` + `ChargeEligibility` (không đụng CSDL). Quy tắc R1–R4: số tiền phí `ENV` = giá tháng của nhóm (theo phiên bản biểu giá của kỳ) × (quý ? 3 : 1); phí khác = giá nhập, nếu không nhập thì lấy giá mặc định; miễn 100% → 0. Bỏ qua (kèm lý do) các đối tượng: không active; không có hợp đồng hiệu lực; khu vực chưa có công ty (cảnh báo); đã có khoản cùng loại phí ở kỳ chồng lấn (tháng nằm trong quý và ngược lại). Chỉ lập khoản cho kỳ chưa khóa. Test viết trước cho **mỗi** quy tắc và mỗi lý do bỏ qua.
   - **Tiêu chí nghiệm thu:**
     - [x] Test đơn vị bao đủ R1–R4: tháng, quý, miễn, phí khác có/không giá nhập, 4 lý do bỏ qua, kỳ đã khóa
@@ -262,12 +264,12 @@
   - **File dự kiến:** `BE/billing/service/{ChargeCalculator,ChargeEligibility}.java`, `BT/billing/{ChargeCalculatorTest,ChargeEligibilityTest}.java`
   - **Kích thước:** S
 
-- [x] **T18 — Phiếu yêu cầu thu: xem trước và phát hành (backend)** · `billing` · M · P0 · **[TDD]** · **xong 26/09/2026**: mã khoản giữ mã đối tượng đầy đủ `KT-1026-DTH-H000128` (tránh trùng giữa địa bàn); phát hành 0 khoản mới thì không lưu phiếu (HTTP 200); ngày phát hành lấy từ bean `Clock`
+- [x] **T18 — Phiếu yêu cầu thu: xem trước và phát hành (backend)** · `billing` · M · P0 · **\[TDD\]** · **xong 26/09/2026**: mã khoản giữ mã đối tượng đầy đủ `KT-1026-DTH-H000128` (tránh trùng giữa địa bàn); phát hành 0 khoản mới thì không lưu phiếu (HTTP 200); ngày phát hành lấy từ bean `Clock`
   - **Mô tả:** Tạo `MIG/V8__charge_requests_charges.sql` và hai entity: `ChargeRequest` (mã `YCT-…`, kỳ, loại phí, phạm vi **có cấu trúc**: toàn xã / danh sách tổ / theo công ty, hạn đóng, ghi chú, người lập) và `Charge` (đối tượng, hợp đồng, kỳ, loại phí, số tiền snapshot, hạn, trạng thái `UNPAID/PAID/EXEMPT`; "Quá hạn" tính khi đọc, không lưu; công ty snapshot theo trả lời G3). `ChargeRequestService.preview(cmd)` trả số khoản sẽ sinh, tổng tiền, danh sách bỏ qua kèm lý do. `publish(cmd)` sinh khoản trong một transaction, idempotent (ràng buộc duy nhất subject + loại phí + kỳ), ghi audit. API `POST /api/billing/charge-requests/preview`, `POST /api/billing/charge-requests`, `GET /api/billing/charges?periodId&areaId&status`.
   - **Tiêu chí nghiệm thu:**
     - [x] Xem trước và phát hành toàn xã kỳ 10/2026 cho cùng số khoản và cùng tổng tiền (IT)
     - [x] Phát hành lại cùng kỳ và loại phí không sinh khoản trùng; kết quả báo "0 khoản mới" (IT)
-    - [x] Kỳ đã khóa → 422; không phải COMMUNE_OFFICER → 403 (IT)
+    - [x] Kỳ đã khóa → 422; không phải COMMUNE\_OFFICER → 403 (IT)
   - **Kiểm chứng:**
     - [x] `cd backend && ./mvnw test -Dtest=ChargeRequestServiceIT`
     - [x] `cd backend && ./mvnw verify`
@@ -301,7 +303,7 @@
   - **File dự kiến:** `MIG/V9__…sql` + `SEED/V9_1__seed_collectors.sql`, `BE/collection/domain/CollectorAssignment.java` (+ repo), `BE/collection/service/CollectorAssignmentService.java`, `BE/collection/api/CollectionController.java` (+ DTO), `BT/collection/CollectorAssignmentIT.java`
   - **Kích thước:** M
 
-- [x] **T21 — Ghi nhận kết quả thu: Payment, CollectionVisit, chống ghi trùng** · `collection` · M · P0 · **[TDD]** · **xong 26/09/2026**: thu một phần, thu vượt → 422 (G4); phương thức theo DD là `APP_SIMULATED` (không phải `CITIZEN_APP`); quản lý ghi thay phải chọn người thu; thêm `/my-work` và `/charges/{id}/activity`
+- [x] **T21 — Ghi nhận kết quả thu: Payment, CollectionVisit, chống ghi trùng** · `collection` · M · P0 · **\[TDD\]** · **xong 26/09/2026**: thu một phần, thu vượt → 422 (G4); phương thức theo DD là `APP_SIMULATED` (không phải `CITIZEN_APP`); quản lý ghi thay phải chọn người thu; thêm `/my-work` và `/charges/{id}/activity`
   - **Mô tả:** Tạo `MIG/V10__payments_visits.sql` và hai entity: `Payment` (khoản, số tiền, hình thức `CASH/TRANSFER/CITIZEN_APP`, thời điểm, người xác nhận, `requestId` duy nhất để chống trùng) và `CollectionVisit` (khoản, kết quả `ABSENT/APPOINTMENT/REFUSED`, ngày hẹn lại, ghi chú, người ghi). `CollectionService.recordPayment(...)`: khoản chuyển `PAID` khi Σ thanh toán ≥ số tiền; gửi lại cùng `requestId` trả kết quả cũ, không tạo thanh toán thứ hai; chặn khi kỳ đã khóa hoặc khoản đã miễn; người đi thu chỉ ghi cho khoản trong tổ mình, công ty ghi thay cho hộ của mình. Test viết trước cho từng quy tắc. Thanh toán một phần/thu thừa theo trả lời G4. Có ghi audit. Phương thức `CITIZEN_APP` để sẵn cho T40.
   - **Tiêu chí nghiệm thu:**
     - [x] Test đơn vị: đủ tiền → PAID; gửi trùng `requestId` → 1 Payment; kỳ khóa → 422; khoản miễn → 422; vắng/hẹn/từ chối không đổi trạng thái khoản
@@ -314,12 +316,12 @@
   - **File dự kiến:** `MIG/V10__…sql`, `BE/collection/domain/{Payment,CollectionVisit}.java` (+ repo), `BE/collection/service/CollectionService.java`, `BE/collection/api/CollectionController.java`, `BT/collection/{CollectionServiceTest,CollectionApiIT}.java`
   - **Kích thước:** M
 
-- [x] **H2 — [NGƯỜI DÙNG] Duyệt data dictionary Phần B** · mục tiêu 02/10 · **đã duyệt 24/09/2026**
+- [x] **H2 — \[NGƯỜI DÙNG\] Duyệt data dictionary Phần B** · mục tiêu 02/10 · **đã duyệt 24/09/2026**
   - Duyệt notifications, complaints, citizen-app, CollectionSchedule; trả lời G6, G7, G12, xác nhận mặc định O1, O5, O6, O7.
   - **Chặn:** T23, T36, T38, T39, T45, T47.
   - **Phụ thuộc:** T01
 
-- [ ] **T22 — Khung mobile Expo gọi được API từ điện thoại** · `platform` · L (scaffold) · P0 · ~~[cần hỏi trước: G10]~~ G10 đã duyệt `expo-secure-store` · **code xong 27/09/2026, chờ người dùng quét QR trên điện thoại thật**: Expo SDK 57 + RN 0.86 + TS 6; màn hình ở `mobile/src/app/` (quy ước SDK 57, không phải `mobile/app/`); `react-dom`/`react-native-reanimated`/`react-native-worklets` ghim bằng `expo install` để hết xung đột peer của expo-router; `gen:api` chạy `npx openapi-typescript@7.13.0` vì bản này chưa nhận TS 6; đã kiểm `expo-doctor` 21/21, `expo export` android đóng gói được, gọi `http://192.168.1.66:8080/v3/api-docs` qua IP LAN trả 200
+- [ ] **T22 — Khung mobile Expo gọi được API từ điện thoại** · `platform` · L (scaffold) · P0 · ~~\[cần hỏi trước: G10\]~~ G10 đã duyệt `expo-secure-store` · **code xong 27/09/2026, chờ người dùng quét QR trên điện thoại thật**: Expo SDK 57 + RN 0.86 + TS 6; màn hình ở `mobile/src/app/` (quy ước SDK 57, không phải `mobile/app/`); `react-dom`/`react-native-reanimated`/`react-native-worklets` ghim bằng `expo install` để hết xung đột peer của expo-router; `gen:api` chạy `npx openapi-typescript@7.13.0` vì bản này chưa nhận TS 6; đã kiểm `expo-doctor` 21/21, `expo export` android đóng gói được, gọi `http://192.168.1.66:8080/v3/api-docs` qua IP LAN trả 200
   - **Mô tả:** Khởi tạo `mobile/` bằng Expo SDK (ghim phiên bản) + TypeScript + Expo Router + TanStack Query. `MOB/src/api/client.ts` đọc base URL từ `EXPO_PUBLIC_API_URL` (IP LAN của laptop). Script `gen:api` (openapi-typescript). Jest tối thiểu. Một màn "Kiểm tra kết nối" gọi `GET /v3/api-docs` hoặc endpoint health. Task này nằm ở tuần 2 để phát hiện sớm rủi ro R6 (mạng LAN/SDK).
   - **Tiêu chí nghiệm thu:**
     - [ ] `npx expo start`, quét QR bằng Expo Go trên điện thoại thật, màn "Kiểm tra kết nối" báo thành công — chờ người dùng
@@ -356,8 +358,8 @@
 
 ## Tuần 3 — Hoàn tất luồng tiền, thông báo, khiếu nại backend (07/10 – 13/10)
 
-- [x] **T24 — Sổ công ty–kỳ (CompanyLedgerService): nguồn số liệu duy nhất** · `remittance` · M · P0 · **[TDD]** · **xong 26/09/2026**: phải thu theo công ty chụp trên khoản (G3); đã nộp lấy qua `RemittedTotals` (tạm 0 tới T26); nợ kỳ trước tính mọi kỳ khác đã hết hạn
-  - **Mô tả:** Service chỉ đọc, tính cho mỗi (công ty, kỳ): **phải thu** (Σ khoản của các tổ công ty phụ trách **tại kỳ phát sinh**, không dùng phân công hiện tại, đây là sửa lỗi R6 của prototype); **công ty đã thu** (R8, theo G4); **đã nộp về xã** (Σ phiếu thu, R7, trả 0 cho tới khi T26 xong); **còn phải nộp**; **nợ kỳ trước**; **quá hạn** khi hạn kỳ < hôm nay (R9–R11). Có thêm trạng thái tiến độ (R13: Chưa có công ty / Đã nộp đủ / Quá hạn nộp / Nộp một phần / Chưa nộp; cờ < 45%) và trạng thái đối soát (R14: chênh lệch = đã nộp − đã thu; Khớp / Đang nộp / Lệch). "Hôm nay" lấy qua `Clock` inject để test được. Test viết trước, gồm ca **đổi công ty giữa các kỳ**: kỳ cũ vẫn tính cho công ty cũ.
+- [x] **T24 — Sổ công ty–kỳ (CompanyLedgerService): nguồn số liệu duy nhất** · `remittance` · M · P0 · **\[TDD\]** · **xong 26/09/2026**: phải thu theo công ty chụp trên khoản (G3); đã nộp lấy qua `RemittedTotals` (tạm 0 tới T26); nợ kỳ trước tính mọi kỳ khác đã hết hạn
+  - **Mô tả:** Service chỉ đọc, tính cho mỗi (công ty, kỳ): **phải thu** (Σ khoản của các tổ công ty phụ trách **tại kỳ phát sinh**, không dùng phân công hiện tại, đây là sửa lỗi R6 của prototype); **công ty đã thu** (R8, theo G4); **đã nộp về xã** (Σ phiếu thu, R7, trả 0 cho tới khi T26 xong); **còn phải nộp**; **nợ kỳ trước**; **quá hạn** khi hạn kỳ &lt; hôm nay (R9–R11). Có thêm trạng thái tiến độ (R13: Chưa có công ty / Đã nộp đủ / Quá hạn nộp / Nộp một phần / Chưa nộp; cờ &lt; 45%) và trạng thái đối soát (R14: chênh lệch = đã nộp − đã thu; Khớp / Đang nộp / Lệch). "Hôm nay" lấy qua `Clock` inject để test được. Test viết trước, gồm ca **đổi công ty giữa các kỳ**: kỳ cũ vẫn tính cho công ty cũ.
   - **Tiêu chí nghiệm thu:**
     - [x] Test đơn vị cho từng công thức R6–R14 và mỗi nhánh trạng thái, gồm ca đổi công ty
     - [x] `GET /api/remittance/ledger?periodId` (xã: mọi công ty; công ty: chỉ dòng của mình) (IT phạm vi)
@@ -369,8 +371,8 @@
   - **File dự kiến:** `BE/remittance/service/{CompanyLedgerService,LedgerStatus}.java`, `BE/remittance/api/LedgerController.java` (+ DTO), `BT/remittance/{CompanyLedgerServiceTest,LedgerApiIT}.java`
   - **Kích thước:** M
 
-- [x] **T25 — Tiền mặt người đi thu đang giữ và bàn giao cho công ty** · `collection` · S · P0 · **[TDD]** · **xong 26/09/2026**: quản lý công ty ghi khi nhận tiền (G5); bàn giao không gắn kỳ theo D5 (DD đã duyệt, khác mô tả task)
-  - **Mô tả:** Tạo `MIG/V12__cash_handovers.sql` và entity `CashHandover` (người đi thu, kỳ, ngày, số tiền, ghi chú, người ghi). `CashService.held(collectorId)` = Σ thanh toán tiền mặt người đó xác nhận − Σ bàn giao (R21). `handover(...)`: 0 < số tiền ≤ đang giữ (R22). Bên ghi nhận (công ty "nhận tiền mặt" hay người đi thu "bàn giao") theo trả lời G5. Có ghi audit. Test viết trước.
+- [x] **T25 — Tiền mặt người đi thu đang giữ và bàn giao cho công ty** · `collection` · S · P0 · **\[TDD\]** · **xong 26/09/2026**: quản lý công ty ghi khi nhận tiền (G5); bàn giao không gắn kỳ theo D5 (DD đã duyệt, khác mô tả task)
+  - **Mô tả:** Tạo `MIG/V12__cash_handovers.sql` và entity `CashHandover` (người đi thu, kỳ, ngày, số tiền, ghi chú, người ghi). `CashService.held(collectorId)` = Σ thanh toán tiền mặt người đó xác nhận − Σ bàn giao (R21). `handover(...)`: 0 &lt; số tiền ≤ đang giữ (R22). Bên ghi nhận (công ty "nhận tiền mặt" hay người đi thu "bàn giao") theo trả lời G5. Có ghi audit. Test viết trước.
   - **Tiêu chí nghiệm thu:**
     - [x] Test đơn vị: đang giữ đúng sau 2 lần thu và 1 lần bàn giao; bàn giao vượt đang giữ → 422; số tiền ≤ 0 → 422
     - [x] API `GET /api/collection/cash/held`, `POST /api/collection/cash/handovers`; công ty không bàn giao được cho người đi thu của công ty khác (IT)
@@ -380,8 +382,8 @@
   - **File dự kiến:** `MIG/V12__cash_handovers.sql`, `BE/collection/domain/CashHandover.java` (+ repo), `BE/collection/service/CashService.java`, `BT/collection/{CashServiceTest,CashApiIT}.java`
   - **Kích thước:** S (API gắn vào `CollectionController` có sẵn)
 
-- [x] **T26 — Phiếu thu công ty do xã lập (backend)** · `remittance` · M · P0 · **[TDD]** · **xong 26/09/2026**: khóa dòng kỳ (`SELECT … FOR UPDATE`) để mã tuần tự và R15 an toàn khi song song; sổ công ty–kỳ đọc số đã nộp thật; DTO có số tiền bằng chữ (R29), lũy kế và còn nộp (R30)
-  - **Mô tả:** Tạo `MIG/V13__company_receipts.sql` và entity `CompanyReceipt` (mã `PT-CT-MMYY-nnn`, công ty, kỳ, số tiền, hình thức, ngày, người nộp, số chứng từ, ghi chú, người lập). `CompanyReceiptService.issue(...)` theo mẫu SPEC §6: chỉ COMMUNE_OFFICER; 1 phiếu 1 kỳ, một kỳ nộp nhiều lần; 0 < số tiền ≤ `ledger.remaining` (R15); sinh mã tuần tự không trùng khi gọi đồng thời; ghi audit; kỳ đã khóa → 422. `GET` danh sách phiếu theo kỳ/công ty (công ty chỉ thấy phiếu của mình) kèm lũy kế đã nộp tới từng phiếu (R30). Sau task này ledger (T24) đọc số đã nộp thật.
+- [x] **T26 — Phiếu thu công ty do xã lập (backend)** · `remittance` · M · P0 · **\[TDD\]** · **xong 26/09/2026**: khóa dòng kỳ (`SELECT … FOR UPDATE`) để mã tuần tự và R15 an toàn khi song song; sổ công ty–kỳ đọc số đã nộp thật; DTO có số tiền bằng chữ (R29), lũy kế và còn nộp (R30)
+  - **Mô tả:** Tạo `MIG/V13__company_receipts.sql` và entity `CompanyReceipt` (mã `PT-CT-MMYY-nnn`, công ty, kỳ, số tiền, hình thức, ngày, người nộp, số chứng từ, ghi chú, người lập). `CompanyReceiptService.issue(...)` theo mẫu SPEC §6: chỉ COMMUNE\_OFFICER; 1 phiếu 1 kỳ, một kỳ nộp nhiều lần; 0 &lt; số tiền ≤ `ledger.remaining` (R15); sinh mã tuần tự không trùng khi gọi đồng thời; ghi audit; kỳ đã khóa → 422. `GET` danh sách phiếu theo kỳ/công ty (công ty chỉ thấy phiếu của mình) kèm lũy kế đã nộp tới từng phiếu (R30). Sau task này ledger (T24) đọc số đã nộp thật.
   - **Tiêu chí nghiệm thu:**
     - [x] Test đơn vị: phiếu vượt số còn nộp → 422 `RECEIPT_AMOUNT_OUT_OF_RANGE`; số tiền 0 → 422; nộp 2 lần cộng dồn đúng
     - [x] IT: sau khi lập phiếu, `ledger` đổi "đã nộp" và "còn nộp" tương ứng; dv02 không xem được phiếu của DV01
@@ -446,7 +448,7 @@
   - **Kích thước:** M
 
 - [x] **T31 — Báo cáo tiến độ và đối soát (màn xã)** · `remittance` · M · P0 (§10 bước 5) · **xong 26/09/2026** (test tự động; còn xem bằng mắt): thêm API `GET /api/remittance/area-progress` cho tiến độ theo tổ
-  - **Mô tả:** Hai màn của cán bộ xã dùng chung API ledger T24. **Tiến độ:** theo công ty và theo tổ, trạng thái R13, cờ < 45%, nợ kỳ trước. **Đối soát:** phải thu / công ty đã thu / đã nộp về xã / chênh lệch, trạng thái Khớp / Đang nộp / Lệch. Thêm một IT backend so dữ liệu 3 nơi (tiến độ, đối soát, dòng công ty) cho cùng kỳ.
+  - **Mô tả:** Hai màn của cán bộ xã dùng chung API ledger T24. **Tiến độ:** theo công ty và theo tổ, trạng thái R13, cờ &lt; 45%, nợ kỳ trước. **Đối soát:** phải thu / công ty đã thu / đã nộp về xã / chênh lệch, trạng thái Khớp / Đang nộp / Lệch. Thêm một IT backend so dữ liệu 3 nơi (tiến độ, đối soát, dòng công ty) cho cùng kỳ.
   - **Tiêu chí nghiệm thu:**
     - [x] Sau khi lập phiếu một phần cho DV01, cả hai màn hiện "Đang nộp" / "Nộp một phần" đúng
     - [x] IT: tổng của tiến độ = đối soát = ledger phía công ty cho cùng kỳ (tiêu chí SPEC §9.6)
@@ -458,7 +460,7 @@
   - **File dự kiến:** `WEB/features/remittance/ProgressPage/ProgressPage.tsx`, `WEB/features/remittance/ReconciliationPage/ReconciliationPage.tsx`, `WEB/features/remittance/useCompanyLedger.ts`, `BT/remittance/LedgerConsistencyIT.java`
   - **Kích thước:** M
 
-- [x] **T32 — Khóa kỳ: chặn khi còn nợ, cấm sửa sau khóa** · `remittance` · M · P0 (§10 bước 8) · **[TDD]** · **xong 26/09/2026**: cán bộ xã khóa (G1), chặn khi còn phải nộp > 0 kể cả chưa quá hạn (G15); nút Khóa kỳ đặt ở màn **Đối soát** của cán bộ xã (màn kỳ thu thuộc quản trị); chỉ khóa được kỳ Đang thu
+- [x] **T32 — Khóa kỳ: chặn khi còn nợ, cấm sửa sau khóa** · `remittance` · M · P0 (§10 bước 8) · **\[TDD\]** · **xong 26/09/2026**: cán bộ xã khóa (G1), chặn khi còn phải nộp &gt; 0 kể cả chưa quá hạn (G15); nút Khóa kỳ đặt ở màn **Đối soát** của cán bộ xã (màn kỳ thu thuộc quản trị); chỉ khóa được kỳ Đang thu
   - **Mô tả:** `PeriodLockService.lock(periodId)`: dùng ledger để chặn khi còn công ty nợ, trả lỗi 422 liệt kê công ty và số nợ (R19); khóa thành công thì đặt `LOCKED` qua service public của master-data. Viết `PeriodGuard.requireOpen(periodId)` (master-data) và gọi trong billing publish, collection recordPayment/handover, remittance issue receipt: sau khóa không sửa được khoản, thanh toán, phiếu thu của kỳ. Thêm nút "Khóa kỳ" trên màn kỳ thu (vai trò theo G1). Test viết trước.
   - **Tiêu chí nghiệm thu:**
     - [x] Test đơn vị: còn nợ → 422 kèm danh sách công ty; hết nợ → khóa được
@@ -496,7 +498,7 @@
   - **File dự kiến:** `MIG/V14__payment_reminders.sql`, `BE/remittance/domain/PaymentReminder.java` (+ repo), `BE/remittance/service/ReminderService.java`, `BT/remittance/ReminderServiceTest.java`, `WEB/features/remittance/ProgressPage/ReminderModal.tsx`
   - **Kích thước:** M
 
-- [x] **T35 — Công ty xem phiếu thu, báo sai sót; xã xử lý** · `remittance` · M · P0 (§10 bước 5) · ~~[cần hỏi trước: G6]~~ G6 đã chốt ở DD · **xong 26/09/2026** (test tự động; còn kiểm tay): API `/api/remittance/receipt-issues` (+ `/{id}/resolve`); màn công ty đặt tạm làm tab "Phiếu thu xã lập" trong "Khu vực được giao" (`features/collection/CompanyHubPage.tsx`, T28–T29 thêm tab); màn xã là tab "Sai sót phiếu thu" trong "Khoản thu"; nhãn "Đã báo sai sót · chờ xã kiểm tra" ghép ở web từ danh sách sai sót
+- [x] **T35 — Công ty xem phiếu thu, báo sai sót; xã xử lý** · `remittance` · M · P0 (§10 bước 5) · ~~\[cần hỏi trước: G6\]~~ G6 đã chốt ở DD · **xong 26/09/2026** (test tự động; còn kiểm tay): API `/api/remittance/receipt-issues` (+ `/{id}/resolve`); màn công ty đặt tạm làm tab "Phiếu thu xã lập" trong "Khu vực được giao" (`features/collection/CompanyHubPage.tsx`, T28–T29 thêm tab); màn xã là tab "Sai sót phiếu thu" trong "Khoản thu"; nhãn "Đã báo sai sót · chờ xã kiểm tra" ghép ở web từ danh sách sai sót
   - **Mô tả:** Tạo `MIG/V15__receipt_issues.sql` và entity `ReceiptIssue` (phiếu thu, loại: Sai số tiền / Sai kỳ thu / Sai chứng từ / Không phải khoản nộp của công ty; số đúng; mô tả; trạng thái `PENDING/RESOLVED`; kết quả xử lý; người xử lý). Công ty: màn "Phiếu thu xã lập" (chỉ phiếu của mình) + form báo sai sót → thông báo `RECEIPT` tới xã. Xã: **màn xử lý mới** (prototype chưa có): danh sách sai sót chờ, đánh dấu đã xử lý kèm ghi chú → thông báo về công ty. Khi lập phiếu (T26) phát thông báo `RECEIPT` tới công ty. "Xử lý" có sửa/hủy phiếu hay không theo trả lời G6; mặc định để hỏi: chỉ đóng kèm ghi chú.
   - **Tiêu chí nghiệm thu:**
     - [x] DV01 báo sai sót → xã thấy thông báo và mục chờ; xã xử lý → DV01 thấy thông báo và trạng thái "Đã xử lý" (IT; kiểm tay còn chờ)
@@ -504,13 +506,13 @@
     - [x] Validation form báo sai sót có test component
   - **Kiểm chứng:**
     - [x] `cd backend && ./mvnw test -Dtest=ReceiptIssueIT`
-    - [x] Web lint/test/build; [ ] thủ công §10 bước 5 (sai sót)
+    - [x] Web lint/test/build; \[ \] thủ công §10 bước 5 (sai sót)
   - **Phụ thuộc:** T26, T23, T30
   - **File dự kiến:** `MIG/V15__receipt_issues.sql`, `BE/remittance/domain/ReceiptIssue.java` (+ repo), `BE/remittance/service/ReceiptIssueService.java`, `BT/remittance/ReceiptIssueIT.java`, `WEB/features/remittance/{CompanyReceiptsPage/CompanyReceiptsPage.tsx,ReceiptIssuesPage/ReceiptIssuesPage.tsx}`
   - **Kích thước:** M
 
-- [x] **T36 — Khiếu nại backend: luồng trạng thái, timeline nối tiếp, thông báo** · `complaints` · M · P0 · **[TDD]** · ~~[cần hỏi trước: G12]~~ G12 đã chốt ở DD · **xong 26/09/2026**: xã ghi nhận chỉ kênh PHONE/IN_PERSON (APP do người dân gửi ở T43, thêm mốc SUBMITTED); chuyển công ty một lần (chuyển lại → 422 `COMPLAINT_ALREADY_FORWARDED`); công ty phản hồi không đổi trạng thái, xã đóng từ Mới hoặc Đang xử lý; tạo mới chỉ báo xã (không báo công ty theo khu vực như prototype, vì G12); `complaint_events` có trigger chặn sửa/xóa; FK tới `citizen_accounts` thêm ở V18
-  - **Mô tả:** Tạo `MIG/V16__complaints.sql` và hai entity: `Complaint` (mã `KN-…`, ngày, người gửi, đối tượng liên quan, khu vực, kênh APP/PHONE/IN_PERSON, loại, nội dung, trạng thái `NEW → PROCESSING → RESOLVED`, công ty được chuyển, hạn xử lý) và `ComplaintEvent` (append-only: RECEIVED, FORWARDED, COMPANY_REPLIED, CLOSED; người, thời gian, nội dung). `ComplaintService`: xã ghi nhận/xử lý; chuyển công ty (hạn = hôm nay + 3 ngày, công ty mặc định theo `companyOf(khu vực)`); công ty phản hồi; xã đóng. Mỗi bước phát thông báo (xã, công ty, người dân nếu người gửi là dân). Công ty chỉ thấy khiếu nại theo phạm vi G12. Test viết trước cho chuyển trạng thái hợp lệ/không hợp lệ và timeline không bị ghi đè.
+- [x] **T36 — Khiếu nại backend: luồng trạng thái, timeline nối tiếp, thông báo** · `complaints` · M · P0 · **\[TDD\]** · ~~\[cần hỏi trước: G12\]~~ G12 đã chốt ở DD · **xong 26/09/2026**: xã ghi nhận chỉ kênh PHONE/IN\_PERSON (APP do người dân gửi ở T43, thêm mốc SUBMITTED); chuyển công ty một lần (chuyển lại → 422 `COMPLAINT_ALREADY_FORWARDED`); công ty phản hồi không đổi trạng thái, xã đóng từ Mới hoặc Đang xử lý; tạo mới chỉ báo xã (không báo công ty theo khu vực như prototype, vì G12); `complaint_events` có trigger chặn sửa/xóa; FK tới `citizen_accounts` thêm ở V18
+  - **Mô tả:** Tạo `MIG/V16__complaints.sql` và hai entity: `Complaint` (mã `KN-…`, ngày, người gửi, đối tượng liên quan, khu vực, kênh APP/PHONE/IN\_PERSON, loại, nội dung, trạng thái `NEW → PROCESSING → RESOLVED`, công ty được chuyển, hạn xử lý) và `ComplaintEvent` (append-only: RECEIVED, FORWARDED, COMPANY\_REPLIED, CLOSED; người, thời gian, nội dung). `ComplaintService`: xã ghi nhận/xử lý; chuyển công ty (hạn = hôm nay + 3 ngày, công ty mặc định theo `companyOf(khu vực)`); công ty phản hồi; xã đóng. Mỗi bước phát thông báo (xã, công ty, người dân nếu người gửi là dân). Công ty chỉ thấy khiếu nại theo phạm vi G12. Test viết trước cho chuyển trạng thái hợp lệ/không hợp lệ và timeline không bị ghi đè.
   - **Tiêu chí nghiệm thu:**
     - [x] Test đơn vị: chuyển trạng thái sai → 422; mỗi bước thêm một event, event cũ không đổi
     - [x] IT: xã tạo → chuyển DV01 → DV01 phản hồi → xã đóng; mỗi bước có đúng thông báo; dv02 không thấy khiếu nại → 403/404
@@ -529,7 +531,7 @@
   - [ ] §10 bước 8: khóa kỳ khi còn nợ bị chặn, có lý do
   - [ ] Coverage service `billing`/`collection`/`remittance` ≥ 80% (nếu có JaCoCo, G10)
   - [x] `/agent-skills:review` trên toàn bộ luồng tiền; sửa các phát hiện mức Critical/Important trước khi sang tuần 4 (gộp lô 3, 28/09/2026: backend 158 unit + 201 IT gồm `MoneyConcurrencyIT`, `AreaScopedApiNoTransactionIT`; web 108; mobile 80 — đều xanh)
-    - Review luồng tiền 28/09/2026 (nhánh `fix/money-concurrency`): đã sửa I1–I3 (khóa kỳ FOR SHARE khi ghi, khóa dòng khoản khi thu, khóa người đi thu khi bàn giao), M2–M5 (M3: tràn tổng tiền → 422 `CHARGE_AMOUNT_TOO_LARGE`), M8, audit thu tiền tách `chargeAmount`/`paymentAmount`, nạp sẵn địa bàn cho area-progress và tìm hồ sơ hộ của công ty; người dùng chốt: I4 chặn đơn giá nhập tay 0 đ (422, web min 1), cờ < 45% cấp công ty theo đã nộp về xã / phải thu (màn tiến độ hiện % đã nộp), cấp tổ giữ đã thu / phải thu; còn M6, M7, M9 ghi nhận
+    - Review luồng tiền 28/09/2026 (nhánh `fix/money-concurrency`): đã sửa I1–I3 (khóa kỳ FOR SHARE khi ghi, khóa dòng khoản khi thu, khóa người đi thu khi bàn giao), M2–M5 (M3: tràn tổng tiền → 422 `CHARGE_AMOUNT_TOO_LARGE`), M8, audit thu tiền tách `chargeAmount`/`paymentAmount`, nạp sẵn địa bàn cho area-progress và tìm hồ sơ hộ của công ty; người dùng chốt: I4 chặn đơn giá nhập tay 0 đ (422, web min 1), cờ &lt; 45% cấp công ty theo đã nộp về xã / phải thu (màn tiến độ hiện % đã nộp), cấp tổ giữ đã thu / phải thu; còn M6, M7, M9 ghi nhận
 
 ---
 
@@ -558,7 +560,7 @@
   - **File dự kiến:** `MIG/V17__…sql` + `SEED/V17_1__seed_schedules.sql`, `BE/masterdata/domain/CollectionSchedule.java` (+ repo), `BE/masterdata/api/ScheduleController.java`, `BT/masterdata/CollectionScheduleIT.java`
   - **Kích thước:** S
 
-- [x] **T39 — Tài khoản người dân, đăng nhập OTP cố định, API hộ và khoản** · `citizen-app` · M · P0 · ~~[cần hỏi trước: G8; O7]~~ G8, O7 đã chốt ở DD · **xong 27/09/2026**: token người dân chung khóa JWT nhưng có claim `kind=CITIZEN` + `subjectId`, principal `CurrentCitizen`; `/api/citizen/**` chỉ nhận token người dân, API nội bộ trả 403 với token người dân và ngược lại; OTP `123456` (biến `CITIZEN_DEMO_OTP`), token người dân sống 7 ngày; SĐT sai và OTP sai trả cùng lỗi `INVALID_OTP`; nhận SĐT dạng `+84`/có khoảng trắng; tài khoản bị khóa bị chặn ngay cả khi token còn hạn; thêm `GET /api/citizen/charges/{id}` (khoản hộ khác → 404) cho T42; seed 6 tài khoản (hộ demo có 2 thành viên, D11); nối FK `citizen_accounts` cho `notifications`, `complaints`, `complaint_events`
+- [x] **T39 — Tài khoản người dân, đăng nhập OTP cố định, API hộ và khoản** · `citizen-app` · M · P0 · ~~\[cần hỏi trước: G8; O7\]~~ G8, O7 đã chốt ở DD · **xong 27/09/2026**: token người dân chung khóa JWT nhưng có claim `kind=CITIZEN` + `subjectId`, principal `CurrentCitizen`; `/api/citizen/**` chỉ nhận token người dân, API nội bộ trả 403 với token người dân và ngược lại; OTP `123456` (biến `CITIZEN_DEMO_OTP`), token người dân sống 7 ngày; SĐT sai và OTP sai trả cùng lỗi `INVALID_OTP`; nhận SĐT dạng `+84`/có khoảng trắng; tài khoản bị khóa bị chặn ngay cả khi token còn hạn; thêm `GET /api/citizen/charges/{id}` (khoản hộ khác → 404) cho T42; seed 6 tài khoản (hộ demo có 2 thành viên, D11); nối FK `citizen_accounts` cho `notifications`, `complaints`, `complaint_events`
   - **Mô tả:** Tạo `MIG/V18__citizen_accounts.sql` và entity `CitizenAccount` (SĐT, gắn một `ServiceSubject`, trạng thái). Seed tài khoản cho `DTH-H000128` và vài hộ khác (SĐT giả). `POST /api/citizen/auth/otp/request` (mô phỏng, không gửi SMS) và `POST /api/citizen/auth/otp/verify` (mã cố định lấy từ cấu hình) → JWT vai trò CITIZEN gắn `subjectId`. `GET /api/citizen/me` (hồ sơ hộ); `GET /api/citizen/charges` (khoản chưa đóng + lịch sử, từ `Charge`). Người dân chỉ thấy hộ của mình.
   - **Tiêu chí nghiệm thu:**
     - [x] Đăng nhập bằng SĐT + OTP cố định; sai OTP → 401 (IT)
@@ -583,7 +585,7 @@
   - **File dự kiến:** `BE/citizen/service/CitizenPaymentService.java`, `BE/citizen/api/CitizenController.java`, `BT/citizen/CitizenPaymentIT.java`
   - **Kích thước:** S
 
-- [ ] **T41 — Mobile: đăng nhập, trang chủ, thông tin hộ, khoản phải đóng** · `citizen-app` · M · P0 · **code xong 27/09/2026, chờ người dùng thử trên Expo Go**: thanh tab theo đúng prototype (Trang chủ · Chợ đồ cũ · Thông báo · Tài khoản; hai tab sau là màn "Đang xây dựng" chờ T44/T48), nên Khoản phí (`src/app/charges.tsx`) và Thông tin hộ (`src/app/household.tsx`) là màn đẩy từ Trang chủ/Tài khoản thay vì tab như file dự kiến; bảo vệ đăng nhập bằng `Stack.Protected` của Expo Router 57 + `SessionProvider` (SecureStore, 401 → tự đăng xuất); định dạng tiền/ngày tự viết (không dayjs/Intl vì Hermes), cùng bộ ca test với web; 36 test Jest (client, kết nối, định dạng, kiểm tra SĐT/OTP, gộp khoản)
+- [x] **T41 — Mobile: đăng nhập, trang chủ, thông tin hộ, khoản phải đóng** · `citizen-app` · M · P0 · **code xong 27/09/2026, chờ người dùng thử trên Expo Go**: thanh tab theo đúng prototype (Trang chủ · Chợ đồ cũ · Thông báo · Tài khoản; hai tab sau là màn "Đang xây dựng" chờ T44/T48), nên Khoản phí (`src/app/charges.tsx`) và Thông tin hộ (`src/app/household.tsx`) là màn đẩy từ Trang chủ/Tài khoản thay vì tab như file dự kiến; bảo vệ đăng nhập bằng `Stack.Protected` của Expo Router 57 + `SessionProvider` (SecureStore, 401 → tự đăng xuất); định dạng tiền/ngày tự viết (không dayjs/Intl vì Hermes), cùng bộ ca test với web; 36 test Jest (client, kết nối, định dạng, kiểm tra SĐT/OTP, gộp khoản)
   - **Sửa 27/09/2026 (kiểm tích hợp sớm trên seed):** server thật trả 500 ở đăng nhập OTP, `/me`, `/schedule` và bấm thanh toán lần 2, vì controller dựng DTO từ proxy lười sau khi transaction đóng (`open-in-view: false`) mà các IT cũ chạy trong `@Transactional` nên không lộ. Sửa: `CitizenAccountRepository` luôn nạp kèm hộ → tổ → phường; thanh toán nạp lại xác nhận kèm khoản. Thêm `CitizenApiNoTransactionIT` gọi mọi API người dân với dữ liệu đã commit (đỏ trước khi sửa, xanh sau). Qua API trên seed đã chạy trọn §10 bước 4, 6 và phần rác cồng kềnh bước 7; còn chờ người dùng kiểm tay trên điện thoại + web
   - **Mô tả:** Màn đăng nhập (SĐT → OTP), token lưu bằng `expo-secure-store` (nếu được duyệt ở G10). Tab điều hướng. Trang chủ (tổng phải đóng, lối tắt). Thông tin hộ. Khoản phải đóng + lịch sử. Tham chiếu `prototype/` app người dân.
   - **Tiêu chí nghiệm thu:**
@@ -634,13 +636,13 @@
   - **File dự kiến:** `BE/citizen/api/CitizenNotificationController.java`, `BT/citizen/CitizenNotificationIT.java`, `MOB/app/(tabs)/notifications.tsx`
   - **Kích thước:** S
 
-- [x] **T45 — Rác cồng kềnh: backend và màn công ty báo phí** · `citizen-app` · M · P0 (§10 bước 7) · **O5 mặc định (không sinh Charge)** · ~~[cần hỏi trước: G13]~~ G13 đã chốt · **xong 27/09/2026** (test tự động; còn kiểm tay §10 bước 7): mã `CK-MMYY-nnn`; công ty phụ trách chụp theo `companyOf(khu vực, ngày đăng ký)`, tổ chưa có công ty → 422 `BULKY_NO_COMPANY`; ngày mong muốn/ngày hẹn trước hôm nay → 422; ngày hẹn để trống = ngày hộ mong muốn; ngoài báo phí và đã thu gom, công ty còn **từ chối** (kèm lý do) và dân hủy được khi Chờ xác nhận/Đã báo phí; dân hủy thì báo công ty; audit ghi thao tác của công ty; xã/quản trị đọc được `GET /api/bulky-requests` (web chưa có màn xã); ảnh (T46, 28/09/2026): dân gửi `photoNames` là **tên ảnh** đã tải qua `POST /api/citizen/photos` của T47 (tối đa 5, tên trùng bỏ bớt, tên chưa tải → 422 `PHOTO_NOT_FOUND`, không nhận URL tự do; cột `photo_urls` giữ nguyên, lưu tên), `photoUrls` trả về theo phía gọi: app dân `/api/citizen/photos/{name}`, web `GET /api/bulky-requests/{id}/photos/{name}` (công ty phụ trách; xã/quản trị chỉ xem; công ty khác hoặc ảnh không thuộc yêu cầu → 404), màn công ty có cột "Ảnh" (ảnh nhỏ tải kèm token, bấm xem lớn); màn web `/company/bulky` (menu "Rác cồng kềnh"), thông báo `company.bulky` mở màn và tô dòng theo `?id=`
+- [x] **T45 — Rác cồng kềnh: backend và màn công ty báo phí** · `citizen-app` · M · P0 (§10 bước 7) · **O5 mặc định (không sinh Charge)** · ~~\[cần hỏi trước: G13\]~~ G13 đã chốt · **xong 27/09/2026** (test tự động; còn kiểm tay §10 bước 7): mã `CK-MMYY-nnn`; công ty phụ trách chụp theo `companyOf(khu vực, ngày đăng ký)`, tổ chưa có công ty → 422 `BULKY_NO_COMPANY`; ngày mong muốn/ngày hẹn trước hôm nay → 422; ngày hẹn để trống = ngày hộ mong muốn; ngoài báo phí và đã thu gom, công ty còn **từ chối** (kèm lý do) và dân hủy được khi Chờ xác nhận/Đã báo phí; dân hủy thì báo công ty; audit ghi thao tác của công ty; xã/quản trị đọc được `GET /api/bulky-requests` (web chưa có màn xã); ảnh (T46, 28/09/2026): dân gửi `photoNames` là **tên ảnh** đã tải qua `POST /api/citizen/photos` của T47 (tối đa 5, tên trùng bỏ bớt, tên chưa tải → 422 `PHOTO_NOT_FOUND`, không nhận URL tự do; cột `photo_urls` giữ nguyên, lưu tên), `photoUrls` trả về theo phía gọi: app dân `/api/citizen/photos/{name}`, web `GET /api/bulky-requests/{id}/photos/{name}` (công ty phụ trách; xã/quản trị chỉ xem; công ty khác hoặc ảnh không thuộc yêu cầu → 404), màn công ty có cột "Ảnh" (ảnh nhỏ tải kèm token, bấm xem lớn); màn web `/company/bulky` (menu "Rác cồng kềnh"), thông báo `company.bulky` mở màn và tô dòng theo `?id=`
   - **Giới hạn người dùng chốt 28/09/2026:** ngày mong muốn và ngày hẹn thu gom xa nhất 30 ngày tới (`BULKY_DATE_TOO_FAR`); mỗi hộ tối đa 3 yêu cầu Chờ xác nhận/Đã báo phí (`BULKY_TOO_MANY_OPEN`); phí công ty báo tối đa 10.000.000 đ. Tạo yêu cầu khóa theo tiền tố mã (`pg_advisory_xact_lock`) để không trùng mã và không vượt giới hạn khi gửi dồn; dân tạo/hủy có ghi audit (`CREATE_BULKY`, `CITIZEN_CANCEL_BULKY`)
   - **Mô tả:** Tạo `MIG/V21__bulky_waste_requests.sql` và entity `BulkyWasteRequest` (loại vật dụng, số lượng, địa chỉ, ngày mong muốn, ảnh (tùy C5), công ty phụ trách = `companyOf(khu vực)`, phí công ty báo, trạng thái `PENDING → QUOTED → COLLECTED / CANCELLED`). API cho dân (tạo, xem, hủy) và cho công ty (danh sách của mình, báo phí, đánh dấu đã thu gom). Mỗi lần đổi trạng thái phát thông báo cho dân. Web công ty: màn "Rác cồng kềnh" có form báo phí. Phí **không** sinh `Charge` (O5).
   - **Tiêu chí nghiệm thu:**
     - [x] IT: dân tạo → yêu cầu gán DV01 → DV01 báo phí → dân thấy "Đã báo phí"; dv02 không thấy yêu cầu này (`BulkyWasteIT`, dùng DV07 của fixture)
     - [x] Không có `Charge` nào được tạo từ yêu cầu (IT)
-    - [x] Validation form báo phí (phí > 0) có test component (`QuoteForm.test.tsx`, kèm form từ chối và luồng màn công ty)
+    - [x] Validation form báo phí (phí &gt; 0) có test component (`QuoteForm.test.tsx`, kèm form từ chối và luồng màn công ty)
   - **Kiểm chứng:**
     - [x] `cd backend && ./mvnw test -Dtest=BulkyWasteIT` (7 test); web lint/test/build (111 test)
     - [x] Gộp lô 2 kèm ảnh T46 (28/09/2026): `./mvnw verify` đầy đủ 155 unit + 194 IT xanh (`BulkyWasteIT` 14 test, `CitizenApiNoTransactionIT` 6 test); schema web + mobile sinh lại; web lint + Vitest (106 test / 25 file) + build xanh
@@ -652,7 +654,7 @@
   - **Mô tả:** Form đăng ký (4 loại vật dụng, số lượng, địa chỉ mặc định theo hộ, ngày mong muốn, ảnh theo C5). Danh sách và chi tiết có trạng thái và phí công ty báo.
   - **Tiêu chí nghiệm thu:**
     - [ ] Dân đăng ký → DV01 báo phí trên web → app hiện "Đã báo phí" kèm số tiền — API đã kiểm bằng `BulkyWasteIT`; chờ người dùng chạy tay (SĐT `0902000128`, OTP `123456`, web `dv01`)
-    - [x] Validation form (ngày mong muốn ≥ hôm nay, số lượng > 0) có test Jest (`features/bulky/validate.test.ts`)
+    - [x] Validation form (ngày mong muốn ≥ hôm nay, số lượng &gt; 0) có test Jest (`features/bulky/validate.test.ts`)
   - **Kiểm chứng:**
     - [x] `cd mobile && npm run gen:api && npm test` (60 test) + `npm run typecheck` + `expo export`
     - [x] Gộp lô 2 có ảnh (28/09/2026): schema sinh lại (`photoNames`, `GET /api/bulky-requests/{id}/photos/{name}`); mobile typecheck + Jest (80 test / 12 file) + `expo export` android xanh; backend `./mvnw verify` đầy đủ 155 unit + 194 IT xanh (`BulkyWasteIT` 14 test); web lint + Vitest (106 test) + build xanh
@@ -666,7 +668,7 @@
   - **Tiêu chí nghiệm thu:**
     - [x] Đăng bài, xem danh sách/chi tiết, bình luận qua API (IT) (`MarketIT`, 9 test)
     - [x] Chỉ chủ bài đổi được trạng thái bài (IT) (`MarketIT.onlyAuthorClosesPostOnceWithoutReopeningAndClosedPostsLeaveDefaultList`)
-    - [x] Đóng bài một chiều, bài đã đóng không nhận bình luận (IT `MarketIT.onlyAuthorClosesPostOnceWithoutReopeningAndClosedPostsLeaveDefaultList`, `MarketIT.closedPostTakesNoNewComments`; `MarketIT` 10 test); API chợ gọi ngoài transaction như server thật (`CitizenApiNoTransactionIT.marketFlowLoadsOutsideTestTransaction`, đăng bài đồng thời ra mã khác nhau `concurrentMarketPostsGetDistinctCodes`); ổ chứa ảnh còn < 1 GB → 422 `STORAGE_FULL` (`PhotoStorageTest`); đã sinh lại `schema.d.ts` web + mobile (đổi mô tả endpoint đóng bài) — xanh khi gộp lô 2 (28/09/2026)
+    - [x] Đóng bài một chiều, bài đã đóng không nhận bình luận (IT `MarketIT.onlyAuthorClosesPostOnceWithoutReopeningAndClosedPostsLeaveDefaultList`, `MarketIT.closedPostTakesNoNewComments`; `MarketIT` 10 test); API chợ gọi ngoài transaction như server thật (`CitizenApiNoTransactionIT.marketFlowLoadsOutsideTestTransaction`, đăng bài đồng thời ra mã khác nhau `concurrentMarketPostsGetDistinctCodes`); ổ chứa ảnh còn &lt; 1 GB → 422 `STORAGE_FULL` (`PhotoStorageTest`); đã sinh lại `schema.d.ts` web + mobile (đổi mô tả endpoint đóng bài) — xanh khi gộp lô 2 (28/09/2026)
   - **Kiểm chứng:**
     - [x] `cd backend && ./mvnw test -Dtest=MarketIT,DemoSeedIT,GlobalExceptionHandlerTest` (9 + 9 + 10 test); `./mvnw verify` (152 unit + 177 IT); sau khi sinh lại schema: web lint/test/build (116 test), mobile typecheck/jest (60 test)
     - [x] Gộp lô 2 (28/09/2026): `./mvnw verify` đầy đủ 155 unit + 194 IT xanh (kể cả `CollectionNoTransactionIT`, `PhotoStorageTest`); web lint + Vitest (106 test) + build; mobile typecheck + Jest (80 test) + `expo export` android
@@ -674,7 +676,7 @@
   - **File dự kiến:** `MIG/V20__market.sql`, `BE/citizen/domain/{MarketPost,MarketComment}.java` (+ repo), `BE/citizen/service/MarketService.java`, `BE/citizen/api/MarketController.java`, `BT/citizen/MarketIT.java`
   - **Kích thước:** M
 
-- [ ] **T48 — Mobile: chợ đồ cũ** · `citizen-app` · M · P0 (§10 bước 7) · **code xong 28/09/2026, test tự động xanh khi gộp lô 2; chờ người dùng thử tay**: tab "Chợ đồ cũ" liệt kê bài đang đăng, lọc Tất cả / Cho tặng / Trao đổi, kéo để tải lại; chi tiết có ảnh, bình luận (bài đã đóng thì ẩn ô bình luận, trên iOS ô bình luận không bị bàn phím che), chủ bài đóng bài sau khi xác nhận (không mở lại); form đăng bài: tên, hình thức, mô tả bắt buộc, nơi nhận và ảnh không bắt buộc (tối đa 5). Ảnh dùng chung với T46 ở `features/photos` (`pickPhotos`, `uploadPhoto` qua `api.upload` có token, `PhotoPickerField` khóa nút gửi khi đang tải, `PhotoStrip`); iOS đổi ảnh HEIC sang dạng tương thích trước khi tải. `expo-image-picker` ~57.0.20 (dependency đã duyệt G10) khóa bằng `npx expo install`, plugin `app.json` chỉ xin quyền thư viện ảnh (tắt camera, micro)
+- [ ] **T48 — Mobile: chợ đồ cũ** · `citizen-app` · M · P0 (§10 bước 7) · **code xong 28/09/2026, test tự động xanh khi gộp lô 2; chờ người dùng thử tay**: tab "Chợ đồ cũ" liệt kê bài đang đăng, lọc Tất cả / Cho tặng / Trao đổi, kéo để tải lại; chi tiết có ảnh, bình luận (bài đã đóng thì ẩn ô bình luận, trên iOS ô bình luận không bị bàn phím che), chủ bài đóng bài sau khi xác nhận (không mở lại); form đăng bài: tên, hình thức, mô tả bắt buộc, nơi nhận và ảnh không bắt buộc (tối đa 5). Ảnh dùng chung với T46 ở `features/photos` (`pickPhotos`, `uploadPhoto` qua `api.upload` có token, `PhotoPickerField` khóa nút gửi khi đang tải, `PhotoStrip`); iOS đổi ảnh HEIC sang dạng tương thích trước khi tải. `expo-image-picker` \~57.0.20 (dependency đã duyệt G10) khóa bằng `npx expo install`, plugin `app.json` chỉ xin quyền thư viện ảnh (tắt camera, micro)
   - **Mô tả:** Danh sách (lọc Cho tặng / Trao đổi), chi tiết có bình luận, form đăng bài.
   - **Tiêu chí nghiệm thu:**
     - [ ] Dân đăng một bài trên điện thoại, bài hiện trong danh sách (§10 bước 7) — chờ người dùng
@@ -689,7 +691,7 @@
 - [x] **T49 — `docker compose up --build` chạy db + backend + web; rà seed theo §10** · `platform` · M · P0 (§10 bước 9) · **xong 28/09/2026, đã vào `main`: `./mvnw verify` xanh (158 unit + 202 IT), CSDL sạch + build lần lượt + `up` chạy được, §10 bước 1–8 qua API (web qua nginx, app gọi thẳng backend) 36/36 kiểm tra đạt, log backend/nginx không lỗi; thử tay giao diện là T50**: image backend đóng gói bằng Maven wrapper, bỏ test (test chạy riêng `./mvnw verify`), đặt `SPRING_PROFILES_ACTIVE=demo` trong image để nạp seed; web build Vite rồi nginx phục vụ file tĩnh + proxy `/api/` sang `backend:8080` (dùng DNS của Docker nên backend tạo lại vẫn nối được; `client_max_body_size 50m` ngang `max-swallow-size` của backend cho đồng bộ, dù hiện ảnh chỉ đi từ app thẳng vào cổng backend); backend mở cổng `BACKEND_PORT` cho Expo Go gọi thẳng (app không qua nginx); volume `vsmt-uploads` giữ ảnh (`vsmt.upload-dir` = `/app/uploads`); runbook build lần lượt từng image (máy yếu) và cảnh báo đổi `POSTGRES_PASSWORD` khi đã có volume cũ; người đi thu mở web qua `http://<IP LAN>:5173` (không phải secure context), fix `requestId` bỏ `crypto.randomUUID` đã có trên `main`; qua nginx thì audit ghi IP container (cột `ip_address` mức Thật, demo chấp nhận). **Seed `V22_1`**: nhắc nộp (§10 bước 5, R16) cần kỳ đã quá hạn mà công ty còn nợ, seed cũ không có kỳ nào nên API trả 422 `NO_OVERDUE_DEBT`; thêm kỳ cũ 09/2026 Đang thu, hạn công ty nộp xã 25/09/2026 (quá hạn cả 28/09 lẫn ngày demo 21/10), biểu giá `BG-65-2026` (hiệu lực từ 01/09), chỉ phát hành cho DV01 (KV07 + KV09, 19 khoản 1.319.000), 8 lần thu 609.000, người đi thu đã bàn giao hết tiền mặt, một phiếu thu 400.000 → DV01 còn nợ quá hạn 919.000; kèm nhật ký cho các thao tác tiền (kỳ mở là Đang thu luôn nên không có dòng "Bắt đầu thu"), không tạo thông báo. Hệ quả theo R9–R11: ở kỳ 10/2026 dòng DV01 hiện Quá hạn nộp/Lệch cho tới khi DV01 nộp hết kỳ 09. **Người dùng chốt 28/09/2026:** bước 5 theo thứ tự nhắc nộp → xã lập phiếu thu hết 919.000 kỳ 09 → phiếu thu một phần kỳ 10 ("Đang nộp"); bước 2 phân KV24 cho DV01 để bước 3 DV01 phân KV24 cho `thu07`
   - **Mô tả:** Viết `backend/Dockerfile` (multi-stage, JRE 21) và `web/Dockerfile` (build Vite + nginx proxy `/api`), thêm service `backend` và `web` vào `docker-compose.yml` (backend chạy Spring profile `demo`, biến từ `.env`). Rà seed khớp kịch bản §10: có kỳ 10/2026 chưa mở, KV24 chưa phân công, DV01 + người đi thu KV07/KV09, hộ `DTH-H000128` có tài khoản dân; không có dữ liệu thật. Ghi `docs/demo-runbook.md` (lệnh chạy, tài khoản, thứ tự §10). Nếu chọn C7 thì chỉ viết runbook chạy dev.
   - **Tiêu chí nghiệm thu:**
-    - [x] Máy sạch: `docker compose up --build` → web ở http://localhost:5173 (hoặc cổng đã ghi) đăng nhập được
+    - [x] Máy sạch: `docker compose up --build` → web ở [http://localhost:5173](http://localhost:5173) (hoặc cổng đã ghi) đăng nhập được
     - [x] Seed đủ điều kiện ban đầu của §10 bước 1–8 (bảng đối chiếu ở `docs/demo-runbook.md` mục "Dữ liệu seed cho §10"; `DemoSeedIT` xanh; chạy §10 bước 1–8 qua API trên CSDL sạch đạt; thử tay giao diện ở T50)
     - [x] Không có secret thật trong Dockerfile/compose (rà tay: mật khẩu CSDL và `JWT_SECRET` lấy từ `.env`; giá trị mặc định chỉ có cổng và OTP demo `123456`)
   - **Kiểm chứng:**
@@ -726,13 +728,13 @@
   - **Tiêu chí nghiệm thu:**
     - [x] Quản trị tạo tài khoản COLLECTOR cho DV01; tài khoản đó đăng nhập được
     - [x] Không phải ADMIN → 403 (IT); tài khoản bị khóa không đăng nhập được (IT)
-    - [x] Validation form (COMPANY_MANAGER/COLLECTOR bắt buộc có công ty) có test component
-  - **Kiểm chứng:** `UserAdminIT` 8, `CompanyApiIT` 3 (sau review: chặn đổi công ty khi còn tiền mặt / phân tổ tương lai, mật khẩu > 72 byte) + IT/unit liên quan (auth, phân công khu vực, phân tổ, phạm vi) xanh; web typecheck, lint, test `platform`/`masterdata`/`app` 43; mobile typecheck; chạy trên docker: API tạo/khóa/403/thêm công ty/chặn phân công công ty tạm ngưng đúng, 2 màn mới không lỗi console
+    - [x] Validation form (COMPANY\_MANAGER/COLLECTOR bắt buộc có công ty) có test component
+  - **Kiểm chứng:** `UserAdminIT` 8, `CompanyApiIT` 3 (sau review: chặn đổi công ty khi còn tiền mặt / phân tổ tương lai, mật khẩu &gt; 72 byte) + IT/unit liên quan (auth, phân công khu vực, phân tổ, phạm vi) xanh; web typecheck, lint, test `platform`/`masterdata`/`app` 43; mobile typecheck; chạy trên docker: API tạo/khóa/403/thêm công ty/chặn phân công công ty tạm ngưng đúng, 2 màn mới không lỗi console
   - **Phụ thuộc:** T06, T07, T08, T09
   - **File dự kiến:** `BE/platform/service/UserAdminService.java`, `BE/platform/api/UserAdminController.java`, `BT/platform/UserAdminIT.java`, `WEB/features/platform/AccountsPage/{AccountsPage.tsx,AccountForm.test.tsx}`
   - **Kích thước:** M
 
-- [ ] **T52 — Màn nhật ký (xem audit log)** · `platform` · S · P2 (C2) · **code xong 27/09/2026, kiểm chứng tự động xanh khi gộp 28/09/2026; chờ người dùng xem tay**: `AuditLogQueryService.search` chỉ cho ADMIN; lọc ngày theo giờ Việt Nam, `to` gồm trọn ngày; tên đăng nhập "chứa chuỗi" so bằng `locate` (không `like`) nên `_`/`%` trong `canbo_xa…` không thành ký tự đại diện; hành động so đúng mã; mới nhất trước, sắp xếp cố định ở server. Web `/admin/logs`: mã hành động và loại đối tượng hiện nhãn tiếng Việt (`WEB/features/platform/labels.ts`; nhãn đối tượng lấy theo tiêu đề entity trong data dictionary, nhãn hành động theo chữ trên nút các màn; mã chưa có nhãn thì hiện nguyên mã, di chuột lên nhãn thấy mã), lọc hành động bằng danh sách chọn có tìm kiếm; mở dòng xem JSON trước/sau; vai trò `CITIZEN`/`SYSTEM` có nhãn. **Task sau thêm mã audit mới (T47, T53…) thì bổ sung nhãn vào `labels.ts`.** Khi gộp 28/09/2026 đã đối chiếu đủ mọi mã backend truyền vào `AuditService.record/recordCitizen/recordSystem` và thêm nhãn `REPORT_SUBJECT` (T53), `CREATE_BULKY`, `CITIZEN_CANCEL_BULKY` (rác cồng kềnh); ô lọc hành động là danh sách ảo của AntD nên test gõ tìm rồi mới chọn.
+- [x] **T52 — Màn nhật ký (xem audit log)** · `platform` · S · P2 (C2) · **code xong 27/09/2026, kiểm chứng tự động xanh khi gộp 28/09/2026; chờ người dùng xem tay**: `AuditLogQueryService.search` chỉ cho ADMIN; lọc ngày theo giờ Việt Nam, `to` gồm trọn ngày; tên đăng nhập "chứa chuỗi" so bằng `locate` (không `like`) nên `_`/`%` trong `canbo_xa…` không thành ký tự đại diện; hành động so đúng mã; mới nhất trước, sắp xếp cố định ở server. Web `/admin/logs`: mã hành động và loại đối tượng hiện nhãn tiếng Việt (`WEB/features/platform/labels.ts`; nhãn đối tượng lấy theo tiêu đề entity trong data dictionary, nhãn hành động theo chữ trên nút các màn; mã chưa có nhãn thì hiện nguyên mã, di chuột lên nhãn thấy mã), lọc hành động bằng danh sách chọn có tìm kiếm; mở dòng xem JSON trước/sau; vai trò `CITIZEN`/`SYSTEM` có nhãn. **Task sau thêm mã audit mới (T47, T53…) thì bổ sung nhãn vào `labels.ts`.** Khi gộp 28/09/2026 đã đối chiếu đủ mọi mã backend truyền vào `AuditService.record/recordCitizen/recordSystem` và thêm nhãn `REPORT_SUBJECT` (T53), `CREATE_BULKY`, `CITIZEN_CANCEL_BULKY` (rác cồng kềnh); ô lọc hành động là danh sách ảo của AntD nên test gõ tìm rồi mới chọn.
   - **Mô tả:** `GET /api/platform/audit-logs` (ADMIN, lọc theo thời gian/người/hành động, phân trang). Web: bảng nhật ký, xem trước/sau.
   - **Tiêu chí nghiệm thu:**
     - [x] Lập phiếu thu xong thấy dòng `ISSUE_COMPANY_RECEIPT` kèm trước/sau (phiếu thu là tạo mới nên "trước" rỗng theo data dictionary; `RECORD_PAYMENT` có đủ trước/sau — `AuditLogApiIT` kiểm cả hai) (xanh khi gộp 28/09/2026)
@@ -745,7 +747,7 @@
   - **File dự kiến:** `BE/platform/api/AuditLogController.java`, `BT/platform/AuditLogApiIT.java`, `WEB/features/platform/AuditLogPage/AuditLogPage.tsx`
   - **Kích thước:** S
 
-- [ ] **T53 — Người đi thu: lịch sử hộ và báo sai thông tin hộ** · `collection` · M · P2 (C3) · ~~[cần hỏi trước: G7]~~ G7 đã chốt (a) · **code xong 27/09/2026, test tự động xanh khi gộp; chờ người dùng thử tay trên web**: không có entity, chỉ thông báo `INFO` + nhật ký `REPORT_SUBJECT`; báo theo **khoản** (`chargeId`) chứ không theo hộ, dùng lại `CollectorAssignmentService.myCharge` nên phạm vi giống danh sách thu (tổ/công ty chụp trên khoản, G3): xã đổi tổ của hộ sau khi phát hành vẫn báo được, ngoài phạm vi → 404 `CHARGE_NOT_FOUND`; thông báo tới cán bộ xã (`commune.subjects`) và quản lý công ty của khoản (`company.households`); lịch sử hộ chỉ trong một khoản (một kỳ), xem kỳ khác bằng ô chọn kỳ (prototype gộp các kỳ; người dùng chốt giữ một kỳ 27/09/2026, data dictionary §5.0); web: nút Lịch sử và Báo sai thông tin trên từng hộ, mở bottom sheet
+- [x] **T53 — Người đi thu: lịch sử hộ và báo sai thông tin hộ** · `collection` · M · P2 (C3) · ~~\[cần hỏi trước: G7\]~~ G7 đã chốt (a) · **code xong 27/09/2026, test tự động xanh khi gộp; chờ người dùng thử tay trên web**: không có entity, chỉ thông báo `INFO` + nhật ký `REPORT_SUBJECT`; báo theo **khoản** (`chargeId`) chứ không theo hộ, dùng lại `CollectorAssignmentService.myCharge` nên phạm vi giống danh sách thu (tổ/công ty chụp trên khoản, G3): xã đổi tổ của hộ sau khi phát hành vẫn báo được, ngoài phạm vi → 404 `CHARGE_NOT_FOUND`; thông báo tới cán bộ xã (`commune.subjects`) và quản lý công ty của khoản (`company.households`); lịch sử hộ chỉ trong một khoản (một kỳ), xem kỳ khác bằng ô chọn kỳ (prototype gộp các kỳ; người dùng chốt giữ một kỳ 27/09/2026, data dictionary §5.0); web: nút Lịch sử và Báo sai thông tin trên từng hộ, mở bottom sheet
   - **Mô tả:** `GET /api/collection/charges/{id}/history` (thanh toán + lượt ghé). `POST /api/collection/subject-reports`: báo hộ chuyển đi / sai thông tin → thông báo `INFO` tới xã + công ty (G2, G7; có lưu thành entity riêng hay không tùy trả lời G7). Web người đi thu: màn lịch sử hộ + form báo sai.
   - **Tiêu chí nghiệm thu:**
     - [x] Lịch sử hộ hiện đủ thanh toán và lượt ghé theo thời gian (`SubjectReportIT.historyMergesPaymentsAndVisitsInTimeOrder`, test web `collectorPages.test.tsx`), trong một kỳ (người dùng chốt 27/09/2026)
@@ -757,3 +759,11 @@
   - **Phụ thuộc:** T27, T23
   - **File dự kiến:** `BE/collection/service/SubjectReportService.java`, `BE/collection/api/CollectionController.java`, `BT/collection/SubjectReportIT.java`, `WEB/features/collection/CollectorListPage/{HouseholdHistory.tsx,ReportSubjectForm.tsx}`
   - **Kích thước:** M
+
+
+## Dữ liệu dân cư theo yêu cầu của xã (28/09/2026)
+
+- [x] Tách địa chỉ thành số nhà + đường (V23), hộ gia đình bắt buộc số thành viên, nhóm giá HGĐ khớp số thành viên, nhãn "Tổ/Ấp/Thôn".
+- [ ] **Để sau — Tính theo ký (đ/kg).** Áp dụng cho: chủ nguồn thải lớn; chủ nguồn thải nhỏ phát sinh 500 kg đến dưới 9.000 kg/tháng; hộ đã phân loại rác tại nguồn đúng quy định. Cần: số kg theo từng hộ từng kỳ, đơn giá đ/kg của nhóm `BY_VOLUME`, sinh khoản = kg × đơn giá. Còn hỏi: đơn giá lấy từ đâu, ai nhập số kg hằng tháng.
+- [ ] **Để sau — Nạp dữ liệu dân cư hàng loạt** (Excel/CSV đúng 8 cột xã đưa, kiểm từng dòng, lỗi thì không ghi). Còn hỏi: chỉ cho demo hay file thật, xã có mã hộ sẵn không.
+- Miễn giảm: giữ cờ miễn 100% như hiện tại (quyết định 28/09/2026).

@@ -1549,7 +1549,10 @@ export interface components {
             /** @enum {string} */
             type: "HOUSEHOLD" | "BUSINESS_HOUSEHOLD" | "ENTERPRISE";
             name: string;
-            address: string;
+            /** @description Số nhà; bỏ trống nếu nhà chưa có số */
+            houseNo?: string;
+            /** @description Đường / hẻm */
+            street: string;
             /** Format: int64 */
             areaId: number;
             phone?: string;
@@ -1585,7 +1588,10 @@ export interface components {
             /** @enum {string} */
             subjectType: "HOUSEHOLD" | "BUSINESS_HOUSEHOLD" | "ENTERPRISE";
             name: string;
+            /** @description Số nhà + đường, ghép sẵn */
             address: string;
+            houseNo: string | null;
+            street: string;
             /** Format: int64 */
             areaId: number;
             /** @example KV07 */

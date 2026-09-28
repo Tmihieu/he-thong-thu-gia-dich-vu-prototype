@@ -10,7 +10,7 @@ const areas: Area[] = [
   { id: 24, code: 'KV24', name: 'Tổ dân phố 24', districtId: 3, districtCode: 'NB', status: 'ACTIVE', subjectCount: 9 },
 ];
 const existing: Subject = {
-  id: 128, code: 'DTH-H000128', subjectType: 'HOUSEHOLD', name: 'Nguyễn Văn Mẫu', address: 'Số 12 đường Mẫu',
+  id: 128, code: 'DTH-H000128', subjectType: 'HOUSEHOLD', name: 'Nguyễn Văn Mẫu', address: 'Số 12 đường Mẫu', houseNo: 'Số 12', street: 'đường Mẫu',
   areaId: 24, areaCode: 'KV24', districtCode: 'NB', phone: '0902000128', status: 'ACTIVE', memberCount: 4,
   representativeName: null, taxCode: null, note: null,
   currentContract: {
@@ -33,7 +33,9 @@ describe('SubjectProfileForm', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ' }));
 
     expect(await screen.findByText('Vui lòng nhập tên')).toBeInTheDocument();
-    expect(screen.getByText('Vui lòng chọn tổ')).toBeInTheDocument();
+    expect(screen.getByText('Vui lòng chọn tổ/ấp/thôn')).toBeInTheDocument();
+    expect(screen.getByText('Vui lòng nhập đường / hẻm')).toBeInTheDocument();
+    expect(screen.getByText('Vui lòng nhập số thành viên')).toBeInTheDocument();
     expect(screen.getByText('Số điện thoại chỉ gồm 9–15 chữ số')).toBeInTheDocument();
     expect(screen.getByText('Vui lòng chọn nhóm giá')).toBeInTheDocument();
     expect(screen.getByText('Vui lòng chọn ngày bắt đầu')).toBeInTheDocument();
@@ -53,9 +55,11 @@ describe('SubjectProfileForm', () => {
     render(<SubjectProfileForm areas={areas} onSubmit={onSubmit} />);
 
     type('Tên chủ hộ', 'Lê Thị Mẫu');
-    type('Địa chỉ', 'Số 5 đường Mẫu');
+    type('Số nhà', 'Số 5');
+    type('Đường / hẻm', 'đường Mẫu');
     type('Số điện thoại', '0902999555');
-    await pickOption(screen.getByRole('combobox', { name: 'Tổ dân phố' }), 'KV24 · Tổ dân phố 24');
+    await userEvent.type(screen.getByLabelText('Số thành viên'), '3');
+    await pickOption(screen.getByRole('combobox', { name: 'Tổ/Ấp/Thôn' }), 'KV24 · Tổ dân phố 24');
     await pickOption(screen.getByRole('combobox', { name: 'Nhóm giá' }), 'HGĐ ≥ 3 người');
     pickDate(screen.getByLabelText('Hiệu lực từ'), '01/10/2026');
     await userEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ' }));
@@ -63,8 +67,8 @@ describe('SubjectProfileForm', () => {
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
     expect(onSubmit.mock.calls[0]![0]).toEqual({
       subject: {
-        type: 'HOUSEHOLD', name: 'Lê Thị Mẫu', address: 'Số 5 đường Mẫu', areaId: 24, phone: '0902999555',
-        memberCount: undefined, representativeName: undefined, taxCode: undefined, note: undefined,
+        type: 'HOUSEHOLD', name: 'Lê Thị Mẫu', houseNo: 'Số 5', street: 'đường Mẫu', areaId: 24, phone: '0902999555',
+        memberCount: 3, representativeName: undefined, taxCode: undefined, note: undefined,
       },
       contract: {
         tariffGroup: 'HH_3_PLUS', validFrom: '2026-10-01', validTo: undefined, exempt: false,
@@ -78,13 +82,25 @@ describe('SubjectProfileForm', () => {
     const onSubmit = vi.fn();
     render(<SubjectProfileForm areas={areas} onSubmit={onSubmit} />);
     type('Tên chủ hộ', 'Lê Thị Mẫu');
-    type('Địa chỉ', 'Số 5 đường Mẫu');
-    await pickOption(screen.getByRole('combobox', { name: 'Tổ dân phố' }), 'KV24 · Tổ dân phố 24');
+    type('Đường / hẻm', 'Hẻm 3 ấp Mẫu');
+    await userEvent.type(screen.getByLabelText('Số thành viên'), '2');
+    await pickOption(screen.getByRole('combobox', { name: 'Tổ/Ấp/Thôn' }), 'KV24 · Tổ dân phố 24');
     await userEvent.click(screen.getByRole('checkbox', { name: 'Đăng ký dịch vụ cho hộ này' }));
     await userEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ' }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
     expect(onSubmit.mock.calls[0]![0].contract).toBeNull();
+  });
+
+  it('nhóm giá không khớp số thành viên thì báo lỗi, không gửi', async () => {
+    const onSubmit = vi.fn();
+    render(<SubjectProfileForm subject={existing} areas={areas} onSubmit={onSubmit} />);
+    await userEvent.clear(screen.getByLabelText('Số thành viên'));
+    await userEvent.type(screen.getByLabelText('Số thành viên'), '2');
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu hồ sơ' }));
+
+    expect(await screen.findByText('Hộ có 2 thành viên phải chọn nhóm "HGĐ ≤ 2 người"')).toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it('sửa hồ sơ có hợp đồng miễn: hiển thị miễn, giữ nguyên cờ miễn khi lưu', async () => {

@@ -99,7 +99,7 @@ class SubjectApiIT extends IntegrationTest {
 
         mvc.perform(put("/api/masterdata/subjects/" + id).header(HttpHeaders.AUTHORIZATION, officer)
                         .contentType(MediaType.APPLICATION_JSON).content("""
-                        {"type":"HOUSEHOLD","name":"Trần Thị Mẫu","address":"Số 20 đường Mẫu","areaId":%d,
+                        {"type":"HOUSEHOLD","name":"Trần Thị Mẫu","houseNo":"Số 20","street":"đường Mẫu","areaId":%d,
                          "phone":"0902999001","memberCount":2}""".formatted(kv07.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Trần Thị Mẫu"))
@@ -113,7 +113,8 @@ class SubjectApiIT extends IntegrationTest {
 
         mvc.perform(get("/api/masterdata/subjects/" + id).header(HttpHeaders.AUTHORIZATION, officer))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.address").value("Số 20 đường Mẫu"));
+                .andExpect(jsonPath("$.address").value("Số 20 đường Mẫu"))
+                .andExpect(jsonPath("$.street").value("đường Mẫu"));
         assertThat(jdbc.queryForList("select action from audit_logs where entity_id in ('DTH-H000001', 'ĐK-DTH-0001')"
                 + " order by id", String.class)).containsExactly("CREATE_SUBJECT", "CREATE_CONTRACT", "UPDATE_SUBJECT",
                 "END_SUBJECT");
@@ -171,6 +172,10 @@ class SubjectApiIT extends IntegrationTest {
                 ,"contract":{"tariffGroup":"HH_3_PLUS","validFrom":"2026-01-01","exempt":true}""")
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("EXEMPT_REASON_REQUIRED"));
+        create(officer, kv07.getId(), """
+                ,"contract":{"tariffGroup":"HH_UP_TO_2","validFrom":"2026-01-01"}""")
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("TARIFF_GROUP_MISMATCH"));
         mvc.perform(get("/api/masterdata/subjects").param("size", "999").header(HttpHeaders.AUTHORIZATION, officer))
                 .andExpect(status().isBadRequest());
     }
@@ -187,7 +192,7 @@ class SubjectApiIT extends IntegrationTest {
 
     private ResultActions create(String token, Long areaId, String extra) throws Exception {
         String bodyJson = """
-                {"type":"HOUSEHOLD","name":"Nguyễn Văn Mẫu","address":"Số 12 đường Mẫu","areaId":%d,"memberCount":4%s}"""
+                {"type":"HOUSEHOLD","name":"Nguyễn Văn Mẫu","houseNo":"Số 12","street":"đường Mẫu","areaId":%d,"memberCount":4%s}"""
                 .formatted(areaId, extra);
         return mvc.perform(post("/api/masterdata/subjects").header(HttpHeaders.AUTHORIZATION, token)
                 .contentType(MediaType.APPLICATION_JSON).content(bodyJson));

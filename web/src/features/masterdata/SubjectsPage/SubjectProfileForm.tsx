@@ -14,7 +14,8 @@ export interface ProfileSubmit {
 interface FormValues {
   type: SubjectType;
   name: string;
-  address: string;
+  houseNo?: string;
+  street: string;
   areaId?: number;
   phone?: string;
   memberCount?: number | null;
@@ -30,6 +31,20 @@ interface FormValues {
 const DATE_FORMAT = 'DD/MM/YYYY';
 const iso = (d: Dayjs | null | undefined) => (d ? d.format('YYYY-MM-DD') : undefined);
 const trimmed = (s: string | undefined) => (s && s.trim() ? s.trim() : undefined);
+
+/** Như máy chủ (TARIFF_GROUP_MISMATCH): hợp đồng đang mở theo nhóm số người phải khớp số thành viên hiện tại. */
+const groupFitsMembers = ({ getFieldValue }: { getFieldValue: (name: keyof FormValues) => unknown }) => ({
+  validator(_: unknown, group: TariffGroup | undefined) {
+    if ((group !== 'HH_UP_TO_2' && group !== 'HH_3_PLUS') || getFieldValue('validTo')) return Promise.resolve();
+    if (getFieldValue('type') !== 'HOUSEHOLD') {
+      return Promise.reject(new Error('Nhóm giá theo số người chỉ dùng cho hộ gia đình'));
+    }
+    const members = getFieldValue('memberCount') as number | null | undefined;
+    const expected: TariffGroup = members && members <= 2 ? 'HH_UP_TO_2' : 'HH_3_PLUS';
+    if (!members || group === expected) return Promise.resolve();
+    return Promise.reject(new Error(`Hộ có ${members} thành viên phải chọn nhóm "${TARIFF_GROUP_LABELS[expected]}"`));
+  },
+});
 
 interface Props {
   subject?: Subject;
@@ -52,7 +67,8 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
     ? {
         type: subject.subjectType,
         name: subject.name,
-        address: subject.address,
+        houseNo: subject.houseNo ?? undefined,
+        street: subject.street,
         areaId: subject.areaId,
         phone: subject.phone ?? undefined,
         memberCount: subject.memberCount,
@@ -70,7 +86,8 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
     const subjectReq: SubjectRequest = {
       type: v.type,
       name: v.name.trim(),
-      address: v.address.trim(),
+      houseNo: trimmed(v.houseNo),
+      street: v.street.trim(),
       areaId: v.areaId!,
       phone: trimmed(v.phone),
       memberCount: v.type === 'HOUSEHOLD' ? (v.memberCount ?? undefined) : undefined,
@@ -112,12 +129,12 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
           </Form.Item>
         </Col>
         <Col xs={24} md={12}>
-          <Form.Item label="Tổ dân phố" name="areaId" rules={[{ required: true, message: 'Vui lòng chọn tổ' }]}>
+          <Form.Item label="Tổ/Ấp/Thôn" name="areaId" rules={[{ required: true, message: 'Vui lòng chọn tổ/ấp/thôn' }]}>
             <Select
-              aria-label="Tổ dân phố"
+              aria-label="Tổ/Ấp/Thôn"
               showSearch
               optionFilterProp="label"
-              placeholder="Chọn tổ"
+              placeholder="Chọn tổ/ấp/thôn"
               options={areas.map((a) => ({ value: a.id, label: `${a.code} · ${a.name}` }))}
             />
           </Form.Item>
@@ -130,9 +147,18 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
       >
         <Input maxLength={200} />
       </Form.Item>
-      <Form.Item label="Địa chỉ" name="address" rules={[{ required: true, whitespace: true, message: 'Vui lòng nhập địa chỉ' }]}>
-        <Input maxLength={255} placeholder="Số nhà, hẻm, đường" />
-      </Form.Item>
+      <Row gutter={16}>
+        <Col xs={24} md={8}>
+          <Form.Item label="Số nhà" name="houseNo">
+            <Input maxLength={30} placeholder="Bỏ trống nếu chưa có số" />
+          </Form.Item>
+        </Col>
+        <Col xs={24} md={16}>
+          <Form.Item label="Đường / hẻm" name="street" rules={[{ required: true, whitespace: true, message: 'Vui lòng nhập đường / hẻm' }]}>
+            <Input maxLength={200} />
+          </Form.Item>
+        </Col>
+      </Row>
       <Row gutter={16}>
         <Col xs={24} md={12}>
           <Form.Item
@@ -145,7 +171,7 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
         </Col>
         <Col xs={24} md={12}>
           {type === 'HOUSEHOLD' ? (
-            <Form.Item label="Số nhân khẩu" name="memberCount">
+            <Form.Item label="Số thành viên" name="memberCount" rules={[{ required: true, message: 'Vui lòng nhập số thành viên' }]}>
               <InputNumber min={1} max={99} style={{ width: '100%' }} />
             </Form.Item>
           ) : (
@@ -179,7 +205,12 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
       {showContract && (
         <Row gutter={16}>
           <Col xs={24} md={8}>
-            <Form.Item label="Nhóm giá" name="tariffGroup" rules={[{ required: true, message: 'Vui lòng chọn nhóm giá' }]}>
+            <Form.Item
+              label="Nhóm giá"
+              name="tariffGroup"
+              dependencies={['type', 'memberCount', 'validTo']}
+              rules={[{ required: true, message: 'Vui lòng chọn nhóm giá' }, groupFitsMembers]}
+            >
               <Select
                 aria-label="Nhóm giá"
                 placeholder="Chọn nhóm"

@@ -33,8 +33,18 @@ public class ServiceSubject extends BaseEntity {
     @Column(nullable = false, length = 200)
     private String name;
 
+    /** Địa chỉ ghép từ số nhà + đường, chỉ đổi qua {@link #setAddressParts}. */
+    @Setter(AccessLevel.NONE)
     @Column(nullable = false, length = 255)
     private String address;
+
+    @Setter(AccessLevel.NONE)
+    @Column(length = 30)
+    private String houseNo;
+
+    @Setter(AccessLevel.NONE)
+    @Column(nullable = false, length = 200)
+    private String street;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "area_id", nullable = false)
@@ -57,14 +67,22 @@ public class ServiceSubject extends BaseEntity {
 
     private String note;
 
-    public static ServiceSubject create(String code, SubjectType type, String name, String address, Area area) {
+    public static ServiceSubject create(String code, SubjectType type, String name, String houseNo, String street,
+            Area area) {
         ServiceSubject s = new ServiceSubject();
         s.code = code;
         s.subjectType = type;
         s.name = name;
-        s.address = address;
+        s.setAddressParts(houseNo, street);
         s.area = area;
         s.status = SubjectStatus.PENDING;
         return s;
+    }
+
+    /** Số nhà không bắt buộc (nhà chưa có số); đường/hẻm/ấp bắt buộc. */
+    public void setAddressParts(String houseNo, String street) {
+        this.houseNo = houseNo;
+        this.street = street;
+        this.address = houseNo == null ? street : houseNo + " " + street;
     }
 }

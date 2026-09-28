@@ -38,7 +38,7 @@ class ChargeEligibilityTest {
     final CollectionPeriod october = CollectionPeriod.open(PeriodType.MONTH, 2026, 10, null, LocalDate.of(2026, 10, 31), bg65);
     final CollectionPeriod q4 = CollectionPeriod.open(PeriodType.QUARTER, 2026, 4, null, LocalDate.of(2026, 12, 31), bg65);
 
-    final ServiceSubject subject = ServiceSubject.create("DTH-H000128", SubjectType.HOUSEHOLD, "Mẫu", "Số 1",
+    final ServiceSubject subject = ServiceSubject.create("DTH-H000128", SubjectType.HOUSEHOLD, "Mẫu", null, "Số 1",
             Area.create("KV07", "Tổ 07", District.create("DTH", "Đông Thạnh")));
     final ServiceContract contract = ServiceContract.create("ĐK-DTH-0001", subject, TariffGroup.HH_3_PLUS,
             LocalDate.of(2026, 1, 1), null, false, null, null);

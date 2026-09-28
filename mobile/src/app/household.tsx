@@ -26,7 +26,7 @@ export default function HouseholdScreen() {
             <Line label="Tên hộ" value={p.subject.name} />
             <Line label="Loại" value={SUBJECT_TYPE_LABELS[p.subject.subjectType]} />
             <Line label="Địa chỉ" value={p.subject.address} />
-            <Line label="Tổ" value={`${p.subject.areaName} (${p.subject.areaCode}) · ${p.subject.districtName}`} />
+            <Line label="Tổ/Ấp/Thôn" value={`${p.subject.areaName} (${p.subject.areaCode}) · ${p.subject.districtName}`} />
             {p.subject.memberCount != null ? <Line label="Số nhân khẩu" value={String(p.subject.memberCount)} /> : null}
             <Line label="SĐT của hộ" value={p.subject.phone ?? '—'} />
             <Line

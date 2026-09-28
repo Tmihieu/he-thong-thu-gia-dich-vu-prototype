@@ -113,7 +113,8 @@ class CollectorAssignmentIT extends IntegrationTest {
         FeeType env = feeTypes.save(FeeType.create("ENV", "Phí VSMT", PricingMode.TARIFF, null));
         for (Area area : List.of(kv07, kv09, kv12)) {
             ServiceSubject s = ServiceSubject.create("DTH-H0000" + area.getCode().substring(2), SubjectType.HOUSEHOLD,
-                    "Hộ " + area.getCode(), "Số 1", area);
+                    "Hộ " + area.getCode(), null, "Số 1", area);
+            s.setMemberCount(3);
             s.setStatus(SubjectStatus.ACTIVE);
             subjects.save(s);
             contracts.save(ServiceContract.create("ĐK-" + area.getCode(), s, TariffGroup.HH_3_PLUS,
