@@ -2385,6 +2385,13 @@ export interface components {
             collectionRate: number;
             /** @description Tỷ lệ thu dưới 45% */
             lowCollectionRate: boolean;
+            /**
+             * Format: double
+             * @description Đã nộp về xã / phải thu (%)
+             */
+            remittedRate: number;
+            /** @description Tỷ lệ đã nộp dưới 45% (cờ ở màn tiến độ) */
+            lowRemittedRate: boolean;
             /** @enum {string} */
             progress: "NO_COMPANY" | "PAID_IN_FULL" | "OVERDUE" | "PARTIAL" | "NOT_PAID";
             /** @enum {string} */
