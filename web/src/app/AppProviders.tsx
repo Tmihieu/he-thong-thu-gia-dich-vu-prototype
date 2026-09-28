@@ -6,13 +6,14 @@ import 'dayjs/locale/vi';
 import type { ReactNode } from 'react';
 
 import { AuthProvider } from './auth/AuthProvider';
+import { antdTheme } from './theme';
 
 dayjs.locale('vi');
 
 /** Provider dùng chung cho app và test: AntD tiếng Việt, React Query, đăng nhập. */
 export function AppProviders({ queryClient, children }: { queryClient: QueryClient; children: ReactNode }) {
   return (
-    <ConfigProvider locale={viVN}>
+    <ConfigProvider locale={viVN} theme={antdTheme}>
       <AntApp>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>{children}</AuthProvider>

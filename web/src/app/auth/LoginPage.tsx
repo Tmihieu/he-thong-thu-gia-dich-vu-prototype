@@ -6,6 +6,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router';
 import { ApiError } from '../../api/client';
 import { homePath, ROLE_BASE } from '../layout/menuConfig';
 import { FullPageSpin } from '../pages/StatusPages';
+import { brand } from '../theme';
 import { type Role, useAuth } from './authContext';
 
 interface LoginForm {
@@ -44,12 +45,13 @@ export function LoginPage() {
   }
 
   return (
-    <div style={{ display: 'grid', placeItems: 'center', minHeight: '100vh', padding: 16, background: '#f5f7f5' }}>
+    <div style={{ display: 'grid', placeItems: 'center', minHeight: '100vh', padding: 16, background: brand.chrome }}>
       <Card style={{ width: '100%', maxWidth: 400 }}>
-        <Typography.Title level={3} style={{ marginTop: 0 }}>
+        <img src="/logo-dong-thanh.jpg" alt="Logo xã Đông Thạnh" width={88} height={88} style={{ display: 'block', margin: '0 auto 12px', borderRadius: '50%' }} />
+        <Typography.Title level={3} style={{ marginTop: 0, textAlign: 'center' }}>
           Thu giá dịch vụ VSMT
         </Typography.Title>
-        <Typography.Paragraph type="secondary">Xã Đông Thạnh · đăng nhập cho cán bộ xã, công ty và quản trị</Typography.Paragraph>
+        <Typography.Paragraph type="secondary" style={{ textAlign: 'center' }}>Xã Đông Thạnh · đăng nhập cho cán bộ xã, công ty và quản trị</Typography.Paragraph>
         {error && <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} role="alert" />}
         <Form<LoginForm> layout="vertical" onFinish={onFinish} requiredMark={false} disabled={submitting}>
           <Form.Item

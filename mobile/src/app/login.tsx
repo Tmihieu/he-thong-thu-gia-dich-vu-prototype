@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ApiError } from '../api/client';
@@ -63,8 +63,9 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.hero}>
+          <Image source={require('../../assets/logo-dong-thanh.jpg')} style={styles.logo} accessibilityLabel="Logo xã Đông Thạnh" />
           <Text style={styles.brand}>Thu giá dịch vụ VSMT</Text>
-          <Text style={styles.heroSub}>Ứng dụng người dân · bản demo</Text>
+          <Text style={styles.heroSub}>Xã Đông Thạnh · ứng dụng người dân</Text>
         </View>
 
         <View style={styles.card}>
@@ -141,9 +142,10 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.primary },
-  container: { flexGrow: 1, padding: spacing.lg, gap: spacing.lg, backgroundColor: colors.primary },
+  flex: { flex: 1, backgroundColor: colors.chrome },
+  container: { flexGrow: 1, padding: spacing.lg, gap: spacing.lg, backgroundColor: colors.chrome },
   hero: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xl },
+  logo: { width: 96, height: 96, borderRadius: radius.pill, marginBottom: spacing.sm },
   brand: { color: '#fff', fontSize: 24, fontWeight: '800', textAlign: 'center' },
   heroSub: { color: colors.heroText, fontSize: 14 },
   card: {

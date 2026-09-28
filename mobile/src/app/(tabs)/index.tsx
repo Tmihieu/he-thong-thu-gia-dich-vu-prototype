@@ -156,7 +156,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   screen: { padding: 0, gap: 0 },
-  hero: { backgroundColor: colors.primary, padding: spacing.lg, gap: spacing.lg, borderBottomLeftRadius: radius.lg, borderBottomRightRadius: radius.lg },
+  hero: { backgroundColor: colors.chrome, padding: spacing.lg, gap: spacing.lg, borderBottomLeftRadius: radius.lg, borderBottomRightRadius: radius.lg },
   heroTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   avatar: { width: 48, height: 48, borderRadius: radius.pill, backgroundColor: '#ffffff33', alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: '#fff', fontWeight: '800', fontSize: 18 },

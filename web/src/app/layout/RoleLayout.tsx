@@ -5,6 +5,7 @@ import { Link, Outlet, useLocation } from 'react-router';
 
 import { NotificationBell } from '../../features/notifications/NotificationBell';
 import { type Me, useAuth } from '../auth/authContext';
+import { brand } from '../theme';
 import { MENU, menuPath, ROLE_LABELS } from './menuConfig';
 
 function UserBox({ user, onLogout }: { user: Me; onLogout: () => void }) {
@@ -28,7 +29,8 @@ function MobileLayout({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const items = MENU[user.role];
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <header style={{ padding: '12px 16px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center' }}>
+      <header style={{ padding: '10px 16px', borderBottom: `1px solid ${brand.border}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <img src="/logo-dong-thanh.jpg" alt="" width={32} height={32} style={{ borderRadius: '50%' }} />
         <Typography.Text strong style={{ flex: 1 }}>
           {user.fullName}
         </Typography.Text>
@@ -38,12 +40,12 @@ function MobileLayout({ user, onLogout }: { user: Me; onLogout: () => void }) {
       <main style={{ flex: 1, padding: 16 }}>
         <Outlet />
       </main>
-      <nav aria-label="Điều hướng" style={{ display: 'flex', borderTop: '1px solid #eee', position: 'sticky', bottom: 0, background: '#fff' }}>
+      <nav aria-label="Điều hướng" style={{ display: 'flex', borderTop: `1px solid ${brand.border}`, position: 'sticky', bottom: 0, background: '#fff' }}>
         {items.map((entry) => {
           const to = menuPath(user.role, entry);
           const active = pathname.startsWith(to);
           return (
-            <Link key={entry.path} to={to} style={{ flex: 1, textAlign: 'center', padding: '8px 0', color: active ? '#1677ff' : '#555' }}>
+            <Link key={entry.path} to={to} style={{ flex: 1, textAlign: 'center', padding: '8px 0', color: active ? brand.primary : brand.textMuted, fontWeight: active ? 600 : 400 }}>
               <div>{createElement(entry.icon)}</div>
               <div style={{ fontSize: 12 }}>{entry.label}</div>
             </Link>
@@ -70,14 +72,18 @@ export function RoleLayout() {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Layout.Sider breakpoint="lg" collapsedWidth={0} theme="light" width={220}>
-        <div style={{ padding: 16 }}>
-          <Typography.Text strong>VSMT Đông Thạnh</Typography.Text>
+      <Layout.Sider breakpoint="lg" collapsedWidth={0} theme="dark" width={232}>
+        <div style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <img src="/logo-dong-thanh.jpg" alt="" width={40} height={40} style={{ borderRadius: '50%', flexShrink: 0 }} />
+          <div style={{ lineHeight: 1.3 }}>
+            <div style={{ color: '#fff', fontWeight: 700 }}>Xã Đông Thạnh</div>
+            <div style={{ color: 'rgba(255,255,255,0.72)', fontSize: 12 }}>Thu giá dịch vụ VSMT</div>
+          </div>
         </div>
-        <Menu mode="inline" items={items} selectedKeys={selected ? [selected] : []} aria-label="Menu chính" />
+        <Menu theme="dark" mode="inline" items={items} selectedKeys={selected ? [selected] : []} aria-label="Menu chính" />
       </Layout.Sider>
       <Layout>
-        <Layout.Header style={{ background: '#fff', display: 'flex', justifyContent: 'flex-end', paddingInline: 16 }}>
+        <Layout.Header style={{ borderBottom: `1px solid ${brand.border}`, display: 'flex', justifyContent: 'flex-end', paddingInline: 16 }}>
           <UserBox user={user} onLogout={logout} />
         </Layout.Header>
         <Layout.Content style={{ padding: 24 }}>

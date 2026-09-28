@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
 import { api, ApiError } from '../../../api/client';
+import { brand } from '../../../app/theme';
 import { DateText } from '../../../shared/DateText';
 import { MoneyText } from '../../../shared/MoneyText';
 import {
@@ -106,7 +107,7 @@ export function BulkyRequestsPage() {
         dataSource={visible}
         pagination={{ pageSize: 20, hideOnSinglePage: true }}
         locale={{ emptyText: 'Không có yêu cầu' }}
-        onRow={(r) => (r.id === focusId ? { style: { background: '#e6f4ff' } } : {})}
+        onRow={(r) => (r.id === focusId ? { style: { background: brand.primarySoft } } : {})}
         scroll={{ x: 'max-content' }}
         columns={[
           { title: 'Mã', dataIndex: 'code' },

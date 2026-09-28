@@ -2,6 +2,7 @@ import { Select, Space, Table, Tag } from 'antd';
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { brand } from '../../../app/theme';
 import { DateText } from '../../../shared/DateText';
 import { CHARGE_STATUS_COLORS, CHARGE_STATUS_LABELS, TARIFF_GROUP_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
@@ -75,7 +76,7 @@ export function ChargesPage() {
               <>
                 {c.subjectCode}
                 <br />
-                <span style={{ color: '#666' }}>{c.subjectName}</span>
+                <span style={{ color: brand.textMuted }}>{c.subjectName}</span>
               </>
             ),
           },

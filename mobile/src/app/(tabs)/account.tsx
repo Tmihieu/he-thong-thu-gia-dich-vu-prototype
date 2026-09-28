@@ -76,7 +76,7 @@ export default function AccountScreen() {
 
 const styles = StyleSheet.create({
   screen: { padding: 0, gap: 0 },
-  hero: { backgroundColor: colors.primary, alignItems: 'center', gap: spacing.xs, padding: spacing.xl, paddingBottom: spacing.xl + spacing.sm, borderBottomLeftRadius: radius.lg, borderBottomRightRadius: radius.lg },
+  hero: { backgroundColor: colors.chrome, alignItems: 'center', gap: spacing.xs, padding: spacing.xl, paddingBottom: spacing.xl + spacing.sm, borderBottomLeftRadius: radius.lg, borderBottomRightRadius: radius.lg },
   avatar: { width: 64, height: 64, borderRadius: radius.pill, backgroundColor: '#ffffff33', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xs },
   avatarText: { color: '#fff', fontWeight: '800', fontSize: 24 },
   name: { color: '#fff', fontSize: 18, fontWeight: '700' },
