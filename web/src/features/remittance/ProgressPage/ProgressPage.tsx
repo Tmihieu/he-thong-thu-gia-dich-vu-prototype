@@ -1,4 +1,5 @@
-import { Alert, Button, Card, Col, Progress, Row, Space, Statistic, Table, Tag, Typography } from 'antd';
+import { BellOutlined } from '@ant-design/icons';
+import { Alert, Button, Card, Col, Popover, Progress, Row, Space, Statistic, Table, Tag, Typography } from 'antd';
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
@@ -44,6 +45,23 @@ export function ProgressPage() {
       </Typography.Title>
       <Space style={{ marginBottom: 16 }}>
         <PeriodSelect value={periodId} onChange={setPeriodId} />
+        {overdue.length > 0 && !readOnly && (
+          <Popover
+            trigger="click"
+            title={`${overdue.length} công ty quá hạn nộp`}
+            content={
+              <Space direction="vertical">
+                {overdue.map((r) => (
+                  <Button key={r.companyId} size="small" danger block onClick={() => setReminding(r.companyId)}>
+                    {`Nhắc nộp ${r.companyCode} · ${r.companyName}`}
+                  </Button>
+                ))}
+              </Space>
+            }
+          >
+            <Button danger icon={<BellOutlined />}>{`Nhắc công ty nộp (${overdue.length})`}</Button>
+          </Popover>
+        )}
       </Space>
       {ledger.error && <Alert type="error" showIcon message={ledger.error instanceof ApiError ? ledger.error.message : 'Không tải được số liệu'} />}
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
@@ -63,25 +81,6 @@ export function ProgressPage() {
           </Col>
         ))}
       </Row>
-      {overdue.length > 0 && (
-        <Alert
-          type="error"
-          showIcon
-          style={{ marginBottom: 16 }}
-          message={`${overdue.length} công ty quá hạn nộp`}
-          description={
-            !readOnly && (
-            <Space wrap>
-              {overdue.map((r) => (
-                <Button key={r.companyId} size="small" danger onClick={() => setReminding(r.companyId)}>
-                  Nhắc nộp {r.companyCode}
-                </Button>
-              ))}
-            </Space>
-            )
-          }
-        />
-      )}
       {unassigned.length > 0 && (
         <Alert
           type="warning"

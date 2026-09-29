@@ -86,7 +86,7 @@ describe('Lãnh đạo', () => {
   it('màn tiến độ và đối soát chỉ đọc: không nhắc nộp, không khóa kỳ', async () => {
     api();
     renderApp('/leader/progress');
-    expect(await screen.findByText('1 công ty quá hạn nộp')).toBeInTheDocument();
+    expect(await screen.findByText('Quá hạn nộp')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Nhắc nộp/ })).not.toBeInTheDocument();
   });
 });
