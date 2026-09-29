@@ -1,97 +1,99 @@
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { ApiError } from '../../api/client';
-import { useMarketPosts, type MarketPost } from '../../features/citizen/api';
-import { StoredPhoto } from '../../features/photos/PhotoStrip';
-import { formatDate } from '../../shared/format';
-import { MARKET_TYPE_LABELS, type MarketPostType } from '../../shared/labels';
-import { colors, spacing } from '../../shared/theme';
-import { Button, Card, Chip, Empty, ErrorBox, Loading, Muted, Screen, Tag } from '../../shared/ui';
+import { flattenUnique, useMarketFeed, useMarketMetadata, type FeedFilter } from '../../features/market/api';
+import { PagedList, PostCard } from '../../features/market/PostCard';
+import { MARKET_CATEGORY_LABELS, MARKET_TAG_LABELS, type MarketTag } from '../../shared/labels';
+import { colors, radius, spacing } from '../../shared/theme';
+import { Button, Chip } from '../../shared/ui';
 
-const THUMB_SIZE = { width: 64, height: 64 };
+const TAGS = Object.keys(MARKET_TAG_LABELS) as MarketTag[];
 
-const FILTERS: { type: MarketPostType | undefined; label: string }[] = [
-  { type: undefined, label: 'Tất cả' },
-  { type: 'GIVE', label: MARKET_TYPE_LABELS.GIVE },
-  { type: 'EXCHANGE', label: MARKET_TYPE_LABELS.EXCHANGE },
-];
-
-/** Chợ đồ cũ như prototype `citizenMarket`: bài đang đăng, lọc Cho tặng / Trao đổi, kéo để tải lại. */
+/** Chợ đồ cũ (spec §5.1): tìm caption, chips nhiều nhãn (OR), một danh mục, một tổ; tải thêm khi cuộn. */
 export default function MarketTab() {
-  const [type, setType] = useState<MarketPostType | undefined>(undefined);
-  const list = useMarketPosts(type);
+  const [text, setText] = useState('');
+  const [filter, setFilter] = useState<FeedFilter>({ q: '', tags: [] });
+  const meta = useMarketMetadata();
+  const feed = useMarketFeed(filter);
+  const set = (patch: Partial<FeedFilter>) => setFilter((f) => ({ ...f, ...patch }));
+  const toggleTag = (t: MarketTag) =>
+    set({ tags: filter.tags.includes(t) ? filter.tags.filter((x) => x !== t) : [...filter.tags, t] });
 
-  return (
-    <Screen refreshing={list.isFetching && !list.isPending} onRefresh={() => void list.refetch()}>
-      <Card style={styles.tip}>
-        <Text style={styles.tipText}>
-          Cho tặng hoặc trao đổi đồ không còn dùng trong xã để giảm rác cồng kềnh. Vật dụng không ai nhận thì{' '}
-          <Text style={styles.link} onPress={() => router.push('/bulky/new')}>
-            đăng ký thu gom cồng kềnh
-          </Text>
-          .
-        </Text>
-      </Card>
+  const header = (
+    <View style={styles.header}>
       <Button title="Đăng bài" onPress={() => router.push('/market/new')} />
+      <View style={styles.row}>
+        <Link label="Tin của tôi" to="/market/mine" />
+        <Link label="Đã lưu" to="/market/saved" />
+        <Link label="Đã chặn" to="/market/blocks" />
+      </View>
+      <TextInput
+        accessibilityLabel="Tìm trong chợ"
+        style={styles.input}
+        value={text}
+        onChangeText={setText}
+        onSubmitEditing={() => set({ q: text.trim() })}
+        onEndEditing={() => set({ q: text.trim() })}
+        returnKeyType="search"
+        placeholder="Tìm đồ…"
+        placeholderTextColor={colors.textMuted}
+        maxLength={100}
+      />
       <View style={styles.chips}>
-        {FILTERS.map((f) => (
-          <Chip key={f.label} label={f.label} selected={f.type === type} onPress={() => setType(f.type)} />
+        {TAGS.map((t) => (
+          <Chip key={t} label={MARKET_TAG_LABELS[t]} selected={filter.tags.includes(t)} onPress={() => toggleTag(t)} />
         ))}
       </View>
-      {list.isPending ? <Loading /> : null}
-      {list.error ? (
-        <ErrorBox
-          message={list.error instanceof ApiError ? list.error.message : 'Không tải được chợ đồ cũ.'}
-          onRetry={() => void list.refetch()}
-        />
-      ) : null}
-      {list.data?.length === 0 ? (
-        <Card>
-          <Empty>Chưa có bài nào đang đăng.</Empty>
-        </Card>
-      ) : null}
-      {list.data?.map((p) => <PostCard key={p.id} p={p} />)}
-    </Screen>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+        <Chip label="Mọi danh mục" selected={!filter.category} onPress={() => set({ category: undefined })} />
+        {(meta.data?.categories ?? []).map((c) => (
+          <Chip key={c} label={MARKET_CATEGORY_LABELS[c]} selected={filter.category === c} onPress={() => set({ category: c })} />
+        ))}
+      </ScrollView>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+        <Chip label="Mọi tổ" selected={!filter.areaId} onPress={() => set({ areaId: undefined })} />
+        {(meta.data?.areas ?? []).map((a) => (
+          <Chip key={a.id} label={a.name} selected={filter.areaId === a.id} onPress={() => set({ areaId: a.id })} />
+        ))}
+      </ScrollView>
+      <Link label="Đồ không ai nhận? Đăng ký thu gom cồng kềnh" to="/bulky/new" />
+    </View>
+  );
+
+  return (
+    <PagedList
+      q={feed}
+      items={flattenUnique(feed.data?.pages)}
+      keyOf={(p) => String(p.id)}
+      render={(p) => <PostCard p={p} />}
+      header={header}
+      empty="Không có bài phù hợp."
+    />
   );
 }
 
-function PostCard({ p }: { p: MarketPost }) {
+function Link({ label, to }: { label: string; to: Href }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={() => router.push({ pathname: '/market/[id]', params: { id: String(p.id) } })}
-      style={({ pressed }) => pressed && styles.pressed}
-    >
-      <Card style={styles.post}>
-        {p.photoUrls[0] ? <StoredPhoto url={p.photoUrls[0]} size={THUMB_SIZE} /> : null}
-        <View style={styles.body}>
-          <View style={styles.top}>
-            <Text style={styles.title}>{p.title}</Text>
-            <Tag tone={p.postType === 'GIVE' ? 'success' : 'info'}>{MARKET_TYPE_LABELS[p.postType]}</Tag>
-          </View>
-          <Text style={styles.text} numberOfLines={2}>
-            {p.description}
-          </Text>
-          <Muted>
-            {p.author.displayName} · {p.author.areaName} · {formatDate(p.createdAt)} · {p.commentCount} bình luận
-          </Muted>
-        </View>
-      </Card>
-    </Pressable>
+    <Text accessibilityRole="link" style={styles.link} onPress={() => router.push(to)}>
+      {label}
+    </Text>
   );
 }
 
 const styles = StyleSheet.create({
-  tip: { backgroundColor: colors.primarySoft, borderColor: colors.primary },
-  tipText: { fontSize: 14, color: colors.text, lineHeight: 20 },
-  link: { color: colors.primaryDark, fontWeight: '800' },
+  header: { gap: spacing.md },
+  row: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  pressed: { opacity: 0.7 },
-  post: { flexDirection: 'row', gap: spacing.md },
-  body: { flex: 1, gap: spacing.xs },
-  top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
-  title: { fontSize: 15, fontWeight: '700', color: colors.text, flex: 1 },
-  text: { fontSize: 14, color: colors.text },
+  link: { color: colors.primaryDark, fontWeight: '800', fontSize: 15, paddingVertical: spacing.xs },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm + 2,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: colors.text,
+    backgroundColor: colors.background,
+  },
 });

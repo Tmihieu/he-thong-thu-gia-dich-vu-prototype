@@ -109,9 +109,21 @@ export const DAY_SLOT_LABELS: Record<DaySlot, string> = {
   AFTERNOON: 'Buổi chiều',
 };
 
-export type MarketPostType = Schemas['MarketPostDto']['postType'];
+export type MarketTag = Schemas['MarketPostDto']['tags'][number];
+export type MarketCategory = Schemas['MarketPostDto']['category'];
 
-export const MARKET_TYPE_LABELS: Record<MarketPostType, string> = {
+export const MARKET_TAG_LABELS: Record<MarketTag, string> = {
+  FIND: 'Tìm đồ',
+  SELL: 'Bán đồ',
   GIVE: 'Cho tặng',
-  EXCHANGE: 'Trao đổi',
+  EXCHANGE: 'Đổi đồ',
+};
+
+export const MARKET_CATEGORY_LABELS: Record<MarketCategory, string> = {
+  HOUSEHOLD: 'Đồ gia dụng',
+  ELECTRONICS: 'Điện tử',
+  FURNITURE: 'Nội thất',
+  CHILDREN: 'Đồ trẻ em',
+  TOOLS_VEHICLES: 'Xe đạp và dụng cụ',
+  OTHER: 'Khác',
 };

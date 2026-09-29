@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing } from '../../shared/theme';
 import { Button, Muted } from '../../shared/ui';
-import { addPhotos, MAX_PHOTOS, type UploadedPhoto } from './photos';
+import { addPhotos, MAX_PHOTOS, type PhotoSender, type UploadedPhoto } from './photos';
 import { StoredPhoto } from './PhotoStrip';
 
 const THUMB_SIZE = { width: 72, height: 72 };
@@ -17,11 +17,13 @@ export function PhotoPickerField({
   onChange,
   max = MAX_PHOTOS,
   onBusyChange,
+  send,
 }: {
   value: UploadedPhoto[];
   onChange: (v: UploadedPhoto[]) => void;
   max?: number;
   onBusyChange?: (busy: boolean) => void;
+  send?: PhotoSender;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export function PhotoPickerField({
       const result = await addPhotos(latest.current.length, max, (b) => {
         setBusy(b);
         onBusyChange?.(b);
-      });
+      }, send);
       if (result.uploaded.length > 0) onChange([...latest.current, ...result.uploaded]);
       setError(result.error);
     } finally {

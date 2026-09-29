@@ -21,6 +21,10 @@ describe('notificationHref', () => {
       params: { id: '6' },
     });
     expect(notificationHref({ screen: 'citizen.bulkyDetail', params: {} })).toBe('/bulky');
+    expect(notificationHref({ screen: 'citizen.marketDetail', params: { postId: 7 } })).toEqual({
+      pathname: '/market/[id]',
+      params: { id: '7' },
+    });
   });
 
   it('thiếu hoặc sai id thì về danh sách', () => {

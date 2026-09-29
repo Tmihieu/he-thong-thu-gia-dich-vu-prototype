@@ -10,7 +10,7 @@ function positiveId(params: Record<string, unknown> | null | undefined, key: str
   return typeof value === 'number' && Number.isInteger(value) && value > 0 ? String(value) : null;
 }
 
-/** `link.screen` do backend gửi (`ComplaintService`, `CitizenPaymentService`, `BulkyWasteService`) → màn app; null nếu không có màn. */
+/** `link.screen` do backend gửi (`ComplaintService`, `CitizenPaymentService`, `BulkyWasteService`, `MarketService`) → màn app; null nếu không có màn. */
 export function notificationHref(link: NotificationLink | null | undefined): Href | null {
   switch (link?.screen) {
     case 'citizen.complaintDetail': {
@@ -24,6 +24,10 @@ export function notificationHref(link: NotificationLink | null | undefined): Hre
     case 'citizen.bulkyDetail': {
       const id = positiveId(link.params, 'requestId');
       return id ? { pathname: '/bulky/[id]', params: { id } } : '/bulky';
+    }
+    case 'citizen.marketDetail': {
+      const id = positiveId(link.params, 'postId');
+      return id ? { pathname: '/market/[id]', params: { id } } : '/market';
     }
     default:
       return null;
