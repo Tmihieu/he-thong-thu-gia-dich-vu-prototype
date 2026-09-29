@@ -246,14 +246,18 @@ public class CollectionService {
             return result;
         }
         Map<Long, Long> paid = new HashMap<>();
-        payments.sumsByChargeIds(chargeIds).forEach(r -> paid.put((Long) r[0], ((Number) r[1]).longValue()));
+        Map<Long, OffsetDateTime> paidAt = new HashMap<>();
+        payments.sumsByChargeIds(chargeIds).forEach(r -> {
+            paid.put((Long) r[0], ((Number) r[1]).longValue());
+            paidAt.put((Long) r[0], (OffsetDateTime) r[2]);
+        });
         Map<Long, CollectionVisit> latest = new HashMap<>();
         visits.findLatestByChargeIds(chargeIds).forEach(v -> latest.put(v.getCharge().getId(), v));
-        chargeIds.forEach(id -> result.put(id, new ChargeProgress(paid.getOrDefault(id, 0L), latest.get(id))));
+        chargeIds.forEach(id -> result.put(id, new ChargeProgress(paid.getOrDefault(id, 0L), paidAt.get(id), latest.get(id))));
         return result;
     }
 
-    public record ChargeProgress(long paidAmount, CollectionVisit lastVisit) {
+    public record ChargeProgress(long paidAmount, OffsetDateTime lastPaidAt, CollectionVisit lastVisit) {
     }
 
     private PaymentOutcome replay(Payment existing, Long chargeId) {

@@ -26,6 +26,7 @@ function work(id: number, name: string, extra: { status?: string; paid?: number;
     },
     paidAmount: paid,
     remainingAmount: amount - paid,
+    lastPaidAt: paid > 0 ? (id === 2 ? '2026-10-12T03:00:00Z' : '2026-10-14T03:00:00Z') : null,
     lastVisit: extra.lastVisit ?? null,
   };
 }
@@ -105,6 +106,20 @@ describe('Người đi thu: danh sách thu', () => {
     await userEvent.type(screen.getByRole('searchbox', { name: 'Tìm hộ' }), 'tran thi')
     expect(screen.getByText('Hộ Trần Thị Bình')).toBeInTheDocument();
     expect(screen.queryByText('Hộ Nguyễn Văn An')).not.toBeInTheDocument();
+  });
+
+  it('nhật ký ngày giờ đi thu trên thẻ; lọc theo ngày đã thu', async () => {
+    api();
+    renderApp('/collector/list');
+
+    const binh = await screen.findByRole('listitem', { name: 'Hộ Trần Thị Bình' });
+    expect(within(binh).getByText('Đã thu lúc 12/10/2026 10:00')).toBeInTheDocument();
+    expect(within(screen.getByRole('listitem', { name: 'Hộ Lê Văn Cường' })).getByText('Vắng nhà lúc 10/10/2026 09:00')).toBeInTheDocument();
+
+    pickDate(screen.getByLabelText('Ngày đã thu'), '12/10/2026');
+    await waitFor(() => expect(screen.queryByText('Hộ Nguyễn Văn An')).not.toBeInTheDocument());
+    expect(screen.getByText('Hộ Trần Thị Bình')).toBeInTheDocument();
+    expect(screen.queryByText('Hộ Phạm Thị Dung')).not.toBeInTheDocument();
   });
 
   it('thu tiền mặt: mặc định số còn thiếu; bấm Xác nhận hai lần nhanh chỉ dùng một requestId', async () => {

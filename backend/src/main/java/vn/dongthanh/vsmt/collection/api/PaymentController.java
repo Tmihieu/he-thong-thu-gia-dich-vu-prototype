@@ -187,11 +187,12 @@ public class PaymentController {
             @Schema(requiredMode = RequiredMode.REQUIRED) ChargeDto charge,
             @Schema(requiredMode = RequiredMode.REQUIRED) long paidAmount,
             @Schema(requiredMode = RequiredMode.REQUIRED) long remainingAmount,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true, description = "Lần thu tiền gần nhất") OffsetDateTime lastPaidAt,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) VisitDto lastVisit) {
 
         static CollectorChargeDto of(ChargeDto c, ChargeProgress p) {
             long paid = p == null ? 0 : p.paidAmount();
-            return new CollectorChargeDto(c, paid, c.amount() - paid,
+            return new CollectorChargeDto(c, paid, c.amount() - paid, p == null ? null : p.lastPaidAt(),
                     p == null || p.lastVisit() == null ? null : VisitDto.of(p.lastVisit()));
         }
     }

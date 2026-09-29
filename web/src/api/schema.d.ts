@@ -2881,6 +2881,11 @@ export interface components {
             paidAmount: number;
             /** Format: int64 */
             remainingAmount: number;
+            /**
+             * Format: date-time
+             * @description Lần thu tiền gần nhất
+             */
+            lastPaidAt: string | null;
             lastVisit: components["schemas"]["VisitDto"];
         };
         ChargePageDto: {

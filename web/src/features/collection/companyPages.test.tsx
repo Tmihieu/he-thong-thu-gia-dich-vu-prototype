@@ -37,7 +37,8 @@ function work(id: number, name: string, areaId: number, status = 'UNPAID') {
     },
     paidAmount: status === 'PAID' ? 80_000 : 0,
     remainingAmount: status === 'PAID' ? 0 : 80_000,
-    lastVisit: null,
+    lastPaidAt: null,
+  lastVisit: null,
   };
 }
 

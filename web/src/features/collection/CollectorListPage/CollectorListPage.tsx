@@ -7,7 +7,8 @@ import {
   UpOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
-import { Alert, Button, Empty, Input, Select, Spin, Tag } from 'antd';
+import { Alert, Button, DatePicker, Empty, Input, Select, Spin, Tag } from 'antd';
+import dayjs, { type Dayjs } from 'dayjs';
 import { useMemo, useState } from 'react';
 
 import { ApiError } from '../../../api/client';
@@ -17,7 +18,7 @@ import { MoneyText } from '../../../shared/MoneyText';
 import { normalizeText } from '../../../shared/normalizeText';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type CollectorCharge, useCashHeld, useMyWork, useMyWorkAllPeriods } from '../api';
-import { byChipOrder, countChips, WORK_CHIPS, type WorkChip, workChip, workState } from '../workState';
+import { byChipOrder, countChips, RESULT_LABELS, WORK_CHIPS, type WorkChip, workChip, workState } from '../workState';
 import { HouseholdHistory } from './HouseholdHistory';
 import { ReportSubjectForm } from './ReportSubjectForm';
 import { ResultSheet } from './ResultSheet';
@@ -40,6 +41,7 @@ export function CollectorListPage() {
   const [chip, setChip] = useState<WorkChip>('ALL');
   const [street, setStreet] = useState<string>();
   const [q, setQ] = useState('');
+  const [paidOn, setPaidOn] = useState<Dayjs | null>(null);
   const [statsOpen, setStatsOpen] = useState(true);
   const [editing, setEditing] = useState<CollectorCharge | null>(null);
   const [viewing, setViewing] = useState<CollectorCharge | null>(null);
@@ -68,12 +70,13 @@ export function CollectorListPage() {
     const needle = normalizeText(q.trim());
     return items.filter((w) => {
       if (street && streetOf(w.charge.subjectAddress) !== street) return false;
+      if (paidOn && !(w.lastPaidAt && dayjs(w.lastPaidAt).isSame(paidOn, 'day'))) return false;
       return (
         !needle ||
         normalizeText(`${w.charge.subjectName} ${w.charge.subjectCode} ${w.charge.subjectAddress} ${w.charge.code} ${w.charge.requestCode}`).includes(needle)
       );
     });
-  }, [items, street, q]);
+  }, [items, street, q, paidOn]);
   const counts = useMemo(() => countChips(items), [items]);
   const visible = useMemo(() => scoped.filter((w) => chip === 'ALL' || workChip(w) === chip).sort(byChipOrder), [scoped, chip]);
 
@@ -129,6 +132,10 @@ export function CollectorListPage() {
               onChange={setStreet}
               options={streets.map((s) => ({ value: s, label: s }))}
             />
+          </label>
+          <label>
+            <span>Ngày đã thu</span>
+            <DatePicker aria-label="Ngày đã thu" placeholder="Tất cả" format="DD/MM/YYYY" value={paidOn} onChange={setPaidOn} style={{ width: '100%' }} />
           </label>
         </div>
       </section>
@@ -187,6 +194,19 @@ export function CollectorListPage() {
                     <p className="clm-partial">
                       Đã thu <MoneyText value={w.paidAmount} /> · còn thiếu <MoneyText value={w.remainingAmount} />
                     </p>
+                  )}
+                  {(w.lastPaidAt || w.lastVisit) && (
+                    <div className="clm-kv">
+                      <small>Nhật ký đi thu</small>
+                      <span>
+                        {w.lastPaidAt && <div>Đã thu lúc {formatDate(w.lastPaidAt, true)}</div>}
+                        {w.lastVisit && (
+                          <div>
+                            {RESULT_LABELS[w.lastVisit.result]} lúc {formatDate(w.lastVisit.visitedAt, true)}
+                          </div>
+                        )}
+                      </span>
+                    </div>
                   )}
                   {previous.length > 0 && (
                     <div className="clm-previous">

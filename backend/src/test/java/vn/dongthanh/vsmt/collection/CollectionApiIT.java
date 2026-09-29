@@ -106,7 +106,9 @@ class CollectionApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$[*].charge.subjectCode", contains("DTH-H000001", "DTH-H000002")))
                 .andExpect(jsonPath("$[0].charge.status").value("PAID"))
                 .andExpect(jsonPath("$[0].paidAmount").value(80_000))
+                .andExpect(jsonPath("$[0].lastPaidAt").isNotEmpty())
                 .andExpect(jsonPath("$[1].charge.status").value("UNPAID"))
+                .andExpect(jsonPath("$[1].lastPaidAt").isEmpty())
                 .andExpect(jsonPath("$[1].remainingAmount").value(80_000))
                 .andExpect(jsonPath("$[1].lastVisit.result").value("ABSENT"));
 

@@ -12,6 +12,7 @@ const item = {
   charge: { id: 5, subjectId: 42, subjectCode: 'DTH-H000121', subjectName: 'Hộ Nguyễn Văn An', subjectAddress: '1 Đường Mẫu' },
   paidAmount: 0,
   remainingAmount: 80_000,
+  lastPaidAt: null,
   lastVisit: null,
 } as unknown as CollectorCharge;
 
