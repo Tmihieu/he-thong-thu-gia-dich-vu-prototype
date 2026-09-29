@@ -1,4 +1,4 @@
-import { App, Button, Descriptions, Drawer, Input, Segmented, Space, Statistic, Table, Tag, Typography } from 'antd';
+import { App, Button, Descriptions, Drawer, Flex, Input, Segmented, Space, Statistic, Table, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 
@@ -79,30 +79,30 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
 
   return (
     <>
-      <Space style={{ width: '100%', justifyContent: 'space-between' }} align="start">
-        {!admin && (
-          <Typography.Title level={3} style={{ marginTop: 0 }}>
-            Công ty môi trường
-          </Typography.Title>
-        )}
+      {!admin && (
+        <Typography.Title level={3} style={{ marginTop: 0 }}>
+          Công ty môi trường
+        </Typography.Title>
+      )}
+      <Flex wrap gap={8} justify="space-between" style={{ marginBottom: 16 }}>
+        <Space wrap>
+          <Input.Search allowClear placeholder="Tên, mã, đầu mối, điện thoại" style={{ width: 280 }} onChange={(e) => setQ(e.target.value)} />
+          <Segmented<StatusFilter>
+            value={status}
+            onChange={setStatus}
+            options={[
+              { value: 'all', label: 'Tất cả' },
+              { value: 'ACTIVE', label: 'Hoạt động' },
+              { value: 'INACTIVE', label: 'Tạm ngưng' },
+            ]}
+          />
+        </Space>
         {admin && (
           <Button type="primary" onClick={() => openForm(null)}>
             + Thêm công ty
           </Button>
         )}
-      </Space>
-      <Space wrap style={{ marginBottom: 16 }}>
-        <Input.Search allowClear placeholder="Tên, mã, đầu mối, điện thoại" style={{ width: 280 }} onChange={(e) => setQ(e.target.value)} />
-        <Segmented<StatusFilter>
-          value={status}
-          onChange={setStatus}
-          options={[
-            { value: 'all', label: 'Tất cả' },
-            { value: 'ACTIVE', label: 'Hoạt động' },
-            { value: 'INACTIVE', label: 'Tạm ngưng' },
-          ]}
-        />
-      </Space>
+      </Flex>
       <Table<Company>
         rowKey="id"
         loading={companies.isLoading}

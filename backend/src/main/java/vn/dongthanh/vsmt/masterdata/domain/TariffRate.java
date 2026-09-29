@@ -43,11 +43,24 @@ public class TariffRate extends BaseEntity {
     @Column(nullable = false, length = 30)
     private String unitLabel;
 
-    static TariffRate create(TariffVersion version, TariffGroup group, long collectionFee, long processingFee,
-            String unitLabel) {
+    /** Sửa đơn giá khi phiên bản còn dự thảo; giữ cùng dòng để không vướng ràng buộc duy nhất (phiên bản, nhóm). */
+    void update(long collectionFee, long processingFee, String unitLabel) {
+        requireNonNegative(collectionFee, processingFee);
+        this.collectionFee = collectionFee;
+        this.processingFee = processingFee;
+        this.monthlyTotal = Math.addExact(collectionFee, processingFee);
+        this.unitLabel = unitLabel;
+    }
+
+    private static void requireNonNegative(long collectionFee, long processingFee) {
         if (collectionFee < 0 || processingFee < 0) {
             throw new IllegalArgumentException("Đơn giá không được âm");
         }
+    }
+
+    static TariffRate create(TariffVersion version, TariffGroup group, long collectionFee, long processingFee,
+            String unitLabel) {
+        requireNonNegative(collectionFee, processingFee);
         TariffRate r = new TariffRate();
         r.tariffVersion = version;
         r.tariffGroup = group;

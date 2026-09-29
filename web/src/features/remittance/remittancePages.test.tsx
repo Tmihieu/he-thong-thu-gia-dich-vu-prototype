@@ -4,6 +4,7 @@ import { afterEach, beforeEach, vi } from 'vitest';
 
 import { TOKEN_KEY } from '../../app/auth/authContext';
 import { jsonResponse, mockApi, renderApp } from '../../test/renderApp';
+import { rateColor } from './ReconciliationPage/PeriodTrend';
 
 const officer = { id: 2, username: 'canbo_xa', fullName: 'Nguyễn Thị Mẫu', role: 'COMMUNE_OFFICER', companyId: null };
 const periods = [
@@ -96,6 +97,25 @@ describe('Đối soát', () => {
     expect(within(dv01Row).getByText('thu rồi chưa nộp')).toBeInTheDocument();
     expect(within(dv01Row).getByText('1 phiếu thu')).toBeInTheDocument();
     expect(screen.getAllByText('400.000 đ', norm).length).toBeGreaterThan(0);
+  });
+});
+
+describe('Thu 3 tháng gần nhất', () => {
+  it('màu vòng theo ngưỡng 25 / 50 / 75%', () => {
+    expect([0, 24.9, 25, 49.9, 50, 74.9, 75, 100].map(rateColor)).toEqual([
+      '#d92d20', '#d92d20', '#eaaa08', '#eaaa08', '#ef6820', '#ef6820', '#16794a', '#16794a',
+    ]);
+  });
+
+  it('tháng mới nhất bên trái, mỗi công ty một vòng tỷ lệ thu', async () => {
+    const fetchFn = api();
+    renderApp('/commune/reconciliation');
+
+    const card = (await screen.findByText('Thu 3 tháng gần nhất')).closest('.ant-card')!;
+    const months = (await within(card as HTMLElement).findAllByText(/^Tháng \d{2}\/2026$/)).map((e) => e.textContent);
+    expect(months).toEqual(['Tháng 10/2026', 'Tháng 08/2026']);
+    expect(await within(card as HTMLElement).findAllByLabelText('DV07 25%')).toHaveLength(2);
+    expect(fetchFn.mock.calls.some(([url]) => String(url) === '/api/remittance/ledger?periodId=8')).toBe(true);
   });
 });
 

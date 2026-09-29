@@ -14,6 +14,9 @@ public interface CollectionPeriodRepository extends JpaRepository<CollectionPeri
 
     boolean existsByCode(String code);
 
+    /** Kỳ đầu tiên (sớm nhất) bắt đầu từ ngày {@code date} trở đi. */
+    Optional<CollectionPeriod> findFirstByStartDateGreaterThanEqualOrderByStartDateAsc(LocalDate date);
+
     Optional<CollectionPeriod> findByCode(String code);
 
     /** Khóa dòng kỳ thu tới hết transaction (SELECT … FOR UPDATE): tuần tự hóa lập phiếu thu, khóa kỳ. */

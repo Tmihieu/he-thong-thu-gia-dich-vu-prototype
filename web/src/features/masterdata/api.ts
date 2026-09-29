@@ -6,6 +6,8 @@ import type { components } from '../../api/schema';
 
 export type TariffVersion = components['schemas']['TariffVersionDto'];
 export type TariffRate = components['schemas']['TariffRateDto'];
+export type TariffDraftRequest = components['schemas']['TariffDraftRequest'];
+export type CreateTariffRequest = components['schemas']['CreateTariffRequest'];
 export type Period = components['schemas']['PeriodDto'];
 export type OpenPeriodRequest = components['schemas']['OpenPeriodRequest'];
 export type District = components['schemas']['DistrictDto'];
@@ -44,6 +46,25 @@ export function useTariffs() {
     queryKey: masterdataKeys.tariffs,
     queryFn: () => api.get<TariffVersion[]>('/api/masterdata/tariffs'),
   });
+}
+
+function useTariffMutation<V>(fn: (v: V) => Promise<TariffVersion>) {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: fn, onSuccess: () => qc.invalidateQueries({ queryKey: masterdataKeys.tariffs }) });
+}
+
+export function useCreateTariffDraft() {
+  return useTariffMutation((body: CreateTariffRequest) => api.post<TariffVersion>('/api/masterdata/tariffs', body));
+}
+
+export function useUpdateTariffDraft() {
+  return useTariffMutation(({ id, body }: { id: number; body: TariffDraftRequest }) =>
+    api.put<TariffVersion>(`/api/masterdata/tariffs/${id}`, body),
+  );
+}
+
+export function useIssueTariff() {
+  return useTariffMutation((id: number) => api.post<TariffVersion>(`/api/masterdata/tariffs/${id}/issue`));
 }
 
 export function usePeriods() {

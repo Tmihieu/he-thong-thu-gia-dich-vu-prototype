@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 
 import { api } from '../../api/client';
 import type { components } from '../../api/schema';
@@ -21,6 +21,16 @@ export function useCompanyLedger(periodId: number | undefined) {
     queryKey: [...remittanceKeys.ledger, periodId],
     queryFn: () => api.get<LedgerRow[]>('/api/remittance/ledger', { params: { periodId } }),
     enabled: periodId !== undefined,
+  });
+}
+
+/** Sổ công ty–kỳ của nhiều kỳ một lúc (dùng chung cache với {@link useCompanyLedger}). */
+export function useCompanyLedgers(periodIds: number[]) {
+  return useQueries({
+    queries: periodIds.map((periodId) => ({
+      queryKey: [...remittanceKeys.ledger, periodId],
+      queryFn: () => api.get<LedgerRow[]>('/api/remittance/ledger', { params: { periodId } }),
+    })),
   });
 }
 

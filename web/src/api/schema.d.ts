@@ -2707,6 +2707,35 @@ export interface components {
             /** Format: int64 */
             unreadCount: number;
         };
+        RateRequest: {
+            /** @enum {string} */
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_GENERATOR" | "BY_VOLUME";
+            /** Format: int64 */
+            collectionFee: number;
+            /** Format: int64 */
+            processingFee: number;
+            /** @example đ/hộ/tháng */
+            unitLabel: string;
+        };
+        TariffDraftRequest: {
+            /** @example QĐ 65/2026/QĐ-UBND */
+            legalBasis: string;
+            /** Format: date */
+            validFrom: string;
+            /**
+             * Format: date
+             * @description Để trống là không thời hạn
+             */
+            validTo?: string;
+            scopeNote?: string;
+            note?: string;
+            rates: components["schemas"]["RateRequest"][];
+        };
+        CreateTariffRequest: {
+            /** @example BG-70-2027 */
+            code: string;
+            draft: components["schemas"]["TariffDraftRequest"];
+        };
         TariffRateDto: {
             /** @enum {string} */
             tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_GENERATOR" | "BY_VOLUME";

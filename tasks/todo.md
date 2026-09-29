@@ -797,3 +797,9 @@
 - [ ] **Để sau — Tính theo ký (đ/kg).** Áp dụng cho: chủ nguồn thải lớn; chủ nguồn thải nhỏ phát sinh 500 kg đến dưới 9.000 kg/tháng; hộ đã phân loại rác tại nguồn đúng quy định. Cần: số kg theo từng hộ từng kỳ, đơn giá đ/kg của nhóm `BY_VOLUME`, sinh khoản = kg × đơn giá. Còn hỏi: đơn giá lấy từ đâu, ai nhập số kg hằng tháng.
 - [ ] **Để sau — Nạp dữ liệu dân cư hàng loạt** (Excel/CSV đúng 8 cột xã đưa, kiểm từng dòng, lỗi thì không ghi). Còn hỏi: chỉ cho demo hay file thật, xã có mã hộ sẵn không.
 - Miễn giảm: giữ cờ miễn 100% như hiện tại (quyết định 28/09/2026); từ 29/09/2026 bật cờ tạo đề nghị để lãnh đạo duyệt sau (T56).
+
+## Chỉnh giao diện + biểu giá (người dùng đưa vào 29/09/2026)
+
+- [x] `/admin/config` tab Công ty & địa bàn: nút "+ Thêm công ty" cùng hàng ô tìm kiếm, sát phải.
+- [x] Đối soát (`/commune/reconciliation`): khung "Thu 3 tháng gần nhất" ở đầu trang, tháng mới nhất bên trái; thanh đã thu / phải thu cùng thang giữa các tháng; vòng tỷ lệ thu (đã thu / phải thu) từng công ty, màu < 25% đỏ, 25–< 50% vàng, 50–< 75% cam, ≥ 75% xanh lá. Chỉ kỳ tháng.
+- [x] **Soạn và ban hành biểu giá** (người dùng chốt 29/09/2026, cách 1): quản trị tạo dự thảo (đủ đơn giá 4 nhóm), sửa khi còn dự thảo, rồi Ban hành; bản đã ban hành không sửa. Ban hành: bản đang áp dụng kết thúc ngay trước ngày hiệu lực mới; chặn khi đã mở kỳ bắt đầu từ ngày hiệu lực trở đi, khi bản cũ bị thay hết, hoặc bị cắt đôi. API `POST /api/masterdata/tariffs`, `PUT /tariffs/{id}`, `POST /tariffs/{id}/issue`; audit mọi thao tác. Kiểm chứng: `TariffDraftIT` 5 test, web `ConfigPage.test` 5 test. `schema.d.ts` thêm tay 3 kiểu request, chạy lại `npm run gen:api` khi backend mới chạy. Chưa có: xóa dự thảo.

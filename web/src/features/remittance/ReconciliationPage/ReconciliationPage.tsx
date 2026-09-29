@@ -8,6 +8,7 @@ import { MoneyText } from '../../../shared/MoneyText';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type LedgerRow, useCompanyLedger } from '../api';
 import { LockPeriodButton } from './LockPeriodButton';
+import { PeriodTrend } from './PeriodTrend';
 
 function Gap({ gap }: { gap: number }) {
   if (gap === 0) return <MoneyText value={0} />;
@@ -40,6 +41,7 @@ export function ReconciliationPage() {
       <Typography.Title level={3} style={{ marginTop: 0 }}>
         Đối soát
       </Typography.Title>
+      <PeriodTrend />
       <Space style={{ marginBottom: 16 }} wrap>
         <PeriodSelect value={periodId} onChange={setPeriodId} />
         {periodId !== undefined && !readOnly && <LockPeriodButton periodId={periodId} />}
