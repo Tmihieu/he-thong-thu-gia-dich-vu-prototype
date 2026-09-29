@@ -17,11 +17,12 @@ describe('menuConfig', () => {
       'Đối soát',
       'Khiếu nại',
       'Đề nghị',
+      'Chợ cộng đồng',
     ]);
-    expect(labels('COMPANY_MANAGER')).toEqual(['Khu vực được giao', 'Khiếu nại', 'Rác cồng kềnh']);
-    expect(labels('COLLECTOR')).toEqual(['Danh sách thu', 'Tiền mặt', 'Tài khoản']);
-    expect(labels('ADMIN')).toEqual(['Tài khoản', 'Cấu hình', 'Nhật ký']);
-    expect(labels('LEADER')).toEqual(['Dashboard', 'Chờ duyệt', 'Báo cáo tổng hợp', 'Tiến độ thu', 'Đối soát']);
+    expect(labels('COMPANY_MANAGER')).toEqual(['Khu vực được giao', 'Khiếu nại', 'Rác cồng kềnh', 'Chợ cộng đồng']);
+    expect(labels('COLLECTOR')).toEqual(['Danh sách thu', 'Tiền mặt', 'Tài khoản', 'Chợ cộng đồng']);
+    expect(labels('ADMIN')).toEqual(['Tài khoản', 'Cấu hình', 'Nhật ký', 'Chợ cộng đồng']);
+    expect(labels('LEADER')).toEqual(['Dashboard', 'Chờ duyệt', 'Báo cáo tổng hợp', 'Tiến độ thu', 'Đối soát', 'Chợ cộng đồng']);
   });
 
   it('đường dẫn menu nằm dưới gốc của vai trò và không trùng', () => {

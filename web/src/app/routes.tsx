@@ -9,6 +9,7 @@ import { CollectorListPage } from '../features/collection/CollectorListPage/Coll
 import { CompanyHubPage } from '../features/collection/CompanyHubPage';
 import { CommuneComplaintsPage } from '../features/complaints/CommuneComplaintsPage';
 import { CompanyComplaintsPage } from '../features/complaints/CompanyComplaintsPage';
+import { MarketListPage, MarketPostPage } from '../features/market/MarketPages';
 import { AreasPage } from '../features/masterdata/AreasPage/AreasPage';
 import { ApprovalsPage } from '../features/leadership/ApprovalsPage';
 import { LeaderDashboardPage } from '../features/leadership/LeaderDashboardPage';
@@ -69,8 +70,10 @@ export const routes: RouteObject[] = [
       { index: true, element: <Navigate to={homePath(role)} replace /> },
       ...MENU[role].map((entry) => ({
         path: entry.path,
-        element: PAGES[`${role}:${entry.path}`] ?? <NotFoundPage />,
+        // Chợ cộng đồng chỉ đọc: một màn cho cả 5 vai trò.
+        element: entry.path === 'market' ? <MarketListPage /> : (PAGES[`${role}:${entry.path}`] ?? <NotFoundPage />),
       })),
+      { path: 'market/:id', element: <MarketPostPage /> },
       { path: 'notifications', element: <NotificationCenterPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],

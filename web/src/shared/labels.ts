@@ -155,3 +155,28 @@ export const STATUS_COLORS: Record<TariffStatus | PeriodStatus, string> = {
   COLLECTING: 'green',
   LOCKED: 'default',
 };
+
+export type MarketTag = Schemas['MarketPostDto']['tags'][number];
+export type MarketCategory = Schemas['MarketPostDto']['category'];
+export type MarketPostStatus = Schemas['MarketPostDto']['status'];
+
+export const MARKET_TAG_LABELS: Record<MarketTag, string> = {
+  FIND: 'Tìm đồ',
+  SELL: 'Bán đồ',
+  GIVE: 'Cho tặng',
+  EXCHANGE: 'Đổi đồ',
+};
+
+export const MARKET_CATEGORY_LABELS: Record<MarketCategory, string> = {
+  HOUSEHOLD: 'Đồ gia dụng',
+  ELECTRONICS: 'Điện tử',
+  FURNITURE: 'Nội thất',
+  CHILDREN: 'Đồ trẻ em',
+  TOOLS_VEHICLES: 'Xe đạp và dụng cụ',
+  OTHER: 'Khác',
+};
+
+export const MARKET_STATUS_LABELS: Record<MarketPostStatus, string> = {
+  OPEN: 'Đang đăng',
+  CLOSED: 'Đã xong',
+};

@@ -1,9 +1,10 @@
-import { Alert, App, Button, Image, Popconfirm, Segmented, Space, Spin, Table, Tag, Typography } from 'antd';
-import { useEffect, useMemo, useState } from 'react';
+import { Alert, App, Button, Image, Popconfirm, Segmented, Space, Table, Tag, Typography } from 'antd';
+import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
-import { api, ApiError } from '../../../api/client';
+import { ApiError } from '../../../api/client';
 import { brand } from '../../../app/theme';
+import { AuthImage } from '../../../shared/AuthImage';
 import { DateText } from '../../../shared/DateText';
 import { MoneyText } from '../../../shared/MoneyText';
 import {
@@ -26,36 +27,6 @@ const FILTERS: Filter[] = ['PENDING', 'QUOTED', 'COLLECTED', 'CANCELLED', 'ALL']
 
 function errorText(e: unknown) {
   return e ? (e instanceof ApiError ? e.message : 'Không thực hiện được. Vui lòng thử lại.') : null;
-}
-
-/**
- * Ảnh cần token nên không gắn thẳng đường dẫn vào `<img>`: tải Blob kèm Bearer, hiện qua object URL, thu hồi khi gỡ.
- * ponytail: ảnh nhỏ tải nguyên ảnh gốc (≤ 5 MB/ảnh); nếu bảng chậm thì thêm ảnh thu nhỏ ở backend.
- */
-function AuthImage({ path, alt }: { path: string; alt: string }) {
-  const [src, setSrc] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    const abort = new AbortController();
-    let url: string | null = null;
-    api.blob(path, { signal: abort.signal }).then(
-      (blob) => {
-        if (abort.signal.aborted) return;
-        url = URL.createObjectURL(blob);
-        setSrc(url);
-      },
-      () => {
-        if (!abort.signal.aborted) setFailed(true);
-      },
-    );
-    return () => {
-      abort.abort();
-      if (url) URL.revokeObjectURL(url);
-    };
-  }, [path]);
-  if (failed) return <Typography.Text type="secondary">Không tải được ảnh</Typography.Text>;
-  if (!src) return <Spin size="small" />;
-  return <Image src={src} alt={alt} width={48} height={48} style={{ objectFit: 'cover', borderRadius: 4 }} />;
 }
 
 /** "Rác cồng kềnh" của công ty (T45): yêu cầu của hộ trong khu vực mình, báo phí, đánh dấu đã thu gom, từ chối. */
