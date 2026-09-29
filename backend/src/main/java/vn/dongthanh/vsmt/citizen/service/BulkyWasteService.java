@@ -19,6 +19,7 @@ import vn.dongthanh.vsmt.citizen.domain.BulkyWasteRequest;
 import vn.dongthanh.vsmt.citizen.domain.BulkyWasteRequestRepository;
 import vn.dongthanh.vsmt.citizen.domain.CitizenAccount;
 import vn.dongthanh.vsmt.citizen.domain.DaySlot;
+import vn.dongthanh.vsmt.citizen.domain.MarketImageRepository;
 import vn.dongthanh.vsmt.citizen.service.PhotoStorage.StoredPhoto;
 import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubject;
@@ -60,6 +61,7 @@ public class BulkyWasteService {
     private final NotificationService notifications;
     private final AuditService audit;
     private final PhotoStorage photos;
+    private final MarketImageRepository marketImages;
     private final Clock clock;
 
     public record CreateCommand(BulkyItemType itemType, String itemDescription, int quantity, String address,
@@ -72,6 +74,10 @@ public class BulkyWasteService {
         LocalDate today = LocalDate.now(clock);
         requireDateWindow(cmd.preferredDate(), today, "Ngày mong muốn");
         List<String> photoNames = photos.requireStored(cmd.photoNames());
+        // Ảnh chợ không gắn sang rác cồng kềnh để đi vòng quyền đọc (spec chợ §9): tải lại qua luồng bulky.
+        if (!photoNames.isEmpty() && marketImages.existsByStorageNameIn(photoNames)) {
+            throw new BusinessRuleException("PHOTO_NOT_FOUND", "Ảnh không tồn tại. Vui lòng tải ảnh lên lại.");
+        }
         String prefix = "CK-" + today.format(CODE_TOKEN) + "-";
         // Tuần tự hóa việc tạo trong tháng: không trùng số mã, không vượt giới hạn yêu cầu đang mở khi gửi dồn.
         requests.lockCodePrefix(prefix);

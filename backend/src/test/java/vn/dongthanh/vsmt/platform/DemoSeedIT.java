@@ -196,6 +196,17 @@ class DemoSeedIT extends IntegrationTest {
                 join service_subjects s on s.id = a.subject_id where p.code = 'CDC-035'""", String.class))
                 .isEqualTo("DTH-H000128");
         assertThat(demoDb.queryForObject("select count(*) from market_comments", Integer.class)).isEqualTo(3);
+        // V25 nâng cấp dữ liệu cũ: caption = title + 2 xuống dòng + mô tả, không lấy địa điểm nhận; post_type → tag;
+        // danh mục OTHER, tổ của hộ, không chia sẻ SĐT.
+        assertThat(demoDb.queryForList("""
+                select p.code || ':' || string_agg(t.tag, ',') || ':' || p.category || ':' || p.share_phone
+                    || ':' || (p.area_id = s.area_id) || ':' || (p.caption = p.title || E'\\n\\n' || p.description)
+                    || ':' || (position(coalesce(p.pickup_location, '#') in p.caption) = 0)
+                from market_posts p join market_post_tags t on t.post_id = p.id
+                join citizen_accounts a on a.id = p.author_id join service_subjects s on s.id = a.subject_id
+                group by p.id, s.area_id order by p.code""", String.class))
+                .containsExactly("CDC-033:GIVE:OTHER:false:true:true:true", "CDC-035:GIVE:OTHER:false:true:true:true",
+                        "CDC-039:EXCHANGE:OTHER:false:true:true:true", "CDC-041:GIVE:OTHER:false:true:true:true");
     }
 
     @Test

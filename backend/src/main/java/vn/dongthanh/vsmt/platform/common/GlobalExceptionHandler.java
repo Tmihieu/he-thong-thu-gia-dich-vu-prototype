@@ -4,6 +4,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.core.NestedExceptionUtils;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -115,7 +117,23 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.BAD_REQUEST, VALIDATION_ERROR, "Dữ liệu không hợp lệ: " + detail);
     }
 
-    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class,
+    /** Vd. thuộc tính không khai báo trong DTO chợ (price/amount...): quy tắc nghiệp vụ ném lúc đọc JSON → 422. */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    ResponseEntity<ApiError> unreadableBody(HttpMessageNotReadableException ex) {
+        if (NestedExceptionUtils.getMostSpecificCause(ex) instanceof BusinessRuleException b) {
+            return businessRule(b);
+        }
+        return unreadable(ex);
+    }
+
+    @ExceptionHandler(RateLimitException.class)
+    ResponseEntity<ApiError> rateLimited(RateLimitException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, Long.toString(ex.getRetryAfterSeconds()))
+                .body(new ApiError(ex.getCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler({MethodArgumentTypeMismatchException.class,
             MissingServletRequestParameterException.class, MissingServletRequestPartException.class,
             HandlerMethodValidationException.class})
     ResponseEntity<ApiError> unreadable(Exception ex) {

@@ -9,10 +9,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,7 +41,8 @@ import vn.dongthanh.vsmt.citizen.domain.MarketComment;
 import vn.dongthanh.vsmt.citizen.domain.MarketCommentRepository;
 import vn.dongthanh.vsmt.citizen.domain.MarketPost;
 import vn.dongthanh.vsmt.citizen.domain.MarketPostRepository;
-import vn.dongthanh.vsmt.citizen.domain.MarketPostType;
+import vn.dongthanh.vsmt.citizen.domain.MarketTag;
+import vn.dongthanh.vsmt.citizen.domain.MarketCategory;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubjectRepository;
 import vn.dongthanh.vsmt.support.CollectionFixture;
 import vn.dongthanh.vsmt.support.DatabaseCleaner;
@@ -68,8 +69,6 @@ class CitizenApiNoTransactionIT extends IntegrationTest {
 
     @Value("${vsmt.citizen.demo-otp}")
     String demoOtp;
-    @Value("${vsmt.upload-dir}")
-    String uploadDir;
 
     long chargeId;
     String token;
@@ -146,33 +145,33 @@ class CitizenApiNoTransactionIT extends IntegrationTest {
         long otherPostId = tx.execute(s -> {
             CitizenAccount b = accounts.save(CitizenAccount.create("0902000005",
                     subjects.findByCode("DTH-H000005").orElseThrow(), "Chủ hộ B"));
-            MarketPost p = marketPosts.save(MarketPost.create("CDC-001", b, "Tủ gỗ", MarketPostType.EXCHANGE,
-                    "Còn tốt", List.of(), null));
-            marketComments.save(MarketComment.create(p, b, "Ưu tiên đổi bàn học"));
+            MarketPost p = marketPosts.save(MarketPost.create("CDC-001", b, new MarketPost.Content("Tủ gỗ\n\nCòn tốt",
+                    Set.of(MarketTag.EXCHANGE), MarketCategory.FURNITURE, null), null, null));
+            marketComments.save(MarketComment.create(p, b, "Ưu tiên đổi bàn học", null, null));
             return p.getId();
         });
-        String photo = body(mvc.perform(multipart("/api/citizen/photos").file(new MockMultipartFile("file", "anh.jpg",
-                        MediaType.IMAGE_JPEG_VALUE, MarketIT.JPEG)).header(HttpHeaders.AUTHORIZATION, token))
-                .andExpect(status().isCreated())).get("name").asText();
-        try {
-            ok(post("/api/citizen/market/posts"), """
-                    {"title":"Kệ sách","postType":"GIVE","description":"Kệ 3 tầng","photoNames":["%s"]}"""
-                    .formatted(photo)).andExpect(jsonPath("$.photoUrls[0]").value("/api/citizen/photos/" + photo));
-            long myPostId = body(ok(post("/api/citizen/market/posts"),
-                    "{\"title\":\"Ghế nhựa\",\"postType\":\"GIVE\",\"description\":\"Còn tốt\"}")
-                    .andExpect(jsonPath("$.author.areaCode").value("KV07"))).get("id").asLong();
-            ok(get("/api/citizen/market/posts"))
-                    .andExpect(jsonPath("$.items[*].author.areaCode").value(contains("KV07", "KV07", "KV12")));
-            ok(post("/api/citizen/market/posts/" + otherPostId + "/comments"), "{\"content\":\"Còn không anh?\"}")
-                    .andExpect(jsonPath("$.author.areaCode").value("KV07"));
-            ok(get("/api/citizen/market/posts/" + otherPostId))
-                    .andExpect(jsonPath("$.post.author.areaCode").value("KV12"))
-                    .andExpect(jsonPath("$.comments[*].author.areaCode").value(contains("KV12", "KV07")));
-            ok(post("/api/citizen/market/posts/" + myPostId + "/status"), "{\"status\":\"CLOSED\"}")
-                    .andExpect(jsonPath("$.status").value("CLOSED"));
-        } finally {
-            Files.deleteIfExists(Path.of(uploadDir, photo));
-        }
+        long imageId = body(mvc.perform(multipart("/api/citizen/market/images").file(new MockMultipartFile("file",
+                        "anh.jpg", MediaType.IMAGE_JPEG_VALUE, MarketIT.JPEG)).header(HttpHeaders.AUTHORIZATION, token))
+                .andExpect(status().isCreated())).get("id").asLong();
+        long withPhoto = body(ok(post("/api/citizen/market/posts"), """
+                {"caption":"Kệ sách","tags":["GIVE"],"photoIds":[%d],"clientRequestId":"%s"}"""
+                .formatted(imageId, UUID.randomUUID()))).get("id").asLong();
+        ok(get("/api/market/posts/" + withPhoto + "/images/" + imageId));
+        long myPostId = body(ok(post("/api/citizen/market/posts"),
+                "{\"caption\":\"Ghế nhựa\",\"tags\":[\"GIVE\",\"SELL\"],\"clientRequestId\":\"%s\"}"
+                        .formatted(UUID.randomUUID()))
+                .andExpect(jsonPath("$.area.code").value("KV07"))).get("id").asLong();
+        ok(get("/api/market/posts"))
+                .andExpect(jsonPath("$.items[*].area.code").value(contains("KV07", "KV07", "KV12")));
+        ok(post("/api/citizen/market/posts/" + otherPostId + "/comments"),
+                "{\"content\":\"Còn không anh?\",\"clientRequestId\":\"%s\"}".formatted(UUID.randomUUID()))
+                .andExpect(jsonPath("$.author.displayName").value("Chủ hộ A"));
+        ok(get("/api/market/posts/" + otherPostId)).andExpect(jsonPath("$.area.code").value("KV12"));
+        ok(get("/api/market/posts/" + otherPostId + "/comments"))
+                .andExpect(jsonPath("$.items[*].author.displayName").value(contains("Chủ hộ B", "Chủ hộ A")));
+        ok(post("/api/citizen/market/posts/" + myPostId + "/status"), "{\"status\":\"CLOSED\",\"version\":0}")
+                .andExpect(jsonPath("$.status").value("CLOSED"));
+        ok(get("/api/citizen/market/posts/mine")).andExpect(jsonPath("$.total").value(2));
     }
 
     @Test
@@ -182,11 +181,12 @@ class CitizenApiNoTransactionIT extends IntegrationTest {
             CountDownLatch start = new CountDownLatch(1);
             List<Future<Integer>> results = new ArrayList<>();
             for (int i = 0; i < 4; i++) {
+                String body = "{\"caption\":\"Ghế nhựa\",\"tags\":[\"GIVE\"],\"clientRequestId\":\"%s\"}"
+                        .formatted(UUID.randomUUID());
                 results.add(pool.submit(() -> {
                     start.await();
                     return mvc.perform(post("/api/citizen/market/posts").header(HttpHeaders.AUTHORIZATION, token)
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .content("{\"title\":\"Ghế nhựa\",\"postType\":\"GIVE\",\"description\":\"Còn tốt\"}"))
+                                    .contentType(MediaType.APPLICATION_JSON).content(body))
                             .andReturn().getResponse().getStatus();
                 }));
             }
@@ -197,7 +197,7 @@ class CitizenApiNoTransactionIT extends IntegrationTest {
         } finally {
             pool.shutdownNow();
         }
-        ok(get("/api/citizen/market/posts")).andExpect(jsonPath("$.items[*].code",
+        ok(get("/api/market/posts")).andExpect(jsonPath("$.items[*].code",
                 containsInAnyOrder("CDC-001", "CDC-002", "CDC-003", "CDC-004")));
     }
 

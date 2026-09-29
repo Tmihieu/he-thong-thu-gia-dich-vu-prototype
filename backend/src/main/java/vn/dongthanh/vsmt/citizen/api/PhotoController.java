@@ -22,11 +22,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.citizen.service.CitizenQueryService;
+import vn.dongthanh.vsmt.citizen.service.MarketService;
 import vn.dongthanh.vsmt.citizen.service.PhotoStorage;
 import vn.dongthanh.vsmt.citizen.service.PhotoStorage.StoredPhoto;
+import vn.dongthanh.vsmt.platform.common.NotFoundException;
 import vn.dongthanh.vsmt.platform.security.CurrentCitizen;
 
-/** Ảnh người dân tải lên, dùng chung cho chợ đồ cũ và rác cồng kềnh (T46). Mọi người dân đã đăng nhập xem được. */
+/** Ảnh người dân tải lên, dùng cho rác cồng kềnh (T46); ảnh chợ tải qua /api/citizen/market/images.
+ * Ảnh thuộc chợ chỉ đọc được qua đây khi có bài tham chiếu người xem được phép đọc (spec chợ §9). */
 @Tag(name = "App người dân: ảnh")
 @RestController
 @RequestMapping(PhotoController.BASE_PATH)
@@ -37,6 +40,7 @@ public class PhotoController {
 
     private final CitizenQueryService citizens;
     private final PhotoStorage photos;
+    private final MarketService market;
 
     static String url(String name) {
         return BASE_PATH + "/" + name;
@@ -57,7 +61,10 @@ public class PhotoController {
     public ResponseEntity<byte[]> download(@AuthenticationPrincipal CurrentCitizen citizen,
             @PathVariable @Pattern(regexp = PhotoStorage.NAME_PATTERN, message = "không hợp lệ") String name)
             throws IOException {
-        citizens.requireActive(citizen);
+        Long me = citizens.requireActive(citizen).getId();
+        if (!market.legacyPhotoReadable(me, name)) {
+            throw new NotFoundException("PHOTO_NOT_FOUND", "Không tìm thấy ảnh.");
+        }
         StoredPhoto photo = photos.load(name);
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(photo.contentType())).body(photo.bytes());
     }
