@@ -14,6 +14,7 @@ export interface ChargeQuery {
   periodId?: number;
   areaId?: number;
   status?: Charge['status'];
+  companyId?: number;
   page: number;
   size: number;
 }

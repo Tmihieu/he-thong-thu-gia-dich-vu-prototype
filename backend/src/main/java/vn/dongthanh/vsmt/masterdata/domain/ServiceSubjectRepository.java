@@ -24,15 +24,17 @@ public interface ServiceSubjectRepository extends JpaRepository<ServiceSubject, 
      */
     @Query(value = "select s from ServiceSubject s join fetch s.area a join fetch a.district d"
             + " where (:districtId is null or d.id = :districtId) and (:areaId is null or a.id = :areaId)"
-            + " and (:status is null or s.status = :status) and (:scoped = false or a.id in :areaIds)"
+            + " and (:status is null or s.status = :status)"
+            + " and (:subjectType is null or s.subjectType = :subjectType) and (:scoped = false or a.id in :areaIds)"
             + " and (:q = '' or lower(s.code) like :q or lower(s.name) like :q or s.phone like :q"
             + " or lower(s.address) like :q)",
             countQuery = "select count(s) from ServiceSubject s join s.area a join a.district d"
             + " where (:districtId is null or d.id = :districtId) and (:areaId is null or a.id = :areaId)"
-            + " and (:status is null or s.status = :status) and (:scoped = false or a.id in :areaIds)"
+            + " and (:status is null or s.status = :status)"
+            + " and (:subjectType is null or s.subjectType = :subjectType) and (:scoped = false or a.id in :areaIds)"
             + " and (:q = '' or lower(s.code) like :q or lower(s.name) like :q or s.phone like :q"
             + " or lower(s.address) like :q)")
-    Page<ServiceSubject> search(Long districtId, Long areaId, SubjectStatus status, boolean scoped,
+    Page<ServiceSubject> search(Long districtId, Long areaId, SubjectStatus status, SubjectType subjectType, boolean scoped,
             Collection<Long> areaIds, String q, Pageable pageable);
 
     @Query("select s from ServiceSubject s join fetch s.area a join fetch a.district order by s.code")

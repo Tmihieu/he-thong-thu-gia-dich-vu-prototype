@@ -1,20 +1,18 @@
-import { Alert, Button, Input, Segmented, Select, Space, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Input, Segmented, Select, Space, Table, Tag, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 
 import { ApiError } from '../../../api/client';
 import { MoneyText } from '../../../shared/MoneyText';
 import { normalizeText } from '../../../shared/normalizeText';
-import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type CollectorCharge, useCollectorAssignments, useCollectors, useCompanyWork } from '../api';
 import { ResultSheet } from '../CollectorListPage/ResultSheet';
-import { WORK_FILTERS, type WorkGroup, workState } from '../workState';
+import { byChipOrder, countChips, WORK_CHIPS, type WorkChip, workChip, workState } from '../workState';
 
-/** "Hộ được giao" của công ty: khoản các tổ mình phụ trách trong kỳ; lọc tổ / trạng thái / người đi thu; ghi thay. */
-export function CompanyHouseholdsPage() {
-  const [periodId, setPeriodId] = useState<number>();
+/** "Hộ được giao" của công ty (nằm dưới tổng quan): khoản các tổ mình phụ trách trong kỳ; lọc khu vực / người đi thu / trạng thái; ghi thay. */
+export function CompanyHouseholdsPage({ periodId }: { periodId: number | undefined }) {
   const [areaId, setAreaId] = useState<number>();
   const [collectorId, setCollectorId] = useState<number>();
-  const [filter, setFilter] = useState<WorkGroup | 'ALL'>('ALL');
+  const [chip, setChip] = useState<WorkChip>('ALL');
   const [q, setQ] = useState('');
   const [editing, setEditing] = useState<CollectorCharge | null>(null);
   const work = useCompanyWork(periodId);
@@ -34,30 +32,40 @@ export function CompanyHouseholdsPage() {
     return [...m].sort((a, b) => a[1].localeCompare(b[1])).map(([value, label]) => ({ value, label }));
   }, [items]);
 
-  const visible = useMemo(() => {
+  // Lọc khu vực / người thu / tìm kiếm trước, đếm theo nút lọc sau để số trên nút khớp danh sách.
+  const scoped = useMemo(() => {
     const needle = normalizeText(q.trim());
     return items.filter((w) => {
       if (areaId !== undefined && w.charge.areaId !== areaId) return false;
       if (collectorId !== undefined && collectorOfArea.get(w.charge.areaId)?.id !== collectorId) return false;
-      if (filter !== 'ALL' && workState(w).group !== filter) return false;
-      return !needle || normalizeText(`${w.charge.subjectName} ${w.charge.subjectCode} ${w.charge.subjectAddress}`).includes(needle);
+      const who = collectorOfArea.get(w.charge.areaId)?.name ?? '';
+      return !needle || normalizeText(`${w.charge.subjectName} ${w.charge.subjectCode} ${w.charge.subjectAddress} ${who}`).includes(needle);
     });
-  }, [items, areaId, collectorId, collectorOfArea, filter, q]);
+  }, [items, areaId, collectorId, collectorOfArea, q]);
+
+  const counts = useMemo(() => countChips(scoped), [scoped]);
+
+  const visible = useMemo(
+    () =>
+      scoped
+        .filter((w) => chip === 'ALL' || workChip(w) === chip)
+        .sort(byChipOrder),
+    [scoped, chip],
+  );
 
   const error = work.error ?? assignments.error ?? collectors.error;
   return (
-    <>
+    <Card size="small" title="Hộ được giao" className="section-card">
       <Space wrap style={{ marginBottom: 12 }}>
-        <PeriodSelect value={periodId} onChange={setPeriodId} />
-        <Select
+        <Input.Search
           allowClear
-          aria-label="Tổ"
-          placeholder="Tất cả tổ"
-          style={{ width: 160 }}
-          value={areaId}
-          onChange={setAreaId}
-          options={areaOptions}
+          placeholder="Tên hộ, mã hộ, địa chỉ, người thu"
+          aria-label="Tìm hộ"
+          style={{ width: 300 }}
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
         />
+        <Select allowClear aria-label="Khu vực" placeholder="Tất cả khu vực" style={{ width: 170 }} value={areaId} onChange={setAreaId} options={areaOptions} />
         <Select
           allowClear
           aria-label="Người đi thu"
@@ -67,11 +75,24 @@ export function CompanyHouseholdsPage() {
           onChange={setCollectorId}
           options={(collectors.data ?? []).map((c) => ({ value: c.id, label: c.fullName }))}
         />
-        <Input.Search allowClear placeholder="Tên hộ, mã hộ, địa chỉ" aria-label="Tìm hộ" value={q} onChange={(e) => setQ(e.target.value)} />
       </Space>
-      <Segmented<WorkGroup | 'ALL'> options={WORK_FILTERS} value={filter} onChange={setFilter} style={{ marginBottom: 12 }} />
+      <div style={{ marginBottom: 12 }}>
+        <Segmented<WorkChip>
+          value={chip}
+          onChange={setChip}
+          options={WORK_CHIPS.map((c) => ({
+            value: c.value,
+            label: (
+              <span>
+                {c.label} <Typography.Text strong>{counts[c.value] ?? 0}</Typography.Text>
+              </span>
+            ),
+          }))}
+        />
+      </div>
       {error && <Alert type="error" showIcon message={error instanceof ApiError ? error.message : 'Không tải được danh sách hộ'} />}
       <Table<CollectorCharge>
+        size="small"
         rowKey={(w) => w.charge.id}
         loading={work.isLoading}
         dataSource={visible}
@@ -89,11 +110,34 @@ export function CompanyHouseholdsPage() {
               </>
             ),
           },
-          { title: 'Địa chỉ', render: (_, w) => w.charge.subjectAddress },
-          { title: 'Tổ', render: (_, w) => w.charge.areaCode },
+          {
+            title: 'Địa chỉ',
+            render: (_, w) => (
+              <>
+                <div>{w.charge.subjectAddress}</div>
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  {w.charge.areaCode}
+                </Typography.Text>
+              </>
+            ),
+          },
           { title: 'Người đi thu', render: (_, w) => collectorOfArea.get(w.charge.areaId)?.name ?? '—' },
-          { title: 'Phải thu', align: 'right', render: (_, w) => <MoneyText value={w.charge.amount} /> },
-          { title: 'Đã thu', align: 'right', render: (_, w) => <MoneyText value={w.paidAmount} /> },
+          {
+            title: 'Số tiền',
+            align: 'right',
+            render: (_, w) => (
+              <>
+                <div>
+                  <MoneyText value={w.charge.amount} />
+                </div>
+                {w.paidAmount > 0 && w.paidAmount < w.charge.amount && (
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    đã thu <MoneyText value={w.paidAmount} />
+                  </Typography.Text>
+                )}
+              </>
+            ),
+          },
           {
             title: 'Kết quả',
             render: (_, w) => {
@@ -118,6 +162,6 @@ export function CompanyHouseholdsPage() {
         collectors={collectors.data ?? []}
         defaultCollectorId={editing ? collectorOfArea.get(editing.charge.areaId)?.id : undefined}
       />
-    </>
+    </Card>
   );
 }

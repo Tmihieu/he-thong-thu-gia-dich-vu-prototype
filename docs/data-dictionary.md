@@ -1016,7 +1016,7 @@ Timeline lưu nối tiếp, không ghi đè. Không có `updated_at`, `updated_b
 | `RS_USERS.lastLogin`                               | → `User.last_login_at`                                                                                                                                        |
 | `RS_USERS.status` Hoạt động / Đã khóa              | → `User.status`                                                                                                                                               |
 | `RS_USERS.status` Bắt buộc 2FA                     | bỏ — 2FA ngoài phạm vi 4 tuần                                                                                                                                 |
-| `RS_ROLES` (name, scope, functions, perms) | bỏ — vai trò cố định bằng enum `Role` (4 vai trò nội bộ; người dân dùng `CitizenAccount`, G8), quyền cài trong code backend; màn vai trò (nếu có) chỉ hiển thị tĩnh. Vai trò Kế toán và Lãnh đạo bỏ theo intent 23/09 |
+| `RS_ROLES` (name, scope, functions, perms) | bỏ — vai trò cố định bằng enum `Role` (4 vai trò nội bộ; người dân dùng `CitizenAccount`, G8), quyền cài trong code backend; màn vai trò (nếu có) chỉ hiển thị tĩnh. Vai trò Kế toán bỏ theo intent 23/09; **Lãnh đạo thêm lại 29/09/2026** (`Role.LEADER`, SPEC §9.10) |
 | `RS_DISTRICTS.code`, `name`, `note`                | → `District.code`, `name`, `note`                                                                                                                             |
 | `RS_DISTRICTS.groups`, `subjects`                  | bỏ — dẫn xuất, đếm `Area` và `ServiceSubject`                                                                                                                 |
 | `RS_BACKUPS`                                       | bỏ — sao lưu là việc vận hành CSDL, không phải dữ liệu nghiệp vụ                                                                                              |
@@ -1374,3 +1374,31 @@ Prototype có hai dạng: web `KN-2609-nnn` (YYMM) và app `PA-0926-nnn` (MMYY).
 - Nhận file qua kênh xã chỉ định; không lưu vào repo, không gửi qua dịch vụ công cộng; không dùng làm seed.
 - Khi triển khai thật, import qua công cụ riêng (ngoài phạm vi 4 tuần), không qua migration.
 
+
+
+## Bổ sung 29/09/2026 — Vai trò Lãnh đạo và đề nghị về tiền (SPEC §9.10, todo T54–T59)
+
+**Enum `Role`:** thêm `LEADER` Lãnh đạo (chỉ đọc nghiệp vụ + duyệt đề nghị; không khóa kỳ, không cấu hình / phân quyền).
+
+**Entity `ApprovalRequest` (Đề nghị)** — mức: Demo · nguồn: Xã tạo, Lãnh đạo duyệt
+
+| Trường | Tên kỹ thuật | Kiểu | Bắt buộc | Ghi chú |
+|---|---|---|---|---|
+| Mã đề nghị | `code` | `varchar(20)` | Có | `DN-MMYY-nnn`, duy nhất |
+| Loại | `type` | enum `ApprovalType` | Có | `EXEMPTION` Miễn giảm · `REFUND` Hoàn · `WRITE_OFF` Xóa nợ |
+| Hợp đồng | `contract_id` | FK | Khi miễn giảm | Miễn 100% theo hợp đồng |
+| Khoản thu | `charge_id` | FK | Khi hoàn / xóa nợ | Xóa nợ: khoản Chưa thu, chưa có thanh toán · Hoàn: khoản đã có thanh toán |
+| Số tiền | `amount` | `bigint` | Khi hoàn | 0 < số tiền ≤ đã thu − đã hoàn |
+| Lý do | `reason` | `varchar(1000)` | Có | |
+| Số văn bản | `decision_no` | `varchar(50)` | Không | |
+| Trạng thái | `status` | enum `ApprovalStatus` | Có | `PENDING` Chờ duyệt · `APPROVED` Đã duyệt · `REJECTED` Từ chối |
+| Người / lúc đề nghị | `requested_by`, `requested_at` | FK, `timestamptz` | Có | |
+| Người / lúc duyệt | `decided_by`, `decided_at` | FK, `timestamptz` | Khi đã quyết | Chỉ `LEADER` |
+| Ý kiến lãnh đạo | `decision_note` | `varchar(1000)` | Khi từ chối | |
+| Kỳ ghi nhận | `effective_period_id` | FK | Khi duyệt | Kỳ đang mở lúc duyệt (khoản thuộc kỳ đã khóa vẫn ghi vào kỳ đang mở) |
+
+**Enum `ChargeStatus`:** thêm `WRITTEN_OFF` Đã xóa nợ (T57). Bảng `charges` thêm `written_off_period_id` (kỳ ghi nhận xóa nợ: kỳ của khoản nếu chưa khóa, ngược lại kỳ đang thu lúc duyệt); `amount` chỉ đổi khi lãnh đạo từ chối miễn giảm (tính lại đơn giá × số tháng).
+
+**Hoàn tiền (T58):** một dòng `payments` với `method = REFUND`, `amount` **âm**, không có người đi thu; cột mới `ledger_period_id` = kỳ ghi nhận trong sổ công ty–kỳ (null với thanh toán thường = kỳ của khoản). Enum `PaymentMethod` thêm `REFUND` Hoàn tiền.
+
+**Sổ công ty–kỳ (`LedgerRowDto`):** thêm `adjustment` (Điều chỉnh kỳ trước: khoản kỳ đã khóa được xóa nợ, ghi ở kỳ này) và `refunded` (đã hoàn, ghi ở kỳ này). Còn phải nộp = phải thu − điều chỉnh − đã nộp; đã thu = Σ thanh toán (trừ hoàn) theo kỳ ghi nhận. O8, O9, O10 chốt 29/09/2026 (SPEC §11).

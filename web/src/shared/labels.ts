@@ -70,12 +70,14 @@ export const CHARGE_STATUS_LABELS: Record<ChargeStatus, string> = {
   UNPAID: 'Chưa thu',
   PAID: 'Đã thu',
   EXEMPT: 'Miễn giảm',
+  WRITTEN_OFF: 'Đã xóa nợ',
 };
 
 export const CHARGE_STATUS_COLORS: Record<ChargeStatus, string> = {
   UNPAID: 'orange',
   PAID: 'green',
   EXEMPT: 'purple',
+  WRITTEN_OFF: 'default',
 };
 
 export const CHARGE_SCOPE_LABELS: Record<ChargeScope, string> = {
@@ -124,6 +126,7 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   CASH: 'Tiền mặt',
   TRANSFER: 'Chuyển khoản',
   APP_SIMULATED: 'App người dân (mô phỏng)',
+  REFUND: 'Hoàn tiền',
 };
 
 /** Loại sai sót phiếu thu công ty báo (R28). */

@@ -128,7 +128,7 @@ public class BulkyWasteService {
     /** Công ty thấy yêu cầu của mình; cán bộ xã và quản trị thấy tất cả. */
     @Transactional(readOnly = true)
     public List<BulkyWasteRequest> listForCompany(CurrentUser actor, BulkyStatus status) {
-        actor.requireRole(Role.COMPANY_MANAGER, Role.COMMUNE_OFFICER, Role.ADMIN);
+        actor.requireRole(Role.COMPANY_MANAGER, Role.COMMUNE_OFFICER, Role.ADMIN, Role.LEADER);
         return requests.search(actor.role() == Role.COMPANY_MANAGER ? actor.companyId() : null, status);
     }
 
@@ -172,7 +172,7 @@ public class BulkyWasteService {
      */
     @Transactional(readOnly = true)
     public StoredPhoto photoForCompany(Long id, String name, CurrentUser actor) throws IOException {
-        actor.requireRole(Role.COMPANY_MANAGER, Role.COMMUNE_OFFICER, Role.ADMIN);
+        actor.requireRole(Role.COMPANY_MANAGER, Role.COMMUNE_OFFICER, Role.ADMIN, Role.LEADER);
         BulkyWasteRequest request = requests.findById(id)
                 .filter(r -> actor.role() != Role.COMPANY_MANAGER || r.getCompany().getId().equals(actor.companyId()))
                 .orElseThrow(BulkyWasteService::notFound);

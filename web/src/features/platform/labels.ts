@@ -26,6 +26,9 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   RESOLVE_RECEIPT_ISSUE: 'Xử lý sai sót phiếu thu',
   CREATE_PAYMENT_REMINDER: 'Gửi nhắc nộp',
   REPORT_SUBJECT: 'Báo sai thông tin hộ',
+  CREATE_APPROVAL: 'Lập đề nghị miễn giảm / hoàn / xóa nợ',
+  APPROVE_APPROVAL: 'Duyệt đề nghị',
+  REJECT_APPROVAL: 'Từ chối đề nghị',
   CREATE_BULKY: 'Người dân đăng ký rác cồng kềnh',
   CITIZEN_CANCEL_BULKY: 'Người dân hủy yêu cầu rác cồng kềnh',
   QUOTE_BULKY_FEE: 'Báo phí rác cồng kềnh',
@@ -47,6 +50,7 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   CashHandover: 'Bàn giao tiền mặt',
   CompanyReceipt: 'Phiếu thu xã lập cho công ty',
   ReceiptIssue: 'Báo sai sót phiếu thu',
+  ApprovalRequest: 'Đề nghị miễn giảm / hoàn / xóa nợ',
   PaymentReminder: 'Nhắc nộp',
   BulkyWasteRequest: 'Đăng ký thu gom rác cồng kềnh',
 };

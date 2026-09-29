@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -47,6 +48,7 @@ public class SubjectService {
     private final AreaRepository areas;
     private final AreaAssignmentService assignments;
     private final AuditService audit;
+    private final ApplicationEventPublisher events;
 
     public record SubjectCommand(SubjectType type, String name, String houseNo, String street, Long areaId, String phone,
             Integer memberCount, String representativeName, String taxCode, String note) {
@@ -56,7 +58,7 @@ public class SubjectService {
             String exemptReason, String exemptDecisionNo, String note) {
     }
 
-    public record SubjectFilter(Long districtId, Long areaId, SubjectStatus status, String q) {
+    public record SubjectFilter(Long districtId, Long areaId, SubjectStatus status, SubjectType subjectType, String q) {
     }
 
     public ServiceSubject create(SubjectCommand cmd, ContractCommand contract, CurrentUser actor) {
@@ -133,10 +135,14 @@ public class SubjectService {
         requireNoOverlap(contract.getSubject().getId(), cmd.validFrom(), cmd.validTo(), contract.getId());
         requireGroupFits(contract.getSubject(), cmd);
         Map<String, Object> before = snapshot(contract);
+        boolean wasExempt = contract.isExempt();
         contract.change(cmd.tariffGroup(), cmd.validFrom(), cmd.validTo(), cmd.exempt(), cmd.exemptReason(),
                 cmd.exemptDecisionNo());
         contract.setNote(cmd.note());
         audit.record(actor, "UPDATE_CONTRACT", CONTRACT, contract.getContractNo(), before, snapshot(contract));
+        if (!wasExempt && contract.isExempt()) {
+            publishExempted(contract, actor);
+        }
         return contract;
     }
 
@@ -160,7 +166,7 @@ public class SubjectService {
             return Page.empty(page);
         }
         String q = f.q() == null || f.q().isBlank() ? "" : "%" + f.q().trim().toLowerCase(Locale.ROOT) + "%";
-        return subjects.search(f.districtId(), f.areaId(), f.status(), scoped, scoped ? areaIds : List.of(-1L), q, page);
+        return subjects.search(f.districtId(), f.areaId(), f.status(), f.subjectType(), scoped, scoped ? areaIds : List.of(-1L), q, page);
     }
 
     @Transactional(readOnly = true)
@@ -192,7 +198,15 @@ public class SubjectService {
         contract.setNote(cmd.note());
         ServiceContract saved = contracts.save(contract);
         audit.record(actor, "CREATE_CONTRACT", CONTRACT, saved.getContractNo(), null, snapshot(saved));
+        if (saved.isExempt()) {
+            publishExempted(saved, actor);
+        }
         return saved;
+    }
+
+    private void publishExempted(ServiceContract contract, CurrentUser actor) {
+        events.publishEvent(new ContractExemptedEvent(contract.getId(), contract.getExemptReason(),
+                contract.getExemptDecisionNo(), actor));
     }
 
     private void requireNoOverlap(Long subjectId, LocalDate from, LocalDate to, Long exceptContractId) {

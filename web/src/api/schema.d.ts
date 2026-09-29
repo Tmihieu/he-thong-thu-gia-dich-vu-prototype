@@ -1508,7 +1508,7 @@ export interface components {
         UpdateUserRequest: {
             fullName: string;
             /** @enum {string} */
-            role: "COMMUNE_OFFICER" | "COMPANY_MANAGER" | "COLLECTOR" | "ADMIN";
+            role: "COMMUNE_OFFICER" | "COMPANY_MANAGER" | "COLLECTOR" | "ADMIN" | "LEADER";
             /** Format: int64 */
             companyId?: number;
             phone?: string;
@@ -1522,7 +1522,7 @@ export interface components {
             username: string;
             fullName: string;
             /** @enum {string} */
-            role: "COMMUNE_OFFICER" | "COMPANY_MANAGER" | "COLLECTOR" | "ADMIN";
+            role: "COMMUNE_OFFICER" | "COMPANY_MANAGER" | "COLLECTOR" | "ADMIN" | "LEADER";
             /** Format: int64 */
             companyId: number | null;
             phone: string | null;
@@ -1821,7 +1821,7 @@ export interface components {
             username: string;
             fullName: string;
             /** @enum {string} */
-            role: "COMMUNE_OFFICER" | "COMPANY_MANAGER" | "COLLECTOR" | "ADMIN";
+            role: "COMMUNE_OFFICER" | "COMPANY_MANAGER" | "COLLECTOR" | "ADMIN" | "LEADER";
             /** Format: int64 */
             companyId?: number;
             phone?: string;
@@ -1851,7 +1851,7 @@ export interface components {
             username: string;
             fullName: string;
             /** @enum {string} */
-            role: "COMMUNE_OFFICER" | "COMPANY_MANAGER" | "COLLECTOR" | "ADMIN";
+            role: "COMMUNE_OFFICER" | "COMPANY_MANAGER" | "COLLECTOR" | "ADMIN" | "LEADER";
             /**
              * Format: int64
              * @description Chỉ có với COMPANY_MANAGER, COLLECTOR
@@ -2066,7 +2066,7 @@ export interface components {
             /** Format: int64 */
             chargeId: number;
             /** @enum {string} */
-            reportType: "MOVED_AWAY" | "WRONG_INFO";
+            reportType: "MOVED_AWAY" | "VACANT" | "WRONG_INFO" | "WRONG_MEMBERS" | "WRONG_AMOUNT" | "DUPLICATE";
             description: string;
         };
         PaymentRequest: {
@@ -2075,7 +2075,7 @@ export interface components {
             /** Format: int64 */
             amount: number;
             /** @enum {string} */
-            method: "CASH" | "TRANSFER" | "APP_SIMULATED";
+            method: "CASH" | "TRANSFER" | "APP_SIMULATED" | "REFUND";
             /** @description UUID do client sinh, chống gửi trùng */
             clientRequestId: string;
             bankRef?: string;
@@ -2094,7 +2094,7 @@ export interface components {
             /** Format: int64 */
             amount: number;
             /** @enum {string} */
-            method: "CASH" | "TRANSFER" | "APP_SIMULATED";
+            method: "CASH" | "TRANSFER" | "APP_SIMULATED" | "REFUND";
             /** Format: date-time */
             paidAt: string;
             /** Format: int64 */
@@ -2105,7 +2105,7 @@ export interface components {
             payment: components["schemas"]["PaymentDto"];
             chargeCode: string;
             /** @enum {string} */
-            chargeStatus: "UNPAID" | "PAID" | "EXEMPT";
+            chargeStatus: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
             /** Format: int64 */
             paidAmount: number;
             /** Format: int64 */
@@ -2202,12 +2202,12 @@ export interface components {
             /** Format: int64 */
             amount: number;
             /** @enum {string} */
-            method: "CASH" | "TRANSFER" | "APP_SIMULATED";
+            method: "CASH" | "TRANSFER" | "APP_SIMULATED" | "REFUND";
             /** Format: int64 */
             chargeId: number;
             chargeCode: string;
             /** @enum {string} */
-            chargeStatus: "UNPAID" | "PAID" | "EXEMPT";
+            chargeStatus: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
             /** Format: int64 */
             chargeAmount: number;
             periodCode: string;
@@ -2521,6 +2521,60 @@ export interface components {
             dueDate: string;
             content: string;
         };
+        ApprovalDto: {
+            /** Format: int64 */
+            id: number;
+            code: string;
+            /** @enum {string} */
+            type: "EXEMPTION" | "REFUND" | "WRITE_OFF";
+            /** @enum {string} */
+            status: "PENDING" | "APPROVED" | "REJECTED";
+            subjectCode: string;
+            subjectName: string;
+            contractNo: string | null;
+            /** Format: int64 */
+            chargeId: number | null;
+            chargeCode: string | null;
+            periodCode: string | null;
+            companyCode: string | null;
+            /**
+             * Format: int64
+             * @description Số tiền khoản
+             */
+            chargeAmount: number | null;
+            /**
+             * Format: int64
+             * @description Số tiền hoàn
+             */
+            amount: number | null;
+            reason: string;
+            decisionNo: string | null;
+            requestedByName: string;
+            /** Format: date-time */
+            requestedAt: string;
+            decidedByName: string | null;
+            /** Format: date-time */
+            decidedAt: string | null;
+            decisionNote: string | null;
+            /** @description Kỳ ghi nhận hoàn / xóa nợ */
+            effectivePeriodCode: string | null;
+        };
+        CreateApprovalRequest: {
+            /** @enum {string} */
+            type: "EXEMPTION" | "REFUND" | "WRITE_OFF";
+            /** Format: int64 */
+            chargeId: number;
+            /**
+             * Format: int64
+             * @description Bắt buộc khi hoàn
+             */
+            amount?: number;
+            reason: string;
+            decisionNo?: string;
+        };
+        DecisionRequest: {
+            note?: string;
+        };
         LedgerRowDto: {
             /** Format: int64 */
             companyId: number;
@@ -2535,6 +2589,16 @@ export interface components {
             due: number;
             /** Format: int64 */
             chargeCount: number;
+            /**
+             * Format: int64
+             * @description Điều chỉnh kỳ trước: khoản kỳ đã khóa được xóa nợ, ghi nhận ở kỳ này
+             */
+            adjustment: number;
+            /**
+             * Format: int64
+             * @description Đã hoàn cho hộ, ghi nhận ở kỳ này
+             */
+            refunded: number;
             /**
              * Format: int64
              * @description Công ty đã thu của hộ
@@ -2778,7 +2842,7 @@ export interface components {
             /** Format: date */
             dueDate: string;
             /** @enum {string} */
-            status: "UNPAID" | "PAID" | "EXEMPT";
+            status: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
             /** @description Chưa thu và đã qua hạn đóng */
             overdue: boolean;
         };
@@ -2964,7 +3028,7 @@ export interface components {
             /** Format: date */
             dueDate: string;
             /** @enum {string} */
-            status: "UNPAID" | "PAID" | "EXEMPT";
+            status: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
             /** @description Chưa thu và đã qua hạn đóng */
             overdue: boolean;
             /** Format: date-time */
@@ -4944,7 +5008,7 @@ export interface operations {
         parameters: {
             query?: {
                 periodId?: number;
-                status?: "UNPAID" | "PAID" | "EXEMPT";
+                status?: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
                 page?: number;
                 size?: number;
             };
@@ -4969,7 +5033,7 @@ export interface operations {
         parameters: {
             query?: {
                 periodId?: number;
-                status?: "UNPAID" | "PAID" | "EXEMPT";
+                status?: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
                 page?: number;
                 size?: number;
             };
@@ -5017,7 +5081,7 @@ export interface operations {
             query?: {
                 periodId?: number;
                 areaId?: number;
-                status?: "UNPAID" | "PAID" | "EXEMPT";
+                status?: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
                 page?: number;
                 size?: number;
             };
@@ -5411,7 +5475,7 @@ export interface operations {
             query?: {
                 periodId?: number;
                 areaId?: number;
-                status?: "UNPAID" | "PAID" | "EXEMPT";
+                status?: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
                 subjectId?: number;
                 page?: number;
                 size?: number;

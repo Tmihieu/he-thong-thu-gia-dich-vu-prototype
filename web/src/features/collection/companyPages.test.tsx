@@ -92,7 +92,6 @@ describe('Công ty: hộ được giao', () => {
   it('hiện người đi thu theo tổ, lọc theo người đi thu; ghi thay mặc định người phụ trách tổ', async () => {
     const fetchFn = api();
     renderApp('/company/assigned');
-    await userEvent.click(await screen.findByRole('tab', { name: 'Hộ được giao' }));
 
     const row = (await screen.findByText('Hộ Cường')).closest('tr')!;
     expect(within(row).getByText('Lê Văn Mẫu')).toBeInTheDocument();
@@ -106,7 +105,7 @@ describe('Công ty: hộ được giao', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Cập nhật Hộ Cường' }));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByTitle('Lê Văn Mẫu · thu09')).toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Xác nhận' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu kết quả' }));
 
     await waitFor(() =>
       expect(lastPost(fetchFn, '/api/collection/payments')).toMatchObject({ chargeId: 3, amount: 80_000, method: 'CASH',

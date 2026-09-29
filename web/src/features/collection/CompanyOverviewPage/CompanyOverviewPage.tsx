@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, Card, Col, Descriptions, Progress, Row, Space, Table, Tag, Typography } from 'antd';
-import { useState } from 'react';
+import { Alert, App, Button, Card, Col, Progress, Row, Space, Table, Tag, Typography } from 'antd';
+import { type ReactNode, useMemo, useState } from 'react';
 
 import { api, ApiError } from '../../../api/client';
 import { DateText } from '../../../shared/DateText';
@@ -8,16 +8,54 @@ import { PROGRESS_COLORS, PROGRESS_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { remittanceKeys, useCompanyLedger } from '../../remittance/api';
-import { type CashHeld, collectionKeys, type Handover, useCashHeld, useHandovers } from '../api';
+import { type CashHeld, collectionKeys, type Handover, useCashHeld, useCollectorAssignments, useCompanyWork, useHandovers } from '../api';
+import { CompanyHouseholdsPage } from '../CompanyHouseholdsPage/CompanyHouseholdsPage';
 import { CashReceiveForm, type CashReceiveRequest } from './CashReceiveForm';
+
+type CollectorRow = CashHeld & { assigned: number; assignedAmount: number; paid: number; paidAmount: number; overdue: number };
+
+const pct = (v: number | undefined) => (Math.round((v ?? 0) * 10) / 10).toLocaleString('vi-VN');
+const Sub = ({ children }: { children: ReactNode }) => (
+  <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+    {children}
+  </Typography.Text>
+);
+
+interface RingProps {
+  loading: boolean;
+  color: string;
+  percent: number;
+  hasData: boolean;
+  label: string;
+  value: ReactNode;
+  note: ReactNode;
+}
+
+/** Thẻ vòng tiến độ như prototype (rsRingCard): vòng % bên trái, nhãn / số / ghi chú bên phải. */
+function RingCard({ loading, color, percent, hasData, label, value, note }: RingProps) {
+  return (
+    <Card size="small" loading={loading} className="section-card" style={{ height: '100%' }}>
+      <Space size="middle" align="center">
+        <Progress type="circle" size={88} strokeColor={color} percent={hasData ? percent : 0} format={(p) => (hasData ? `${pct(p)}%` : '—')} />
+        <div>
+          <Typography.Text type="secondary">{label}</Typography.Text>
+          <div style={{ fontSize: 20, fontWeight: 700, lineHeight: 1.3 }}>{value}</div>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {note}
+          </Typography.Text>
+        </div>
+      </Space>
+    </Card>
+  );
+}
 
 function errorText(e: unknown) {
   return e ? (e instanceof ApiError ? e.message : 'Không thực hiện được. Vui lòng thử lại.') : null;
 }
 
 /**
- * Tổng quan của công ty: vòng tiến độ lấy nguyên dòng công ty trong sổ công ty–kỳ (T24, không tự tính lại);
- * người đi thu và tiền mặt đang giữ; nhận tiền mặt (G5); lịch sử bàn giao.
+ * Tổng quan của công ty (theo prototype rsCompanyAssigned): 3 vòng tiến độ (tiền lấy nguyên dòng sổ công ty–kỳ T24);
+ * tiến độ theo tài khoản người đi thu + nhận tiền mặt (G5); danh sách hộ được giao; lịch sử bàn giao.
  */
 export function CompanyOverviewPage() {
   const { message } = App.useApp();
@@ -36,8 +74,36 @@ export function CompanyOverviewPage() {
       setReceiving(null);
     },
   });
+  const work = useCompanyWork(periodId);
+  const assignments = useCollectorAssignments();
   const row = ledger.data?.[0];
-  const loadError = ledger.error ?? cash.error ?? handovers.error;
+
+  const items = useMemo(() => work.data ?? [], [work.data]);
+  const households = useMemo(
+    () => ({
+      total: items.length,
+      paid: items.filter((w) => w.charge.status === 'PAID').length,
+      areas: new Set(items.map((w) => w.charge.areaId)).size,
+    }),
+    [items],
+  );
+  // ponytail: hộ tính cho người đang phụ trách tổ (không theo người đã xác nhận thu); tách theo người xác nhận cần API trả collectorId của khoản.
+  const collectorRows = useMemo<CollectorRow[]>(() => {
+    const byArea = new Map((assignments.data ?? []).map((a) => [a.areaId, a.collectorId]));
+    return (cash.data ?? []).map((c) => {
+      const mine = items.filter((w) => byArea.get(w.charge.areaId) === c.collectorId);
+      const paid = mine.filter((w) => w.charge.status === 'PAID');
+      return {
+        ...c,
+        assigned: mine.length,
+        assignedAmount: mine.reduce((t, w) => t + w.charge.amount, 0),
+        paid: paid.length,
+        paidAmount: mine.reduce((t, w) => t + w.paidAmount, 0),
+        overdue: mine.filter((w) => w.charge.status === 'UNPAID' && w.charge.overdue).length,
+      };
+    });
+  }, [cash.data, assignments.data, items]);
+  const loadError = ledger.error ?? cash.error ?? handovers.error ?? assignments.error;
 
   return (
     <>
@@ -46,71 +112,147 @@ export function CompanyOverviewPage() {
       </Space>
       {loadError && <Alert type="error" showIcon message={errorText(loadError)} style={{ marginBottom: 12 }} />}
       <Row gutter={[16, 16]}>
-        <Col xs={24} md={10}>
-          <Card size="small" title="Tiến độ thu kỳ" loading={ledger.isLoading}>
-            {row ? (
-              <Space size="large" align="center" wrap>
-                <Progress
-                  type="circle"
-                  percent={row.collectionRate}
-                  status={row.lowCollectionRate ? 'exception' : 'normal'}
-                  format={(p) => `${(p ?? 0).toLocaleString('vi-VN')}%`}
-                />
-                <Descriptions size="small" column={1}>
-                  <Descriptions.Item label="Đã thu">
-                    <MoneyText value={row.collected} strong />
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Phải thu">
-                    <MoneyText value={row.due} />
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Đã nộp về xã">
-                    <MoneyText value={row.received} />
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Còn phải nộp">
-                    <MoneyText value={row.remaining} />
-                  </Descriptions.Item>
-                  {row.previousDebt > 0 && (
-                    <Descriptions.Item label="Nợ kỳ trước">
-                      <Typography.Text type="danger">
-                        <MoneyText value={row.previousDebt} />
-                      </Typography.Text>
-                    </Descriptions.Item>
-                  )}
-                </Descriptions>
-                <Tag color={PROGRESS_COLORS[row.progress]}>{PROGRESS_LABELS[row.progress]}</Tag>
-              </Space>
-            ) : (
-              <Typography.Text type="secondary">Kỳ này công ty chưa có khoản phải thu</Typography.Text>
-            )}
-          </Card>
+        <Col xs={24} md={8}>
+          <RingCard
+            loading={work.isLoading}
+            color="#175cd3"
+            percent={households.total ? (households.paid / households.total) * 100 : 0}
+            hasData={households.total > 0}
+            label="Hộ đã thu"
+            value={`${households.paid}/${households.total} hộ`}
+            note={
+              <>
+                {households.areas} tổ · phải thu <MoneyText value={row?.due ?? 0} />
+              </>
+            }
+          />
         </Col>
-        <Col xs={24} md={14}>
-          <Card size="small" title="Người đi thu · tiền mặt">
-            <Table<CashHeld>
-              size="small"
-              rowKey="collectorId"
-              loading={cash.isLoading}
-              dataSource={cash.data ?? []}
-              pagination={false}
-              locale={{ emptyText: 'Công ty chưa có người đi thu' }}
-              columns={[
-                { title: 'Người đi thu', render: (_, c) => `${c.collectorName} · ${c.collectorUsername}` },
-                { title: 'Đã thu tiền mặt', dataIndex: 'collectedCash', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-                { title: 'Đã bàn giao', dataIndex: 'handedOver', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-                { title: 'Đang giữ', dataIndex: 'held', align: 'right', render: (v: number) => <MoneyText value={v} strong /> },
-                {
-                  title: '',
-                  render: (_, c) => (
-                    <Button size="small" disabled={c.held <= 0} onClick={() => setReceiving(c)} aria-label={`Nhận tiền mặt ${c.collectorName}`}>
-                      Nhận tiền mặt
-                    </Button>
-                  ),
-                },
-              ]}
-            />
-          </Card>
+        <Col xs={24} md={8}>
+          <RingCard
+            loading={ledger.isLoading}
+            color={row?.lowCollectionRate ? '#b42318' : '#16794a'}
+            percent={row?.collectionRate ?? 0}
+            hasData={!!row}
+            label="Đã thu"
+            value={<MoneyText value={row?.collected ?? 0} />}
+            note={
+              <>
+                trên <MoneyText value={row?.due ?? 0} /> phải thu
+              </>
+            }
+          />
+        </Col>
+        <Col xs={24} md={8}>
+          <RingCard
+            loading={ledger.isLoading}
+            color="#0b3a67"
+            percent={row?.remittedRate ?? 0}
+            hasData={!!row}
+            label="Đã nộp về xã"
+            value={<MoneyText value={row?.received ?? 0} />}
+            note={
+              row ? (
+                <Space size={4} wrap>
+                  <span>{row.receiptCount} phiếu thu · còn <MoneyText value={row.remaining} /></span>
+                  <Tag color={PROGRESS_COLORS[row.progress]}>{PROGRESS_LABELS[row.progress]}</Tag>
+                  {row.previousDebt > 0 && (
+                    <Typography.Text type="danger">
+                      Nợ kỳ trước <MoneyText value={row.previousDebt} />
+                    </Typography.Text>
+                  )}
+                </Space>
+              ) : (
+                'Kỳ này công ty chưa có khoản phải thu'
+              )
+            }
+          />
         </Col>
       </Row>
+      <Card size="small" className="section-card" style={{ marginTop: 16 }} title="Theo tài khoản người đi thu">
+        <Table<CollectorRow>
+          size="small"
+          rowKey="collectorId"
+          loading={cash.isLoading}
+          dataSource={collectorRows}
+          pagination={false}
+          locale={{ emptyText: 'Công ty chưa có người đi thu' }}
+          columns={[
+            {
+              title: 'Tài khoản',
+              render: (_, c) => (
+                <>
+                  <div style={{ fontWeight: 600 }}>{c.collectorName}</div>
+                  <Sub>{c.collectorUsername}</Sub>
+                </>
+              ),
+            },
+            {
+              title: 'Hộ được giao',
+              align: 'right',
+              render: (_, c) => (
+                <>
+                  <div>{c.assigned}</div>
+                  <Sub>
+                    <MoneyText value={c.assignedAmount} />
+                  </Sub>
+                </>
+              ),
+            },
+            {
+              title: 'Tiến độ thu',
+              width: 220,
+              render: (_, c) => (
+                <>
+                  <Progress
+                    size="small"
+                    percent={c.assigned ? (c.paid / c.assigned) * 100 : 0}
+                    format={(p) => `${pct(p)}%`}
+                    style={{ marginBottom: 0 }}
+                  />
+                  <Sub>
+                    {c.paid} đã thu · {c.assigned - c.paid} chưa thu
+                    {c.overdue > 0 && <Typography.Text type="danger"> · {c.overdue} quá hạn</Typography.Text>}
+                  </Sub>
+                </>
+              ),
+            },
+            {
+              title: 'Đã thu',
+              align: 'right',
+              render: (_, c) => (
+                <>
+                  <MoneyText value={c.paidAmount} strong />
+                  <Sub>
+                    đang giữ <MoneyText value={c.held} /> tiền mặt
+                  </Sub>
+                </>
+              ),
+            },
+            {
+              title: 'Trạng thái',
+              render: (_, c) =>
+                c.held <= 0 ? (
+                  <Tag color="green">Đã nộp đủ</Tag>
+                ) : c.handedOver > 0 ? (
+                  <Tag color="gold">Còn giữ tiền mặt</Tag>
+                ) : (
+                  <Tag color="red">Chưa nộp về công ty</Tag>
+                ),
+            },
+            {
+              title: '',
+              render: (_, c) => (
+                <Button size="small" disabled={c.held <= 0} onClick={() => setReceiving(c)} aria-label={`Nhận tiền mặt ${c.collectorName}`}>
+                  Nhận tiền mặt
+                </Button>
+              ),
+            },
+          ]}
+        />
+      </Card>
+      <div style={{ marginTop: 16 }}>
+        <CompanyHouseholdsPage periodId={periodId} />
+      </div>
       <Typography.Title level={5} style={{ marginTop: 24 }}>
         Lịch sử bàn giao
       </Typography.Title>

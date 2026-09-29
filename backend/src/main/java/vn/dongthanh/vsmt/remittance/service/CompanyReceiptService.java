@@ -107,7 +107,7 @@ public class CompanyReceiptService {
     /** Phiếu thu theo kỳ/công ty; công ty chỉ thấy phiếu của mình. Kèm lũy kế (R30). */
     @Transactional(readOnly = true)
     public List<ReceiptView> list(Long periodId, Long companyId, CurrentUser actor) {
-        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER);
+        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER, Role.LEADER);
         Long scopedCompany = actor.role() == Role.COMPANY_MANAGER ? actor.companyId() : companyId;
         List<CompanyReceipt> all = receipts.search(periodId, scopedCompany);
         Map<String, Long> running = new HashMap<>();

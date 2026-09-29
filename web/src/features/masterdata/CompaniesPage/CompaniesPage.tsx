@@ -31,8 +31,11 @@ function errorMessage(err: unknown): string | null {
 const statusTag = (s: Company['status']) =>
   s === 'ACTIVE' ? <Tag color="green">Hoạt động</Tag> : <Tag>Tạm ngưng</Tag>;
 
-/** Công ty môi trường (cán bộ xã): danh sách, thêm/sửa, chi tiết có khu vực phụ trách và tiến độ nộp theo kỳ. */
-export function CompaniesPage() {
+/**
+ * Công ty môi trường. Cán bộ xã: danh sách, sửa, phân công tổ chưa có công ty, tiến độ nộp theo kỳ.
+ * Quản trị ({@code admin}): thêm/sửa công ty và xem địa bàn công ty đang phụ trách.
+ */
+export function CompaniesPage({ admin = false }: { admin?: boolean }) {
   const { message } = App.useApp();
   const today = dayjs().format('YYYY-MM-DD');
   const companies = useCompanies();
@@ -48,7 +51,7 @@ export function CompaniesPage() {
   const [editing, setEditing] = useState<Company | null | undefined>(undefined);
   const [assigning, setAssigning] = useState(false);
   const [periodId, setPeriodId] = useState<number | undefined>();
-  const ledger = useCompanyLedger(detailId === null ? undefined : periodId);
+  const ledger = useCompanyLedger(detailId === null || admin ? undefined : periodId);
 
   const areaCount = useMemo(() => {
     const m = new Map<number, number>();
@@ -62,6 +65,7 @@ export function CompaniesPage() {
       .filter((c) => !needle || normalizeText(`${c.code} ${c.name} ${c.contactName} ${c.contactPhone}`).includes(needle));
   }, [companies.data, q, status]);
 
+  const unassigned = (areas.data ?? []).filter((a) => !(active.data ?? []).some((x) => x.areaId === a.id));
   const detail = companies.data?.find((c) => c.id === detailId) ?? null;
   const detailAreas = (active.data ?? []).filter((a) => a.companyId === detailId);
   const row = ledger.data?.find((r) => r.companyId === detailId);
@@ -76,12 +80,16 @@ export function CompaniesPage() {
   return (
     <>
       <Space style={{ width: '100%', justifyContent: 'space-between' }} align="start">
-        <Typography.Title level={3} style={{ marginTop: 0 }}>
-          Công ty môi trường
-        </Typography.Title>
-        <Button type="primary" onClick={() => openForm(null)}>
-          + Thêm công ty
-        </Button>
+        {!admin && (
+          <Typography.Title level={3} style={{ marginTop: 0 }}>
+            Công ty môi trường
+          </Typography.Title>
+        )}
+        {admin && (
+          <Button type="primary" onClick={() => openForm(null)}>
+            + Thêm công ty
+          </Button>
+        )}
       </Space>
       <Space wrap style={{ marginBottom: 16 }}>
         <Input.Search allowClear placeholder="Tên, mã, đầu mối, điện thoại" style={{ width: 280 }} onChange={(e) => setQ(e.target.value)} />
@@ -141,16 +149,18 @@ export function CompaniesPage() {
           detail && (
             <Space>
               <Button onClick={() => openForm(detail)}>Sửa thông tin</Button>
-              <Button
-                type="primary"
-                disabled={detail.status !== 'ACTIVE'}
-                onClick={() => {
-                  assign.reset();
-                  setAssigning(true);
-                }}
-              >
-                + Phân công khu vực
-              </Button>
+              {!admin && (
+                <Button
+                  type="primary"
+                  disabled={detail.status !== 'ACTIVE' || unassigned.length === 0}
+                  onClick={() => {
+                    assign.reset();
+                    setAssigning(true);
+                  }}
+                >
+                  + Phân công khu vực
+                </Button>
+              )}
             </Space>
           )
         }
@@ -174,25 +184,29 @@ export function CompaniesPage() {
               </Descriptions.Item>
             </Descriptions>
 
-            <Space style={{ margin: '24px 0 12px' }}>
-              <Typography.Title level={5} style={{ margin: 0 }}>
-                Tiến độ nộp
-              </Typography.Title>
-              <PeriodSelect value={periodId} onChange={setPeriodId} />
-              {row && <Tag color={PROGRESS_COLORS[row.progress]}>{PROGRESS_LABELS[row.progress]}</Tag>}
-            </Space>
-            {row ? (
-              <Space size="large" wrap>
-                <Statistic title="Phải thu" valueRender={() => <MoneyText value={row.due} />} />
-                <Statistic title="Đã thu" valueRender={() => <MoneyText value={row.collected} />} />
-                <Statistic title="Đã nộp về xã" valueRender={() => <MoneyText value={row.received} />} />
-                <Statistic title="Còn phải nộp" valueRender={() => <MoneyText value={row.remaining} />} />
-                {row.previousDebt > 0 && (
-                  <Statistic title="Nợ kỳ trước" valueRender={() => <Typography.Text type="danger"><MoneyText value={row.previousDebt} /></Typography.Text>} />
-                )}
+            {!admin && (
+              <>
+              <Space style={{ margin: '24px 0 12px' }}>
+                <Typography.Title level={5} style={{ margin: 0 }}>
+                  Tiến độ nộp
+                </Typography.Title>
+                <PeriodSelect value={periodId} onChange={setPeriodId} />
+                {row && <Tag color={PROGRESS_COLORS[row.progress]}>{PROGRESS_LABELS[row.progress]}</Tag>}
               </Space>
-            ) : (
-              <Typography.Text type="secondary">Kỳ này công ty chưa có khoản phải thu.</Typography.Text>
+              {row ? (
+                <Space size="large" wrap>
+                  <Statistic title="Phải thu" valueRender={() => <MoneyText value={row.due} />} />
+                  <Statistic title="Đã thu" valueRender={() => <MoneyText value={row.collected} />} />
+                  <Statistic title="Đã nộp về xã" valueRender={() => <MoneyText value={row.received} />} />
+                  <Statistic title="Còn phải nộp" valueRender={() => <MoneyText value={row.remaining} />} />
+                  {row.previousDebt > 0 && (
+                    <Statistic title="Nợ kỳ trước" valueRender={() => <Typography.Text type="danger"><MoneyText value={row.previousDebt} /></Typography.Text>} />
+                  )}
+                </Space>
+              ) : (
+                <Typography.Text type="secondary">Kỳ này công ty chưa có khoản phải thu.</Typography.Text>
+              )}
+              </>
             )}
 
             <Typography.Title level={5} style={{ margin: '24px 0 12px' }}>
@@ -238,7 +252,7 @@ export function CompaniesPage() {
       {detail && (
         <AssignAreaModal
           open={assigning}
-          areas={areas.data ?? []}
+          areas={unassigned}
           companies={[detail]}
           initialAreaIds={[]}
           initialCompanyId={detail.id}

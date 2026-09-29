@@ -1,122 +1,241 @@
-import { ClockCircleOutlined, WarningOutlined } from '@ant-design/icons';
-import { Alert, Button, Card, Empty, Input, List, Segmented, Space, Spin, Statistic, Tag, Typography } from 'antd';
+import {
+  CheckCircleFilled,
+  ClockCircleOutlined,
+  DownOutlined,
+  EditOutlined,
+  ExclamationCircleFilled,
+  UpOutlined,
+  WarningOutlined,
+} from '@ant-design/icons';
+import { Alert, Button, Empty, Input, Select, Spin, Tag } from 'antd';
 import { useMemo, useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { useAuth } from '../../../app/auth/authContext';
+import { formatDate } from '../../../shared/format';
 import { MoneyText } from '../../../shared/MoneyText';
 import { normalizeText } from '../../../shared/normalizeText';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
-import { type CollectorCharge, useCashHeld, useMyWork } from '../api';
-import { WORK_FILTERS, type WorkGroup, workState } from '../workState';
+import { type CollectorCharge, useCashHeld, useMyWork, useMyWorkAllPeriods } from '../api';
+import { byChipOrder, countChips, WORK_CHIPS, type WorkChip, workChip, workState } from '../workState';
 import { HouseholdHistory } from './HouseholdHistory';
 import { ReportSubjectForm } from './ReportSubjectForm';
 import { ResultSheet } from './ResultSheet';
 
-/** Danh sách thu của người đi thu (giao diện điện thoại, §10 bước 3). */
+/** "2026-09" → "09/2026". */
+const periodLabel = (code: string) => code.split('-').reverse().join('/');
+
+/** Tên đường lấy từ địa chỉ: đoạn trước dấu phẩy đầu, bỏ số nhà. */
+// ponytail: tách bằng chuỗi địa chỉ; khi ChargeDto có trường đường riêng (hồ sơ hộ đã tách) thì dùng trường đó.
+function streetOf(address: string) {
+  return (address.split(',')[0] ?? '').replace(/^\s*\S*\d\S*\s+/, '').trim() || address;
+}
+
+const isBusiness = (w: CollectorCharge) => w.charge.tariffGroup === 'SMALL_GENERATOR' || w.charge.tariffGroup === 'BY_VOLUME';
+
+/** Danh sách thu của người đi thu (giao diện điện thoại, theo prototype collector-mobile: thẻ hợp đồng, nút lọc, bottom sheet). */
 export function CollectorListPage() {
+  const { user } = useAuth();
   const [periodId, setPeriodId] = useState<number>();
-  const [filter, setFilter] = useState<WorkGroup | 'ALL'>('ALL');
+  const [chip, setChip] = useState<WorkChip>('ALL');
+  const [street, setStreet] = useState<string>();
   const [q, setQ] = useState('');
+  const [statsOpen, setStatsOpen] = useState(true);
   const [editing, setEditing] = useState<CollectorCharge | null>(null);
   const [viewing, setViewing] = useState<CollectorCharge | null>(null);
   const [reporting, setReporting] = useState<CollectorCharge | null>(null);
   const work = useMyWork(periodId);
+  const all = useMyWorkAllPeriods();
   const cash = useCashHeld();
   const items = useMemo(() => work.data ?? [], [work.data]);
 
-  const visible = useMemo(() => {
+  const streets = useMemo(
+    () => [...new Set(items.map((w) => streetOf(w.charge.subjectAddress)))].sort((a, b) => a.localeCompare(b, 'vi')),
+    [items],
+  );
+
+  // Khoản các kỳ trước của cùng hộ (mới nhất trước) để đánh dấu đã nộp / còn nợ trên thẻ.
+  const previousOf = useMemo(() => {
+    const m = new Map<number, CollectorCharge[]>();
+    (all.data ?? []).forEach((w) => m.set(w.charge.subjectId, [...(m.get(w.charge.subjectId) ?? []), w]));
+    return (w: CollectorCharge) =>
+      (m.get(w.charge.subjectId) ?? [])
+        .filter((x) => x.charge.periodCode < w.charge.periodCode)
+        .sort((a, b) => b.charge.periodCode.localeCompare(a.charge.periodCode));
+  }, [all.data]);
+
+  const scoped = useMemo(() => {
     const needle = normalizeText(q.trim());
     return items.filter((w) => {
-      if (filter !== 'ALL' && workState(w).group !== filter) return false;
-      if (!needle) return true;
-      return normalizeText(`${w.charge.subjectName} ${w.charge.subjectCode} ${w.charge.subjectAddress}`).includes(needle);
+      if (street && streetOf(w.charge.subjectAddress) !== street) return false;
+      return (
+        !needle ||
+        normalizeText(`${w.charge.subjectName} ${w.charge.subjectCode} ${w.charge.subjectAddress} ${w.charge.code} ${w.charge.requestCode}`).includes(needle)
+      );
     });
-  }, [items, filter, q]);
+  }, [items, street, q]);
+  const counts = useMemo(() => countChips(items), [items]);
+  const visible = useMemo(() => scoped.filter((w) => chip === 'ALL' || workChip(w) === chip).sort(byChipOrder), [scoped, chip]);
 
-  const paid = items.filter((w) => w.charge.status === 'PAID').length;
+  const paid = counts.PAID ?? 0;
   const held = cash.data?.[0]?.held ?? 0;
+  const period = items[0] ? periodLabel(items[0].charge.periodCode) : '';
 
   return (
-    <Space direction="vertical" size={12} style={{ width: '100%' }}>
-      <PeriodSelect value={periodId} onChange={setPeriodId} />
-      <Space size={12} style={{ width: '100%' }} styles={{ item: { flex: 1 } }}>
-        <Card size="small">
-          <Statistic title="Đã thu" value={`${paid}/${items.length} hộ`} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Tiền mặt đang giữ" value={held} formatter={(v) => <MoneyText value={Number(v)} strong />} />
-        </Card>
-      </Space>
-      <Input.Search allowClear placeholder="Tìm tên hộ, mã hộ, địa chỉ" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Tìm hộ" />
-      <Segmented<WorkGroup | 'ALL'> block options={WORK_FILTERS} value={filter} onChange={setFilter} />
-      {work.error && (
-        <Alert type="error" showIcon message={work.error instanceof ApiError ? work.error.message : 'Không tải được danh sách thu'} />
-      )}
+    <div className="clm-page">
+      <section className="clm-filters">
+        <Input.Search
+          allowClear
+          size="large"
+          placeholder="Tìm hộ, mã KH, địa chỉ, mã khoản..."
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          aria-label="Tìm hộ"
+        />
+        <button type="button" className="clm-stats-toggle" aria-expanded={statsOpen} onClick={() => setStatsOpen((o) => !o)}>
+          Thống kê kỳ {period} {statsOpen ? <UpOutlined /> : <DownOutlined />}
+        </button>
+        {statsOpen && (
+          <div className="clm-stats">
+            <div>
+              <small>Đã thu</small>
+              <strong>{`${paid}/${items.length} hộ`}</strong>
+            </div>
+            <div>
+              <small>Chưa thu</small>
+              <strong>{items.length - paid}</strong>
+              {(counts.OVERDUE ?? 0) > 0 && <em>{counts.OVERDUE} quá hạn</em>}
+            </div>
+            <div>
+              <small>Tiền mặt đang giữ</small>
+              <strong>
+                <MoneyText value={held} />
+              </strong>
+            </div>
+          </div>
+        )}
+        <div className="clm-filter-row">
+          <label>
+            <span>Kỳ thanh toán</span>
+            <PeriodSelect value={periodId} onChange={setPeriodId} />
+          </label>
+          <label>
+            <span>Đường</span>
+            <Select
+              allowClear
+              aria-label="Đường"
+              placeholder="Tất cả"
+              value={street}
+              onChange={setStreet}
+              options={streets.map((s) => ({ value: s, label: s }))}
+            />
+          </label>
+        </div>
+      </section>
+
+      <div className="clm-chips" role="group" aria-label="Lọc theo kết quả">
+        {WORK_CHIPS.map((c) => (
+          <button key={c.value} type="button" className={`clm-chip${chip === c.value ? ' active' : ''}`} aria-pressed={chip === c.value} onClick={() => setChip(c.value)}>
+            {c.label} <b>{counts[c.value] ?? 0}</b>
+          </button>
+        ))}
+      </div>
+
+      {work.error && <Alert type="error" showIcon message={work.error instanceof ApiError ? work.error.message : 'Không tải được danh sách thu'} />}
       {work.isLoading ? (
         <Spin />
       ) : visible.length === 0 ? (
         <Empty description={items.length === 0 ? 'Chưa có hộ nào trong tổ được giao' : 'Không có hộ phù hợp'} />
       ) : (
-        <List<CollectorCharge>
-          dataSource={visible}
-          rowKey={(w) => w.charge.id}
-          renderItem={(w) => {
+        <ul className="clm-cards">
+          {visible.map((w) => {
             const s = workState(w);
+            const unpaid = w.charge.status === 'UNPAID';
+            const previous = previousOf(w);
             return (
-              <List.Item
-                aria-label={w.charge.subjectName}
-                actions={[
-                  ...(w.charge.status === 'UNPAID'
-                    ? [
-                        <Button key="update" type="primary" size="small" onClick={() => setEditing(w)}>
-                          Cập nhật
-                        </Button>,
-                      ]
-                    : []),
-                  <Button
-                    key="history"
-                    size="small"
-                    icon={<ClockCircleOutlined />}
-                    aria-label="Lịch sử"
-                    title="Lịch sử"
-                    onClick={() => setViewing(w)}
-                  />,
-                  <Button
-                    key="report"
-                    size="small"
-                    icon={<WarningOutlined />}
-                    aria-label="Báo sai thông tin"
-                    title="Báo sai thông tin / chuyển đi"
-                    onClick={() => setReporting(w)}
-                  />,
-                ]}
-              >
-                <List.Item.Meta
-                  title={
-                    <Space size={6} wrap>
-                      <span>{w.charge.subjectName}</span>
-                      <Tag color={s.color}>{s.label}</Tag>
-                    </Space>
-                  }
-                  description={
-                    <>
-                      <div>{w.charge.subjectAddress}</div>
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                        {w.charge.subjectCode} · {w.charge.areaCode} ·{' '}
-                        {w.charge.status === 'UNPAID' ? 'còn thiếu ' : 'phải thu '}
-                        <MoneyText value={w.charge.status === 'UNPAID' ? w.remainingAmount : w.charge.amount} />
-                      </Typography.Text>
-                    </>
-                  }
-                />
-              </List.Item>
+              <li key={w.charge.id} className="clm-card" aria-label={w.charge.subjectName}>
+                <header className="clm-card-head">
+                  <strong>Khoản thu · {w.charge.code}</strong>
+                  <Tag color={s.color}>{s.label}</Tag>
+                </header>
+                <div className="clm-card-body">
+                  <small className="clm-label">Thông tin khách hàng</small>
+                  <h3 className="clm-name">{w.charge.subjectName}</h3>
+                  <p>
+                    <b>Mã KH:</b> {w.charge.subjectCode} · {isBusiness(w) ? 'Hộ kinh doanh' : 'Hộ gia đình'}
+                  </p>
+                  <p>
+                    <b>Địa chỉ:</b> {w.charge.subjectAddress} ({w.charge.areaCode})
+                  </p>
+                  <div className="clm-kv">
+                    <small>Phiếu yêu cầu thu</small>
+                    <span>
+                      {w.charge.requestCode} · hạn {formatDate(w.charge.dueDate)}
+                    </span>
+                  </div>
+                  <div className="clm-kv">
+                    <small>Nhân viên thu gom</small>
+                    <span>{user?.fullName}</span>
+                  </div>
+                  <div className="clm-amount">
+                    <small>Số tiền phải thu · kỳ {periodLabel(w.charge.periodCode)}</small>
+                    <strong>
+                      <MoneyText value={w.charge.amount} />
+                    </strong>
+                  </div>
+                  {unpaid && w.paidAmount > 0 && (
+                    <p className="clm-partial">
+                      Đã thu <MoneyText value={w.paidAmount} /> · còn thiếu <MoneyText value={w.remainingAmount} />
+                    </p>
+                  )}
+                  {previous.length > 0 && (
+                    <div className="clm-previous">
+                      <small>Các kỳ trước</small>
+                      <div>
+                        {previous.map((x) =>
+                          x.charge.status === 'UNPAID' ? (
+                            <span key={x.charge.id} className="clm-prev debt">
+                              <ExclamationCircleFilled /> {periodLabel(x.charge.periodCode)} · còn <MoneyText value={x.remainingAmount} />
+                            </span>
+                          ) : (
+                            <span key={x.charge.id} className="clm-prev ok">
+                              <CheckCircleFilled /> {periodLabel(x.charge.periodCode)}
+                              {x.charge.status === 'EXEMPT' ? ' · miễn giảm' : x.charge.status === 'WRITTEN_OFF' ? ' · đã xóa nợ' : ''}
+                            </span>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <div className="clm-actions">
+                    {unpaid ? (
+                      <Button type="primary" size="large" icon={<EditOutlined />} aria-label="Cập nhật kết quả" onClick={() => setEditing(w)}>
+                        Cập nhật kết quả
+                      </Button>
+                    ) : (
+                      <span className="clm-done">
+                        <CheckCircleFilled /> {s.label}
+                      </span>
+                    )}
+                    <Button size="large" icon={<ClockCircleOutlined />} aria-label="Lịch sử" title="Lịch sử nộp các kỳ" onClick={() => setViewing(w)} />
+                    <Button
+                      size="large"
+                      className="clm-warn"
+                      icon={<WarningOutlined />}
+                      aria-label="Báo sai thông tin"
+                      title="Báo sai thông tin về xã"
+                      onClick={() => setReporting(w)}
+                    />
+                  </div>
+                </div>
+              </li>
             );
-          }}
-        />
+          })}
+        </ul>
       )}
       <ResultSheet item={editing} onClose={() => setEditing(null)} />
       <HouseholdHistory item={viewing} onClose={() => setViewing(null)} />
       <ReportSubjectForm item={reporting} onClose={() => setReporting(null)} />
-    </Space>
+    </div>
   );
 }

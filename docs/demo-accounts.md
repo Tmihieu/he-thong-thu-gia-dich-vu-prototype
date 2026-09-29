@@ -9,6 +9,7 @@ Mật khẩu chung của mọi tài khoản demo: **`Demo@2026`**
 |---|---|---|---|---|
 | `admin` | Quản trị (`ADMIN`) | Quản trị hệ thống | — | T05 · `V1_1__seed_users.sql` |
 | `canbo_xa` | Cán bộ xã (`COMMUNE_OFFICER`) | Nguyễn Thị Mẫu | — | T05 · `V1_1__seed_users.sql` |
+| `lanhdao` | Lãnh đạo (`LEADER`) | Trần Văn Mẫu (lãnh đạo) | — | T54 · `V24_1__seed_leader.sql` |
 | `dv01` … `dv11` | Công ty môi trường (`COMPANY_MANAGER`) | Người đầu mối của công ty (giả) | DV01 … DV11 | T09 · `V3_2__seed_company_users.sql` |
 | `thu01` … `thu23` | Người đi thu (`COLLECTOR`) | Tên giả kèm "(người thu KVxx)" | Công ty đang phụ trách tổ | T20 · `V9_1__seed_collectors.sql` — mỗi tổ đã có công ty một người, số theo tổ (vd. `thu07` ở KV07 của DV01); KV24 chưa có |
 

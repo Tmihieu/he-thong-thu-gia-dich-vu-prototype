@@ -1,5 +1,7 @@
+import { BankOutlined, CalendarOutlined, HomeOutlined, StopOutlined, WalletOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, DatePicker, Drawer, Form, Input, InputNumber, Radio, Select, Space, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Drawer, Form, Input, InputNumber, Radio, Select, Typography } from 'antd';
+import type { ReactNode } from 'react';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useEffect } from 'react';
 
@@ -8,6 +10,35 @@ import { formatMoney } from '../../../shared/format';
 import { MoneyText } from '../../../shared/MoneyText';
 import { type Collector, type CollectorCharge, collectionKeys, type PaymentResult, type Visit } from '../api';
 import { RESULT_LABELS, type ResultKind } from '../workState';
+
+/** Ô chọn kết quả như prototype (clm-result-grid). */
+const TILES: { value: ResultKind; label: string; icon: ReactNode }[] = [
+  { value: 'CASH', label: 'Đã thu tiền mặt', icon: <WalletOutlined /> },
+  { value: 'TRANSFER', label: 'Đã thu chuyển khoản', icon: <BankOutlined /> },
+  { value: 'ABSENT', label: 'Vắng nhà', icon: <HomeOutlined /> },
+  { value: 'APPOINTMENT', label: 'Đã hẹn', icon: <CalendarOutlined /> },
+  { value: 'REFUSED', label: 'Từ chối nộp', icon: <StopOutlined /> },
+];
+
+function tip(result: ResultKind | undefined) {
+  if (result === 'CASH' || result === 'TRANSFER')
+    return (
+      <>
+        <strong>Đã thu:</strong> hệ thống xuất biên lai điện tử và gửi cho hộ ngay, không nhập số biên lai.
+      </>
+    );
+  if (result === 'REFUSED')
+    return (
+      <>
+        <strong>Từ chối nộp:</strong> ghi rõ lý do; công ty và xã sẽ thấy để xử lý.
+      </>
+    );
+  return (
+    <>
+      <strong>Chưa thu:</strong> hộ giữ trạng thái chưa thu, ghi ngày quay lại để nhắc lịch.
+    </>
+  );
+}
 
 interface Values {
   result: ResultKind;
@@ -96,13 +127,14 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId }: P
       height="auto"
       open={item !== null}
       onClose={onClose}
-      title={item ? `${item.charge.subjectName} · ${item.charge.subjectCode}` : 'Cập nhật kết quả'}
+      title="Cập nhật kết quả"
+      className="clm-sheet"
       destroyOnHidden
       styles={{ body: { paddingBottom: 24 } }}
     >
       {item && (
         <Typography.Paragraph type="secondary" style={{ marginTop: -8 }}>
-          {item.charge.subjectAddress} · còn thiếu <MoneyText value={remaining} strong />
+          {item.charge.subjectName} · {item.charge.subjectAddress} · còn thiếu <MoneyText value={remaining} strong />
         </Typography.Paragraph>
       )}
       {submit.error && (
@@ -123,10 +155,11 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId }: P
         preserve={false}
       >
         <Form.Item name="result" label="Kết quả" rules={[{ required: true, message: 'Vui lòng chọn kết quả' }]}>
-          <Radio.Group buttonStyle="solid" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {(Object.keys(RESULT_LABELS) as ResultKind[]).map((k) => (
-              <Radio.Button key={k} value={k}>
-                {RESULT_LABELS[k]}
+          <Radio.Group className="clm-tiles">
+            {TILES.map((t) => (
+              <Radio.Button key={t.value} value={t.value}>
+                {t.icon}
+                <span>{t.label}</span>
               </Radio.Button>
             ))}
           </Radio.Group>
@@ -134,7 +167,7 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId }: P
         {paying && (
           <Form.Item
             name="amount"
-            label="Số tiền thu"
+            label="Số tiền thực thu"
             rules={[
               { required: true, message: 'Vui lòng nhập số tiền' },
               { type: 'number', min: 1, message: 'Số tiền phải lớn hơn 0' },
@@ -182,14 +215,17 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId }: P
           </Form.Item>
         )}
         <Form.Item name="note" label="Ghi chú">
-          <Input.TextArea rows={2} maxLength={500} />
+          <Input.TextArea rows={2} maxLength={500} placeholder="Ví dụ: hẹn sau 18:00, để giấy báo..." />
         </Form.Item>
-        <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-          <Button onClick={onClose}>Hủy</Button>
-          <Button type="primary" htmlType="submit" loading={submit.isPending}>
-            Xác nhận
+        <p className="clm-tip">{tip(result)}</p>
+        <div className="clm-sheet-actions">
+          <Button size="large" onClick={onClose}>
+            Hủy
           </Button>
-        </Space>
+          <Button size="large" type="primary" htmlType="submit" loading={submit.isPending}>
+            Lưu kết quả
+          </Button>
+        </div>
       </Form>
     </Drawer>
   );

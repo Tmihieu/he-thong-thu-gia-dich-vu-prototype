@@ -110,7 +110,7 @@ public class CashService {
         boolean allowed = switch (actor.role()) {
             case COLLECTOR -> Objects.equals(actor.id(), collector.getId());
             case COMPANY_MANAGER -> Objects.equals(actor.companyId(), collector.getCompanyId());
-            case COMMUNE_OFFICER, ADMIN -> true;
+            case COMMUNE_OFFICER, ADMIN, LEADER -> true;
         };
         if (!allowed) {
             throw new AccessDeniedException("Người đi thu ngoài phạm vi");

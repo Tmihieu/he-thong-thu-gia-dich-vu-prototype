@@ -23,6 +23,7 @@ export type ContractRequest = components['schemas']['ContractRequest'];
 export interface SubjectQuery {
   areaId?: number;
   status?: Subject['status'];
+  subjectType?: Subject['subjectType'];
   q?: string;
   page: number;
   size: number;

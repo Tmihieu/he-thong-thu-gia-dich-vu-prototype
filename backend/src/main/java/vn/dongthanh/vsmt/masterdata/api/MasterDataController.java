@@ -67,14 +67,14 @@ public class MasterDataController {
         return CompanyDto.of(query.company(actor, id));
     }
 
-    @Operation(summary = "Thêm công ty (cán bộ xã); mã DVnn tự sinh")
+    @Operation(summary = "Thêm công ty (quản trị); mã DVnn tự sinh")
     @PostMapping("/companies")
     @ResponseStatus(HttpStatus.CREATED)
     public CompanyDto createCompany(@Valid @RequestBody CompanyRequest req, @AuthenticationPrincipal CurrentUser actor) {
         return CompanyDto.of(companies.create(req.toCommand(), actor));
     }
 
-    @Operation(summary = "Sửa thông tin công ty (cán bộ xã)")
+    @Operation(summary = "Sửa thông tin công ty (cán bộ xã, quản trị)")
     @PutMapping("/companies/{id}")
     public CompanyDto updateCompany(@PathVariable Long id, @Valid @RequestBody CompanyRequest req,
             @AuthenticationPrincipal CurrentUser actor) {

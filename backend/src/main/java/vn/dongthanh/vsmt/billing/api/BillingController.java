@@ -72,9 +72,10 @@ public class BillingController {
     @GetMapping("/charges")
     public ChargePageDto charges(@RequestParam(required = false) Long periodId,
             @RequestParam(required = false) Long areaId, @RequestParam(required = false) ChargeStatus status,
-            @RequestParam(required = false) Long subjectId, @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(required = false) Long subjectId, @RequestParam(required = false) Long companyId,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "50") @Min(1) @Max(500) int size, @AuthenticationPrincipal CurrentUser actor) {
-        Page<Charge> result = service.searchCharges(periodId, areaId, status, subjectId,
+        Page<Charge> result = service.searchCharges(periodId, areaId, status, subjectId, companyId,
                 PageRequest.of(page, size, Sort.by("code")), actor);
         LocalDate today = service.today();
         return new ChargePageDto(result.getContent().stream().map(c -> ChargeDto.of(c, today)).toList(),

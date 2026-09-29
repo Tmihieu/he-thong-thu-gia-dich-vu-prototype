@@ -31,6 +31,8 @@ import vn.dongthanh.vsmt.remittance.service.RemittedTotals.Received;
  * <ul>
  * <li>Phải thu (sửa R6): Σ khoản theo công ty chụp lúc phát hành (G3), không dùng phân công hiện tại.</li>
  * <li>Công ty đã thu (R8, G4): Σ thanh toán. Đã nộp về xã (R7): Σ phiếu thu. Còn phải nộp = phải thu − đã nộp.</li>
+ * <li>Điều chỉnh kỳ trước (O10): khoản của kỳ đã khóa được xóa nợ, ghi nhận ở kỳ này; còn phải nộp = phải thu −
+ * điều chỉnh − đã nộp. Đã thu đã trừ tiền hoàn ghi nhận ở kỳ này (T58); cột "đã hoàn" chỉ để hiển thị.</li>
  * <li>Nợ kỳ trước (R9–R11): Σ max(0, phải thu − đã nộp) các kỳ khác đã hết hạn. Quá hạn: hạn kỳ &lt; hôm nay và còn nộp.</li>
  * <li>Tiến độ (R13) và đối soát (R14, chênh lệch = đã nộp − đã thu) như prototype.</li>
  * <li>Cờ dưới 45% ở cấp công ty (màn tiến độ của xã) tính theo đã nộp về xã / phải thu như prototype; tỷ lệ đã thu
@@ -51,7 +53,7 @@ public class CompanyLedgerService {
     private final Clock clock;
 
     public record LedgerRow(Long companyId, String companyCode, String companyName, Long periodId, long due,
-            long chargeCount, long collected, long received, long receiptCount, long remaining, long gap,
+            long chargeCount, long adjustment, long refunded, long collected, long received, long receiptCount, long remaining, long gap,
             long previousDebt, boolean overdue, double collectionRate, boolean lowCollectionRate, double remittedRate,
             boolean lowRemittedRate, Progress progress, Reconciliation reconciliation) {
     }
@@ -62,12 +64,16 @@ public class CompanyLedgerService {
         LocalDate today = LocalDate.now(clock);
         Map<Long, CompanyAmount> due = byCompany(queries.dueByCompany(periodId));
         Map<Long, CompanyAmount> collected = byCompany(queries.collectedByCompany(periodId));
+        Map<Long, CompanyAmount> adjustment = byCompany(queries.writeOffAdjustmentByCompany(periodId));
+        Map<Long, CompanyAmount> refunded = byCompany(queries.refundedByCompany(periodId));
         Map<Long, Received> received = remitted.receivedByCompany(periodId);
         Map<Long, Long> previousDebt = previousDebts(periodId, today);
 
         Set<Long> ids = new TreeSet<>();
         ids.addAll(due.keySet());
         ids.addAll(collected.keySet());
+        ids.addAll(adjustment.keySet());
+        ids.addAll(refunded.keySet());
         ids.addAll(received.keySet());
         previousDebt.forEach((id, debt) -> {
             if (debt > 0) {
@@ -81,8 +87,8 @@ public class CompanyLedgerService {
                 .collect(Collectors.toMap(Company::getId, Function.identity()));
         return ids.stream()
                 .filter(companyById::containsKey)
-                .map(id -> build(companyById.get(id), period, today, due.get(id), collected.get(id), received.get(id),
-                        previousDebt.getOrDefault(id, 0L)))
+                .map(id -> build(companyById.get(id), period, today, due.get(id), adjustment.get(id), refunded.get(id),
+                        collected.get(id), received.get(id), previousDebt.getOrDefault(id, 0L)))
                 .sorted(Comparator.comparing(LedgerRow::companyCode))
                 .toList();
     }
@@ -94,7 +100,7 @@ public class CompanyLedgerService {
                     Company c = companies.findAllById(List.of(companyId)).stream()
                             .filter(x -> x.getId().equals(companyId)).findFirst()
                             .orElseThrow(() -> new NotFoundException("COMPANY_NOT_FOUND", "Không tìm thấy công ty."));
-                    return build(c, period(periodId), LocalDate.now(clock), null, null, null, 0L);
+                    return build(c, period(periodId), LocalDate.now(clock), null, null, null, null, null, 0L);
                 });
     }
 
@@ -134,14 +140,18 @@ public class CompanyLedgerService {
     }
 
     private LedgerRow build(Company company, CollectionPeriod period, LocalDate today, CompanyAmount dueRow,
-            CompanyAmount collectedRow, Received receivedRow, long previousDebt) {
+            CompanyAmount adjustmentRow, CompanyAmount refundedRow, CompanyAmount collectedRow, Received receivedRow,
+            long previousDebt) {
         long due = dueRow == null ? 0 : dueRow.amount();
+        long adjustment = adjustmentRow == null ? 0 : adjustmentRow.amount();
+        long refunded = refundedRow == null ? 0 : refundedRow.amount();
         long chargeCount = dueRow == null ? 0 : dueRow.count();
         long collected = collectedRow == null ? 0 : collectedRow.amount();
         long received = receivedRow == null ? 0 : receivedRow.amount();
         long receiptCount = receivedRow == null ? 0 : receivedRow.receiptCount();
-        long remaining = due - received;
-        long gap = received - collected;
+        long remaining = due - adjustment - received;
+        // Điều chỉnh kỳ trước là phần công ty đã nộp thừa ở kỳ khóa, tính như đã nộp để đối soát khớp được.
+        long gap = received + adjustment - collected;
         boolean pastDue = period.getDueDate().isBefore(today);
         boolean overdue = pastDue && remaining > 0;
 
@@ -168,7 +178,7 @@ public class CompanyLedgerService {
 
         // Phải thu 0 thì tỷ lệ 0% và vẫn gắn cờ, như prototype.
         return new LedgerRow(company.getId(), company.getCode(), company.getName(), period.getId(), due, chargeCount,
-                collected, received, receiptCount, remaining, gap, previousDebt, overdue, percent(collected, due),
+                adjustment, refunded, collected, received, receiptCount, remaining, gap, previousDebt, overdue, percent(collected, due),
                 due == 0 || lowRate(collected, due), percent(received, due), due == 0 || lowRate(received, due),
                 progress, reconciliation);
     }

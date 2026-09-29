@@ -35,7 +35,7 @@ public class CompanyService {
     }
 
     public Company create(CompanyCommand cmd, CurrentUser actor) {
-        actor.requireRole(Role.COMMUNE_OFFICER);
+        actor.requireRole(Role.ADMIN);
         int next = companies.maxCodeNumber() + 1;
         if (next > 99) {
             throw new BusinessRuleException("COMPANY_CODE_EXHAUSTED", "Đã dùng hết mã công ty DV01–DV99.");
@@ -49,7 +49,7 @@ public class CompanyService {
     }
 
     public Company update(Long id, CompanyCommand cmd, CurrentUser actor) {
-        actor.requireRole(Role.COMMUNE_OFFICER);
+        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN);
         Company company = companies.findById(id)
                 .orElseThrow(() -> new NotFoundException("COMPANY_NOT_FOUND", "Không tìm thấy công ty."));
         Map<String, Object> before = snapshot(company);

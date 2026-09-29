@@ -19,6 +19,8 @@ const SCREENS: Record<string, (p: Params) => string> = {
   'commune.complaints': (p) => withId('/commune/complaints', 'complaintId', p),
   'company.complaints': (p) => withId('/company/complaints', 'complaintId', p),
   'company.bulky': (p) => withId('/company/bulky', 'requestId', p),
+  'leader.approvals': () => '/leader/approvals',
+  'commune.approvals': () => '/commune/approvals',
 };
 
 /** Đường dẫn tới màn của thông báo, hoặc null nếu màn không có hoặc thuộc vai trò khác. */

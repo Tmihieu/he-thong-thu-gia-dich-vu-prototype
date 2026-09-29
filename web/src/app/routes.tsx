@@ -10,6 +10,9 @@ import { CompanyHubPage } from '../features/collection/CompanyHubPage';
 import { CommuneComplaintsPage } from '../features/complaints/CommuneComplaintsPage';
 import { CompanyComplaintsPage } from '../features/complaints/CompanyComplaintsPage';
 import { AreasPage } from '../features/masterdata/AreasPage/AreasPage';
+import { ApprovalsPage } from '../features/leadership/ApprovalsPage';
+import { LeaderDashboardPage } from '../features/leadership/LeaderDashboardPage';
+import { LeaderReportPage } from '../features/leadership/LeaderReportPage';
 import { CompaniesPage } from '../features/masterdata/CompaniesPage/CompaniesPage';
 import { ConfigPage } from '../features/masterdata/ConfigPage';
 import { SubjectsPage } from '../features/masterdata/SubjectsPage/SubjectsPage';
@@ -37,6 +40,12 @@ const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'COMMUNE_OFFICER:progress': <ProgressPage />,
   'COMMUNE_OFFICER:reconciliation': <ReconciliationPage />,
   'COMMUNE_OFFICER:complaints': <CommuneComplaintsPage />,
+  'COMMUNE_OFFICER:approvals': <ApprovalsPage />,
+  'LEADER:dashboard': <LeaderDashboardPage />,
+  'LEADER:approvals': <ApprovalsPage />,
+  'LEADER:report': <LeaderReportPage />,
+  'LEADER:progress': <ProgressPage />,
+  'LEADER:reconciliation': <ReconciliationPage />,
   'COMPANY_MANAGER:complaints': <CompanyComplaintsPage />,
   'COMPANY_MANAGER:assigned': <CompanyHubPage />,
   'COMPANY_MANAGER:bulky': <BulkyRequestsPage />,

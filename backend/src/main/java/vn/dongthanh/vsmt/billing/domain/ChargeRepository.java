@@ -10,6 +10,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import vn.dongthanh.vsmt.masterdata.domain.PeriodStatus;
+
 public interface ChargeRepository extends JpaRepository<Charge, Long> {
 
     /** Khoảng tháng đã lập khoản cùng loại phí, chồng với [from, to], cho các đối tượng (chặn trùng kỳ, R2). */
@@ -51,4 +53,10 @@ public interface ChargeRepository extends JpaRepository<Charge, Long> {
     @Query("select c from Charge c join fetch c.period p join fetch c.feeType f where c.subject.id = :subjectId"
             + " order by p.startDate desc, f.code, c.id")
     List<Charge> findBySubjectIdWithPeriod(Long subjectId);
+
+    /** Khoản của hợp đồng theo trạng thái, trong các kỳ chưa khóa (bỏ miễn giảm khi lãnh đạo từ chối, O8). */
+    @Query("select c from Charge c join fetch c.period p where c.contract.id = :contractId and c.status = :status"
+            + " and p.status <> :locked")
+    List<Charge> findByContractInUnlockedPeriods(Long contractId, ChargeStatus status,
+            PeriodStatus locked);
 }

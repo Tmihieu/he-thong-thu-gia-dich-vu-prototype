@@ -36,6 +36,15 @@ export function useMyWork(periodId: number | undefined) {
   });
 }
 
+/** Khoản mọi kỳ của người đi thu, để đánh dấu các kỳ trước trên thẻ hộ. */
+// ponytail: API giới hạn 500 khoản/lần; tổ đông nhiều kỳ thì kỳ cũ nhất bị cắt, thêm API "khoản theo hộ" nếu cần đủ.
+export function useMyWorkAllPeriods() {
+  return useQuery({
+    queryKey: [...collectionKeys.myWork, 'all'],
+    queryFn: () => api.get<CollectorCharge[]>('/api/collection/my-work'),
+  });
+}
+
 /** Tiền mặt đang giữ: người đi thu nhận dòng của mình; quản lý công ty nhận cả công ty. */
 export function useCashHeld() {
   return useQuery({

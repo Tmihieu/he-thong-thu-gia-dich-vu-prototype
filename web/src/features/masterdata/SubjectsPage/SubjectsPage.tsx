@@ -29,7 +29,7 @@ function errorMessage(err: unknown): string {
 
 type Editing = { mode: 'create' } | { mode: 'edit'; subject: Subject } | null;
 
-/** Hồ sơ hộ của cán bộ xã: lọc theo tổ/trạng thái, tìm theo mã/tên/SĐT, tạo, sửa, ngừng cung cấp dịch vụ. */
+/** Hồ sơ hộ của cán bộ xã: lọc theo tổ/loại hộ/trạng thái, tìm theo mã/tên/SĐT, tạo, sửa, ngừng cung cấp dịch vụ. */
 export function SubjectsPage() {
   const { message } = App.useApp();
   const areas = useAreas();
@@ -99,6 +99,14 @@ export function SubjectsPage() {
           options={(areas.data ?? []).map((a) => ({ value: a.id, label: `${a.code} · ${a.name}` }))}
         />
         <Select
+          aria-label="Lọc theo loại hộ"
+          allowClear
+          placeholder="Mọi loại hộ"
+          style={{ width: 180 }}
+          onChange={(subjectType?: Subject['subjectType']) => setQuery((prev) => ({ ...prev, subjectType, page: 0 }))}
+          options={Object.entries(SUBJECT_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
+        />
+        <Select
           aria-label="Lọc theo trạng thái"
           allowClear
           placeholder="Mọi trạng thái"
@@ -135,6 +143,7 @@ export function SubjectsPage() {
           },
           { title: 'Tên', dataIndex: 'name' },
           { title: 'Loại', dataIndex: 'subjectType', render: (t: Subject['subjectType']) => SUBJECT_TYPE_LABELS[t] },
+          { title: 'Địa chỉ', dataIndex: 'address' },
           { title: 'Tổ/Ấp/Thôn', dataIndex: 'areaCode' },
           { title: 'SĐT', dataIndex: 'phone', render: (p: string | null) => p ?? '—' },
           {

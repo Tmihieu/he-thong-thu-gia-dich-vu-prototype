@@ -8,7 +8,9 @@ public enum Role {
     COMMUNE_OFFICER,
     COMPANY_MANAGER,
     COLLECTOR,
-    ADMIN;
+    ADMIN,
+    /** Lãnh đạo: xem toàn hệ thống, duyệt đề nghị miễn giảm / hoàn / xóa nợ; không ghi nghiệp vụ khác (SPEC §9.10). */
+    LEADER;
 
     /** Vai trò thuộc một công ty, bắt buộc có {@code companyId}. */
     public boolean belongsToCompany() {

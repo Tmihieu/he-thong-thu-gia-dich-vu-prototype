@@ -1,12 +1,12 @@
-import { Select, Space, Table, Tag } from 'antd';
+import { Button, Segmented, Select, Space, Table, Tag } from 'antd';
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
 import { brand } from '../../../app/theme';
-import { DateText } from '../../../shared/DateText';
-import { CHARGE_STATUS_COLORS, CHARGE_STATUS_LABELS, TARIFF_GROUP_LABELS } from '../../../shared/labels';
+import { CHARGE_STATUS_COLORS, CHARGE_STATUS_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
-import { useAreas, usePeriods } from '../../masterdata/api';
+import { CreateApprovalModal } from '../../leadership/CreateApprovalModal';
+import { useAreas, useCompanies, usePeriods } from '../../masterdata/api';
 import { type Charge, type ChargeQuery, useCharges } from '../api';
 
 /** Nhãn trạng thái hiển thị: "Quá hạn" tính từ hạn đóng, không lưu. */
@@ -15,12 +15,14 @@ export function ChargeStatusTag({ charge }: { charge: Pick<Charge, 'status' | 'o
   return <Tag color={CHARGE_STATUS_COLORS[charge.status]}>{CHARGE_STATUS_LABELS[charge.status]}</Tag>;
 }
 
-/** Danh sách khoản phải thu: lọc theo kỳ, tổ, trạng thái; phân trang phía máy chủ. */
+/** Danh sách khoản phải thu: lọc theo kỳ, tổ, công ty, trạng thái (nút bấm); phân trang phía máy chủ. */
 export function ChargesPage() {
   const periods = usePeriods();
   const areas = useAreas();
+  const companies = useCompanies();
   const [query, setQuery] = useState<ChargeQuery>({ page: 0, size: 50 });
   const charges = useCharges(query);
+  const [proposing, setProposing] = useState<{ charge: Charge; type: 'REFUND' | 'WRITE_OFF' } | null>(null);
 
   return (
     <>
@@ -44,12 +46,26 @@ export function ChargesPage() {
           options={(areas.data ?? []).map((a) => ({ value: a.id, label: `${a.code} · ${a.name}` }))}
         />
         <Select
-          aria-label="Lọc theo trạng thái"
+          aria-label="Lọc theo công ty"
           allowClear
-          placeholder="Mọi trạng thái"
-          style={{ width: 180 }}
-          onChange={(status?: Charge['status']) => setQuery((q) => ({ ...q, status, page: 0 }))}
-          options={Object.entries(CHARGE_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
+          showSearch
+          optionFilterProp="label"
+          placeholder="Mọi công ty"
+          style={{ width: 240 }}
+          onChange={(companyId?: number) => setQuery((q) => ({ ...q, companyId, page: 0 }))}
+          options={(companies.data ?? []).map((c) => ({ value: c.id, label: `${c.code} · ${c.name}` }))}
+        />
+        <Segmented<Charge['status'] | 'ALL'>
+          aria-label="Lọc theo trạng thái"
+          value={query.status ?? 'ALL'}
+          onChange={(v) => setQuery((q) => ({ ...q, status: v === 'ALL' ? undefined : v, page: 0 }))}
+          options={[
+            { value: 'ALL', label: 'Tất cả' },
+            ...(Object.keys(CHARGE_STATUS_LABELS) as Charge['status'][]).map((value) => ({
+              value,
+              label: CHARGE_STATUS_LABELS[value],
+            })),
+          ]}
         />
       </Space>
       <Table<Charge>
@@ -69,9 +85,18 @@ export function ChargesPage() {
           onChange: (page) => setQuery((q) => ({ ...q, page: page - 1 })),
         }}
         columns={[
-          { title: 'Mã khoản', dataIndex: 'code' },
           {
-            title: 'Hộ',
+            title: 'Mã khoản / phiếu YC',
+            render: (_, c) => (
+              <>
+                {c.code}
+                <br />
+                <span style={{ color: brand.textMuted }}>{c.requestCode}</span>
+              </>
+            ),
+          },
+          {
+            title: 'Đối tượng',
             render: (_, c) => (
               <>
                 {c.subjectCode}
@@ -80,19 +105,26 @@ export function ChargesPage() {
               </>
             ),
           },
-          { title: 'Tổ', dataIndex: 'areaCode' },
-          { title: 'Công ty', dataIndex: 'companyCode' },
           { title: 'Kỳ', dataIndex: 'periodCode' },
-          {
-            title: 'Nhóm giá',
-            dataIndex: 'tariffGroup',
-            render: (g: Charge['tariffGroup']) => (g ? TARIFF_GROUP_LABELS[g] : '—'),
-          },
           { title: 'Số tiền', dataIndex: 'amount', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-          { title: 'Hạn đóng', dataIndex: 'dueDate', render: (d: string) => <DateText value={d} /> },
+          { title: 'Công ty phụ trách', dataIndex: 'companyCode' },
           { title: 'Trạng thái', render: (_, c) => <ChargeStatusTag charge={c} /> },
+          {
+            title: '',
+            render: (_, c) =>
+              c.status === 'UNPAID' ? (
+                <Button size="small" onClick={() => setProposing({ charge: c, type: 'WRITE_OFF' })} aria-label={`Đề nghị xóa nợ ${c.code}`}>
+                  Đề nghị xóa nợ
+                </Button>
+              ) : c.status === 'PAID' ? (
+                <Button size="small" onClick={() => setProposing({ charge: c, type: 'REFUND' })} aria-label={`Đề nghị hoàn ${c.code}`}>
+                  Đề nghị hoàn
+                </Button>
+              ) : null,
+          },
         ]}
       />
+      <CreateApprovalModal target={proposing} onClose={() => setProposing(null)} />
     </>
   );
 }

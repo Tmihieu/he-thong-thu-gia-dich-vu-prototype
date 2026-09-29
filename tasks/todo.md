@@ -761,9 +761,39 @@
   - **Kích thước:** M
 
 
+## Vai trò Lãnh đạo (người dùng đưa vào 29/09/2026, làm sau T53) — SPEC §9.10
+
+Đã chốt 29/09/2026: miễn giảm giữ 100% và **xã vẫn tự bật cờ, lãnh đạo duyệt sau để ghi nhận**; hoàn = hộ nộp thừa / thu nhầm, công ty trả lại hộ ngoài hệ thống; xóa nợ = khoản chưa thu do xã đề nghị; lãnh đạo **chỉ xem + xuất báo cáo, không xác nhận**; **không chốt kỳ**; cảnh báo: nộp chậm / nợ kỳ trước, tỷ lệ thu thấp, đề nghị chờ duyệt; hoàn / xóa nợ của kỳ đã khóa ghi vào kỳ đang mở. O8, O9, O10 chốt 29/09/2026 theo phương án đề xuất (SPEC §11).
+
+**Kiểm chứng 29/09/2026:** `LeadershipIT` 6 test (chỉ đọc + 403, xóa nợ, hoàn một phần / hết + tiền mặt giữ nguyên, kỳ khóa → điều chỉnh kỳ đang thu, từ chối miễn giảm); web `leadership.test.tsx` 4 test + `menuConfig`; mobile typecheck + jest 80. **Chờ người dùng thử tay** (đăng nhập `lanhdao` / `Demo@2026`, cần build lại backend để áp V24).
+
+- [x] **T54 — Vai trò LEADER: tài khoản, menu, quyền chỉ đọc** · `platform` · M · P1 · **code xong 29/09/2026**: V24 thêm `LEADER` vào ràng buộc vai trò, seed `lanhdao` (V24_1). Chặn ghi **một chỗ chung** ở `SecurityConfig.internalAccess`: lãnh đạo chỉ GET, trừ `/api/leadership/**` và `/api/notifications/**` (API ghi mới tự động bị chặn); thêm `LEADER` vào các API đọc đang giới hạn vai trò. Web `/leader`: Dashboard, Chờ duyệt, Báo cáo tổng hợp, Tiến độ thu + Đối soát (dùng màn xã, ẩn Nhắc nộp / Khóa kỳ)
+  - **Mô tả:** thêm `Role.LEADER` (nhãn "Lãnh đạo"), seed `lanhdao` (dữ liệu giả); quản trị tạo được tài khoản lãnh đạo; menu web: Dashboard, Báo cáo, Chờ duyệt, và các màn nghiệp vụ của xã ở chế độ chỉ đọc. Backend: các API đọc của xã mở cho LEADER; mọi API ghi (lập phiếu, khóa kỳ, sửa hộ, cấu hình, tài khoản) trả 403.
+  - **Tiêu chí nghiệm thu:** [ ] lãnh đạo đăng nhập vào `/leader/dashboard`; [ ] gọi API ghi của xã / quản trị → 403 (IT); [ ] màn xã mở bằng lãnh đạo không có nút thao tác.
+  - **Phụ thuộc:** T06, T08, T51
+- [x] **T55 — Đề nghị và hàng chờ duyệt (`ApprovalRequest`)** · `leadership` · L · P1 · **code xong 29/09/2026**: module `leadership`, `/api/leadership/approvals` (GET, POST, `/{id}/approve`, `/{id}/reject`); khóa dòng đề nghị và kiểm "đã xử lý" **trước** mọi thao tác tiền; thông báo INFO; web: màn Chờ duyệt (lãnh đạo) / Đề nghị (xã), nút "Đề nghị xóa nợ / hoàn" trên màn Khoản thu
+  - **Mô tả:** migration bảng đề nghị (loại MIỄN GIẢM / HOÀN / XÓA NỢ, đối tượng, số tiền, lý do, số văn bản, trạng thái Chờ duyệt → Đã duyệt / Từ chối, người + lúc đề nghị / duyệt, ý kiến, kỳ ghi nhận; mã `DN-MMYY-nnn`). API: xã tạo; lãnh đạo xem hàng chờ, Duyệt / Từ chối (ý kiến bắt buộc khi từ chối); không duyệt 2 lần (khóa dòng). Audit mọi thao tác + nhãn trong `labels.ts`; thông báo đề nghị mới → lãnh đạo, kết quả → người đề nghị. Web: màn "Chờ duyệt" của lãnh đạo (lọc loại / trạng thái, nút Duyệt / Từ chối từng dòng) + màn "Đề nghị của tôi" cho xã.
+  - **Tiêu chí nghiệm thu:** [ ] từ chối không ý kiến → 422; [ ] duyệt 2 lần song song chỉ 1 lần thành công; [ ] thông báo đúng người.
+  - **Phụ thuộc:** T54, T23, T07
+- [x] **T56 — Miễn giảm qua lãnh đạo** · `master-data` · S · P1 · **code xong 29/09/2026**: `SubjectService` phát `ContractExemptedEvent` khi cờ miễn chuyển sang bật (tạo hoặc sửa hợp đồng) → module lãnh đạo tạo đề nghị; từ chối → `ServiceContract.revokeExemption` + `Charge.revokeExemption` (số tiền = đơn giá × số tháng đã chụp)
+  - **Mô tả:** xã bật cờ miễn 100% trên hợp đồng như hiện nay → tự tạo đề nghị MIỄN GIẢM (Chờ duyệt). Lãnh đạo Duyệt = ghi nhận. Từ chối (O8 đã chốt): bỏ cờ, khoản Miễn giảm của kỳ đang mở về Chưa thu, thông báo xã.
+  - **Phụ thuộc:** T55
+- [x] **T57 — Xóa nợ** · `billing` + `remittance` · M · P1 · **code xong 29/09/2026**: `charges.written_off_period_id`; phải thu bỏ khoản xóa nợ trong chính kỳ; khoản kỳ đã khóa → cột `adjustment` (Điều chỉnh kỳ trước) ở kỳ đang thu, còn phải nộp = phải thu − điều chỉnh − đã nộp. Người đi thu vẫn thấy khoản, nhãn "Đã xóa nợ", không có nút cập nhật
+  - **Mô tả:** xã chọn khoản Chưa thu + lý do → đề nghị XÓA NỢ; duyệt → `ChargeStatus.WRITTEN_OFF` ("Đã xóa nợ", migration mới), không tính vào phải thu / phải nộp của công ty, người đi thu không còn thấy khoản. Khoản kỳ đã khóa: số kỳ khóa giữ nguyên, điều chỉnh ghi ở kỳ đang mở (O10).
+  - **Tiêu chí nghiệm thu:** [ ] sau duyệt, phải thu công ty giảm đúng số trên tiến độ = đối soát = màn công ty; [ ] khoản đã có thanh toán không được đề nghị xóa nợ (422).
+  - **Phụ thuộc:** T55, T24
+- [x] **T58 — Hoàn tiền** · `collection` + `remittance` · M · P1 · **code xong 29/09/2026**: dòng `payments` âm, `method = REFUND`, `ledger_period_id` = kỳ ghi nhận; "đã thu" của công ty tính theo kỳ ghi nhận, cột `refunded` hiển thị riêng; không gắn người đi thu nên tiền mặt đang giữ không đổi; API thu thường chặn `REFUND`
+  - **Mô tả:** đề nghị HOÀN cho khoản đã thu, số tiền 0 < hoàn ≤ đã thu − đã hoàn; duyệt → ghi bút toán hoàn (âm) gắn khoản, công ty "đã thu" giảm; hoàn một phần giữ Đã thu, hoàn hết về Chưa thu (O9 đã chốt). Kỳ đã khóa: ghi nhận ở kỳ đang mở (O10). Tiền mặt đang giữ của người đi thu không đổi (công ty trả hộ ngoài hệ thống).
+  - **Tiêu chí nghiệm thu:** [ ] hoàn vượt số đã thu → 422; [ ] sổ công ty–kỳ, đối soát, màn công ty khớp nhau sau hoàn.
+  - **Phụ thuộc:** T55, T21, T24
+- [x] **T59 — Dashboard lãnh đạo + báo cáo tổng hợp, xuất báo cáo** · `leadership` · M · P1 · **code xong 29/09/2026**: không thêm API — dashboard / báo cáo lấy nguyên sổ công ty–kỳ + tiến độ theo tổ; xuất CSV (UTF-8 BOM, mở bằng Excel) ở trình duyệt, không thêm thư viện
+  - **Mô tả:** dashboard: tổng phải thu / đã thu / đã nộp về xã / còn nợ của kỳ, tỷ lệ theo công ty và theo tổ; cảnh báo nộp chậm / nợ kỳ trước, tỷ lệ thu thấp (cờ sẵn có), số đề nghị chờ duyệt (bấm mở hàng chờ). Báo cáo tổng hợp kỳ (lấy nguyên sổ công ty–kỳ, không tự tính lại) + nút Xuất (Excel/CSV). Không có nút xác nhận báo cáo, không có Chốt kỳ.
+  - **Tiêu chí nghiệm thu:** [ ] số trên dashboard = màn tiến độ + đối soát của xã cùng kỳ; [ ] file xuất đúng số, tiêu đề tiếng Việt.
+  - **Phụ thuộc:** T54, T24, T55
+
 ## Dữ liệu dân cư theo yêu cầu của xã (28/09/2026)
 
 - [x] Tách địa chỉ thành số nhà + đường (V23), hộ gia đình bắt buộc số thành viên, nhóm giá HGĐ khớp số thành viên, nhãn "Tổ/Ấp/Thôn".
 - [ ] **Để sau — Tính theo ký (đ/kg).** Áp dụng cho: chủ nguồn thải lớn; chủ nguồn thải nhỏ phát sinh 500 kg đến dưới 9.000 kg/tháng; hộ đã phân loại rác tại nguồn đúng quy định. Cần: số kg theo từng hộ từng kỳ, đơn giá đ/kg của nhóm `BY_VOLUME`, sinh khoản = kg × đơn giá. Còn hỏi: đơn giá lấy từ đâu, ai nhập số kg hằng tháng.
 - [ ] **Để sau — Nạp dữ liệu dân cư hàng loạt** (Excel/CSV đúng 8 cột xã đưa, kiểm từng dòng, lỗi thì không ghi). Còn hỏi: chỉ cho demo hay file thật, xã có mã hộ sẵn không.
-- Miễn giảm: giữ cờ miễn 100% như hiện tại (quyết định 28/09/2026).
+- Miễn giảm: giữ cờ miễn 100% như hiện tại (quyết định 28/09/2026); từ 29/09/2026 bật cờ tạo đề nghị để lãnh đạo duyệt sau (T56).

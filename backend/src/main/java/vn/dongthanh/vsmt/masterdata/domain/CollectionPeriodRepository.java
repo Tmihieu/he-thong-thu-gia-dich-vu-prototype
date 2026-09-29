@@ -31,6 +31,9 @@ public interface CollectionPeriodRepository extends JpaRepository<CollectionPeri
     @Query("select p from CollectionPeriod p join fetch p.tariffVersion order by p.startDate desc, p.periodType")
     List<CollectionPeriod> findAllWithTariff();
 
+    /** Kỳ theo trạng thái, mới nhất trước (kỳ đang thu để ghi nhận hoàn / xóa nợ của kỳ đã khóa, O10). */
+    List<CollectionPeriod> findByStatusOrderByStartDateDesc(PeriodStatus status);
+
     /** Các kỳ (tháng và/hoặc quý) chứa ngày {@code date}. */
     @Query("select p from CollectionPeriod p join fetch p.tariffVersion"
             + " where p.startDate <= :date and p.endDate >= :date order by p.periodType")

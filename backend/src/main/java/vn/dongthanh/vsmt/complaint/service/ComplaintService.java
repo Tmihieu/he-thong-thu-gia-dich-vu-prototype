@@ -220,13 +220,13 @@ public class ComplaintService {
     /** Xã và quản trị thấy tất cả; công ty chỉ thấy khiếu nại đã chuyển cho mình (G12). */
     @Transactional(readOnly = true)
     public List<Complaint> list(ComplaintStatus status, CurrentUser actor) {
-        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER);
+        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER, Role.LEADER);
         return complaints.search(status, actor.role() == Role.COMPANY_MANAGER ? actor.companyId() : null);
     }
 
     @Transactional(readOnly = true)
     public ComplaintDetail get(Long id, CurrentUser actor) {
-        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER);
+        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER, Role.LEADER);
         Complaint complaint = find(id);
         if (actor.role() == Role.COMPANY_MANAGER && !complaint.isForwardedTo(actor.companyId())) {
             throw notFound();

@@ -33,6 +33,7 @@ import vn.dongthanh.vsmt.masterdata.api.SubjectDtos.SubjectRequest;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceContract;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubject;
 import vn.dongthanh.vsmt.masterdata.domain.SubjectStatus;
+import vn.dongthanh.vsmt.masterdata.domain.SubjectType;
 import vn.dongthanh.vsmt.masterdata.service.SubjectService;
 import vn.dongthanh.vsmt.masterdata.service.SubjectService.SubjectFilter;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
@@ -49,9 +50,10 @@ public class SubjectController {
     @GetMapping("/subjects")
     public SubjectPageDto search(@RequestParam(required = false) Long districtId,
             @RequestParam(required = false) Long areaId, @RequestParam(required = false) SubjectStatus status,
+            @RequestParam(required = false) SubjectType subjectType,
             @RequestParam(required = false) String q, @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(200) int size, @AuthenticationPrincipal CurrentUser actor) {
-        Page<ServiceSubject> result = subjects.search(new SubjectFilter(districtId, areaId, status, q),
+        Page<ServiceSubject> result = subjects.search(new SubjectFilter(districtId, areaId, status, subjectType, q),
                 PageRequest.of(page, size, Sort.by("code")), actor);
         Map<Long, List<ServiceContract>> contracts = subjects.contractsOf(
                 result.getContent().stream().map(ServiceSubject::getId).toList());

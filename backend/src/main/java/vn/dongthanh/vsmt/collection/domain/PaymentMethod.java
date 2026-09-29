@@ -4,5 +4,7 @@ package vn.dongthanh.vsmt.collection.domain;
 public enum PaymentMethod {
     CASH,
     TRANSFER,
-    APP_SIMULATED
+    APP_SIMULATED,
+    /** Hoàn tiền đã được lãnh đạo duyệt (T58): dòng âm, không gắn người đi thu. */
+    REFUND
 }

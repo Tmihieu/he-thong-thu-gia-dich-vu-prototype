@@ -81,6 +81,13 @@ public class ServiceContract extends BaseEntity {
         this.exemptDecisionNo = exempt ? exemptDecisionNo : null;
     }
 
+    /** Lãnh đạo từ chối miễn giảm (O8): bỏ cờ miễn, giữ nhóm giá và hiệu lực. */
+    public void revokeExemption() {
+        this.exempt = false;
+        this.exemptReason = null;
+        this.exemptDecisionNo = null;
+    }
+
     public boolean covers(LocalDate date) {
         return !date.isBefore(validFrom) && (validTo == null || !date.isAfter(validTo));
     }

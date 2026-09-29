@@ -86,7 +86,7 @@ class PeriodLockServiceTest {
     }
 
     private static LedgerRow debt(String code, long remaining) {
-        return new LedgerRow(1L, code, "Công ty " + code, 10L, remaining, 1, 0, 0, 0, remaining, 0, 0, false, 0, true,
+        return new LedgerRow(1L, code, "Công ty " + code, 10L, remaining, 1, 0, 0, 0, 0, 0, remaining, 0, 0, false, 0, true,
                 0, true, Progress.NOT_PAID, Reconciliation.PENDING);
     }
 }

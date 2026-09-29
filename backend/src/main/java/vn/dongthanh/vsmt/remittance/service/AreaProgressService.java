@@ -52,7 +52,7 @@ public class AreaProgressService {
     }
 
     public List<AreaProgress> progress(Long periodId, CurrentUser actor) {
-        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER);
+        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER, Role.LEADER);
         Map<Long, List<AreaProgressRow>> byArea = new HashMap<>();
         queries.progressByArea(periodId).forEach(r -> byArea.computeIfAbsent(r.areaId(), k -> new ArrayList<>()).add(r));
         Map<Long, Company> current = new HashMap<>();

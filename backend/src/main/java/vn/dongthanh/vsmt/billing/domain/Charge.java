@@ -74,7 +74,8 @@ public class Charge extends BaseEntity {
     @Column(nullable = false, updatable = false)
     private int months;
 
-    @Column(nullable = false, updatable = false)
+    /** Chỉ đổi khi lãnh đạo từ chối miễn giảm (khoản Miễn giảm về Chưa thu, O8). */
+    @Column(nullable = false)
     private long amount;
 
     @Column(nullable = false, updatable = false)
@@ -91,6 +92,11 @@ public class Charge extends BaseEntity {
     private ChargeStatus status;
 
     private OffsetDateTime paidAt;
+
+    /** Kỳ ghi nhận xóa nợ (T57): kỳ của khoản nếu chưa khóa, ngược lại kỳ đang thu lúc duyệt (O10). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "written_off_period_id")
+    private CollectionPeriod writtenOffPeriod;
 
     public static Charge issue(String code, ChargeRequest request, ServiceSubject subject, ServiceContract contract,
             Company company, ChargeAmount amount) {
@@ -121,6 +127,33 @@ public class Charge extends BaseEntity {
         }
         status = ChargeStatus.PAID;
         paidAt = at;
+    }
+
+    /** Hoàn hết số đã thu (T58): Đã thu → Chưa thu. */
+    public void markUnpaidAfterRefund() {
+        if (status != ChargeStatus.PAID) {
+            throw new IllegalStateException("Khoản " + code + " không ở trạng thái đã thu");
+        }
+        status = ChargeStatus.UNPAID;
+        paidAt = null;
+    }
+
+    /** Xóa nợ đã được duyệt (T57): chỉ khoản Chưa thu. */
+    public void writeOff(CollectionPeriod ledgerPeriod) {
+        if (status != ChargeStatus.UNPAID) {
+            throw new IllegalStateException("Khoản " + code + " không ở trạng thái chưa thu");
+        }
+        status = ChargeStatus.WRITTEN_OFF;
+        writtenOffPeriod = ledgerPeriod;
+    }
+
+    /** Lãnh đạo từ chối miễn giảm (O8): khoản Miễn giảm về Chưa thu, số tiền tính lại theo đơn giá đã chụp. */
+    public void revokeExemption() {
+        if (status != ChargeStatus.EXEMPT) {
+            throw new IllegalStateException("Khoản " + code + " không ở trạng thái miễn giảm");
+        }
+        status = ChargeStatus.UNPAID;
+        amount = Math.multiplyExact(unitPrice, (long) months);
     }
 
     /** Quá hạn: chưa thu và đã qua hạn đóng (không lưu, tính khi đọc). */

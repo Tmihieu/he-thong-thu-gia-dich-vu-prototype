@@ -50,7 +50,7 @@ describe('đăng nhập', () => {
     await fillLogin('canbo_xa', 'Demo@2026');
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/commune/subjects'));
-    const menu = await screen.findByRole('menu', { name: 'Menu chính' });
+    const menu = await screen.findByRole('navigation', { name: 'Menu chính' });
     expect(within(menu).getByText('Đối soát')).toBeInTheDocument();
     expect(within(menu).queryByText('Nhật ký')).not.toBeInTheDocument();
     expect(screen.getByText('Nguyễn Thị Mẫu')).toBeInTheDocument();
@@ -81,7 +81,7 @@ describe('bảo vệ route', () => {
     renderApp('/commune/companies');
 
     expect(await screen.findByRole('heading', { name: 'Công ty môi trường' })).toBeInTheDocument();
-    expect(within(screen.getByRole('menu', { name: 'Menu chính' })).getByText('Hồ sơ hộ')).toBeInTheDocument();
+    expect(within(screen.getByRole('navigation', { name: 'Menu chính' })).getByText('Hồ sơ hộ')).toBeInTheDocument();
   });
 
   it('token hết hạn/sai (401 từ /me) thì xóa token và về trang đăng nhập', async () => {

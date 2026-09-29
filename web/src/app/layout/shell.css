@@ -1,0 +1,259 @@
+/* Khung giao diện theo prototype v3.1 (app.css, responsive.css, collector-mobile.css trên nhánh `prototype`), bỏ các ghi chú prototype. */
+:root {
+  --navy-950: #062642;
+  --navy-900: #0b3a67;
+  --navy-200: #cfe1ef;
+  --green-800: #0d633b;
+  --green-700: #16794a;
+  --green-600: #218a58;
+  --green-200: #b9ddc9;
+  --green-100: #e6f4ec;
+  --green-50: #f3faf6;
+  --gray-950: #17212b;
+  --gray-800: #344054;
+  --gray-600: #667085;
+  --gray-500: #7f8b99;
+  --gray-200: #e2e7ec;
+  --gray-100: #eef1f4;
+  --gray-50: #f7f9fb;
+  --page: #e9eef2;
+  --gr-900: #0b4d2c;
+  --gr-800: #0f6236;
+  --gr-700: #127a43;
+  --gr-100: #e3f3ea;
+  --gr-line: #e2e8e4;
+  --gr-page: #f3f5f3;
+  --sidebar-width: 264px;
+  --topbar-height: 76px;
+}
+
+html, body { background: var(--page); }
+/* Prototype tính kích thước theo border-box; AntD tự đặt cho component của nó. */
+.app-shell, .topbar, .sidebar, .role-card, .nav-item, .main-content, .app-footer,
+.clm-shell, .clm-hero, .clm-body, .clm-tabbar, .clm-tab { box-sizing: border-box; }
+
+/* ---------- Khung máy tính ---------- */
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  grid-template-rows: var(--topbar-height) minmax(calc(100vh - var(--topbar-height) - 44px), auto) 44px;
+  grid-template-areas: "topbar topbar" "sidebar main" "sidebar footer";
+}
+.app-shell.sidebar-collapsed { grid-template-columns: minmax(0, 1fr); grid-template-areas: "topbar" "main" "footer"; }
+.app-shell.sidebar-collapsed .sidebar { display: none; }
+
+.topbar {
+  grid-area: topbar;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 0 24px;
+  color: #fff;
+  background: var(--navy-900);
+  border-bottom: 4px solid var(--green-600);
+  box-shadow: 0 4px 14px rgba(6, 38, 66, .18);
+}
+.menu-toggle {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  color: inherit;
+  background: transparent;
+  font-size: 20px;
+  cursor: pointer;
+}
+.menu-toggle:hover { background: rgba(255, 255, 255, .1); }
+.brand { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; }
+.brand:hover { color: inherit; }
+.brand img { width: 44px; height: 44px; flex: 0 0 44px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .35); background: #fff; }
+.brand-copy { min-width: 0; }
+.brand-copy strong { display: block; font-size: 16px; line-height: 1.25; letter-spacing: .01em; }
+.brand-copy small { display: block; margin-top: 3px; color: var(--navy-200); font-size: 12px; }
+.top-actions { display: flex; align-items: center; gap: 10px; }
+.top-actions .ant-btn-icon-only, .top-actions .ant-badge .ant-btn { color: var(--navy-200); background: rgba(255, 255, 255, .08); border: 0; }
+.top-user { display: grid; line-height: 1.25; text-align: right; }
+.top-user strong { font-size: 13px; }
+.top-user small { color: var(--navy-200); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+.avatar {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--green-700);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .32);
+  font-weight: 800;
+}
+
+.sidebar {
+  grid-area: sidebar;
+  position: sticky;
+  top: var(--topbar-height);
+  height: calc(100vh - var(--topbar-height));
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: #fff;
+  border-right: 1px solid var(--gray-200);
+  box-shadow: 4px 0 14px rgba(6, 38, 66, .03);
+}
+.role-card { padding: 20px 18px 15px; border-bottom: 1px solid var(--gray-200); }
+.role-kicker { display: block; color: var(--green-700); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.role-card strong { display: block; margin-top: 3px; color: var(--navy-900); font-size: 16px; }
+.role-nav { flex: 1; padding: 10px; }
+.nav-item {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  margin: 2px 0;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--gray-800);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.nav-item:hover { color: var(--gray-800); background: var(--gray-50); border-color: var(--gray-200); }
+.nav-item.active { color: var(--navy-900); background: var(--green-100); border-color: var(--green-200); box-shadow: inset 3px 0 0 var(--green-700); }
+.nav-icon { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 6px; color: var(--green-800); background: var(--green-50); font-size: 15px; }
+.nav-item.active .nav-icon { color: #fff; background: var(--green-700); }
+
+.main-content { grid-area: main; min-width: 0; padding: 26px 30px 40px; }
+.app-footer {
+  grid-area: footer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 30px;
+  border-top: 1px solid var(--gray-200);
+  color: var(--gray-600);
+  background: #fff;
+  font-size: 11px;
+}
+.sidebar-backdrop { display: none; }
+
+@media (max-width: 1180px) {
+  :root { --sidebar-width: 230px; }
+  .topbar { gap: 12px; padding-inline: 18px; }
+  .brand-copy strong { font-size: 14px; }
+  .main-content { padding-inline: 22px; }
+}
+@media (max-width: 860px) {
+  :root { --topbar-height: 66px; }
+  .app-shell, .app-shell.sidebar-collapsed { grid-template-columns: 1fr; grid-template-rows: var(--topbar-height) auto 44px; grid-template-areas: "topbar" "main" "footer"; }
+  .topbar { padding: 0 13px; }
+  .brand img { width: 38px; height: 38px; flex-basis: 38px; }
+  .brand-copy strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .brand-copy small, .top-user { display: none; }
+  .sidebar, .app-shell.sidebar-collapsed .sidebar { display: flex; position: fixed; left: 0; width: 274px; transform: translateX(-102%); transition: transform .2s ease; }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-backdrop.show { display: block; position: fixed; inset: var(--topbar-height) 0 0; z-index: 25; background: rgba(6, 30, 50, .45); }
+  .main-content { padding: 20px 16px 32px; }
+  .app-footer { padding-inline: 16px; }
+}
+@media (max-width: 600px) {
+  .avatar { display: none; }
+  .main-content { padding: 16px 12px 28px; }
+}
+
+/* ---------- Thành phần AntD theo prototype ---------- */
+.ant-table-thead > tr > th { font-size: 11px; letter-spacing: .03em; text-transform: uppercase; white-space: nowrap; }
+.ant-table-tbody > tr:nth-child(even) > td { background: var(--gray-50); }
+.ant-tag.ant-tag { border-color: transparent; border-radius: 999px; font-weight: 700; }
+.ant-card { box-shadow: 0 1px 2px rgba(6, 38, 66, .05); }
+.ant-card-head-title { color: var(--navy-950); }
+.ant-statistic-content { color: var(--navy-950); font-weight: 700; }
+
+/* ---------- Người đi thu (giao diện điện thoại, mẫu GRAC) ---------- */
+.clm-shell { max-width: 480px; min-height: 100vh; margin: 0 auto; display: flex; flex-direction: column; background: var(--gr-page); }
+.clm-hero { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: #fff; background: var(--gr-800); }
+.clm-hero img { width: 34px; height: 34px; border-radius: 50%; background: #fff; }
+.clm-hero strong { flex: 1; min-width: 0; font-size: 16px; font-weight: 800; }
+.clm-hero small { display: block; color: #d9efe2; font-size: 11px; font-weight: 600; }
+.clm-hero .ant-btn { color: var(--gr-900); background: #fff; border: 0; }
+.clm-body { flex: 1; margin-top: -1px; padding: 16px; border-radius: 22px 22px 0 0; background: var(--gr-page); box-shadow: 0 -12px 0 var(--gr-800); }
+.clm-tabbar { position: sticky; bottom: 0; display: flex; padding: 6px 4px 10px; border-top: 1px solid var(--gr-line); background: #fff; }
+.clm-tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px 2px; color: #5d6b63; font-size: 11px; font-weight: 700; text-decoration: none; }
+.clm-tab:hover { color: var(--gr-700); }
+.clm-tab-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; font-size: 18px; }
+.clm-tab.active { color: var(--gr-700); }
+.clm-tab.active .clm-tab-icon { background: var(--gr-100); }
+
+/* Thẻ nội dung: viền + bóng nhẹ màu navy để tách khỏi nền trang; tiêu đề thẻ có nền riêng. */
+.section-card.ant-card { border-color: #d9e1e8; box-shadow: 0 1px 3px rgba(6, 38, 66, .08); }
+.section-card > .ant-card-head { background: #f7f9fb; }
+
+/* ---------- Người đi thu: danh sách thu (prototype collector-mobile.css) ---------- */
+.clm-page { display: flex; flex-direction: column; gap: 12px; }
+/* Khối tìm kiếm + lọc nối liền đầu trang xanh; nền trang xám nhạt bên dưới để thẻ trắng nổi lên. */
+.clm-filters { margin: -16px -16px 0; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 10px; background: var(--gr-800); border-radius: 0 0 22px 22px; }
+.clm-filters .ant-input-search .ant-input-affix-wrapper, .clm-filters .ant-input-search .ant-input { border-radius: 999px 0 0 999px; }
+.clm-filters .ant-input-search-button { border-radius: 0 999px 999px 0 !important; }
+.clm-stats-toggle { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 12px; border: 0; border-radius: 10px; color: var(--gr-900); background: #fff; font: inherit; font-size: 13px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; cursor: pointer; }
+.clm-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.clm-stats > div { padding: 8px 10px; border-radius: 10px; color: #fff; background: rgba(255, 255, 255, .12); }
+.clm-stats small { display: block; color: #cfe9da; font-size: 11px; font-weight: 600; }
+.clm-stats strong { display: block; font-size: 15px; font-weight: 800; }
+.clm-stats em { display: block; color: #ffd8a8; font-size: 11px; font-style: normal; font-weight: 700; }
+.clm-filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.clm-filter-row label > span { display: block; margin-bottom: 4px; color: #d9efe2; font-size: 12px; font-weight: 700; }
+.clm-filter-row .ant-select { width: 100% !important; }
+
+.clm-chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.clm-chip { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--gr-line); border-radius: 999px; color: var(--gray-800); background: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.clm-chip b { min-width: 22px; padding: 0 6px; border-radius: 999px; background: var(--gray-100); font-size: 12px; text-align: center; }
+.clm-chip.active { color: #fff; background: var(--gr-800); border-color: var(--gr-800); }
+.clm-chip.active b { color: var(--gr-900); background: #fff; }
+
+.clm-cards { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.clm-card { overflow: hidden; border: 1px solid var(--gr-line); border-radius: 14px; background: #fff; box-shadow: 0 2px 6px rgba(11, 77, 44, .06); }
+.clm-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--gr-line); background: #f7fbf8; }
+.clm-card-head strong { color: var(--gr-800); font-size: 14px; font-weight: 800; }
+.clm-card-head .ant-tag { margin: 0; }
+.clm-card-body { padding: 12px 14px 14px; }
+.clm-card-body p { margin: 0 0 4px; color: var(--gray-800); font-size: 14px; }
+.clm-label, .clm-kv small, .clm-amount small, .clm-previous small { color: var(--gray-600); font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.clm-name { margin: 2px 0 6px; color: var(--gr-900); font-size: 19px; font-weight: 800; }
+.clm-kv { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0 0; font-size: 13px; }
+.clm-kv span { color: var(--gray-950); font-weight: 600; text-align: right; }
+.clm-amount { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--gr-line); }
+.clm-amount strong { color: var(--gr-900); font-size: 22px; font-weight: 800; }
+.clm-partial { color: #9a620d !important; font-size: 13px !important; font-weight: 600; }
+.clm-previous { margin-top: 8px; }
+.clm-previous > div { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.clm-prev { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.clm-prev.ok { color: var(--gr-700); background: var(--gr-100); }
+.clm-prev.debt { color: #b42318; background: #fef3f2; }
+.clm-actions { display: flex; gap: 8px; margin-top: 12px; }
+.clm-actions > .ant-btn-primary, .clm-done { flex: 1; }
+.clm-actions > .ant-btn-primary { background: var(--gr-800); }
+.clm-done { display: inline-flex; align-items: center; gap: 6px; color: var(--gr-700); font-weight: 800; }
+.clm-actions .ant-btn-icon-only { border-color: var(--gr-800); color: var(--gr-800); }
+.clm-actions .clm-warn.ant-btn { border-color: #d68b1c; color: #9a620d; }
+
+/* Bottom sheet: ô chọn kết quả / lý do dạng lưới, gợi ý nền xanh nhạt, hai nút chia đôi. */
+.clm-sheet .ant-drawer-content { border-radius: 20px 20px 0 0; }
+.clm-sheet .ant-drawer-header { border-bottom: 0; }
+.clm-tiles.ant-radio-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.clm-tiles-wide.ant-radio-group { grid-template-columns: 1fr; }
+.clm-tiles .ant-radio-button-wrapper { height: auto; min-height: 48px; display: flex; align-items: center; padding: 8px 12px; border: 1px solid #d5dfd9; border-radius: 10px !important; line-height: 1.3; font-weight: 700; }
+.clm-tiles .ant-radio-button-wrapper::before { display: none; }
+.clm-tiles .ant-radio-button-wrapper > span:last-child { display: flex; align-items: center; gap: 10px; }
+.clm-tiles .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) { color: var(--gr-900); background: var(--gr-100); border-color: var(--gr-700); box-shadow: 0 0 0 1px var(--gr-700); }
+.clm-tip { margin: 0 0 16px; padding: 10px 12px; border-radius: 10px; color: var(--gray-800); background: var(--gr-100); font-size: 13px; }
+.clm-tip strong { color: var(--gr-800); }
+.clm-sheet-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
+.clm-sheet-actions .ant-btn-primary { background: var(--gr-800); }

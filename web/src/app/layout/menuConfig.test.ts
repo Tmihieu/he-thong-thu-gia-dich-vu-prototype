@@ -1,8 +1,8 @@
 import { homePath, MENU, menuPath, ROLE_BASE, ROLE_LABELS, ROLES } from './menuConfig';
 
 describe('menuConfig', () => {
-  it('có đúng 4 vai trò nội bộ, không có người dân', () => {
-    expect(ROLES).toEqual(['COMMUNE_OFFICER', 'COMPANY_MANAGER', 'COLLECTOR', 'ADMIN']);
+  it('có đúng 5 vai trò nội bộ (thêm Lãnh đạo 29/09/2026), không có người dân', () => {
+    expect(ROLES).toEqual(['COMMUNE_OFFICER', 'COMPANY_MANAGER', 'COLLECTOR', 'ADMIN', 'LEADER']);
     expect(ROLE_LABELS.COMMUNE_OFFICER).toBe('Cán bộ xã');
   });
 
@@ -16,10 +16,12 @@ describe('menuConfig', () => {
       'Tiến độ thu',
       'Đối soát',
       'Khiếu nại',
+      'Đề nghị',
     ]);
     expect(labels('COMPANY_MANAGER')).toEqual(['Khu vực được giao', 'Khiếu nại', 'Rác cồng kềnh']);
     expect(labels('COLLECTOR')).toEqual(['Danh sách thu', 'Tiền mặt', 'Tài khoản']);
     expect(labels('ADMIN')).toEqual(['Tài khoản', 'Cấu hình', 'Nhật ký']);
+    expect(labels('LEADER')).toEqual(['Dashboard', 'Chờ duyệt', 'Báo cáo tổng hợp', 'Tiến độ thu', 'Đối soát']);
   });
 
   it('đường dẫn menu nằm dưới gốc của vai trò và không trùng', () => {
@@ -37,5 +39,6 @@ describe('menuConfig', () => {
     expect(homePath('COMPANY_MANAGER')).toBe('/company/assigned');
     expect(homePath('COLLECTOR')).toBe('/collector/list');
     expect(homePath('ADMIN')).toBe('/admin/accounts');
+    expect(homePath('LEADER')).toBe('/leader/dashboard');
   });
 });

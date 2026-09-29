@@ -33,12 +33,14 @@ export const CHARGE_STATUS_LABELS: Record<ChargeStatus, string> = {
   UNPAID: 'Chưa đóng',
   PAID: 'Đã đóng',
   EXEMPT: 'Miễn',
+  WRITTEN_OFF: 'Đã xóa nợ',
 };
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   CASH: 'Tiền mặt',
   TRANSFER: 'Chuyển khoản',
   APP_SIMULATED: 'Ứng dụng (mô phỏng)',
+  REFUND: 'Hoàn tiền',
 };
 
 export const WASTE_TYPE_LABELS: Record<WasteType, string> = {

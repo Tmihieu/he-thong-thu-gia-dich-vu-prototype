@@ -119,7 +119,7 @@ public class ReminderService {
 
     @Transactional(readOnly = true)
     public List<ReminderView> list(Long companyId, CurrentUser actor) {
-        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER);
+        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER, Role.LEADER);
         Long scoped = actor.role() == Role.COMPANY_MANAGER ? actor.companyId() : companyId;
         return reminders.search(scoped).stream().map(r -> {
             Set<Long> stillOwing = ledger.overdueDebtsOf(r.getCompany().getId()).stream()

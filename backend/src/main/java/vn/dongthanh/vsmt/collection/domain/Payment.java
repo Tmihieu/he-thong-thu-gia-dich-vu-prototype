@@ -15,6 +15,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import vn.dongthanh.vsmt.billing.domain.Charge;
+import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
 import vn.dongthanh.vsmt.platform.common.BaseEntity;
 
 /**
@@ -62,10 +63,15 @@ public class Payment extends BaseEntity {
     @Column(nullable = false, updatable = false, length = 40)
     private String clientRequestId;
 
+    /** Kỳ ghi nhận trong sổ công ty–kỳ (hoàn tiền, T58); null = kỳ của khoản. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ledger_period_id", updatable = false)
+    private CollectionPeriod ledgerPeriod;
+
     @Builder
     private static Payment of(String code, Charge charge, long amount, PaymentMethod method, OffsetDateTime paidAt,
             Long collectorId, Long confirmedBy, Long citizenAccountId, String bankRef, String note,
-            String clientRequestId) {
+            String clientRequestId, CollectionPeriod ledgerPeriod) {
         Payment p = new Payment();
         p.code = code;
         p.charge = charge;
@@ -78,6 +84,7 @@ public class Payment extends BaseEntity {
         p.bankRef = bankRef;
         p.note = note;
         p.clientRequestId = clientRequestId;
+        p.ledgerPeriod = ledgerPeriod;
         return p;
     }
 }

@@ -3,13 +3,13 @@ import { Tabs, Typography } from 'antd';
 import { useTabParam } from '../../shared/useTabParam';
 import { CompanyReceiptsPage } from '../remittance/CompanyReceiptsPage/CompanyReceiptsPage';
 import { CollectorAssignPage } from './CollectorAssignPage/CollectorAssignPage';
-import { CompanyHouseholdsPage } from './CompanyHouseholdsPage/CompanyHouseholdsPage';
 import { CompanyOverviewPage } from './CompanyOverviewPage/CompanyOverviewPage';
 
-const TABS = ['overview', 'households', 'collectors', 'receipts'] as const;
+// Hộ được giao nằm ngay dưới tổng quan; link cũ ?tab=households rơi về tổng quan.
+const TABS = ['overview', 'collectors', 'receipts'] as const;
 
 /**
- * Màn "Khu vực được giao" của công ty (prototype: assigned): tổng quan + nhận tiền mặt (T29), hộ được giao,
+ * Màn "Khu vực được giao" của công ty (prototype: assigned): tổng quan + nhận tiền mặt (T29) + hộ được giao,
  * phân tổ (T28), phiếu thu xã lập (T35).
  */
 export function CompanyHubPage() {
@@ -24,7 +24,6 @@ export function CompanyHubPage() {
         onChange={setTab}
         items={[
           { key: 'overview', label: 'Tổng quan', children: <CompanyOverviewPage /> },
-          { key: 'households', label: 'Hộ được giao', children: <CompanyHouseholdsPage /> },
           { key: 'collectors', label: 'Phân tổ', children: <CollectorAssignPage /> },
           { key: 'receipts', label: 'Phiếu thu xã lập', children: <CompanyReceiptsPage /> },
         ]}
