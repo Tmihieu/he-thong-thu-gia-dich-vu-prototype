@@ -193,7 +193,9 @@ public class MarketService {
 
     public PostView edit(CurrentCitizen citizen, Long id, PostCommand cmd, int version) {
         Viewer v = citizenViewer(citizen);
-        MarketPost post = requireOwn(v, id);
+        // Cùng khóa với tạo bài: hai request song song không cùng gắn một ảnh chưa gắn vào hai bài.
+        posts.lockKey("market:post:" + v.citizenId());
+        MarketPost post = requireOwnLocked(v, id);
         requireVersion(post, version);
         MarketPost.Content content = normalize(cmd);
         List<MarketImage> current = images.findByPostIdInOrderBySortOrderAscIdAsc(List.of(id));

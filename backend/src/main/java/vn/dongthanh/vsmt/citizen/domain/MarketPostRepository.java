@@ -57,6 +57,6 @@ public interface MarketPostRepository extends JpaRepository<MarketPost, Long> {
     long lockKey(String key);
 
     /** Số lớn nhất đang dùng của mã {@code CDC-nnn}; 0 nếu chưa có. */
-    @Query(value = "select coalesce(max(cast(substring(code, 5) as integer)), 0) from market_posts", nativeQuery = true)
+    @Query(value = "select coalesce(max(cast(substring(code, 5) as integer)), 0) from market_posts where code ~ '^CDC-[0-9]+$'", nativeQuery = true)
     int maxCodeNumber();
 }
