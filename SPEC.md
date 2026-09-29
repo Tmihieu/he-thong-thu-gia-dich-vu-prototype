@@ -279,7 +279,7 @@ Mục tiêu: service layer của `billing`, `collection`, `remittance` có cover
 ### 9.9 `citizen-app`
 - `CitizenAccount` gắn với một `ServiceSubject`; đăng nhập demo bằng SĐT + mã OTP cố định (mô phỏng).
 - Màn: trang chủ, thông tin hộ, khoản phải đóng & lịch sử (từ `Charge`), thanh toán **mô phỏng** (tạo `Payment` hình thức app → khoản thành Đã thu, công ty và xã thấy ngay), biên lai, lịch thu gom, khiếu nại, thông báo, tài khoản.
-- **Chợ đồ cũ:** `MarketPost` (tiêu đề, loại Cho tặng / Trao đổi, mô tả, ảnh, nơi nhận, trạng thái) + `MarketComment`.
+- **Chợ đồ cũ** (thay bởi [chợ đồ cũ v2](docs/cho-do-cu-spec.md), V25, 30/09/2026): `MarketPost` caption + 1–4 tag (Tìm/Bán/Cho tặng/Đổi) + danh mục + tối đa 5 ảnh, không trường giá; đóng/mở lại, ẩn/hiện; liên hệ bằng bình luận và SĐT tự nguyện; lưu bài, chặn hai chiều, thông báo bình luận. Người dân tương tác; 5 vai trò nội bộ chỉ đọc qua `/api/market`. Quy tắc cũ tiêu đề/mô tả/loại/nơi nhận và "đóng không mở lại" (D9/T47) không còn áp dụng.
 - **Rác cồng kềnh:** `BulkyWasteRequest` (loại vật dụng, số lượng, địa chỉ, ngày mong muốn, ảnh, công ty phụ trách theo khu vực, phí công ty báo, trạng thái Chờ xác nhận → Đã báo phí → Đã thu gom / Hủy). Công ty có màn nhận và báo phí.
 - **Nghiệm thu:** dân thanh toán mô phỏng → số liệu công ty/xã cập nhật; dân gửi khiếu nại và nhận thông báo khi được xử lý; đăng bài chợ đồ cũ, đăng ký rác cồng kềnh và thấy công ty báo phí.
 
@@ -331,7 +331,7 @@ Mục tiêu: service layer của `billing`, `collection`, `remittance` có cover
 | O3 | Dữ liệu thật về hộ: trường nào xã/công ty có | Chờ kết quả xin dữ liệu theo data dictionary |
 | O4 | Một người đi thu phụ trách mấy tổ, một tổ mấy người | Schema cho phép nhiều–nhiều; seed 1 người/tổ |
 | O5 | Phí rác cồng kềnh có thành khoản phải thu (`Charge`) và nộp về xã không | Chỉ lưu phí công ty báo trên yêu cầu; không sinh `Charge` |
-| O6 | Ai kiểm duyệt bài chợ đồ cũ | Không kiểm duyệt trong demo |
+| O6 | Ai kiểm duyệt bài chợ đồ cũ | Không kiểm duyệt trong demo; đăng là hiển thị (chợ v2 D05). Báo cáo/kiểm duyệt để nghiên cứu sau |
 | O7 | Đăng nhập người dân thật (VNeID / OTP SMS) | OTP cố định mô phỏng |
 | O8 | Lãnh đạo từ chối miễn giảm | **Chốt 29/09/2026:** bỏ cờ, khoản Miễn giảm kỳ đang mở về Chưa thu, kỳ khóa giữ nguyên |
 | O9 | Hoàn một phần | **Chốt 29/09/2026:** giữ Đã thu, chỉ giảm số đã thu; hoàn hết thì về Chưa thu |

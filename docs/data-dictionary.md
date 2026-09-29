@@ -689,30 +689,43 @@ Timeline lưu nối tiếp, không ghi đè. Không có `updated_at`, `updated_b
 
 ### MarketPost — Bài đăng chợ đồ cũ · `market_posts` · Phần B
 
+Chợ đồ cũ v2 (V25, [spec](cho-do-cu-spec.md)): thay tiêu đề/mô tả/loại/nơi nhận bằng caption + tag + danh mục. Không có trường giá (D01). Cột cũ `title`, `description`, `post_type`, `pickup_location`, `photo_urls` giữ làm dữ liệu legacy, bỏ NOT NULL, không dùng trong API.
 
-| Tên hiển thị (VI) | Tên kỹ thuật      | Kiểu                    | Bắt buộc | Nguồn     | Ví dụ                       | Mức  | Ghi chú                            |
-| ----------------- | ----------------- | ----------------------- | -------- | --------- | --------------------------- | ---- | ---------------------------------- |
-| Mã bài            | `code`            | `text(20)`              | Có       | Hệ thống  | `CDC-041`                   | Demo | Duy nhất                           |
-| Người đăng        | `author_id`       | `FK→CitizenAccount`     | Có       | Hệ thống  | 1                           | Demo | Hiển thị "tên · tổ"                |
-| Tiêu đề           | `title`           | `text(150)`             | Có       | Người dân | Ghế sofa 3 chỗ còn dùng tốt | Demo |                                    |
-| Hình thức         | `post_type`       | `enum MarketPostType`   | Có       | Người dân | `GIVE`                      | Demo |                                    |
-| Mô tả             | `description`     | `text(2000)`            | Có       | Người dân |                             | Demo |                                    |
-| Ảnh               | `photo_urls`      | `text` (danh sách)      | Không    | Người dân |                             | Demo | Tối đa 5 ảnh, ≤ 5 MB/ảnh, JPEG/PNG/WebP (T47 (3, 4)) |
-| Nơi nhận          | `pickup_location` | `text(255)`             | Không    | Người dân | Hẻm 12, Tổ 5                | Demo |                                    |
-| Trạng thái | `status` | `enum MarketPostStatus` | Có | Hệ thống | `OPEN` | Demo | Người đăng tự đóng, không mở lại; bài đã đóng không nhận bình luận mới; không kiểm duyệt (D9, T47 (1, 2), O6) |
+| Tên hiển thị (VI) | Tên kỹ thuật | Kiểu | Bắt buộc | Nguồn | Ví dụ | Mức | Ghi chú |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Mã bài | `code` | `text(20)` | Có | Hệ thống | `CDC-041` | Demo | Duy nhất |
+| Người đăng | `author_id` | `FK→CitizenAccount` | Có | Hệ thống | 1 | Demo | Chủ bài theo tài khoản, không theo hộ |
+| Tổ | `area_id` | `FK→Area` | Có | Hệ thống | 7 | Demo | Snapshot tổ của hộ lúc đăng; bài cũ lấy tổ lúc nâng cấp |
+| Nội dung | `caption` | `text(2500)` | Có | Người dân | Ghế sofa 3 chỗ… | Demo | Trim, plain text; bài cũ = tiêu đề + 2 xuống dòng + mô tả |
+| Danh mục | `category` | `enum MarketCategory` | Có | Người dân | `OTHER` | Demo | Mặc định OTHER |
+| Trạng thái | `status` | `enum MarketPostStatus` | Có | Hệ thống | `OPEN` | Demo | Chủ bài đóng/mở lại; đóng thì không nhận bình luận/gọi mới |
+| Ẩn | `hidden` | `boolean` | Có | Người dân | false | Demo | Độc lập với trạng thái; chỉ chủ bài thấy bài ẩn |
+| Chia sẻ SĐT | `share_phone` | `boolean` | Có | Người dân | false | Demo | Mặc định tắt |
+| SĐT liên hệ | `contact_phone` | `text(15)` | Không | Người dân | 0912345678 | Demo | Tự nhập, null khi không chia sẻ; chỉ trả qua endpoint liên hệ |
+| Mã yêu cầu | `client_request_id`, `request_fingerprint` | `uuid`, `text(64)` | Không | Hệ thống | | Demo | Chống tạo trùng khi retry; unique(author, request) |
+| Lần sửa | `edited_at` | `timestamp` | Không | Hệ thống | | Demo | Hiện "Đã chỉnh sửa" |
 
-
-**Enum `MarketPostType`:** `GIVE` Cho tặng · `EXCHANGE` Trao đổi
-**Enum `MarketPostStatus`** (D9): `OPEN` Đang đăng · `CLOSED` Đã cho/đổi xong
+**Enum `MarketTag`** (bảng `market_post_tags`, 1–4 tag mỗi bài): `FIND` Tìm đồ · `SELL` Bán đồ · `GIVE` Cho tặng · `EXCHANGE` Đổi đồ
+**Enum `MarketCategory`:** `HOUSEHOLD` Đồ gia dụng · `ELECTRONICS` Điện tử · `FURNITURE` Nội thất · `CHILDREN` Đồ trẻ em · `TOOLS_VEHICLES` Xe đạp và dụng cụ · `OTHER` Khác
+**Enum `MarketPostStatus`:** `OPEN` Đang đăng · `CLOSED` Đã xong
 
 ### MarketComment — Bình luận chợ đồ cũ · `market_comments` · Phần B
 
 
-| Tên hiển thị (VI) | Tên kỹ thuật | Kiểu                | Bắt buộc | Nguồn     | Ví dụ          | Mức  | Ghi chú                        |
-| ----------------- | ------------ | ------------------- | -------- | --------- | -------------- | ---- | ------------------------------ |
-| Bài đăng          | `post_id`    | `FK→MarketPost`     | Có       | Hệ thống  | 41             | Demo |                                |
-| Người bình luận   | `author_id`  | `FK→CitizenAccount` | Có       | Hệ thống  | 2              | Demo |                                |
-| Nội dung          | `content`    | `text(1000)`        | Có       | Người dân | Còn không chị? | Demo | Có thể cắt khỏi demo (plan C4) |
+| Tên hiển thị (VI) | Tên kỹ thuật | Kiểu | Bắt buộc | Nguồn | Ví dụ | Mức | Ghi chú |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Bài đăng | `post_id` | `FK→MarketPost` | Có | Hệ thống | 41 | Demo | |
+| Người bình luận | `author_id` | `FK→CitizenAccount` | Có | Hệ thống | 2 | Demo | |
+| Nội dung | `content` | `text(1000)` | Có | Người dân | Còn không chị? | Demo | Phẳng, không sửa/xóa |
+| Mã yêu cầu | `client_request_id`, `request_fingerprint` | `uuid`, `text(64)` | Không | Hệ thống | | Demo | Chống ghi trùng khi retry |
+
+### Bảng phụ chợ đồ cũ v2 (V25)
+
+| Bảng | Khóa / cột | Ghi chú |
+| --- | --- | --- |
+| `market_saved_posts` | PK(`citizen_id`, `post_id`), `created_at` | Bài đã lưu, riêng từng tài khoản |
+| `market_user_blocks` | PK(`blocker_id`, `blocked_id`), `created_at` | Có hướng, hiệu lực hai chiều trong chợ; không chặn chính mình |
+| `market_images` | `id`, `storage_name`, `uploader_id`, `post_id`, `sort_order`, `legacy`, `created_at` | Metadata quyền ảnh (bytes ở thư mục upload); không xóa khi tháo ảnh để route ảnh cũ vẫn biết file thuộc chợ |
 
 
 ### BulkyWasteRequest — Đăng ký thu gom rác cồng kềnh · `bulky_waste_requests` · Phần B
