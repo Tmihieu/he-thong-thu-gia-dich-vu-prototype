@@ -19,6 +19,7 @@ import { ConfigPage } from '../features/masterdata/ConfigPage';
 import { SubjectsPage } from '../features/masterdata/SubjectsPage/SubjectsPage';
 import { NotificationCenterPage } from '../features/notifications/NotificationCenterPage';
 import { AccountsPage } from '../features/platform/AccountsPage/AccountsPage';
+import { DataAdminPage } from '../features/platform/DataAdminPage';
 import { AuditLogPage } from '../features/platform/AuditLogPage/AuditLogPage';
 import { ProgressPage } from '../features/remittance/ProgressPage/ProgressPage';
 import { ReconciliationPage } from '../features/remittance/ReconciliationPage/ReconciliationPage';
@@ -34,6 +35,7 @@ const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'ADMIN:accounts': <AccountsPage />,
   'ADMIN:config': <ConfigPage />,
   'ADMIN:logs': <AuditLogPage />,
+  'ADMIN:data': <DataAdminPage />,
   'COMMUNE_OFFICER:areas': <AreasPage />,
   'COMMUNE_OFFICER:companies': <CompaniesPage />,
   'COMMUNE_OFFICER:subjects': <SubjectsPage />,

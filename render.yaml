@@ -47,6 +47,40 @@ services:
       mountPath: /app/uploads
       sizeGB: 1
 
+  # Jmix Admin: quản trị dữ liệu danh mục, nhúng vào trang admin qua nginx tại /jmix. Cần RAM >= 512 MB.
+  - type: pserv
+    name: vsmt-demo-jmix
+    runtime: docker
+    region: singapore
+    plan: starter
+    rootDir: jmix-admin
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: JAVA_TOOL_OPTIONS
+        value: -Xmx320m -XX:MaxMetaspaceSize=160m
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: vsmt-demo-db
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: vsmt-demo-db
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: vsmt-demo-db
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: vsmt-demo-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: vsmt-demo-db
+          property: password
+      - key: TZ
+        value: Asia/Ho_Chi_Minh
+
   - type: web
     name: vsmt-demo-web
     runtime: docker
@@ -61,6 +95,11 @@ services:
       - key: BACKEND_HOST
         fromService:
           name: vsmt-demo-backend
+          type: pserv
+          property: host
+      - key: JMIX_HOST
+        fromService:
+          name: vsmt-demo-jmix
           type: pserv
           property: host
 
