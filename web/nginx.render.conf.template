@@ -1,0 +1,28 @@
+server {
+    listen ${PORT};
+    root /usr/share/nginx/html;
+
+    # Render's private hostname is stable; the official nginx entrypoint
+    # substitutes BACKEND_HOST and PORT when the container starts.
+    location /api/ {
+        client_max_body_size 50m;
+        proxy_pass http://${BACKEND_HOST}:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+        proxy_connect_timeout 10s;
+        proxy_read_timeout 60s;
+    }
+
+    # Probe backend readiness too; Swagger is already public in Spring Security.
+    location = /healthz {
+        proxy_pass http://${BACKEND_HOST}:8080/v3/api-docs;
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 10s;
+        access_log off;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
