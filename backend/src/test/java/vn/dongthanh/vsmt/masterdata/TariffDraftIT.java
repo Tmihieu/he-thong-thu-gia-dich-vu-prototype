@@ -78,7 +78,7 @@ class TariffDraftIT extends IntegrationTest {
         String body = create(admin, "BG-70-2027", "2027-01-01", 45_000)
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("DRAFT"))
-                .andExpect(jsonPath("$.rates.length()").value(4))
+                .andExpect(jsonPath("$.rates.length()").value(6))
                 .andReturn().getResponse().getContentAsString();
         long id = ((Number) JsonPath.read(body, "$.id")).longValue();
 
