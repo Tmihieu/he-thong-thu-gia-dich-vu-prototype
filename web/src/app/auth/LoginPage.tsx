@@ -1,5 +1,5 @@
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
-import { Alert, Button, Card, Form, Input, Typography } from 'antd';
+import { Alert, Button, Card, Divider, Flex, Form, Input, Typography } from 'antd';
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 
@@ -8,6 +8,7 @@ import { homePath, ROLE_BASE } from '../layout/menuConfig';
 import { FullPageSpin } from '../pages/StatusPages';
 import { brand } from '../theme';
 import { type Role, useAuth } from './authContext';
+import { DEMO_ACCOUNTS, DEMO_LOGIN_ENABLED, DEMO_PASSWORD } from './demoAccounts';
 
 interface LoginForm {
   username: string;
@@ -53,7 +54,13 @@ export function LoginPage() {
         </Typography.Title>
         <Typography.Paragraph type="secondary" style={{ textAlign: 'center' }}>UBND xã Đông Thạnh · Thành phố Hồ Chí Minh</Typography.Paragraph>
         {error && <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} role="alert" />}
-        <Form<LoginForm> layout="vertical" onFinish={onFinish} requiredMark={false} disabled={submitting}>
+        <Form<LoginForm>
+          layout="vertical"
+          onFinish={onFinish}
+          requiredMark={false}
+          disabled={submitting}
+          initialValues={DEMO_LOGIN_ENABLED ? { username: DEMO_ACCOUNTS[0]!.username, password: DEMO_PASSWORD } : undefined}
+        >
           <Form.Item
             label="Tên đăng nhập"
             name="username"
@@ -68,6 +75,26 @@ export function LoginPage() {
             Đăng nhập
           </Button>
         </Form>
+        {DEMO_LOGIN_ENABLED && (
+          <>
+            <Divider plain style={{ fontSize: 13 }}>
+              Đăng nhập nhanh tài khoản demo
+            </Divider>
+            <Flex wrap gap={8} justify="center">
+              {DEMO_ACCOUNTS.map((a) => (
+                <Button
+                  key={a.username}
+                  size="small"
+                  disabled={submitting}
+                  title={a.username}
+                  onClick={() => void onFinish({ username: a.username, password: DEMO_PASSWORD })}
+                >
+                  {a.label}
+                </Button>
+              ))}
+            </Flex>
+          </>
+        )}
       </Card>
     </div>
   );

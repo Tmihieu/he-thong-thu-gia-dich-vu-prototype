@@ -5,6 +5,7 @@ import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleShee
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ApiError } from '../api/client';
+import { DEMO_OTP, DEMO_PHONE } from '../features/auth/demo';
 import { useSession } from '../features/auth/SessionProvider';
 import { validateOtp, validatePhone } from '../features/auth/validate';
 import { citizenApi } from '../features/citizen/api';
@@ -19,8 +20,8 @@ function describe(err: unknown): string {
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const { signIn } = useSession();
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
+  const [phone, setPhone] = useState(DEMO_PHONE);
+  const [otp, setOtp] = useState(DEMO_OTP);
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -49,7 +50,7 @@ export default function LoginScreen() {
   };
   const back = () => {
     setStep('phone');
-    setOtp('');
+    setOtp(DEMO_OTP);
     setFieldError(null);
     verify.reset();
   };

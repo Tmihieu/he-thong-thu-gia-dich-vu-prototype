@@ -5,6 +5,12 @@
 
 Mật khẩu chung của mọi tài khoản demo: **`Demo@2026`**
 
+Màn đăng nhập điền sẵn tài khoản demo để người trình diễn bấm là vào:
+
+- Web: điền sẵn `admin`, kèm nút đăng nhập nhanh theo vai trò. Tắt bằng `VITE_DEMO_LOGIN=false` lúc build.
+- Jmix (`/jmix`, mục *Quản trị dữ liệu*): điền sẵn `admin`. Tắt bằng `JMIX_DEMO_USERNAME=` (để trống).
+- App người dân: điền sẵn SĐT `0902000128` và OTP `123456`. Tắt bằng `EXPO_PUBLIC_DEMO_LOGIN=false`.
+
 | Tên đăng nhập | Vai trò | Họ tên (giả) | Công ty | Seed ở |
 |---|---|---|---|---|
 | `admin` | Quản trị (`ADMIN`) | Quản trị hệ thống | — | T05 · `V1_1__seed_users.sql` |
