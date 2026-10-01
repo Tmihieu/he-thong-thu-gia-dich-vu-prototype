@@ -5,7 +5,7 @@ import { Link, Outlet, useLocation } from 'react-router';
 
 import { NotificationBell } from '../../features/notifications/NotificationBell';
 import { type Me, useAuth } from '../auth/authContext';
-import { homePath, MENU, menuPath, ROLE_LABELS } from './menuConfig';
+import { homePath, MENU, menuPath } from './menuConfig';
 import './shell.css';
 
 const SYSTEM_NAME = 'Quản lý thu giá dịch vụ vệ sinh môi trường';
@@ -22,10 +22,7 @@ function MobileLayout({ user, onLogout }: { user: Me; onLogout: () => void }) {
     <div className="clm-shell">
       <header className="clm-hero">
         <img src="/logo-dong-thanh.jpg" alt="" />
-        <strong>
-          {user.fullName}
-          <small>{ROLE_LABELS[user.role]}</small>
-        </strong>
+        <strong>{user.fullName}</strong>
         <NotificationBell role={user.role} />
         <Button size="small" shape="circle" icon={<LogoutOutlined />} onClick={onLogout} aria-label="Đăng xuất" />
       </header>
@@ -76,7 +73,6 @@ export function RoleLayout() {
           <NotificationBell role={user.role} />
           <span className="top-user">
             <strong>{user.fullName}</strong>
-            <small>{ROLE_LABELS[user.role]}</small>
           </span>
           <span className="avatar" aria-hidden="true">
             {initials(user.fullName)}
@@ -88,10 +84,6 @@ export function RoleLayout() {
       </header>
 
       <aside className={`sidebar${drawerOpen ? ' open' : ''}`}>
-        <div className="role-card">
-          <span className="role-kicker">Vai trò</span>
-          <strong>{ROLE_LABELS[user.role]}</strong>
-        </div>
         <nav className="role-nav" aria-label="Menu chính">
           {MENU[user.role].map((entry) => {
             const to = menuPath(user.role, entry);

@@ -1,6 +1,7 @@
 import { Tabs, Typography } from 'antd';
 
 import { CompaniesPage } from './CompaniesPage/CompaniesPage';
+import { LocationsSettings } from './LocationsSettings';
 import { PeriodsPage } from './PeriodsPage/PeriodsPage';
 import { TariffsPage } from './TariffsPage/TariffsPage';
 
@@ -16,6 +17,7 @@ export function ConfigPage() {
           { key: 'periods', label: 'Kỳ thu', children: <PeriodsPage /> },
           { key: 'tariffs', label: 'Biểu giá', children: <TariffsPage /> },
           { key: 'companies', label: 'Công ty & địa bàn', children: <CompaniesPage admin /> },
+          { key: 'locations', label: 'Thiết lập địa bàn', children: <LocationsSettings /> },
         ]}
       />
     </>

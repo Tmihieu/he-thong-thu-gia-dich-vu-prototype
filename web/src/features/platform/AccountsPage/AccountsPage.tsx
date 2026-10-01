@@ -98,12 +98,7 @@ export function AccountsPage() {
               columns={[
                 {
                   title: 'Người dùng',
-                  render: (_, a) => (
-                    <>
-                      <div>{a.fullName}</div>
-                      <Typography.Text type="secondary">{a.username}</Typography.Text>
-                    </>
-                  ),
+                  dataIndex: 'fullName',
                 },
                 { title: 'Vai trò', render: (_, a) => <Tag color="blue">{ROLE_LABELS[a.role]}</Tag> },
                 {

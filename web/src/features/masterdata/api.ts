@@ -82,6 +82,27 @@ export function useAreas() {
   return useQuery({ queryKey: masterdataKeys.areas, queryFn: () => api.get<Area[]>('/api/masterdata/areas') });
 }
 
+export function useUpdateDistrict() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: Pick<District, 'name' | 'note' | 'sortOrder'> }) =>
+      api.put<District>(`/api/masterdata/districts/${id}`, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: masterdataKeys.districts }),
+  });
+}
+
+export function useUpdateArea() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: Pick<Area, 'name' | 'status'> }) =>
+      api.put<Area>(`/api/masterdata/areas/${id}`, body),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: masterdataKeys.areas });
+      await qc.invalidateQueries({ queryKey: masterdataKeys.assignments });
+    },
+  });
+}
+
 export function useCompanies() {
   return useQuery({ queryKey: masterdataKeys.companies, queryFn: () => api.get<Company[]>('/api/masterdata/companies') });
 }

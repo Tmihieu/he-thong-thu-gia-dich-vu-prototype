@@ -137,6 +137,9 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
           },
           { title: 'Khu vực đang phụ trách', align: 'right', render: (_, c) => areaCount.get(c.id) ?? 0 },
           { title: 'Trạng thái', render: (_, c) => statusTag(c.status) },
+          { title: 'Thao tác', align: 'right', render: (_, c) => (
+            <Button size="small" onClick={() => openForm(c)} aria-label={`Sửa ${c.name}`}>Sửa</Button>
+          ) },
         ]}
       />
 
