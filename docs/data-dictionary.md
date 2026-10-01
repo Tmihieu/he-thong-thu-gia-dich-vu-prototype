@@ -301,12 +301,14 @@ Hộ gia đình / hộ kinh doanh / doanh nghiệp. Hiển thị chung form "H�
 
 
 | Giá trị           | Nhãn               | Giá prototype (đ/tháng)      |
-| ----------------- | ------------------ | ---------------------------- |
-| `HH_UP_TO_2`      | HGĐ ≤ 2 người      | 40.000                       |
-| `HH_3_PLUS`       | HGĐ ≥ 3 người      | 80.000                       |
-| `SMALL_GENERATOR` | Chủ nguồn thải nhỏ | 119.000                      |
-| `BY_VOLUME` | Theo khối lượng | 1.266.000 (số tạm; đơn vị tính chờ QĐ 65/2026) |
-
+| Giá trị | Nhãn | Đơn giá demo (thu gom + vận chuyển) |
+| ----------------- | ------------------------------------ | --------------------------------------- |
+| `HH_UP_TO_2` | HGĐ ≤ 2 người | 29.000 + 11.000 = 40.000 đ/hộ/tháng |
+| `HH_3_PLUS` | HGĐ ≥ 3 người | 57.000 + 23.000 = 80.000 đ/hộ/tháng |
+| `SMALL_UP_TO_126` | Chủ nguồn thải nhỏ ≤ 126 kg/tháng | 57.000 + 23.000 = 80.000 đ/tháng |
+| `SMALL_126_TO_250` | Chủ nguồn thải nhỏ 126–250 kg/tháng | 85.000 + 34.000 = 119.000 đ/tháng |
+| `SMALL_250_TO_500` | Chủ nguồn thải nhỏ 250–500 kg/tháng | 170.000 + 68.000 = 238.000 đ/tháng |
+| `BY_VOLUME` | Chủ nguồn thải lớn 500–9.000 kg/tháng | 453 + 180 = 633 đ/kg (chưa lập được khoản, chờ tính theo ký) |
 
 **Khóa/ràng buộc:** `contract_no` duy nhất; mỗi `subject_id` tối đa 1 hợp đồng hiệu lực tại một thời điểm (exclusion constraint theo `daterange(valid_from, valid_to)`); `valid_to ≥ valid_from`.
 
@@ -337,14 +339,14 @@ Hộ gia đình / hộ kinh doanh / doanh nghiệp. Hiển thị chung form "H�
 | Phiên bản biểu giá | `tariff_version_id` | `FK→TariffVersion` | Có       | Hệ thống | 1           | Demo |                                               |
 | Nhóm giá           | `tariff_group`      | `enum TariffGroup` | Có       | Xã       | `HH_3_PLUS` | Demo |                                               |
 | Thu gom | `collection_fee` | `money` | Có | Xã | 57000 | Demo | Số tạm cho tới khi có QĐ 65/2026 (G9) |
-| Xử lý | `processing_fee` | `money` | Có | Xã | 23000 | Demo | Số tạm (G9) |
-| Tổng mỗi tháng | `monthly_total` | `money` | Có | Hệ thống | 80000 | Demo | = thu gom + xử lý (CHECK) |
-| Đơn vị tính | `unit_label` | `text(30)` | Có | Xã | đ/hộ/tháng | Demo | ⚠ Đơn vị của nhóm `BY_VOLUME` chưa rõ; tạm `đ/tháng` như prototype |
+| Vận chuyển | `transport_fee` | `money` | Có | Xã | 23000 | Demo | Số tạm (G9); trước đây gọi là "xử lý" |
+| Tổng mỗi tháng | `monthly_total` | `money` | Có | Hệ thống | 80000 | Demo | = thu gom + vận chuyển (CHECK); với nhóm đ/kg là tổng đơn giá mỗi kg |
+| Đơn vị tính | `unit_label` | `text(30)` | Có | Xã | đ/hộ/tháng | Demo | Cố định theo nhóm: `đ/hộ/tháng` (hộ gia đình), `đ/tháng` (chủ nguồn thải nhỏ), `đ/kg` (`BY_VOLUME`) |
 
 
-**Khóa/ràng buộc:** duy nhất `(tariff_version_id, tariff_group)`; `CHECK monthly_total = collection_fee + processing_fee`. Biểu giá chỉ gồm **2 thành phần** thu gom + xử lý, không tách vận chuyển và VAT (G9, trả lời 24/09/2026).
+**Khóa/ràng buộc:** duy nhất `(tariff_version_id, tariff_group)`; `CHECK monthly_total = collection_fee + transport_fee`. Biểu giá chỉ gồm **2 thành phần** thu gom + vận chuyển, không có VAT (G9; thành phần thứ hai đổi tên từ "xử lý" sang "vận chuyển" ngày 01/10/2026).
 
-**Seed tạm (số tạm, thay khi có QĐ 65/2026):** `HH_UP_TO_2` 29.000 + 11.000 = 40.000 · `HH_3_PLUS` 57.000 + 23.000 = 80.000 · `SMALL_GENERATOR` 119.000 + 0 · `BY_VOLUME` 1.266.000 + 0.
+**Seed `BG-65-2026`:** theo bảng QĐ 65/2026 như ở trên. Nhóm `BY_VOLUME` (500 đến dưới 9.000 kg/tháng) tính đ/kg nhưng chưa lập được khoản (`CHARGE_PER_KG_UNSUPPORTED`); doanh nghiệp mẫu tạm áp bậc `SMALL_250_TO_500`.
 
 ### FeeType — Loại phí · `fee_types` · Phần A
 
@@ -835,7 +837,7 @@ Chợ đồ cũ v2 (V25, [spec](cho-do-cu-spec.md)): thay tiêu đề/mô tả/l
 | code (BG-65-G2-H3, mỗi nhóm một mã) | → `TariffVersion.code` (một mã cho cả phiên bản) + `TariffRate` (mỗi nhóm một dòng)                             |
 | legal                               | → `TariffVersion.legal_basis`                                                                                   |
 | scope                               | → `TariffVersion.scope_note` + `TariffRate.tariff_group`                                                        |
-| collection / transport / processing | → `TariffRate.collection_fee` / `processing_fee` (tiền số); vận chuyển bỏ — biểu giá chỉ 2 thành phần (G9); "Theo định mức" bỏ |
+| collection / transport / processing | → `TariffRate.collection_fee` / `transport_fee` (tiền số); biểu giá chỉ 2 thành phần thu gom + vận chuyển (G9); "Theo định mức" bỏ |
 | effective                           | → `TariffVersion.valid_from`, `valid_to`                                                                        |
 | status                              | → `TariffVersion.status`                                                                                        |
 | Không liên kết với giá tính tiền    | bỏ hành vi — giá tính tiền lấy từ `TariffRate` của phiên bản gắn kỳ                                             |
@@ -1052,7 +1054,7 @@ Chợ đồ cũ v2 (V25, [spec](cho-do-cu-spec.md)): thay tiêu đề/mô tả/l
 | `CITIZEN_PROFILE.address`                                            | → `ServiceSubject.address` + `Area.name` + `District.name`                            |
 | `CITIZEN_PROFILE.company`                                            | → dẫn xuất từ `AreaAssignment` hiện hành của khu vực hộ                               |
 | `CITIZEN_BILL.period`, `due`, `total`                                | → `Charge` (`period_id`, `due_date`, `amount`)                                        |
-| `CITIZEN_BILL.lines` (45k/20k/12k/3k) | → 2 dòng thu gom + xử lý từ `TariffRate` (G9) |
+| `CITIZEN_BILL.lines` (45k/20k/12k/3k) | → 2 dòng thu gom + vận chuyển từ `TariffRate` (G9) |
 | `CITIZEN_BILL.history`                                               | → danh sách `Charge` các kỳ trước + `Payment`                                         |
 | `CITIZEN_SCHEDULE` \[thứ, khung giờ, loại rác\]                      | → `CollectionSchedule.weekday`/`week_of_month`, `start_time`/`end_time`, `waste_type` |
 | `CITIZEN_COMPLAINTS.id` (PA-…) | → `Complaint.code` (một mã chung `KN-MMYY-nnn`, D8) |
@@ -1104,7 +1106,7 @@ Người duyệt trả lời trực tiếp trong mục 5.1–5.3; ba chỗ trả
 | G6 | "Đã xử lý" = đóng kèm ghi chú; phiếu sai thì lập phiếu mới, không sửa/hủy | `ReceiptIssue`, `CompanyReceipt.status` |
 | G7 | Báo sai thông tin hộ chỉ phát thông báo `INFO`, không có entity | T53 |
 | G8 | Người dân chỉ ở `CitizenAccount`; bỏ `CITIZEN` khỏi enum `Role` | `User.role`, `CitizenAccount` |
-| G9 | Biểu giá gồm **thu gom + xử lý** (không tách vận chuyển, VAT). **Hỏi lại:** dùng số tạm, thay khi có QĐ | `TariffRate` |
+| G9 | Biểu giá gồm **thu gom + vận chuyển** (không có VAT; trước 01/10/2026 gọi thành phần này là "xử lý"). **Hỏi lại:** dùng số tạm, thay khi có QĐ | `TariffRate` |
 | G10 | Duyệt dependency: Lombok, JaCoCo, `spring-boot-starter-oauth2-resource-server`, `@ant-design/icons`, `fetch` tự bọc (không axios), `expo-secure-store`, `expo-image-picker` | T03, T04, T06, T22, T47 |
 | G11 | Kỳ quý dùng `Q{quý}{YY}` thay MMYY, vd. `YCT-Q426-01` | các cột `code` |
 | G12 | Công ty chỉ thấy khiếu nại đã được chuyển cho mình | `Complaint` |

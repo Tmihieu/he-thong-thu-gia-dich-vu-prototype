@@ -29,6 +29,10 @@ public class ChargeCalculator {
         int months;
         if (feeType.getPricingMode() == PricingMode.TARIFF) {
             group = contract.getTariffGroup();
+            if (group == TariffGroup.BY_VOLUME) {
+                // ponytail: đơn giá đ/kg cần số kg theo kỳ; làm khi có nguồn nhập số kg (todo "Tính theo ký").
+                throw new BusinessRuleException("CHARGE_PER_KG_UNSUPPORTED", "Nhóm giá tính theo ký (đ/kg) chưa hỗ trợ lập khoản.");
+            }
             TariffGroup g = group;
             unitPrice = period.getTariffVersion().rateFor(g)
                     .orElseThrow(() -> new BusinessRuleException("TARIFF_RATE_NOT_FOUND", "Biểu giá "

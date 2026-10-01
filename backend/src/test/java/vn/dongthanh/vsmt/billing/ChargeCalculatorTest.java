@@ -33,7 +33,8 @@ class ChargeCalculatorTest {
     {
         bg65.addRate(TariffGroup.HH_UP_TO_2, 29_000, 11_000, "đ/hộ/tháng");
         bg65.addRate(TariffGroup.HH_3_PLUS, 57_000, 23_000, "đ/hộ/tháng");
-        bg65.addRate(TariffGroup.BY_VOLUME, 1_266_000, 0, "đ/tháng");
+        bg65.addRate(TariffGroup.SMALL_250_TO_500, 170_000, 68_000, "đ/tháng");
+        bg65.addRate(TariffGroup.BY_VOLUME, 453, 180, "đ/kg");
     }
 
     final CollectionPeriod october = CollectionPeriod.open(PeriodType.MONTH, 2026, 10, null, LocalDate.of(2026, 10, 31), bg65);
@@ -59,8 +60,8 @@ class ChargeCalculatorTest {
     void envQuarterIsThreeMonths() {
         assertThat(calculator.calculate(env, q4, contract(TariffGroup.HH_UP_TO_2, false), null))
                 .isEqualTo(new ChargeAmount(TariffGroup.HH_UP_TO_2, 40_000L, 3, 120_000L, false));
-        assertThat(calculator.calculate(env, q4, contract(TariffGroup.BY_VOLUME, false), null).amount())
-                .isEqualTo(3_798_000L);
+        assertThat(calculator.calculate(env, q4, contract(TariffGroup.SMALL_250_TO_500, false), null).amount())
+                .isEqualTo(714_000L);
     }
 
     @Test
@@ -95,8 +96,14 @@ class ChargeCalculatorTest {
     }
 
     @Test
+    void perKgGroupIsNotBilledYet() {
+        assertThatThrownBy(() -> calculator.calculate(env, october, contract(TariffGroup.BY_VOLUME, false), null))
+                .extracting("code").isEqualTo("CHARGE_PER_KG_UNSUPPORTED");
+    }
+
+    @Test
     void groupWithoutRateInThePeriodTariffIsRejected() {
-        assertThatThrownBy(() -> calculator.calculate(env, october, contract(TariffGroup.SMALL_GENERATOR, false), null))
+        assertThatThrownBy(() -> calculator.calculate(env, october, contract(TariffGroup.SMALL_UP_TO_126, false), null))
                 .extracting("code").isEqualTo("TARIFF_RATE_NOT_FOUND");
     }
 

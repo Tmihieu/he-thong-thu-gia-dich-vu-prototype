@@ -1878,11 +1878,11 @@ export interface components {
         };
         RateRequest: {
             /** @enum {string} */
-            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_GENERATOR" | "BY_VOLUME";
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME";
             /** Format: int64 */
             collectionFee: number;
             /** Format: int64 */
-            processingFee: number;
+            transportFee: number;
             /** @example đ/hộ/tháng */
             unitLabel: string;
         };
@@ -1902,11 +1902,11 @@ export interface components {
         };
         TariffRateDto: {
             /** @enum {string} */
-            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_GENERATOR" | "BY_VOLUME";
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME";
             /** Format: int64 */
             collectionFee: number;
             /** Format: int64 */
-            processingFee: number;
+            transportFee: number;
             /** Format: int64 */
             monthlyTotal: number;
             /** @example đ/hộ/tháng */
@@ -1932,7 +1932,7 @@ export interface components {
         };
         ContractRequest: {
             /** @enum {string} */
-            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_GENERATOR" | "BY_VOLUME";
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME";
             /** Format: date */
             validFrom: string;
             /** Format: date */
@@ -1967,7 +1967,7 @@ export interface components {
             /** @example ĐK-DTH-0128 */
             contractNo: string;
             /** @enum {string} */
-            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_GENERATOR" | "BY_VOLUME";
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME";
             /** Format: date */
             validFrom: string;
             /** Format: date */
@@ -3277,7 +3277,7 @@ export interface components {
             periodCode: string;
             feeTypeCode: string;
             /** @enum {string|null} */
-            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_GENERATOR" | "BY_VOLUME" | null;
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME" | null;
             /** Format: int64 */
             unitPrice: number;
             /** Format: int32 */
@@ -3411,7 +3411,7 @@ export interface components {
         HouseholdContractDto: {
             contractNo: string;
             /** @enum {string} */
-            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_GENERATOR" | "BY_VOLUME";
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME";
             /** Format: date */
             validFrom: string;
             /** Format: date */

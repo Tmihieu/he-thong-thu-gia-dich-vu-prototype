@@ -66,16 +66,16 @@ public class TariffVersion extends BaseEntity {
         return v;
     }
 
-    public TariffRate addRate(TariffGroup group, long collectionFee, long processingFee, String unitLabel) {
-        TariffRate rate = TariffRate.create(this, group, collectionFee, processingFee, unitLabel);
+    public TariffRate addRate(TariffGroup group, long collectionFee, long transportFee, String unitLabel) {
+        TariffRate rate = TariffRate.create(this, group, collectionFee, transportFee, unitLabel);
         rates.add(rate);
         return rate;
     }
 
     /** Đặt đơn giá một nhóm (dự thảo): có rồi thì sửa tại chỗ, chưa có thì thêm. */
-    public void putRate(TariffGroup group, long collectionFee, long processingFee, String unitLabel) {
-        rateFor(group).ifPresentOrElse(r -> r.update(collectionFee, processingFee, unitLabel),
-                () -> addRate(group, collectionFee, processingFee, unitLabel));
+    public void putRate(TariffGroup group, long collectionFee, long transportFee, String unitLabel) {
+        rateFor(group).ifPresentOrElse(r -> r.update(collectionFee, transportFee, unitLabel),
+                () -> addRate(group, collectionFee, transportFee, unitLabel));
     }
 
     /** Ban hành dự thảo: chuyển sang Đang áp dụng, ghi ngày ban hành. */

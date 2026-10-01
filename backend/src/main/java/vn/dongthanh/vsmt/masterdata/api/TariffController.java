@@ -58,7 +58,7 @@ public class TariffController {
         return TariffVersionDto.of(tariffs.createDraft(req.code(), req.draft().toCommand(), actor));
     }
 
-    @Operation(summary = "Sửa dự thảo biểu giá (quản trị); bản đã ban hành không sửa được")
+    @Operation(summary = "Sửa biểu giá (quản trị); bản đã ban hành giữ nguyên ngày hiệu lực")
     @PutMapping("/tariffs/{id}")
     public TariffVersionDto updateDraft(@PathVariable Long id, @Valid @RequestBody TariffDraftRequest req,
             @AuthenticationPrincipal CurrentUser actor) {
@@ -80,7 +80,7 @@ public class TariffController {
     public record RateRequest(
             @Schema(requiredMode = RequiredMode.REQUIRED) @NotNull(message = "không được để trống") TariffGroup tariffGroup,
             @Schema(requiredMode = RequiredMode.REQUIRED) @PositiveOrZero long collectionFee,
-            @Schema(requiredMode = RequiredMode.REQUIRED) @PositiveOrZero long processingFee,
+            @Schema(requiredMode = RequiredMode.REQUIRED) @PositiveOrZero long transportFee,
             @Schema(requiredMode = RequiredMode.REQUIRED, example = "đ/hộ/tháng")
             @NotBlank(message = "không được để trống") @Size(max = 30) String unitLabel) {
     }
@@ -96,7 +96,7 @@ public class TariffController {
 
         DraftCommand toCommand() {
             return new DraftCommand(legalBasis, validFrom, validTo, blankToNull(scopeNote), blankToNull(note),
-                    rates.stream().map(r -> new RateInput(r.tariffGroup(), r.collectionFee(), r.processingFee(),
+                    rates.stream().map(r -> new RateInput(r.tariffGroup(), r.collectionFee(), r.transportFee(),
                             r.unitLabel())).toList());
         }
 
@@ -114,12 +114,12 @@ public class TariffController {
     public record TariffRateDto(
             @Schema(requiredMode = RequiredMode.REQUIRED) TariffGroup tariffGroup,
             @Schema(requiredMode = RequiredMode.REQUIRED) long collectionFee,
-            @Schema(requiredMode = RequiredMode.REQUIRED) long processingFee,
+            @Schema(requiredMode = RequiredMode.REQUIRED) long transportFee,
             @Schema(requiredMode = RequiredMode.REQUIRED) long monthlyTotal,
             @Schema(requiredMode = RequiredMode.REQUIRED, example = "đ/hộ/tháng") String unitLabel) {
 
         static TariffRateDto of(TariffRate r) {
-            return new TariffRateDto(r.getTariffGroup(), r.getCollectionFee(), r.getProcessingFee(),
+            return new TariffRateDto(r.getTariffGroup(), r.getCollectionFee(), r.getTransportFee(),
                     r.getMonthlyTotal(), r.getUnitLabel());
         }
     }

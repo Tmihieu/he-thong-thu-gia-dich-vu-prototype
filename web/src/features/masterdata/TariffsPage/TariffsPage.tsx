@@ -20,19 +20,21 @@ function errorMessage(err: unknown): string | null {
   return err instanceof ApiError ? err.message : 'Thao tác không thành công. Vui lòng thử lại.';
 }
 
+const GROUP_ORDER = Object.keys(TARIFF_GROUP_LABELS);
+
 function RatesTable({ rates }: { rates: TariffRate[] }) {
   return (
     <Table<TariffRate>
       size="small"
       rowKey="tariffGroup"
       pagination={false}
-      dataSource={rates}
+      dataSource={[...rates].sort((a, b) => GROUP_ORDER.indexOf(a.tariffGroup) - GROUP_ORDER.indexOf(b.tariffGroup))}
       columns={[
         { title: 'Nhóm giá', dataIndex: 'tariffGroup', render: (g: TariffRate['tariffGroup']) => TARIFF_GROUP_LABELS[g] },
         { title: 'Thu gom', dataIndex: 'collectionFee', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-        { title: 'Xử lý', dataIndex: 'processingFee', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+        { title: 'Vận chuyển', dataIndex: 'transportFee', align: 'right', render: (v: number) => <MoneyText value={v} /> },
         {
-          title: 'Tổng mỗi tháng',
+          title: 'Tổng cộng',
           dataIndex: 'monthlyTotal',
           align: 'right',
           render: (v: number) => <MoneyText value={v} strong />,
@@ -43,10 +45,7 @@ function RatesTable({ rates }: { rates: TariffRate[] }) {
   );
 }
 
-/**
- * Phiên bản biểu giá; mở rộng một dòng để xem đơn giá 4 nhóm. Quản trị soạn dự thảo, sửa khi còn dự thảo rồi ban hành;
- * bản đã ban hành không sửa (29/09/2026).
- */
+/** Quản trị soạn, sửa và ban hành biểu giá; khoản đã lập giữ nguyên số tiền. */
 export function TariffsPage() {
   const { message } = App.useApp();
   const tariffs = useTariffs();
@@ -65,7 +64,7 @@ export function TariffsPage() {
 
   function saved(v: TariffVersion) {
     setEditing(undefined);
-    message.success(`Đã lưu dự thảo ${v.code}`);
+    message.success(`Đã lưu ${v.code}`);
   }
 
   return (
@@ -116,17 +115,16 @@ export function TariffsPage() {
             title: '',
             align: 'right',
             render: (_, v) =>
-              v.status === 'DRAFT' && (
+              (
                 <Space>
                   <Button size="small" onClick={() => openForm(v)}>
                     Sửa
                   </Button>
-                  <Popconfirm
+                  {v.status === 'DRAFT' && <Popconfirm
                     title={`Ban hành ${v.code}?`}
                     description={
                       <div style={{ maxWidth: 320 }}>
-                        Áp dụng từ <DateText value={v.validFrom} />. Bản đang áp dụng kết thúc ngay trước ngày này. Đã ban hành
-                        thì không sửa được.
+                        Áp dụng từ <DateText value={v.validFrom} />. Bản đang áp dụng kết thúc ngay trước ngày này.
                       </div>
                     }
                     okText="Ban hành"
@@ -141,7 +139,7 @@ export function TariffsPage() {
                     <Button size="small" type="primary">
                       Ban hành
                     </Button>
-                  </Popconfirm>
+                  </Popconfirm>}
                 </Space>
               ),
           },

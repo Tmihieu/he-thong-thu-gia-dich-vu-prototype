@@ -7,6 +7,7 @@ import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,8 +29,7 @@ import vn.dongthanh.vsmt.platform.security.CurrentUser;
 import vn.dongthanh.vsmt.platform.service.AuditService;
 
 /**
- * Quản trị soạn dự thảo biểu giá rồi ban hành; bản đã ban hành không sửa, kỳ đã mở giữ phiên bản của mình và khoản đã
- * lập giữ số tiền đã chụp (người dùng chốt 29/09/2026).
+ * Quản trị soạn, ban hành và sửa biểu giá; bản đã ban hành giữ hiệu lực, khoản đã lập giữ số tiền đã chụp.
  * Tra biểu giá theo ngày. Phiên bản áp dụng cho một ngày là phiên bản đã ban hành (không phải dự thảo)
  * có hiệu lực bao trùm ngày đó; phiên bản đã hết hiệu lực vẫn dùng được cho ngày trong quá khứ (kỳ 08/2026).
  */
@@ -47,7 +47,7 @@ public class TariffService {
     private final AuditService audit;
     private final Clock clock;
 
-    public record RateInput(TariffGroup group, long collectionFee, long processingFee, String unitLabel) {
+    public record RateInput(TariffGroup group, long collectionFee, long transportFee, String unitLabel) {
     }
 
     public record DraftCommand(String legalBasis, LocalDate validFrom, LocalDate validTo, String scopeNote,
@@ -99,10 +99,18 @@ public class TariffService {
     @Transactional
     public TariffVersion updateDraft(Long id, DraftCommand cmd, CurrentUser actor) {
         actor.requireRole(Role.ADMIN);
-        TariffVersion v = draft(id);
+        TariffVersion v = versions.findById(id)
+                .orElseThrow(() -> new NotFoundException("TARIFF_NOT_FOUND", "Không tìm thấy biểu giá."));
+        boolean issued = v.getStatus() != TariffStatus.DRAFT;
+        if (issued && (!Objects.equals(v.getValidFrom(), cmd.validFrom())
+                || !Objects.equals(v.getValidTo(), cmd.validTo()))) {
+            throw new BusinessRuleException("TARIFF_VALIDITY_LOCKED",
+                    "Biểu giá đã ban hành giữ nguyên ngày hiệu lực. Hãy tạo phiên bản mới để đổi thời gian áp dụng.");
+        }
         Map<String, Object> before = snapshot(v);
         apply(v, cmd);
-        audit.record(actor, "UPDATE_TARIFF_DRAFT", ENTITY, v.getCode(), before, snapshot(v));
+        audit.record(actor, issued ? "UPDATE_TARIFF_VERSION" : "UPDATE_TARIFF_DRAFT", ENTITY,
+                v.getCode(), before, snapshot(v));
         return v;
     }
 
@@ -158,7 +166,7 @@ public class TariffService {
                 .orElseThrow(() -> new NotFoundException("TARIFF_NOT_FOUND", "Không tìm thấy biểu giá."));
         if (v.getStatus() != TariffStatus.DRAFT) {
             throw new BusinessRuleException("TARIFF_NOT_DRAFT",
-                    "Biểu giá " + v.getCode() + " đã ban hành, không sửa được. Hãy tạo dự thảo mới.");
+                    "Biểu giá " + v.getCode() + " đã được ban hành.");
         }
         return v;
     }
@@ -170,14 +178,14 @@ public class TariffService {
         EnumSet<TariffGroup> given = EnumSet.noneOf(TariffGroup.class);
         cmd.rates().forEach(r -> given.add(r.group()));
         if (given.size() != cmd.rates().size() || !given.equals(EnumSet.allOf(TariffGroup.class))) {
-            throw new BusinessRuleException("TARIFF_RATES_INCOMPLETE", "Biểu giá phải có đơn giá cho đủ 4 nhóm giá.");
+            throw new BusinessRuleException("TARIFF_RATES_INCOMPLETE", "Biểu giá phải có đơn giá cho đủ các nhóm giá.");
         }
         v.setLegalBasis(cmd.legalBasis().trim());
         v.setValidFrom(cmd.validFrom());
         v.setValidTo(cmd.validTo());
         v.setScopeNote(cmd.scopeNote());
         v.setNote(cmd.note());
-        cmd.rates().forEach(r -> v.putRate(r.group(), r.collectionFee(), r.processingFee(), r.unitLabel().trim()));
+        cmd.rates().forEach(r -> v.putRate(r.group(), r.collectionFee(), r.transportFee(), r.unitLabel().trim()));
     }
 
     private static Map<String, Object> snapshot(TariffVersion v) {
@@ -187,7 +195,11 @@ public class TariffService {
         m.put("validFrom", v.getValidFrom());
         m.put("validTo", v.getValidTo());
         m.put("status", v.getStatus());
-        v.getRates().forEach(r -> m.put(r.getTariffGroup().name(), r.getMonthlyTotal()));
+        m.put("scopeNote", v.getScopeNote());
+        m.put("note", v.getNote());
+        v.getRates().forEach(r -> m.put(r.getTariffGroup().name(), Map.of(
+                "collectionFee", r.getCollectionFee(), "transportFee", r.getTransportFee(),
+                "monthlyTotal", r.getMonthlyTotal(), "unitLabel", r.getUnitLabel())));
         return m;
     }
 

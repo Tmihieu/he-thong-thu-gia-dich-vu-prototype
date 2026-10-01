@@ -114,9 +114,9 @@ class TariffIT extends IntegrationTest {
     void totalMustEqualComponentsInTheDatabase() {
         Long versionId = versions.findByCode("BG-65-2026").orElseThrow().getId();
         assertThatThrownBy(() -> jdbc.update("""
-                insert into tariff_rates (tariff_version_id, tariff_group, collection_fee, processing_fee,
+                insert into tariff_rates (tariff_version_id, tariff_group, collection_fee, transport_fee,
                                           monthly_total, unit_label)
-                values (?, 'SMALL_GENERATOR', 100000, 0, 119000, 'đ/tháng')""", versionId))
+                values (?, 'SMALL_UP_TO_126', 100000, 0, 119000, 'đ/tháng')""", versionId))
                 .isInstanceOf(DataIntegrityViolationException.class)
                 .hasMessageContaining("ck_tariff_rates_total");
     }

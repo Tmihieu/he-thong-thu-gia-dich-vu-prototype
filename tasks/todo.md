@@ -794,7 +794,7 @@
 ## Dữ liệu dân cư theo yêu cầu của xã (28/09/2026)
 
 - [x] Tách địa chỉ thành số nhà + đường (V23), hộ gia đình bắt buộc số thành viên, nhóm giá HGĐ khớp số thành viên, nhãn "Tổ/Ấp/Thôn".
-- [ ] **Để sau — Tính theo ký (đ/kg).** Áp dụng cho: chủ nguồn thải lớn; chủ nguồn thải nhỏ phát sinh 500 kg đến dưới 9.000 kg/tháng; hộ đã phân loại rác tại nguồn đúng quy định. Cần: số kg theo từng hộ từng kỳ, đơn giá đ/kg của nhóm `BY_VOLUME`, sinh khoản = kg × đơn giá. Còn hỏi: đơn giá lấy từ đâu, ai nhập số kg hằng tháng.
+- [ ] **Để sau — Tính theo ký (đ/kg).** Nhóm `BY_VOLUME` (chủ nguồn thải 500 đến dưới 9.000 kg/tháng; hộ đã phân loại rác tại nguồn đúng quy định cũng tính theo ký). Biểu giá đã có đơn giá đ/kg (453 + 180) nhưng `ChargeCalculator` chặn lập khoản nhóm này. Cần: số kg theo từng đối tượng từng kỳ, sinh khoản = kg × đơn giá. Còn hỏi: ai nhập số kg hằng tháng.
 - [ ] **Để sau — Nạp dữ liệu dân cư hàng loạt** (Excel/CSV đúng 8 cột xã đưa, kiểm từng dòng, lỗi thì không ghi). Còn hỏi: chỉ cho demo hay file thật, xã có mã hộ sẵn không.
 - Miễn giảm: giữ cờ miễn 100% như hiện tại (quyết định 28/09/2026); từ 29/09/2026 bật cờ tạo đề nghị để lãnh đạo duyệt sau (T56).
 

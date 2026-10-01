@@ -34,7 +34,7 @@ import vn.dongthanh.vsmt.platform.domain.UserRepository;
 import vn.dongthanh.vsmt.platform.security.JwtService;
 import vn.dongthanh.vsmt.support.IntegrationTest;
 
-/** Dự thảo và ban hành biểu giá (người dùng chốt 29/09/2026: bản đã ban hành không sửa). */
+/** Soạn, ban hành và sửa biểu giá; bản đã ban hành giữ nguyên hiệu lực. */
 @Transactional
 class TariffDraftIT extends IntegrationTest {
 
@@ -102,19 +102,35 @@ class TariffDraftIT extends IntegrationTest {
                 .containsExactly("CREATE_TARIFF_DRAFT", "UPDATE_TARIFF_DRAFT", "END_TARIFF_VERSION",
                         "ISSUE_TARIFF_VERSION");
 
-        // Đã ban hành thì không sửa, không ban hành lại.
+        // Đã ban hành được sửa đơn giá nhưng không ban hành lại.
         mvc.perform(put("/api/masterdata/tariffs/" + id).header(HttpHeaders.AUTHORIZATION, admin)
                 .contentType(MediaType.APPLICATION_JSON).content(draft("2027-01-01", 1)))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("TARIFF_NOT_DRAFT"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rates[0].collectionFee").value(1))
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
+        assertThat(jdbc.queryForObject("select count(*) from audit_logs where action = 'UPDATE_TARIFF_VERSION'",
+                Integer.class)).isEqualTo(1);
         issue(admin, id).andExpect(status().isUnprocessableEntity());
     }
 
     @Test
-    void draftMustHaveAllFourGroupsAndUniqueCode() throws Exception {
+    void issuedValidityCannotChangeAndOnlyAdminCanEdit() throws Exception {
+        mvc.perform(put("/api/masterdata/tariffs/" + bg65.getId()).header(HttpHeaders.AUTHORIZATION, admin)
+                .contentType(MediaType.APPLICATION_JSON).content(draft("2026-10-01", 50_000)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("TARIFF_VALIDITY_LOCKED"));
+        mvc.perform(put("/api/masterdata/tariffs/" + bg65.getId())
+                .header(HttpHeaders.AUTHORIZATION, token("officer_edit", Role.COMMUNE_OFFICER))
+                .contentType(MediaType.APPLICATION_JSON).content(draft("2026-09-01", 50_000)))
+                .andExpect(status().isForbidden());
+        assertThat(bg65.rateFor(TariffGroup.HH_UP_TO_2).orElseThrow().getCollectionFee()).isEqualTo(30_000);
+    }
+
+    @Test
+    void draftMustHaveAllGroupsAndUniqueCode() throws Exception {
         String threeGroups = """
                 {"code":"BG-THIEU","draft":{"legalBasis":"QĐ","validFrom":"2027-01-01","rates":[%s,%s,%s]}}"""
-                .formatted(rate("HH_UP_TO_2", 1), rate("HH_3_PLUS", 1), rate("SMALL_GENERATOR", 1));
+                .formatted(rate("HH_UP_TO_2", 1), rate("HH_3_PLUS", 1), rate("SMALL_UP_TO_126", 1));
         mvc.perform(post("/api/masterdata/tariffs").header(HttpHeaders.AUTHORIZATION, admin)
                 .contentType(MediaType.APPLICATION_JSON).content(threeGroups))
                 .andExpect(status().isUnprocessableEntity())
@@ -162,14 +178,15 @@ class TariffDraftIT extends IntegrationTest {
 
     private static String draft(String validFrom, long fee) {
         return """
-                {"legalBasis":"QĐ 70/2026/QĐ-UBND","validFrom":"%s","rates":[%s,%s,%s,%s]}"""
-                .formatted(validFrom, rate("HH_UP_TO_2", fee), rate("HH_3_PLUS", fee), rate("SMALL_GENERATOR", fee),
+                {"legalBasis":"QĐ 70/2026/QĐ-UBND","validFrom":"%s","rates":[%s,%s,%s,%s,%s,%s]}"""
+                .formatted(validFrom, rate("HH_UP_TO_2", fee), rate("HH_3_PLUS", fee), rate("SMALL_UP_TO_126", fee),
+                        rate("SMALL_126_TO_250", fee), rate("SMALL_250_TO_500", fee),
                         rate("BY_VOLUME", fee));
     }
 
     private static String rate(String group, long fee) {
         return """
-                {"tariffGroup":"%s","collectionFee":%d,"processingFee":10000,"unitLabel":"đ/hộ/tháng"}"""
+                {"tariffGroup":"%s","collectionFee":%d,"transportFee":10000,"unitLabel":"đ/hộ/tháng"}"""
                 .formatted(group, fee);
     }
 

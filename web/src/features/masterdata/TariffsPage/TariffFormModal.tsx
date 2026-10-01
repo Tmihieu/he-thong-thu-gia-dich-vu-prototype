@@ -6,12 +6,14 @@ import { MoneyText } from '../../../shared/MoneyText';
 import type { CreateTariffRequest, TariffDraftRequest, TariffRate, TariffVersion } from '../api';
 
 type Group = TariffRate['tariffGroup'];
-const GROUPS: Group[] = ['HH_UP_TO_2', 'HH_3_PLUS', 'SMALL_GENERATOR', 'BY_VOLUME'];
+const GROUPS = Object.keys(TARIFF_GROUP_LABELS) as Group[];
+/** Đơn vị tính cố định theo nhóm: chủ nguồn thải 500–9.000 kg tính theo ký, còn lại theo tháng. */
+const unitOf = (g: Group) => (g === 'BY_VOLUME' ? 'đ/kg' : g.startsWith('HH_') ? 'đ/hộ/tháng' : 'đ/tháng');
 
 interface RateValues {
   tariffGroup: Group;
   collectionFee?: number | null;
-  processingFee?: number | null;
+  transportFee?: number | null;
   unitLabel?: string;
 }
 
@@ -26,7 +28,7 @@ interface FormValues {
 }
 
 interface Props {
-  /** Dự thảo đang sửa; null = tạo mới. */
+  /** Biểu giá đang sửa; null = tạo mới. */
   draft: TariffVersion | null;
   /** Bản lấy đơn giá gợi ý khi tạo mới (thường là bản đang áp dụng). */
   template?: TariffVersion;
@@ -47,11 +49,12 @@ const money = {
   parser: (v?: string) => Number((v ?? '').replace(/\D/g, '')),
 };
 
-/** Popup soạn dự thảo biểu giá: đủ đơn giá 4 nhóm; tổng mỗi tháng = thu gom + xử lý. */
+/** Popup soạn dự thảo biểu giá: đủ đơn giá các nhóm; tổng = thu gom + vận chuyển. */
 export function TariffFormModal({ draft, template, open, submitting, error, onCreate, onUpdate, onCancel }: Props) {
   const [form] = Form.useForm<FormValues>();
   const rates = Form.useWatch('rates', form);
   const source = draft ?? template;
+  const issued = !!draft && draft.status !== 'DRAFT';
 
   const initial: FormValues = {
     code: draft?.code,
@@ -62,7 +65,7 @@ export function TariffFormModal({ draft, template, open, submitting, error, onCr
     note: draft?.note,
     rates: GROUPS.map((g) => {
       const r = source?.rates.find((x) => x.tariffGroup === g);
-      return { tariffGroup: g, collectionFee: r?.collectionFee, processingFee: r?.processingFee, unitLabel: r?.unitLabel };
+      return { tariffGroup: g, collectionFee: r?.collectionFee, transportFee: r?.transportFee, unitLabel: unitOf(g) };
     }),
   };
 
@@ -76,7 +79,7 @@ export function TariffFormModal({ draft, template, open, submitting, error, onCr
       rates: v.rates.map((r) => ({
         tariffGroup: r.tariffGroup,
         collectionFee: r.collectionFee!,
-        processingFee: r.processingFee!,
+        transportFee: r.transportFee!,
         unitLabel: r.unitLabel!.trim(),
       })),
     };
@@ -88,18 +91,21 @@ export function TariffFormModal({ draft, template, open, submitting, error, onCr
 
   return (
     <Modal
-      title={draft ? `Sửa dự thảo ${draft.code}` : 'Tạo dự thảo biểu giá'}
+      title={draft ? `Sửa ${issued ? 'biểu giá' : 'dự thảo'} ${draft.code}` : 'Tạo dự thảo biểu giá'}
       open={open}
       onCancel={onCancel}
       onOk={() => form.submit()}
-      okText={draft ? 'Lưu dự thảo' : 'Tạo dự thảo'}
+      okText={issued ? 'Lưu thay đổi' : draft ? 'Lưu dự thảo' : 'Tạo dự thảo'}
       cancelText="Hủy"
       confirmLoading={submitting}
       destroyOnHidden
-      width={760}
+      width={900}
     >
       <Form<FormValues> form={form} layout="vertical" requiredMark={false} preserve={false} initialValues={initial} onFinish={finish}>
         {error && <Alert type="error" showIcon message={error} role="alert" style={{ marginBottom: 16 }} />}
+        {issued && <Typography.Paragraph type="secondary">
+          Thay đổi áp dụng cho khoản lập sau khi lưu. Khoản đã lập giữ nguyên số tiền; ngày hiệu lực không thay đổi.
+        </Typography.Paragraph>}
         <Row gutter={16}>
           <Col xs={24} md={8}>
             <Form.Item label="Mã biểu giá" name="code" rules={[{ required: true, whitespace: true, message: 'Vui lòng nhập mã' }]}>
@@ -113,7 +119,7 @@ export function TariffFormModal({ draft, template, open, submitting, error, onCr
           </Col>
           <Col xs={12} md={8}>
             <Form.Item label="Hiệu lực từ" name="validFrom" rules={required('Vui lòng chọn ngày')}>
-              <DatePicker format="DD/MM/YYYY" placeholder="dd/mm/yyyy" style={{ width: '100%' }} />
+              <DatePicker disabled={issued} format="DD/MM/YYYY" placeholder="dd/mm/yyyy" style={{ width: '100%' }} />
             </Form.Item>
           </Col>
           <Col xs={12} md={8}>
@@ -131,7 +137,7 @@ export function TariffFormModal({ draft, template, open, submitting, error, onCr
                 }),
               ]}
             >
-              <DatePicker format="DD/MM/YYYY" placeholder="dd/mm/yyyy" style={{ width: '100%' }} />
+              <DatePicker disabled={issued} format="DD/MM/YYYY" placeholder="dd/mm/yyyy" style={{ width: '100%' }} />
             </Form.Item>
           </Col>
           <Col xs={24} md={8}>
@@ -143,11 +149,11 @@ export function TariffFormModal({ draft, template, open, submitting, error, onCr
 
         <Typography.Text strong>Đơn giá theo nhóm</Typography.Text>
         <Row gutter={12} style={{ margin: '8px 0 4px', color: 'rgba(0,0,0,.55)', fontSize: 12 }}>
-          <Col span={6}>Nhóm giá</Col>
-          <Col span={5}>Thu gom (đ)</Col>
-          <Col span={5}>Xử lý (đ)</Col>
-          <Col span={4}>Đơn vị tính</Col>
-          <Col span={4} style={{ textAlign: 'right' }}>Tổng mỗi tháng</Col>
+          <Col span={8}>Nhóm giá</Col>
+          <Col span={4}>Thu gom (đ)</Col>
+          <Col span={4}>Vận chuyển (đ)</Col>
+          <Col span={3}>Đơn vị tính</Col>
+          <Col span={5} style={{ textAlign: 'right' }}>Tổng cộng</Col>
         </Row>
         <Form.List name="rates">
           {(fields) =>
@@ -155,26 +161,26 @@ export function TariffFormModal({ draft, template, open, submitting, error, onCr
               const r = rates?.[i];
               return (
                 <Row key={f.key} gutter={12} align="top">
-                  <Col span={6} style={{ paddingTop: 5 }}>
+                  <Col span={8} style={{ paddingTop: 5 }}>
                     {TARIFF_GROUP_LABELS[initial.rates[i]!.tariffGroup]}
                   </Col>
-                  <Col span={5}>
+                  <Col span={4}>
                     <Form.Item name={[f.name, 'collectionFee']} rules={required('Nhập số')}>
                       <InputNumber<number> {...money} aria-label={`Thu gom ${TARIFF_GROUP_LABELS[initial.rates[i]!.tariffGroup]}`} />
                     </Form.Item>
                   </Col>
-                  <Col span={5}>
-                    <Form.Item name={[f.name, 'processingFee']} rules={required('Nhập số')}>
-                      <InputNumber<number> {...money} aria-label={`Xử lý ${TARIFF_GROUP_LABELS[initial.rates[i]!.tariffGroup]}`} />
-                    </Form.Item>
-                  </Col>
                   <Col span={4}>
-                    <Form.Item name={[f.name, 'unitLabel']} rules={[{ required: true, whitespace: true, message: 'Nhập' }]}>
-                      <Input maxLength={30} placeholder="đ/hộ/tháng" />
+                    <Form.Item name={[f.name, 'transportFee']} rules={required('Nhập số')}>
+                      <InputNumber<number> {...money} aria-label={`Vận chuyển ${TARIFF_GROUP_LABELS[initial.rates[i]!.tariffGroup]}`} />
                     </Form.Item>
                   </Col>
-                  <Col span={4} style={{ paddingTop: 5, textAlign: 'right' }}>
-                    <MoneyText value={(r?.collectionFee ?? 0) + (r?.processingFee ?? 0)} strong />
+                  <Col span={3}>
+                    <Form.Item name={[f.name, 'unitLabel']} rules={[{ required: true, whitespace: true, message: 'Nhập' }]}>
+                      <Input maxLength={30} disabled />
+                    </Form.Item>
+                  </Col>
+                  <Col span={5} style={{ paddingTop: 5, textAlign: 'right' }}>
+                    <MoneyText value={(r?.collectionFee ?? 0) + (r?.transportFee ?? 0)} strong />
                   </Col>
                 </Row>
               );

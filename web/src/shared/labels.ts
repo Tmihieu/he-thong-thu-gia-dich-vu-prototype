@@ -28,8 +28,10 @@ export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
 export const TARIFF_GROUP_LABELS: Record<TariffGroup, string> = {
   HH_UP_TO_2: 'HGĐ ≤ 2 người',
   HH_3_PLUS: 'HGĐ ≥ 3 người',
-  SMALL_GENERATOR: 'Chủ nguồn thải nhỏ',
-  BY_VOLUME: 'Theo khối lượng',
+  SMALL_UP_TO_126: 'Chủ nguồn thải nhỏ ≤ 126 kg/tháng',
+  SMALL_126_TO_250: 'Chủ nguồn thải nhỏ 126–250 kg/tháng',
+  SMALL_250_TO_500: 'Chủ nguồn thải nhỏ 250–500 kg/tháng',
+  BY_VOLUME: 'Chủ nguồn thải lớn 500–9.000 kg/tháng',
 };
 
 export const TARIFF_STATUS_LABELS: Record<TariffStatus, string> = {

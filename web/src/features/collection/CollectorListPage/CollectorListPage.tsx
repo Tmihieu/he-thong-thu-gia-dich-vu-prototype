@@ -32,7 +32,7 @@ function streetOf(address: string) {
   return (address.split(',')[0] ?? '').replace(/^\s*\S*\d\S*\s+/, '').trim() || address;
 }
 
-const isBusiness = (w: CollectorCharge) => w.charge.tariffGroup === 'SMALL_GENERATOR' || w.charge.tariffGroup === 'BY_VOLUME';
+const isBusiness = (w: CollectorCharge) => w.charge.tariffGroup?.startsWith('HH_') === false;
 
 /** Danh sách thu của người đi thu (giao diện điện thoại, theo prototype collector-mobile: thẻ hợp đồng, nút lọc, bottom sheet). */
 export function CollectorListPage() {

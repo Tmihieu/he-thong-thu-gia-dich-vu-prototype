@@ -111,7 +111,7 @@ class TariffServiceTest {
     void rateTotalIsSumOfComponentsAndNegativeIsRejected() {
         TariffVersion v = version("BG-X", "2026-01-01", null, TariffStatus.DRAFT);
 
-        assertThat(v.addRate(TariffGroup.SMALL_GENERATOR, 119_000, 0, "đ/tháng").getMonthlyTotal()).isEqualTo(119_000);
+        assertThat(v.addRate(TariffGroup.SMALL_UP_TO_126, 119_000, 0, "đ/tháng").getMonthlyTotal()).isEqualTo(119_000);
         assertThatThrownBy(() -> v.addRate(TariffGroup.BY_VOLUME, -1, 0, "đ/tháng"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
