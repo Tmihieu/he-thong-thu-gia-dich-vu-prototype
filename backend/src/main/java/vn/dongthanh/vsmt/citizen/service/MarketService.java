@@ -38,9 +38,13 @@ import vn.dongthanh.vsmt.citizen.domain.MarketCommentRepository;
 import vn.dongthanh.vsmt.citizen.domain.MarketCommentRepository.CommentCount;
 import vn.dongthanh.vsmt.citizen.domain.MarketImage;
 import vn.dongthanh.vsmt.citizen.domain.MarketImageRepository;
+import vn.dongthanh.vsmt.citizen.domain.MarketModeration;
 import vn.dongthanh.vsmt.citizen.domain.MarketPost;
+import vn.dongthanh.vsmt.citizen.domain.MarketPostReport;
+import vn.dongthanh.vsmt.citizen.domain.MarketPostReportRepository;
 import vn.dongthanh.vsmt.citizen.domain.MarketPostRepository;
 import vn.dongthanh.vsmt.citizen.domain.MarketPostStatus;
+import vn.dongthanh.vsmt.citizen.domain.MarketReportReason;
 import vn.dongthanh.vsmt.citizen.domain.MarketSavedPost;
 import vn.dongthanh.vsmt.citizen.domain.MarketSavedPostRepository;
 import vn.dongthanh.vsmt.citizen.domain.MarketTag;
@@ -57,15 +61,17 @@ import vn.dongthanh.vsmt.platform.common.ConflictException;
 import vn.dongthanh.vsmt.platform.common.NotFoundException;
 import vn.dongthanh.vsmt.platform.common.RateLimitException;
 import vn.dongthanh.vsmt.platform.common.UnauthorizedException;
+import vn.dongthanh.vsmt.platform.domain.Role;
 import vn.dongthanh.vsmt.platform.domain.User;
 import vn.dongthanh.vsmt.platform.domain.UserRepository;
 import vn.dongthanh.vsmt.platform.security.CurrentCitizen;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
 
 /**
- * Chợ đồ cũ v2 (docs/cho-do-cu-spec.md). Người dân ACTIVE đọc + tương tác; 5 vai trò nội bộ ACTIVE chỉ đọc (D06).
- * Một chính sách xem ({@link #viewable}) dùng chung cho feed/chi tiết/bình luận/ảnh/SĐT/lưu: bài ẩn chỉ chủ bài xem,
- * chặn hai chiều → 404 như không tồn tại. Đăng là hiển thị, không kiểm duyệt (D05).
+ * Chợ đồ cũ v2 (docs/cho-do-cu-spec.md). Người dân ACTIVE đọc + tương tác; cán bộ xã chỉ đọc qua đây, kiểm duyệt ở
+ * {@link MarketModerationService}. Một chính sách xem ({@link #viewable}) dùng chung cho feed/chi tiết/bình luận/ảnh/
+ * SĐT/lưu: bài ẩn hoặc chưa được duyệt chỉ chủ bài xem, chặn hai chiều → 404 như không tồn tại. Bài khớp từ khóa lọc
+ * phải chờ duyệt; nhiều người báo cáo thì bài tạm gỡ chờ cán bộ xã xem lại.
  */
 @Service
 @RequiredArgsConstructor
@@ -76,6 +82,8 @@ public class MarketService {
     public static final int MAX_POSTS_PER_DAY = 10;
     public static final int MAX_COMMENTS_PER_10_MIN = 30;
     public static final int MAX_UPLOADS_PER_DAY = 50;
+    /** Số báo cáo đang mở để bài tự tạm gỡ chờ cán bộ xã xem lại. */
+    public static final int REPORTS_TO_HOLD = 3;
     static final ZoneId ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     static final Sort NEWEST = Sort.by(Sort.Direction.DESC, "createdAt", "id");
     private static final long NO_VIEWER = -1L;
@@ -92,8 +100,10 @@ public class MarketService {
     private final CitizenQueryService citizens;
     private final PhotoStorage photos;
     private final NotificationService notifications;
+    private final MarketPostReportRepository reports;
+    private final MarketModerationService moderation;
 
-    /** Người xem: citizenId null là tài khoản nội bộ (chỉ đọc). */
+    /** Người xem: citizenId null là cán bộ xã (chỉ đọc). */
     public record Viewer(Long citizenId) {
         boolean internal() {
             return citizenId == null;
@@ -104,7 +114,7 @@ public class MarketService {
         }
     }
 
-    // ---------- Đọc (mọi vai trò đã đăng nhập) ----------
+    // ---------- Đọc (người dân + cán bộ xã) ----------
 
     /** Kiểm tài khoản còn hoạt động ở server, token còn hạn chưa đủ. */
     @Transactional(readOnly = true)
@@ -113,7 +123,8 @@ public class MarketService {
         if (p instanceof CurrentCitizen c) {
             return new Viewer(citizens.requireActive(c).getId());
         }
-        if (p instanceof CurrentUser u && users.findById(u.id()).filter(User::isActive).isPresent()) {
+        if (p instanceof CurrentUser u && u.role() == Role.COMMUNE_OFFICER
+                && users.findById(u.id()).filter(User::isActive).isPresent()) {
             return new Viewer(null);
         }
         throw new UnauthorizedException("UNAUTHORIZED", "Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.");
@@ -181,6 +192,7 @@ public class MarketService {
         String code = "CDC-%03d".formatted(posts.maxCodeNumber() + 1);
         MarketPost post = posts.save(MarketPost.create(code, author, content, requestId, fp));
         attachAll(post.getId(), attach, List.of());
+        applyFilter(post, true);
         return views(new Viewer(author.getId()), List.of(post)).getFirst();
     }
 
@@ -197,11 +209,16 @@ public class MarketService {
         posts.lockKey("market:post:" + v.citizenId());
         MarketPost post = requireOwnLocked(v, id);
         requireVersion(post, version);
+        if (post.getModeration() == MarketModeration.REJECTED) {
+            throw new BusinessRuleException("MARKET_POST_REJECTED", "Bài " + post.getCode()
+                    + " đã bị cán bộ xã gỡ, không sửa được nữa.");
+        }
         MarketPost.Content content = normalize(cmd);
         List<MarketImage> current = images.findByPostIdInOrderBySortOrderAscIdAsc(List.of(id));
         List<MarketImage> next = requireAttachable(v.citizenId(), id, cmd.photoIds());
         post.edit(content, OffsetDateTime.now());
         attachAll(id, next, current);
+        applyFilter(post, false);
         posts.flush();
         return views(v, List.of(post)).getFirst();
     }
@@ -233,7 +250,7 @@ public class MarketService {
     @Transactional(readOnly = true)
     public String contact(CurrentCitizen citizen, Long id) {
         MarketPost post = requireViewable(citizenViewer(citizen), id);
-        if (post.getStatus() != MarketPostStatus.OPEN || post.isHidden() || post.contactPhoneForAuthorizedReader() == null) {
+        if (!live(post) || post.contactPhoneForAuthorizedReader() == null) {
             throw notFound();
         }
         return post.contactPhoneForAuthorizedReader();
@@ -253,7 +270,7 @@ public class MarketService {
             requireSameRequest(existing.getRequestFingerprint(), fp);
             return existing;
         }
-        if (post.getStatus() != MarketPostStatus.OPEN || post.isHidden()) {
+        if (!live(post)) {
             throw new BusinessRuleException("MARKET_POST_CLOSED", "Bài " + post.getCode() + " không nhận bình luận mới.");
         }
         OffsetDateTime now = OffsetDateTime.now();
@@ -286,6 +303,51 @@ public class MarketService {
         }
     }
 
+    // ---------- Báo cáo + bộ lọc ----------
+
+    /**
+     * Người dân báo cáo bài người khác đang hiển thị. Đã có báo cáo mở của mình → thành công không ghi. Đủ
+     * {@link #REPORTS_TO_HOLD} báo cáo mở thì bài tạm gỡ khỏi feed chờ cán bộ xã.
+     */
+    public void report(CurrentCitizen citizen, Long postId, MarketReportReason reason, String note) {
+        CitizenAccount me = citizens.requireActive(citizen);
+        Viewer v = new Viewer(me.getId());
+        MarketPost post = posts.lockById(postId).filter(p -> viewable(v, p)).orElseThrow(MarketService::notFound);
+        if (post.isAuthoredBy(me.getId())) {
+            throw new BusinessRuleException("MARKET_REPORT_OWN", "Không thể báo cáo bài của chính mình.");
+        }
+        if (reports.existsByPostIdAndReporterIdAndResolvedAtIsNull(postId, me.getId())) {
+            return;
+        }
+        String cleanNote = note == null || note.isBlank() ? null : note.strip();
+        reports.save(MarketPostReport.open(postId, me, reason, cleanNote, OffsetDateTime.now()));
+        long open = reports.countByPostIdAndResolvedAtIsNull(postId);
+        if (open >= REPORTS_TO_HOLD && post.isPublished()) {
+            post.holdForReview("Bị " + open + " người báo cáo, tạm gỡ chờ cán bộ xã xem lại.");
+            moderation.notifyOfficers(post, "Bài bị " + open + " người báo cáo, đã tạm gỡ khỏi chợ.");
+        } else if (open == 1) {
+            moderation.notifyOfficers(post, "Có người dân báo cáo bài đăng.");
+        }
+    }
+
+    /**
+     * Bộ lọc trước khi đăng: khớp từ khóa → chờ duyệt. Sửa bài hết khớp thì bài đang chờ vì bộ lọc được đăng lại;
+     * bài đang chờ vì báo cáo vẫn chờ cán bộ xã.
+     */
+    private void applyFilter(MarketPost post, boolean created) {
+        List<String> matched = moderation.matchedKeywords(post.getCaption());
+        if (!matched.isEmpty()) {
+            boolean wasPublished = post.isPublished();
+            post.holdForReview("Chứa từ khóa cần duyệt: " + String.join(", ", matched));
+            if (created || wasPublished) {
+                moderation.notifyOfficers(post, "Bài chứa từ khóa trong bộ lọc, đang chờ duyệt.");
+            }
+        } else if (post.getModeration() == MarketModeration.PENDING_REVIEW
+                && reports.countByPostIdAndResolvedAtIsNull(post.getId()) < REPORTS_TO_HOLD) {
+            post.republishAfterEdit();
+        }
+    }
+
     // ---------- Ảnh ----------
 
     public MarketImage upload(CurrentCitizen citizen, MultipartFile file) throws IOException {
@@ -314,23 +376,17 @@ public class MarketService {
 
     /**
      * Route ảnh cũ {@code /api/citizen/photos/{name}}: file thuộc chợ chỉ trả khi có bài tham chiếu người xem được đọc,
-     * hoặc là ảnh legacy dùng chung với rác cồng kềnh (giữ quyền bulky hiện hữu).
+     * hoặc không thuộc chợ.
      */
     @Transactional(readOnly = true)
     public boolean legacyPhotoReadable(Long citizenId, String name) {
         List<MarketImage> refs = images.findByStorageName(name);
-        if (refs.isEmpty() || images.usedByBulky(name)) {
+        if (refs.isEmpty()) {
             return true;
         }
         Viewer v = new Viewer(citizenId);
         return refs.stream().anyMatch(i -> i.getPostId() != null
                 && posts.findByIdWithAuthor(i.getPostId()).filter(p -> viewable(v, p)).isPresent());
-    }
-
-    /** Không nhận vào nghiệp vụ khác (rác cồng kềnh) file đã đánh dấu chợ, tránh đi vòng quyền đọc. */
-    @Transactional(readOnly = true)
-    public boolean isMarketPhoto(List<String> names) {
-        return names != null && !names.isEmpty() && images.existsByStorageNameIn(names);
     }
 
     // ---------- Lưu bài ----------
@@ -392,10 +448,15 @@ public class MarketService {
 
     private boolean viewable(Viewer v, MarketPost p) {
         boolean mine = !v.internal() && p.isAuthoredBy(v.citizenId());
-        if (p.isHidden() && !mine) {
+        if ((p.isHidden() || !p.isPublished()) && !mine) {
             return false;
         }
         return v.internal() || mine || !blocks.blockedEitherWay(v.citizenId(), p.getAuthor().getId());
+    }
+
+    /** Đang hiển thị trên chợ: mở, không ẩn, đã duyệt. */
+    private static boolean live(MarketPost p) {
+        return p.getStatus() == MarketPostStatus.OPEN && !p.isHidden() && p.isPublished();
     }
 
     private MarketPost requireViewable(Viewer v, Long id) {
@@ -537,7 +598,7 @@ public class MarketService {
                         Collectors.toList())));
         return list.stream().map(p -> {
             boolean mine = !v.internal() && p.isAuthoredBy(v.citizenId());
-            boolean open = p.getStatus() == MarketPostStatus.OPEN && !p.isHidden();
+            boolean open = live(p);
             boolean isSaved = !v.internal() && saved.existsById(new MarketSavedPost.Key(v.citizenId(), p.getId()));
             return new PostView(p, counts.getOrDefault(p.getId(), 0L), imageIds.getOrDefault(p.getId(), List.of()),
                     mine, isSaved, !v.internal() && open, !v.internal() && open && p.isSharePhone(),

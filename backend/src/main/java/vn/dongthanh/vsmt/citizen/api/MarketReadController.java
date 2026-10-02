@@ -34,9 +34,9 @@ import vn.dongthanh.vsmt.citizen.service.MarketService.Viewer;
 import vn.dongthanh.vsmt.citizen.service.PhotoStorage.StoredPhoto;
 
 /**
- * Đọc chợ cho mọi tài khoản ACTIVE: người dân và 5 vai trò nội bộ (D06). Chỉ GET; SecurityConfig chặn method khác.
+ * Đọc chợ cho người dân và cán bộ xã (người quản lý chợ). Chỉ GET; SecurityConfig chặn method khác và vai trò khác.
  */
-@Tag(name = "Chợ đồ cũ: đọc (người dân + nội bộ)")
+@Tag(name = "Chợ đồ cũ: đọc (người dân + cán bộ xã)")
 @RestController
 @Validated
 @RequestMapping("/api/market")

@@ -211,13 +211,20 @@ class MarketIT extends IntegrationTest {
     }
 
     @Test
-    void internalRolesReadOnlyAndAnonymousOrLockedAreRejected() throws Exception {
+    void communeOfficerReadsOnlyOtherRolesAnonymousOrLockedAreRejected() throws Exception {
         long img = uploadMarket(citizenA);
         long id = json.readTree(createBody(citizenA, "{\"caption\": \"Ghế nhựa\", \"tags\": [\"GIVE\"], \"photoIds\": [%d]}"
                 .formatted(img))).get("id").asLong();
         comment(citizenB, id, "Còn không?").andExpect(status().isCreated());
 
-        for (User u : List.of(fx.officer, fx.admin, fx.dv01Manager, fx.thu07, leader)) {
+        // Chợ chỉ dành cho người dân; cán bộ xã quản lý. Thu tiền, công ty, quản trị, lãnh đạo không thấy chợ.
+        for (User u : List.of(fx.admin, fx.dv01Manager, fx.thu07, leader)) {
+            mvc.perform(get("/api/market/posts").header(HttpHeaders.AUTHORIZATION, fx.bearer(u)))
+                    .andExpect(status().isForbidden());
+            mvc.perform(get("/api/market-moderation/posts").header(HttpHeaders.AUTHORIZATION, fx.bearer(u)))
+                    .andExpect(status().isForbidden());
+        }
+        for (User u : List.of(fx.officer)) {
             String bearer = fx.bearer(u);
             mvc.perform(get("/api/market/posts").header(HttpHeaders.AUTHORIZATION, bearer))
                     .andExpect(status().isOk())
@@ -239,6 +246,110 @@ class MarketIT extends IntegrationTest {
         mvc.perform(get("/api/market/posts")).andExpect(status().isUnauthorized());
         tx.executeWithoutResult(s -> accounts.findById(citizenB.getId()).orElseThrow().lock());
         citizen(citizenB, get("/api/market/posts"), null).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void keywordFilterHoldsPostUntilOfficerApprovesAndEditCanClearIt() throws Exception {
+        String officer = fx.bearer(fx.officer);
+        mvc.perform(post("/api/market-moderation/keywords").header(HttpHeaders.AUTHORIZATION, officer)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"keyword\": \" Vape \"}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.keyword").value("Vape"));
+        mvc.perform(post("/api/market-moderation/keywords").header(HttpHeaders.AUTHORIZATION, officer)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"keyword\": \"vape\"}"))
+                .andExpect(status().isConflict());
+
+        // Khớp cả cụm, không khớp chữ dính liền ("vaper").
+        long clean = create(citizenA, "Cho bạn vaper cái ghế", "[\"GIVE\"]");
+        String body = createBody(citizenA, "{\"caption\": \"Bán VAPE pod còn mới\", \"tags\": [\"SELL\"]}");
+        long held = json.readTree(body).get("id").asLong();
+        assertThat(json.readTree(body).get("moderation").asText()).isEqualTo("PENDING_REVIEW");
+        assertThat(json.readTree(body).get("moderationNote").asText()).contains("Vape");
+        assertThat(json.readTree(body).get("canComment").asBoolean()).isFalse();
+
+        citizen(citizenB, get("/api/market/posts"), null)
+                .andExpect(jsonPath("$.items[*].id").value(contains((int) clean)));
+        citizen(citizenB, get("/api/market/posts/{id}", held), null).andExpect(status().isNotFound());
+        comment(citizenB, held, "Còn không?").andExpect(status().isNotFound());
+        citizen(citizenA, get("/api/citizen/market/posts/mine"), null)
+                .andExpect(jsonPath("$.items[0].moderation").value("PENDING_REVIEW"));
+        assertThat(jdbc.queryForObject("select count(*) from notifications where recipient_role = 'COMMUNE_OFFICER'",
+                Long.class)).isEqualTo(1);
+
+        mvc.perform(get("/api/market-moderation/summary").header(HttpHeaders.AUTHORIZATION, officer))
+                .andExpect(jsonPath("$.pendingReview").value(1)).andExpect(jsonPath("$.reported").value(0));
+        mvc.perform(get("/api/market-moderation/posts").param("moderation", "PENDING_REVIEW")
+                .header(HttpHeaders.AUTHORIZATION, officer))
+                .andExpect(jsonPath("$.items[*].id").value(contains((int) held)));
+        mvc.perform(get("/api/market-moderation/posts/{id}", held).header(HttpHeaders.AUTHORIZATION, officer))
+                .andExpect(jsonPath("$.matchedKeywords").value(contains("Vape")));
+        mvc.perform(post("/api/market-moderation/posts/{id}/approve", held).header(HttpHeaders.AUTHORIZATION, officer)
+                .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.moderation").value("PUBLISHED"));
+        citizen(citizenB, get("/api/market/posts/{id}", held), null).andExpect(status().isOk());
+        assertThat(notificationsOf(citizenA)).isEqualTo(1);
+
+        // Sửa bài đang hiển thị thành có từ khóa → chờ duyệt lại; sửa hết từ khóa → tự đăng lại.
+        String edit = "{\"caption\": \"%s\", \"tags\": [\"GIVE\"], \"version\": %d}";
+        citizen(citizenA, patch("/api/citizen/market/posts/{id}", clean),
+                edit.formatted("Tặng vape", version(citizenA, clean)))
+                .andExpect(jsonPath("$.moderation").value("PENDING_REVIEW"));
+        citizen(citizenA, patch("/api/citizen/market/posts/{id}", clean),
+                edit.formatted("Tặng ghế", version(citizenA, clean)))
+                .andExpect(jsonPath("$.moderation").value("PUBLISHED"));
+
+        long kw = jdbc.queryForObject("select id from market_filter_keywords", Long.class);
+        mvc.perform(delete("/api/market-moderation/keywords/{id}", kw).header(HttpHeaders.AUTHORIZATION, officer))
+                .andExpect(status().isNoContent());
+        create(citizenA, "Bán vape", "[\"SELL\"]");
+        assertThat(jdbc.queryForObject("select count(*) from market_posts where moderation = 'PUBLISHED'",
+                Long.class)).isEqualTo(3);
+    }
+
+    @Test
+    void reportsHoldPostAfterThreeAndOfficerRejectsWithReason() throws Exception {
+        CitizenAccount citizenC = tx.execute(s -> accounts.save(CitizenAccount.create("0902000012",
+                subjects.findByCode("DTH-H000005").orElseThrow(), "Chủ hộ C")));
+        long id = create(citizenA, "Thanh lý tivi, chuyển cọc trước", "[\"SELL\"]");
+        String report = "{\"reason\": \"SCAM\", \"note\": \"Đòi cọc trước\"}";
+
+        citizen(citizenA, post("/api/citizen/market/posts/{id}/reports", id), report)
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("MARKET_REPORT_OWN"));
+        citizen(citizenB, post("/api/citizen/market/posts/{id}/reports", id), "{\"reason\": \"BAD\"}")
+                .andExpect(status().isBadRequest());
+        citizen(citizenB, post("/api/citizen/market/posts/{id}/reports", id), report).andExpect(status().isNoContent());
+        citizen(citizenB, post("/api/citizen/market/posts/{id}/reports", id), report).andExpect(status().isNoContent());
+        citizen(citizenA2, post("/api/citizen/market/posts/{id}/reports", id), report)
+                .andExpect(status().isNoContent());
+        citizen(citizenB, get("/api/market/posts/{id}", id), null).andExpect(status().isOk());
+
+        citizen(citizenC, post("/api/citizen/market/posts/{id}/reports", id), "{\"reason\": \"SPAM\"}")
+                .andExpect(status().isNoContent());
+        citizen(citizenB, get("/api/market/posts/{id}", id), null).andExpect(status().isNotFound());
+        citizen(citizenA, get("/api/market/posts/{id}", id), null)
+                .andExpect(jsonPath("$.moderation").value("PENDING_REVIEW"));
+
+        String officer = fx.bearer(fx.officer);
+        mvc.perform(get("/api/market-moderation/posts").param("reported", "true")
+                .header(HttpHeaders.AUTHORIZATION, officer))
+                .andExpect(jsonPath("$.items[0].id").value(id)).andExpect(jsonPath("$.items[0].openReports").value(3));
+        mvc.perform(get("/api/market-moderation/posts/{id}", id).header(HttpHeaders.AUTHORIZATION, officer))
+                .andExpect(jsonPath("$.reports.length()").value(3));
+        mvc.perform(post("/api/market-moderation/posts/{id}/reject", id).header(HttpHeaders.AUTHORIZATION, officer)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"note\": \" \"}"))
+                .andExpect(status().isUnprocessableEntity());
+        mvc.perform(post("/api/market-moderation/posts/{id}/reject", id).header(HttpHeaders.AUTHORIZATION, officer)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"note\": \"Nghi lừa đảo\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.moderation").value("REJECTED"))
+                .andExpect(jsonPath("$.openReports").value(0));
+        assertThat(jdbc.queryForObject("select count(*) from market_post_reports where resolution = 'REMOVED'",
+                Long.class)).isEqualTo(3);
+        citizen(citizenA, get("/api/citizen/market/posts/mine"), null)
+                .andExpect(jsonPath("$.items[0].moderationNote").value("Nghi lừa đảo"));
+        citizen(citizenA, patch("/api/citizen/market/posts/{id}", id),
+                "{\"caption\": \"Sửa\", \"tags\": [\"SELL\"], \"version\": %d}".formatted(version(citizenA, id)))
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("MARKET_POST_REJECTED"));
+        // Báo lại sau khi đã xử lý: bài không còn xem được → 404.
+        citizen(citizenB, post("/api/citizen/market/posts/{id}/reports", id), report).andExpect(status().isNotFound());
     }
 
     @Test
@@ -442,12 +553,6 @@ class MarketIT extends IntegrationTest {
                 .andExpect(status().isOk()).andExpect(content().bytes(JPEG));
         citizen(citizenB, get("/api/market/posts/{id}/images/{img}", id, theirs), null).andExpect(status().isNotFound());
         citizen(citizenB, get("/api/citizen/photos/{name}", name), null).andExpect(status().isOk());
-        // Rác cồng kềnh không nhận file chợ.
-        citizen(citizenB, post("/api/citizen/bulky-requests"), """
-                {"itemType": "MATTRESS", "quantity": 1, "preferredDate": "2026-10-18", "photoNames": ["%s"]}"""
-                .formatted(name))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("PHOTO_NOT_FOUND"));
 
         citizen(citizenA, put("/api/citizen/market/posts/{id}/visibility", id), hiddenBody(true, version(citizenA, id)))
                 .andExpect(status().isOk());

@@ -61,7 +61,7 @@ public class SecurityConfig {
     static final String LOGIN_PATH = "/api/platform/auth/login";
     static final String[] CITIZEN_LOGIN_PATHS = {"/api/citizen/auth/otp/request", "/api/citizen/auth/otp/verify"};
     static final String CITIZEN_PATHS = "/api/citizen/**";
-    /** Đọc chợ: người dân và mọi vai trò nội bộ (kể cả lãnh đạo), chỉ GET (docs/cho-do-cu-spec.md §10). */
+    /** Đọc chợ: người dân và cán bộ xã (người quản lý chợ), chỉ GET (docs/cho-do-cu-spec.md §10). */
     static final String MARKET_READ_PATHS = "/api/market/**";
     static final String[] PUBLIC_PATHS = {"/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**", "/error"};
     private static final Set<String> INTERNAL_AUTHORITIES = Arrays.stream(Role.values())
@@ -92,7 +92,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, MARKET_READ_PATHS).access((a, ctx) -> new AuthorizationDecision(
                                 a.get().getAuthorities().stream().map(GrantedAuthority::getAuthority).anyMatch(g ->
                                         g.equals(CurrentCitizenAuthentication.AUTHORITY)
-                                                || INTERNAL_AUTHORITIES.contains(g))))
+                                                || g.equals("ROLE_" + Role.COMMUNE_OFFICER.name()))))
                         .requestMatchers(MARKET_READ_PATHS).denyAll()
                         .anyRequest().access(SecurityConfig::internalAccess))
                 .oauth2ResourceServer(rs -> rs

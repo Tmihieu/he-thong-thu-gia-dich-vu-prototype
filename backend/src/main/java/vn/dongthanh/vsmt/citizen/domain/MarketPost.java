@@ -23,7 +23,7 @@ import vn.dongthanh.vsmt.platform.common.BaseEntity;
 
 /**
  * Bài chợ đồ cũ v2 (docs/cho-do-cu-spec.md §6, §8): caption + nhiều tag + danh mục, tổ snapshot lúc đăng, ẩn/hiện độc
- * lập với OPEN/CLOSED, liên hệ tự nguyện. Không có trường giá (D01); cột legacy title/description/... không map.
+ * lập với OPEN/CLOSED, liên hệ tự nguyện. Kiểm duyệt ({@link MarketModeration}) do cán bộ xã. Không có trường giá (D01); cột legacy title/description/... không map.
  */
 @Getter
 @Entity
@@ -77,6 +77,17 @@ public class MarketPost extends BaseEntity {
 
     private OffsetDateTime editedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private MarketModeration moderation = MarketModeration.PUBLISHED;
+
+    @Column(length = 500)
+    private String moderationNote;
+
+    private OffsetDateTime moderatedAt;
+
+    private Long moderatedBy;
+
     public static MarketPost create(String code, CitizenAccount author, Content content, UUID requestId,
             String fingerprint) {
         MarketPost p = new MarketPost();
@@ -111,6 +122,31 @@ public class MarketPost extends BaseEntity {
 
     public void setHidden(boolean hidden) {
         this.hidden = hidden;
+    }
+
+    /** Bộ lọc tự động hoặc nhiều báo cáo: chờ cán bộ xã duyệt, không lên feed. */
+    public void holdForReview(String note) {
+        moderation = MarketModeration.PENDING_REVIEW;
+        moderationNote = note;
+        moderatedAt = null;
+        moderatedBy = null;
+    }
+
+    /** Sửa xong không còn khớp bộ lọc: bài đang chờ vì bộ lọc được đăng lại; bài bị báo cáo vẫn chờ cán bộ xã. */
+    public void republishAfterEdit() {
+        moderation = MarketModeration.PUBLISHED;
+        moderationNote = null;
+    }
+
+    public void moderate(MarketModeration result, String note, Long userId, OffsetDateTime at) {
+        moderation = result;
+        moderationNote = note;
+        moderatedBy = userId;
+        moderatedAt = at;
+    }
+
+    public boolean isPublished() {
+        return moderation == MarketModeration.PUBLISHED;
     }
 
     public boolean isAuthoredBy(Long accountId) {

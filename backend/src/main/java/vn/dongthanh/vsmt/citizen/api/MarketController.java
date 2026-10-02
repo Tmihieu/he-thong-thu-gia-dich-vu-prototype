@@ -44,7 +44,9 @@ import vn.dongthanh.vsmt.citizen.domain.MarketCategory;
 import vn.dongthanh.vsmt.citizen.domain.MarketComment;
 import vn.dongthanh.vsmt.citizen.domain.MarketImage;
 import vn.dongthanh.vsmt.citizen.domain.MarketPost;
+import vn.dongthanh.vsmt.citizen.domain.MarketModeration;
 import vn.dongthanh.vsmt.citizen.domain.MarketPostStatus;
+import vn.dongthanh.vsmt.citizen.domain.MarketReportReason;
 import vn.dongthanh.vsmt.citizen.domain.MarketTag;
 import vn.dongthanh.vsmt.citizen.service.MarketService;
 import vn.dongthanh.vsmt.citizen.service.MarketService.PostCommand;
@@ -71,7 +73,7 @@ public class MarketController {
         return PageDto.of(market.mine(citizen, status, hidden, page, size).map(MarketPostDto::of));
     }
 
-    @Operation(summary = "Đăng bài, hiển thị ngay (không kiểm duyệt); retry cùng clientRequestId trả bài cũ")
+    @Operation(summary = "Đăng bài; khớp từ khóa lọc thì chờ cán bộ xã duyệt; retry cùng clientRequestId trả bài cũ")
     @PostMapping("/posts")
     @ResponseStatus(HttpStatus.CREATED)
     public MarketPostDto create(@AuthenticationPrincipal CurrentCitizen citizen,
@@ -112,6 +114,14 @@ public class MarketController {
     public MarketCommentDto comment(@AuthenticationPrincipal CurrentCitizen citizen, @PathVariable Long id,
             @Valid @RequestBody MarketCommentRequest r) {
         return MarketCommentDto.of(market.comment(citizen, id, r.content(), r.clientRequestId()), citizen.accountId());
+    }
+
+    @Operation(summary = "Báo cáo bài vi phạm; đã báo cáo (chưa xử lý) thì không ghi thêm")
+    @PostMapping("/posts/{id}/reports")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void report(@AuthenticationPrincipal CurrentCitizen citizen, @PathVariable Long id,
+            @Valid @RequestBody MarketReportRequest r) {
+        market.report(citizen, id, r.reason(), r.note());
     }
 
     @Operation(summary = "SĐT liên hệ chủ bài tự chia sẻ; không chia sẻ/không đủ quyền → 404")
@@ -239,6 +249,9 @@ public class MarketController {
     public record MarketVisibilityRequest(@NotNull Boolean hidden, @NotNull Integer version) {
     }
 
+    public record MarketReportRequest(@NotNull MarketReportReason reason, @Size(max = 500) String note) {
+    }
+
     public record MarketCommentRequest(
             @NotBlank(message = "không được để trống") @Size(max = 1000) String content,
             @NotNull(message = "không được để trống") UUID clientRequestId) {
@@ -280,6 +293,10 @@ public class MarketController {
             List<String> photoUrls,
             @Schema(requiredMode = RequiredMode.REQUIRED) MarketPostStatus status,
             @Schema(requiredMode = RequiredMode.REQUIRED) boolean hidden,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Người khác chỉ thấy bài PUBLISHED")
+            MarketModeration moderation,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true, description = "Chỉ chủ bài: lý do chờ duyệt/bị gỡ")
+            String moderationNote,
             @Schema(requiredMode = RequiredMode.REQUIRED) MarketAuthorDto author,
             @Schema(requiredMode = RequiredMode.REQUIRED) OffsetDateTime createdAt,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true, description = "Lần sửa nội dung gần nhất")
@@ -297,7 +314,8 @@ public class MarketController {
                     p.getTags().stream().sorted().toList(), p.getCategory(),
                     new MarketAreaDto(v.areaCode(), v.areaName()),
                     v.imageIds().stream().map(i -> "/api/market/posts/" + p.getId() + "/images/" + i).toList(),
-                    p.getStatus(), p.isHidden(), new MarketAuthorDto(p.getAuthor().getId(), v.authorName()),
+                    p.getStatus(), p.isHidden(), p.getModeration(), v.mine() ? p.getModerationNote() : null,
+                    new MarketAuthorDto(p.getAuthor().getId(), v.authorName()),
                     p.getCreatedAt(), p.getEditedAt(), v.mine() ? p.getVersion() : null, v.commentCount(),
                     v.canComment(), v.canCall(), v.mine(), v.saved());
         }
