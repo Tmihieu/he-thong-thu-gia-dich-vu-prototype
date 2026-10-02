@@ -15,12 +15,7 @@ describe('notificationHref', () => {
     });
   });
 
-  it('rác cồng kềnh → chi tiết yêu cầu theo requestId', () => {
-    expect(notificationHref({ screen: 'citizen.bulkyDetail', params: { requestId: 6 } })).toEqual({
-      pathname: '/bulky/[id]',
-      params: { id: '6' },
-    });
-    expect(notificationHref({ screen: 'citizen.bulkyDetail', params: {} })).toBe('/bulky');
+  it('chợ đồ cũ → chi tiết bài theo postId', () => {
     expect(notificationHref({ screen: 'citizen.marketDetail', params: { postId: 7 } })).toEqual({
       pathname: '/market/[id]',
       params: { id: '7' },

@@ -57,7 +57,6 @@ export default function MarketTab() {
           <Chip key={a.id} label={a.name} selected={filter.areaId === a.id} onPress={() => set({ areaId: a.id })} />
         ))}
       </ScrollView>
-      <Link label="Đồ không ai nhận? Đăng ký thu gom cồng kềnh" to="/bulky/new" />
     </View>
   );
 

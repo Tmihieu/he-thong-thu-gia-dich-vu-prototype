@@ -54,9 +54,6 @@ function RootNavigator() {
         <Stack.Screen name="complaints/index" options={{ title: 'Phản ánh, kiến nghị' }} />
         <Stack.Screen name="complaints/new" options={{ title: 'Gửi phản ánh' }} />
         <Stack.Screen name="complaints/[id]" options={{ title: 'Chi tiết phản ánh' }} />
-        <Stack.Screen name="bulky/index" options={{ title: 'Rác cồng kềnh' }} />
-        <Stack.Screen name="bulky/new" options={{ title: 'Đăng ký rác cồng kềnh' }} />
-        <Stack.Screen name="bulky/[id]" options={{ title: 'Yêu cầu thu gom cồng kềnh' }} />
         <Stack.Screen name="market/new" options={{ title: 'Đăng bài mới' }} />
         <Stack.Screen name="market/mine" options={{ title: 'Tin của tôi' }} />
         <Stack.Screen name="market/saved" options={{ title: 'Đã lưu' }} />
