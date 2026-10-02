@@ -1,174 +1,318 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { Alert, Button, Card, Empty, Image, Input, List, Result, Select, Space, Spin, Tag, Typography } from 'antd';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  Alert,
+  App,
+  Badge,
+  Button,
+  Card,
+  Descriptions,
+  Empty,
+  Form,
+  Image,
+  Input,
+  List,
+  Modal,
+  Popconfirm,
+  Result,
+  Space,
+  Spin,
+  Table,
+  Tabs,
+  Tag,
+  Typography,
+} from 'antd';
 import { useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useParams, useSearchParams } from 'react-router';
 
 import { api, ApiError } from '../../api/client';
 import type { components } from '../../api/schema';
 import { AuthImage } from '../../shared/AuthImage';
 import { DateText } from '../../shared/DateText';
-import {
-  MARKET_CATEGORY_LABELS,
-  MARKET_STATUS_LABELS,
-  MARKET_TAG_LABELS,
-  type MarketCategory,
-  type MarketTag,
-} from '../../shared/labels';
+import { MARKET_CATEGORY_LABELS, MARKET_STATUS_LABELS, MARKET_TAG_LABELS } from '../../shared/labels';
 
 type Schemas = components['schemas'];
-type MarketPost = Schemas['MarketPostDto'];
+type AdminPost = Schemas['MarketAdminPostDto'];
+type Moderation = AdminPost['moderation'];
+type ReportReason = Schemas['MarketReportDto']['reason'];
 
 const PAGE_SIZE = 20;
+
+const MODERATION_LABELS: Record<Moderation, string> = {
+  PUBLISHED: 'Đang hiển thị',
+  PENDING_REVIEW: 'Chờ duyệt',
+  REJECTED: 'Đã gỡ',
+};
+const MODERATION_COLORS: Record<Moderation, string> = {
+  PUBLISHED: 'green',
+  PENDING_REVIEW: 'orange',
+  REJECTED: 'red',
+};
+const REPORT_REASON_LABELS: Record<ReportReason, string> = {
+  SPAM: 'Spam, đăng lặp',
+  PROHIBITED: 'Hàng cấm',
+  SCAM: 'Nghi lừa đảo',
+  OFFENSIVE: 'Nội dung xúc phạm',
+  OTHER: 'Lý do khác',
+};
+
+const marketKeys = {
+  all: ['market-moderation'] as const,
+  summary: ['market-moderation', 'summary'] as const,
+  keywords: ['market-moderation', 'keywords'] as const,
+};
 
 function errorText(e: unknown) {
   return e instanceof ApiError ? e.message : 'Không tải được dữ liệu. Vui lòng thử lại.';
 }
 
-function PostTags({ post }: { post: MarketPost }) {
-  return (
-    <Space size={[4, 4]} wrap>
-      <Tag color={post.status === 'OPEN' ? 'green' : 'default'}>{MARKET_STATUS_LABELS[post.status]}</Tag>
-      {post.tags.map((t) => (
-        <Tag key={t} color="blue">
-          {MARKET_TAG_LABELS[t]}
-        </Tag>
-      ))}
-      <Tag>{MARKET_CATEGORY_LABELS[post.category]}</Tag>
-    </Space>
-  );
+function title(caption: string) {
+  return caption.split('\n')[0] ?? caption;
 }
 
-function PostMeta({ post }: { post: MarketPost }) {
-  return (
-    <Typography.Text type="secondary">
-      {post.author.displayName} · {post.area.name} · <DateText value={post.createdAt} withTime />
-      {post.editedAt && ' · Đã chỉnh sửa'}
-    </Typography.Text>
-  );
+function ModerationTag({ post }: { post: AdminPost }) {
+  return <Tag color={MODERATION_COLORS[post.moderation]}>{MODERATION_LABELS[post.moderation]}</Tag>;
 }
+
+type TabKey = 'pending' | 'reported' | 'all' | 'rejected' | 'keywords';
+const TAB_FILTERS: Record<Exclude<TabKey, 'keywords'>, { moderation?: Moderation; reported?: boolean }> = {
+  pending: { moderation: 'PENDING_REVIEW' },
+  reported: { reported: true },
+  all: {},
+  rejected: { moderation: 'REJECTED' },
+};
 
 /**
- * "Chợ cộng đồng" cho cả 5 vai trò nội bộ: chỉ đọc (spec §3) — không đăng/bình luận/lưu/chặn/gọi, không SĐT.
- * Cùng một component gắn vào menu mọi vai trò.
+ * "Chợ cộng đồng" của cán bộ xã: không đăng hay bình luận, chỉ quản lý danh sách bài — duyệt bài bị bộ lọc từ khóa
+ * giữ lại hoặc bị người dân báo cáo, gỡ bài vi phạm (bắt buộc lý do) và quản lý từ khóa lọc.
  */
-export function MarketListPage() {
-  const [q, setQ] = useState('');
-  const [tags, setTags] = useState<MarketTag[]>([]);
-  const [category, setCategory] = useState<MarketCategory>();
-  const [areaId, setAreaId] = useState<number>();
-  const metadata = useQuery({
-    queryKey: ['market', 'metadata'],
-    queryFn: () => api.get<Schemas['MarketMetadataDto']>('/api/market/metadata'),
+export function MarketModerationPage() {
+  const [params, setParams] = useSearchParams();
+  const tab = (params.get('tab') as TabKey | null) ?? 'pending';
+  const summary = useQuery({
+    queryKey: marketKeys.summary,
+    queryFn: () => api.get<Schemas['MarketModerationSummaryDto']>('/api/market-moderation/summary'),
   });
-  const posts = useInfiniteQuery({
-    queryKey: ['market', 'posts', { q, tags, category, areaId }],
-    initialPageParam: 0,
-    queryFn: ({ pageParam, signal }) =>
-      api.get<Schemas['PageDtoMarketPostDto']>('/api/market/posts', {
-        params: { q: q.trim(), tags: tags.join(','), category, areaId, page: pageParam, size: PAGE_SIZE },
-        signal,
-      }),
-    getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
-  });
-  const items = posts.data?.pages.flatMap((p) => p.items) ?? [];
-  const meta = metadata.data;
+  const label = (text: string, count?: number) => (
+    <Space size={6}>
+      {text}
+      {!!count && <Badge count={count} />}
+    </Space>
+  );
 
   return (
     <>
       <Typography.Title level={3} style={{ marginTop: 0 }}>
         Chợ cộng đồng
       </Typography.Title>
-      <Space wrap style={{ marginBottom: 12 }}>
-        <Input.Search allowClear placeholder="Tìm theo nội dung" maxLength={100} onSearch={setQ} style={{ width: 240 }} />
-        <Select<MarketTag[]>
-          mode="multiple"
-          allowClear
-          aria-label="Loại tin"
-          placeholder="Loại tin"
-          style={{ minWidth: 200 }}
-          value={tags}
-          onChange={setTags}
-          options={(meta?.tags ?? []).map((t) => ({ value: t, label: MARKET_TAG_LABELS[t] }))}
-        />
-        <Select<MarketCategory>
-          allowClear
-          aria-label="Danh mục"
-          placeholder="Danh mục"
-          style={{ minWidth: 180 }}
-          value={category}
-          onChange={setCategory}
-          options={(meta?.categories ?? []).map((c) => ({ value: c, label: MARKET_CATEGORY_LABELS[c] }))}
-        />
-        <Select<number>
-          allowClear
-          showSearch
-          optionFilterProp="label"
-          aria-label="Tổ"
-          placeholder="Tổ"
-          style={{ minWidth: 180 }}
-          value={areaId}
-          onChange={setAreaId}
-          options={(meta?.areas ?? []).map((a) => ({ value: a.id, label: `${a.code} · ${a.name}` }))}
-        />
-      </Space>
-      {posts.error ? (
-        <Alert
-          type="error"
-          showIcon
-          message={errorText(posts.error)}
-          action={<Button onClick={() => void posts.refetch()}>Thử lại</Button>}
-        />
-      ) : (
-        <List<MarketPost>
-          loading={posts.isLoading}
-          dataSource={items}
-          locale={{ emptyText: <Empty description="Chưa có tin phù hợp" /> }}
-          renderItem={(p) => (
-            <List.Item key={p.id} extra={p.photoUrls[0] && <AuthImage path={p.photoUrls[0]} alt={`Ảnh ${p.code}`} size={96} />}>
-              <List.Item.Meta
-                title={<Link to={String(p.id)}>{p.code}</Link>}
-                description={<PostMeta post={p} />}
-              />
-              <Typography.Paragraph ellipsis={{ rows: 2 }} style={{ whiteSpace: 'pre-line' }}>
-                {p.caption}
-              </Typography.Paragraph>
-              <PostTags post={p} />
-              <Typography.Text type="secondary"> · {p.commentCount} bình luận</Typography.Text>
-            </List.Item>
-          )}
-          loadMore={
-            posts.hasNextPage && (
-              <div style={{ textAlign: 'center', marginTop: 12 }}>
-                <Button loading={posts.isFetchingNextPage} onClick={() => void posts.fetchNextPage()}>
-                  Tải thêm
-                </Button>
-              </div>
-            )
-          }
-        />
-      )}
+      <Typography.Paragraph type="secondary">
+        Bài chứa từ khóa trong bộ lọc phải chờ duyệt mới hiển thị; bài bị từ 3 người báo cáo được tạm gỡ chờ xem lại.
+      </Typography.Paragraph>
+      <Tabs
+        activeKey={tab}
+        onChange={(key) => setParams({ tab: key }, { replace: true })}
+        destroyOnHidden
+        items={[
+          { key: 'pending', label: label('Chờ duyệt', summary.data?.pendingReview), children: <PostTable tab="pending" /> },
+          { key: 'reported', label: label('Bị báo cáo', summary.data?.reported), children: <PostTable tab="reported" /> },
+          { key: 'all', label: 'Tất cả bài', children: <PostTable tab="all" /> },
+          { key: 'rejected', label: 'Đã gỡ', children: <PostTable tab="rejected" /> },
+          { key: 'keywords', label: 'Bộ lọc từ khóa', children: <KeywordPanel /> },
+        ]}
+      />
     </>
   );
 }
 
-/** Chi tiết tin (deep link /<vai trò>/market/:id), bình luận cũ trước, tải thêm theo trang. */
-export function MarketPostPage() {
-  const id = Number(useParams().id);
-  const post = useQuery({
-    queryKey: ['market', 'post', id],
-    queryFn: () => api.get<MarketPost>(`/api/market/posts/${id}`),
-    retry: (n, e) => !(e instanceof ApiError && e.status === 404) && n < 2,
-  });
-  const comments = useInfiniteQuery({
-    queryKey: ['market', 'comments', id],
-    initialPageParam: 0,
-    enabled: post.isSuccess,
-    queryFn: ({ pageParam, signal }) =>
-      api.get<Schemas['PageDtoMarketCommentDto']>(`/api/market/posts/${id}/comments`, {
-        params: { page: pageParam, size: PAGE_SIZE },
+function PostTable({ tab }: { tab: Exclude<TabKey, 'keywords'> }) {
+  const [q, setQ] = useState('');
+  const [page, setPage] = useState(0);
+  const posts = useQuery({
+    queryKey: [...marketKeys.all, 'posts', tab, q, page],
+    queryFn: ({ signal }) =>
+      api.get<Schemas['PageDtoMarketAdminPostDto']>('/api/market-moderation/posts', {
+        params: { ...TAB_FILTERS[tab], q: q.trim(), page, size: PAGE_SIZE },
         signal,
       }),
-    getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
+    placeholderData: (prev) => prev,
+  });
+
+  if (posts.error) {
+    return (
+      <Alert
+        type="error"
+        showIcon
+        message={errorText(posts.error)}
+        action={<Button onClick={() => void posts.refetch()}>Thử lại</Button>}
+      />
+    );
+  }
+  return (
+    <>
+      <Input.Search
+        allowClear
+        placeholder="Tìm theo mã, nội dung, người đăng"
+        maxLength={100}
+        onSearch={(v) => {
+          setQ(v);
+          setPage(0);
+        }}
+        style={{ width: 320, marginBottom: 12 }}
+      />
+      <Table<AdminPost>
+        rowKey="id"
+        size="middle"
+        loading={posts.isFetching}
+        dataSource={posts.data?.items ?? []}
+        locale={{ emptyText: <Empty description="Không có bài nào" /> }}
+        pagination={{
+          current: page + 1,
+          pageSize: PAGE_SIZE,
+          total: posts.data?.total ?? 0,
+          showSizeChanger: false,
+          onChange: (p) => setPage(p - 1),
+        }}
+        columns={[
+          {
+            title: 'Ảnh',
+            key: 'photo',
+            width: 72,
+            render: (_, p) =>
+              p.photoUrls[0] ? <AuthImage path={p.photoUrls[0]} alt={`Ảnh ${p.code}`} size={48} /> : null,
+          },
+          {
+            title: 'Bài đăng',
+            key: 'post',
+            render: (_, p) => (
+              <Space direction="vertical" size={2}>
+                <Link to={String(p.id)}>{p.code}</Link>
+                <Typography.Text ellipsis style={{ maxWidth: 360 }}>
+                  {title(p.caption)}
+                </Typography.Text>
+              </Space>
+            ),
+          },
+          {
+            title: 'Người đăng',
+            key: 'author',
+            render: (_, p) => (
+              <Space direction="vertical" size={2}>
+                {p.author.displayName}
+                <Typography.Text type="secondary">{p.area.name}</Typography.Text>
+              </Space>
+            ),
+          },
+          {
+            title: 'Trạng thái',
+            key: 'state',
+            render: (_, p) => (
+              <Space size={[4, 4]} wrap>
+                <ModerationTag post={p} />
+                {p.hidden && <Tag>Người đăng đã ẩn</Tag>}
+                {p.status === 'CLOSED' && <Tag>{MARKET_STATUS_LABELS.CLOSED}</Tag>}
+              </Space>
+            ),
+          },
+          {
+            title: 'Báo cáo',
+            dataIndex: 'openReports',
+            align: 'center',
+            render: (n: number) => (n > 0 ? <Badge count={n} /> : '—'),
+          },
+          {
+            title: 'Đăng lúc',
+            dataIndex: 'createdAt',
+            render: (v: string) => <DateText value={v} withTime />,
+          },
+        ]}
+      />
+    </>
+  );
+}
+
+function KeywordPanel() {
+  const { message } = App.useApp();
+  const queryClient = useQueryClient();
+  const [form] = Form.useForm<{ keyword: string }>();
+  const keywords = useQuery({
+    queryKey: marketKeys.keywords,
+    queryFn: () => api.get<Schemas['MarketKeywordDto'][]>('/api/market-moderation/keywords'),
+  });
+  const add = useMutation({
+    mutationFn: (keyword: string) => api.post<Schemas['MarketKeywordDto']>('/api/market-moderation/keywords', { keyword }),
+    onSuccess: (k) => {
+      form.resetFields();
+      message.success(`Đã thêm từ khóa "${k.keyword}"`);
+      void queryClient.invalidateQueries({ queryKey: marketKeys.keywords });
+    },
+  });
+  const remove = useMutation({
+    mutationFn: (id: number) => api.delete<void>(`/api/market-moderation/keywords/${id}`),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: marketKeys.keywords }),
+  });
+
+  return (
+    <Card>
+      <Typography.Paragraph type="secondary">
+        Bài mới hoặc bài sửa có chứa một trong các từ khóa dưới đây (không phân biệt hoa thường, khớp nguyên cụm từ)
+        sẽ không hiển thị ngay mà chuyển sang "Chờ duyệt".
+      </Typography.Paragraph>
+      <Form form={form} layout="inline" onFinish={(v) => add.mutate(v.keyword)} style={{ marginBottom: 16 }}>
+        <Form.Item name="keyword" rules={[{ required: true, whitespace: true, message: 'Nhập từ khóa' }]}>
+          <Input placeholder="Từ khóa, ví dụ: pháo" maxLength={100} style={{ width: 260 }} aria-label="Từ khóa mới" />
+        </Form.Item>
+        <Button type="primary" htmlType="submit" loading={add.isPending}>
+          Thêm từ khóa
+        </Button>
+      </Form>
+      {add.error && <Alert type="error" showIcon message={errorText(add.error)} style={{ marginBottom: 12 }} />}
+      {keywords.error ? (
+        <Alert type="error" showIcon message={errorText(keywords.error)} />
+      ) : keywords.isLoading ? (
+        <Spin />
+      ) : keywords.data!.length === 0 ? (
+        <Empty description="Chưa có từ khóa lọc" />
+      ) : (
+        <Space size={[8, 8]} wrap>
+          {keywords.data!.map((k) => (
+            <Tag
+              key={k.id}
+              closable
+              onClose={(e) => {
+                e.preventDefault();
+                remove.mutate(k.id);
+              }}
+            >
+              {k.keyword}
+            </Tag>
+          ))}
+        </Space>
+      )}
+    </Card>
+  );
+}
+
+/** Chi tiết bài cho cán bộ xã (deep link /commune/market/:id): ảnh, báo cáo, bình luận, nút giữ bài / gỡ bài. */
+export function MarketModerationPostPage() {
+  const id = Number(useParams().id);
+  const { message } = App.useApp();
+  const queryClient = useQueryClient();
+  const [rejecting, setRejecting] = useState(false);
+  const [form] = Form.useForm<{ note: string }>();
+  const detail = useQuery({
+    queryKey: [...marketKeys.all, 'detail', id],
+    queryFn: () => api.get<Schemas['MarketAdminDetailDto']>(`/api/market-moderation/posts/${id}`),
+    retry: (n, e) => !(e instanceof ApiError && e.status === 404) && n < 2,
+  });
+  const decide = useMutation({
+    mutationFn: ({ action, note }: { action: 'approve' | 'reject'; note?: string }) =>
+      api.post<AdminPost>(`/api/market-moderation/posts/${id}/${action}`, { note }),
+    onSuccess: (p, v) => {
+      message.success(v.action === 'approve' ? `Đã giữ bài ${p.code}` : `Đã gỡ bài ${p.code}`);
+      setRejecting(false);
+      form.resetFields();
+      void queryClient.invalidateQueries({ queryKey: marketKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
   });
   const back = (
     <Link to=".." relative="path">
@@ -176,76 +320,166 @@ export function MarketPostPage() {
     </Link>
   );
 
-  if (post.isLoading) return <Spin />;
-  if (post.error) {
-    if (post.error instanceof ApiError && post.error.status === 404) {
-      return <Result status="404" title="Bài không còn khả dụng" extra={back} />;
+  if (detail.isLoading) return <Spin />;
+  if (detail.error) {
+    if (detail.error instanceof ApiError && detail.error.status === 404) {
+      return <Result status="404" title="Không tìm thấy bài" extra={back} />;
     }
     return (
       <Alert
         type="error"
         showIcon
-        message={errorText(post.error)}
-        action={<Button onClick={() => void post.refetch()}>Thử lại</Button>}
+        message={errorText(detail.error)}
+        action={<Button onClick={() => void detail.refetch()}>Thử lại</Button>}
       />
     );
   }
-  const p = post.data!;
-  const list = comments.data?.pages.flatMap((c) => c.items) ?? [];
+  const { post: p, reports, comments, matchedKeywords } = detail.data!;
+  const openReports = reports.filter((r) => !r.resolvedAt);
+  const needsDecision = p.moderation === 'PENDING_REVIEW' || p.openReports > 0;
 
   return (
     <>
       {back}
-      <Card style={{ marginTop: 12 }} title={p.code}>
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <PostMeta post={p} />
-          <PostTags post={p} />
-          <Typography.Paragraph style={{ whiteSpace: 'pre-line' }}>{p.caption}</Typography.Paragraph>
-          {p.photoUrls.length > 0 && (
-            <Image.PreviewGroup>
-              <Space wrap>
-                {p.photoUrls.map((url, i) => (
-                  <AuthImage key={url} path={url} alt={`Ảnh ${i + 1} của ${p.code}`} size={160} />
+      <Card
+        style={{ marginTop: 12 }}
+        title={
+          <Space>
+            {p.code}
+            <ModerationTag post={p} />
+          </Space>
+        }
+        extra={
+          <Space>
+            {p.moderation !== 'PUBLISHED' || p.openReports > 0 ? (
+              <Popconfirm
+                title={p.moderation === 'PUBLISHED' ? 'Giữ bài và đóng các báo cáo?' : 'Cho bài hiển thị lại?'}
+                okText="Đồng ý"
+                cancelText="Thôi"
+                onConfirm={() => decide.mutate({ action: 'approve' })}
+              >
+                <Button type="primary" loading={decide.isPending && decide.variables?.action === 'approve'}>
+                  {p.moderation === 'PUBLISHED' ? 'Giữ bài' : 'Duyệt cho hiển thị'}
+                </Button>
+              </Popconfirm>
+            ) : null}
+            {p.moderation !== 'REJECTED' && (
+              <Button danger onClick={() => setRejecting(true)}>
+                Gỡ bài
+              </Button>
+            )}
+          </Space>
+        }
+      >
+        {needsDecision && p.moderationNote && (
+          <Alert type="warning" showIcon message={p.moderationNote} style={{ marginBottom: 12 }} />
+        )}
+        {p.moderation === 'REJECTED' && p.moderationNote && (
+          <Alert type="error" showIcon message={`Lý do gỡ: ${p.moderationNote}`} style={{ marginBottom: 12 }} />
+        )}
+        {decide.error && <Alert type="error" showIcon message={errorText(decide.error)} style={{ marginBottom: 12 }} />}
+        <Descriptions column={{ xs: 1, md: 2 }} size="small" style={{ marginBottom: 12 }}>
+          <Descriptions.Item label="Người đăng">{p.author.displayName}</Descriptions.Item>
+          <Descriptions.Item label="Tổ">{p.area.name}</Descriptions.Item>
+          <Descriptions.Item label="Đăng lúc">
+            <DateText value={p.createdAt} withTime />
+            {p.editedAt && ' · Đã chỉnh sửa'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Phân loại">
+            <Space size={[4, 4]} wrap>
+              {p.tags.map((t) => (
+                <Tag key={t} color="blue">
+                  {MARKET_TAG_LABELS[t]}
+                </Tag>
+              ))}
+              <Tag>{MARKET_CATEGORY_LABELS[p.category]}</Tag>
+              <Tag color={p.status === 'OPEN' ? 'green' : 'default'}>{MARKET_STATUS_LABELS[p.status]}</Tag>
+              {p.hidden && <Tag>Người đăng đã ẩn</Tag>}
+            </Space>
+          </Descriptions.Item>
+          {matchedKeywords.length > 0 && (
+            <Descriptions.Item label="Khớp bộ lọc">
+              <Space size={[4, 4]} wrap>
+                {matchedKeywords.map((k) => (
+                  <Tag key={k} color="orange">
+                    {k}
+                  </Tag>
                 ))}
               </Space>
-            </Image.PreviewGroup>
+            </Descriptions.Item>
           )}
-        </Space>
-      </Card>
-      <Card style={{ marginTop: 12 }} title={`Bình luận (${p.commentCount})`}>
-        {comments.error ? (
-          <Alert
-            type="error"
-            showIcon
-            message={errorText(comments.error)}
-            action={<Button onClick={() => void comments.refetch()}>Thử lại</Button>}
-          />
-        ) : (
-          <List
-            loading={comments.isLoading}
-            dataSource={list}
-            locale={{ emptyText: 'Chưa có bình luận' }}
-            renderItem={(c) => (
-              <List.Item key={c.id}>
-                <List.Item.Meta
-                  title={c.author.displayName}
-                  description={<DateText value={c.createdAt} withTime />}
-                />
-                <div style={{ whiteSpace: 'pre-line' }}>{c.content}</div>
-              </List.Item>
-            )}
-            loadMore={
-              comments.hasNextPage && (
-                <div style={{ textAlign: 'center', marginTop: 12 }}>
-                  <Button loading={comments.isFetchingNextPage} onClick={() => void comments.fetchNextPage()}>
-                    Xem thêm bình luận
-                  </Button>
-                </div>
-              )
-            }
-          />
+        </Descriptions>
+        <Typography.Paragraph style={{ whiteSpace: 'pre-line' }}>{p.caption}</Typography.Paragraph>
+        {p.photoUrls.length > 0 && (
+          <Image.PreviewGroup>
+            <Space wrap>
+              {p.photoUrls.map((url, i) => (
+                <AuthImage key={url} path={url} alt={`Ảnh ${i + 1} của ${p.code}`} size={160} />
+              ))}
+            </Space>
+          </Image.PreviewGroup>
         )}
       </Card>
+
+      <Card style={{ marginTop: 12 }} title={`Báo cáo (${openReports.length} chưa xử lý / ${reports.length})`}>
+        <List
+          dataSource={reports}
+          locale={{ emptyText: 'Chưa có báo cáo' }}
+          renderItem={(r) => (
+            <List.Item key={r.id}>
+              <List.Item.Meta
+                title={
+                  <Space>
+                    <Tag color={r.resolvedAt ? 'default' : 'red'}>{REPORT_REASON_LABELS[r.reason]}</Tag>
+                    {r.reporterName}
+                  </Space>
+                }
+                description={
+                  <>
+                    <DateText value={r.createdAt} withTime />
+                    {r.resolution && ` · Đã xử lý: ${r.resolution === 'KEPT' ? 'giữ bài' : 'gỡ bài'}`}
+                  </>
+                }
+              />
+              {r.note}
+            </List.Item>
+          )}
+        />
+      </Card>
+
+      <Card style={{ marginTop: 12 }} title={`Bình luận (${p.commentCount})`}>
+        <List
+          dataSource={comments}
+          locale={{ emptyText: 'Chưa có bình luận' }}
+          renderItem={(c) => (
+            <List.Item key={c.id}>
+              <List.Item.Meta title={c.authorName} description={<DateText value={c.createdAt} withTime />} />
+              <div style={{ whiteSpace: 'pre-line' }}>{c.content}</div>
+            </List.Item>
+          )}
+        />
+      </Card>
+
+      <Modal
+        title={`Gỡ bài ${p.code}`}
+        open={rejecting}
+        okText="Gỡ bài"
+        okButtonProps={{ danger: true, loading: decide.isPending }}
+        cancelText="Thôi"
+        onCancel={() => setRejecting(false)}
+        onOk={() => form.submit()}
+        destroyOnHidden
+      >
+        <Form form={form} layout="vertical" onFinish={(v) => decide.mutate({ action: 'reject', note: v.note })}>
+          <Form.Item
+            name="note"
+            label="Lý do gỡ (người đăng sẽ thấy)"
+            rules={[{ required: true, whitespace: true, message: 'Nhập lý do gỡ bài' }]}
+          >
+            <Input.TextArea rows={3} maxLength={500} showCount />
+          </Form.Item>
+        </Form>
+      </Modal>
     </>
   );
 }

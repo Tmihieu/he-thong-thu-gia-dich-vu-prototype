@@ -18,9 +18,10 @@ const SCREENS: Record<string, (p: Params) => string> = {
   'remittance.receipts': () => '/commune/charges?tab=receipts',
   'commune.complaints': (p) => withId('/commune/complaints', 'complaintId', p),
   'company.complaints': (p) => withId('/company/complaints', 'complaintId', p),
-  'company.bulky': (p) => withId('/company/bulky', 'requestId', p),
   'leader.approvals': () => '/leader/approvals',
   'commune.approvals': () => '/commune/approvals',
+  'commune.market': (p) =>
+    typeof p.postId === 'number' && p.postId > 0 ? `/commune/market/${p.postId}` : '/commune/market?tab=reported',
 };
 
 /** Đường dẫn tới màn của thông báo, hoặc null nếu màn không có hoặc thuộc vai trò khác. */

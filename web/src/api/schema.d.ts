@@ -29,7 +29,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Sửa dự thảo biểu giá (quản trị); bản đã ban hành không sửa được */
+        /** Sửa biểu giá (quản trị); bản đã ban hành giữ nguyên ngày hiệu lực */
         put: operations["updateDraft"];
         post?: never;
         delete?: never;
@@ -49,6 +49,23 @@ export interface paths {
         get: operations["get"];
         /** Sửa thông tin đối tượng (cán bộ xã); hợp đồng sửa qua /contracts/{id} */
         put: operations["update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/districts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sửa địa bàn (quản trị) */
+        put: operations["updateDistrict"];
         post?: never;
         delete?: never;
         options?: never;
@@ -84,6 +101,23 @@ export interface paths {
         get: operations["company"];
         /** Sửa thông tin công ty (cán bộ xã, quản trị) */
         put: operations["updateCompany"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/areas/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sửa tên và trạng thái khu vực (quản trị) */
+        put: operations["updateArea"];
         post?: never;
         delete?: never;
         options?: never;
@@ -493,6 +527,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/market-moderation/posts/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Gỡ / từ chối bài (bắt buộc lý do), đóng các báo cáo chưa xử lý */
+        post: operations["reject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market-moderation/posts/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Duyệt / giữ bài: hiển thị trên chợ, đóng các báo cáo chưa xử lý */
+        post: operations["approve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market-moderation/keywords": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Từ khóa của bộ lọc trước khi đăng */
+        get: operations["keywords"];
+        put?: never;
+        /** Thêm từ khóa lọc */
+        post: operations["addKeyword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/leadership/approvals": {
         parameters: {
             query?: never;
@@ -521,7 +607,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Lãnh đạo từ chối (bắt buộc ý kiến); miễn giảm bị từ chối thì bỏ cờ miễn (O8) */
-        post: operations["reject"];
+        post: operations["reject_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -538,7 +624,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Lãnh đạo duyệt: xóa nợ / ghi hoàn ngay; miễn giảm chỉ ghi nhận */
-        post: operations["approve"];
+        post: operations["approve_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -796,7 +882,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Đăng bài, hiển thị ngay (không kiểm duyệt); retry cùng clientRequestId trả bài cũ */
+        /** Đăng bài; khớp từ khóa lọc thì chờ cán bộ xã duyệt; retry cùng clientRequestId trả bài cũ */
         post: operations["create_4"];
         delete?: never;
         options?: never;
@@ -815,6 +901,23 @@ export interface paths {
         put?: never;
         /** Đóng / mở lại bài (chủ bài) */
         post: operations["changeStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/citizen/market/posts/{id}/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Báo cáo bài vi phạm; đã báo cáo (chưa xử lý) thì không ghi thêm */
+        post: operations["report_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1368,6 +1471,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/market-moderation/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Số bài chờ duyệt và số bài có báo cáo chưa xử lý */
+        get: operations["summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market-moderation/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mọi bài (kể cả ẩn, chờ duyệt, bị gỡ); reported=true chỉ bài có báo cáo chưa xử lý */
+        get: operations["list_9"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market-moderation/posts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chi tiết bài kèm báo cáo, bình luận và từ khóa lọc bị khớp */
+        get: operations["detail_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market-moderation/posts/{id}/images/{imageId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ảnh của bài (mọi trạng thái) */
+        get: operations["image_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/complaints/{id}": {
         parameters: {
             query?: never;
@@ -1580,7 +1751,7 @@ export interface paths {
             cookie?: never;
         };
         /** Thông báo của tài khoản người dân, mới nhất trước; lọc theo loại (Phản ánh / Giao dịch) */
-        get: operations["list_9"];
+        get: operations["list_10"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1801,7 +1972,7 @@ export interface paths {
             cookie?: never;
         };
         /** Yêu cầu rác cồng kềnh (công ty: của mình; xã / quản trị: tất cả), lọc theo trạng thái */
-        get: operations["list_10"];
+        get: operations["list_11"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1839,6 +2010,23 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/market-moderation/keywords/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Xóa từ khóa lọc */
+        delete: operations["removeKeyword"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2006,6 +2194,22 @@ export interface components {
             currentContract: components["schemas"]["ContractDto"];
             contracts: components["schemas"]["ContractDto"][];
         };
+        DistrictRequest: {
+            name: string;
+            note?: string;
+            /** Format: int32 */
+            sortOrder?: number;
+        };
+        DistrictDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example DTH */
+            code: string;
+            name: string;
+            note: string | null;
+            /** Format: int32 */
+            sortOrder: number | null;
+        };
         CompanyRequest: {
             name: string;
             contactName: string;
@@ -2052,6 +2256,29 @@ export interface components {
             bankAccount: string | null;
             bankName: string | null;
         };
+        AreaRequest: {
+            name: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+        };
+        AreaDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example KV07 */
+            code: string;
+            name: string;
+            /** Format: int64 */
+            districtId: number;
+            /** @example DTH */
+            districtCode: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+            /**
+             * Format: int64
+             * @description Số đối tượng chưa chấm dứt
+             */
+            subjectCount: number;
+        };
         SavedStateDto: {
             saved: boolean;
         };
@@ -2084,6 +2311,13 @@ export interface components {
             /** @enum {string} */
             status: "OPEN" | "CLOSED";
             hidden: boolean;
+            /**
+             * @description Người khác chỉ thấy bài PUBLISHED
+             * @enum {string}
+             */
+            moderation: "PUBLISHED" | "PENDING_REVIEW" | "REJECTED";
+            /** @description Chỉ chủ bài: lý do chờ duyệt/bị gỡ */
+            moderationNote: string | null;
             author: components["schemas"]["MarketAuthorDto"];
             /** Format: date-time */
             createdAt: string;
@@ -2402,6 +2636,47 @@ export interface components {
             validTo: string | null;
             note: string | null;
             decisionNo: string | null;
+        };
+        MarketModerationRequest: {
+            note?: string;
+        };
+        MarketAdminPostDto: {
+            /** Format: int64 */
+            id: number;
+            code: string;
+            caption: string;
+            tags: ("FIND" | "SELL" | "GIVE" | "EXCHANGE")[];
+            /** @enum {string} */
+            category: "HOUSEHOLD" | "ELECTRONICS" | "FURNITURE" | "CHILDREN" | "TOOLS_VEHICLES" | "OTHER";
+            area: components["schemas"]["MarketAreaDto"];
+            photoUrls: string[];
+            /** @enum {string} */
+            status: "OPEN" | "CLOSED";
+            hidden: boolean;
+            /** @enum {string} */
+            moderation: "PUBLISHED" | "PENDING_REVIEW" | "REJECTED";
+            moderationNote: string | null;
+            /** Format: date-time */
+            moderatedAt: string | null;
+            /** Format: int64 */
+            openReports: number;
+            /** Format: int64 */
+            commentCount: number;
+            author: components["schemas"]["MarketAuthorDto"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            editedAt: string | null;
+        };
+        MarketKeywordRequest: {
+            keyword: string;
+        };
+        MarketKeywordDto: {
+            /** Format: int64 */
+            id: number;
+            keyword: string;
+            /** Format: date-time */
+            createdAt: string;
         };
         CreateApprovalRequest: {
             /** @enum {string} */
@@ -2770,6 +3045,11 @@ export interface components {
             status: "OPEN" | "CLOSED";
             /** Format: int32 */
             version: number;
+        };
+        MarketReportRequest: {
+            /** @enum {string} */
+            reason: "SPAM" | "PROHIBITED" | "SCAM" | "OFFENSIVE" | "OTHER";
+            note?: string;
         };
         MarketCommentRequest: {
             content: string;
@@ -3178,34 +3458,6 @@ export interface components {
             defaultPrice: number | null;
             active: boolean;
         };
-        DistrictDto: {
-            /** Format: int64 */
-            id: number;
-            /** @example DTH */
-            code: string;
-            name: string;
-            note: string | null;
-            /** Format: int32 */
-            sortOrder: number | null;
-        };
-        AreaDto: {
-            /** Format: int64 */
-            id: number;
-            /** @example KV07 */
-            code: string;
-            name: string;
-            /** Format: int64 */
-            districtId: number;
-            /** @example DTH */
-            districtCode: string;
-            /** @enum {string} */
-            status: "ACTIVE" | "INACTIVE";
-            /**
-             * Format: int64
-             * @description Số đối tượng chưa chấm dứt
-             */
-            subjectCount: number;
-        };
         CollectionScheduleDto: {
             /** Format: int64 */
             id: number;
@@ -3254,6 +3506,50 @@ export interface components {
             tags: ("FIND" | "SELL" | "GIVE" | "EXCHANGE")[];
             categories: ("HOUSEHOLD" | "ELECTRONICS" | "FURNITURE" | "CHILDREN" | "TOOLS_VEHICLES" | "OTHER")[];
             areas: components["schemas"]["AreaDto"][];
+        };
+        MarketModerationSummaryDto: {
+            /** Format: int64 */
+            pendingReview: number;
+            /** Format: int64 */
+            reported: number;
+        };
+        PageDtoMarketAdminPostDto: {
+            items: components["schemas"]["MarketAdminPostDto"][];
+            /** Format: int64 */
+            total: number;
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
+            hasMore: boolean;
+        };
+        MarketAdminCommentDto: {
+            /** Format: int64 */
+            id: number;
+            content: string;
+            authorName: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        MarketAdminDetailDto: {
+            post: components["schemas"]["MarketAdminPostDto"];
+            reports: components["schemas"]["MarketReportDto"][];
+            comments: components["schemas"]["MarketAdminCommentDto"][];
+            matchedKeywords: string[];
+        };
+        MarketReportDto: {
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            reason: "SPAM" | "PROHIBITED" | "SCAM" | "OFFENSIVE" | "OTHER";
+            note: string | null;
+            reporterName: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string|null} */
+            resolution: "KEPT" | "REMOVED" | null;
+            /** Format: date-time */
+            resolvedAt: string | null;
         };
         ChargeDto: {
             /** Format: int64 */
@@ -3656,6 +3952,32 @@ export interface operations {
             };
         };
     };
+    updateDistrict: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DistrictRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DistrictDto"];
+                };
+            };
+        };
+    };
     updateContract: {
         parameters: {
             query?: never;
@@ -3726,6 +4048,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CompanyDto"];
+                };
+            };
+        };
+    };
+    updateArea: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AreaRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AreaDto"];
                 };
             };
         };
@@ -4513,6 +4861,102 @@ export interface operations {
             };
         };
     };
+    reject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarketModerationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MarketAdminPostDto"];
+                };
+            };
+        };
+    };
+    approve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarketModerationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MarketAdminPostDto"];
+                };
+            };
+        };
+    };
+    keywords: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MarketKeywordDto"][];
+                };
+            };
+        };
+    };
+    addKeyword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarketKeywordRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MarketKeywordDto"];
+                };
+            };
+        };
+    };
     list_4: {
         parameters: {
             query?: {
@@ -4560,7 +5004,7 @@ export interface operations {
             };
         };
     };
-    reject: {
+    reject_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -4586,7 +5030,7 @@ export interface operations {
             };
         };
     };
-    approve: {
+    approve_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -5084,6 +5528,30 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["MarketPostDto"];
                 };
+            };
+        };
+    };
+    report_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarketReportRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -5897,6 +6365,98 @@ export interface operations {
             };
         };
     };
+    summary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MarketModerationSummaryDto"];
+                };
+            };
+        };
+    };
+    list_9: {
+        parameters: {
+            query?: {
+                moderation?: "PUBLISHED" | "PENDING_REVIEW" | "REJECTED";
+                status?: "OPEN" | "CLOSED";
+                reported?: boolean;
+                q?: string;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageDtoMarketAdminPostDto"];
+                };
+            };
+        };
+    };
+    detail_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MarketAdminDetailDto"];
+                };
+            };
+        };
+    };
+    image_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                imageId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
     get_3: {
         parameters: {
             query?: never;
@@ -6167,7 +6727,7 @@ export interface operations {
             };
         };
     };
-    list_9: {
+    list_10: {
         parameters: {
             query?: {
                 unreadOnly?: boolean;
@@ -6455,7 +7015,7 @@ export interface operations {
             };
         };
     };
-    list_10: {
+    list_11: {
         parameters: {
             query?: {
                 status?: "PENDING" | "QUOTED" | "COLLECTED" | "CANCELLED";
@@ -6525,6 +7085,26 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["ChargePageDto"];
                 };
+            };
+        };
+    };
+    removeKeyword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
