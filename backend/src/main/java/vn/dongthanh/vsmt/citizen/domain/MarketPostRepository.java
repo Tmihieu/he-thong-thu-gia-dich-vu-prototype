@@ -22,7 +22,7 @@ public interface MarketPostRepository extends JpaRepository<MarketPost, Long> {
             + " (b.blockerId = :viewer and b.blockedId = p.author.id)"
             + " or (b.blockerId = p.author.id and b.blockedId = :viewer))";
 
-    String FEED_WHERE = " where p.hidden = false and p.status = :open"
+    String FEED_WHERE = " where p.moderation = 'PUBLISHED' and p.hidden = false and p.status = :open"
             + " and exists (select 1 from MarketPost p2 join p2.tags t where p2 = p and t in :tags)"
             + " and (:category is null or p.category = :category)"
             + " and (:areaId is null or p.area.id = :areaId)"
@@ -39,6 +39,21 @@ public interface MarketPostRepository extends JpaRepository<MarketPost, Long> {
 
     @Query(value = WITH_AUTHOR + MINE_WHERE, countQuery = "select count(p) from MarketPost p" + MINE_WHERE)
     Page<MarketPost> mine(Long authorId, MarketPostStatus status, Boolean hidden, Pageable page);
+
+    /** Danh sách quản lý của cán bộ xã: mọi bài, kể cả ẩn/chờ duyệt/bị gỡ; {@code reported} chỉ bài có báo cáo mở. */
+    String ADMIN_WHERE = " where (:moderation is null or p.moderation = :moderation)"
+            + " and (:status is null or p.status = :status)"
+            + " and (:reported = false or exists (select 1 from MarketPostReport r where r.postId = p.id"
+            + " and r.resolvedAt is null))"
+            + " and (lower(p.caption) like :pattern escape '!' or lower(p.code) like :pattern escape '!'"
+            + " or lower(a.displayName) like :pattern escape '!')";
+
+    @Query(value = WITH_AUTHOR + ADMIN_WHERE,
+            countQuery = "select count(p) from MarketPost p join p.author a" + ADMIN_WHERE)
+    Page<MarketPost> admin(MarketModeration moderation, MarketPostStatus status, boolean reported, String pattern,
+            Pageable page);
+
+    long countByModeration(MarketModeration moderation);
 
     @Query(WITH_AUTHOR + " where p.id = :id")
     Optional<MarketPost> findByIdWithAuthor(Long id);
