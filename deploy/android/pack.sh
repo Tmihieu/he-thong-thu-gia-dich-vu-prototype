@@ -19,7 +19,7 @@ rm -rf "$STAGE" && mkdir -p "$STAGE"
 cp "$(ls "$REPO"/backend/target/*.jar | grep -v original | head -1)" "$STAGE/backend.jar"
 cp "$(ls "$REPO"/jmix-admin/build/libs/*.jar | grep -v plain | head -1)" "$STAGE/jmix-admin.jar"
 cp -r "$REPO/web/dist" "$STAGE/web"
-cp "$HERE"/{setup.sh,start.sh,stop.sh,status.sh,nginx.conf.template,vsmt.env.example,README.md} "$STAGE/"
+cp "$HERE"/{setup.sh,start.sh,stop.sh,status.sh,ngrok-up.sh,watch.sh,nginx.conf.template,vsmt.env.example,README.md} "$STAGE/"
 tar -czf "$OUT/vsmt-android.tar.gz" -C "$OUT" vsmt
 echo "Đã đóng gói: $OUT/vsmt-android.tar.gz"
 

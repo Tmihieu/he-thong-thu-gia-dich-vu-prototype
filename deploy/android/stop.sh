@@ -3,6 +3,8 @@
 cd "$(dirname "$0")"
 ROOT=$PWD
 
+[ -f run/watch.pid ] && kill "$(cat run/watch.pid)" 2>/dev/null
+rm -f run/watch.pid
 [ -f run/ngrok.pid ] && kill "$(cat run/ngrok.pid)" 2>/dev/null
 pkill -f "ngrok http --url=.* 127.0.0.1:8088" 2>/dev/null
 [ -f run/nginx.pid ] && nginx -p "$ROOT/run" -e "$ROOT/logs/nginx-error.log" -c "$ROOT/run/nginx.conf" -s stop 2>/dev/null

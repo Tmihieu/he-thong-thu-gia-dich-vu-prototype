@@ -56,12 +56,12 @@ wait_http jmix http://127.0.0.1:8081/jmix/login 300
 NGINX="nginx -p $ROOT/run -e $ROOT/logs/nginx-error.log -c $ROOT/run/nginx.conf"
 if [ -f run/nginx.pid ] && kill -0 "$(cat run/nginx.pid)" 2>/dev/null; then $NGINX -s reload; else $NGINX; fi
 
-# Một domain ngrok chỉ mở được một tunnel: tắt tunnel cũ (kể cả của Rice) rồi mở lại về nginx.
-pkill -f "ngrok http" 2>/dev/null
-sleep 1
-nohup proot -b "$PREFIX/etc/resolv.conf:/etc/resolv.conf" \
-    ngrok http --url="$NGROK_DOMAIN" 127.0.0.1:8088 --log=stdout > logs/ngrok.log 2>&1 &
-echo $! > run/ngrok.pid
+./ngrok-up.sh
 sleep 5
+
+# Giám sát tunnel: tự mở lại ngrok khi mất mạng làm đứt tunnel (log: logs/watch.log).
+[ -f run/watch.pid ] && kill "$(cat run/watch.pid)" 2>/dev/null
+nohup ./watch.sh > /dev/null 2>&1 &
+echo $! > run/watch.pid
 
 ./status.sh

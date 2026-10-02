@@ -36,6 +36,8 @@ Tailscale). Cập nhật lần sau chạy lại lệnh này; `vsmt.env`, ảnh t
 
 Lần đầu backend tạo bảng và nạp dữ liệu demo nên mất vài phút. Log ở `~/vsmt/logs/`.
 
+`start.sh` cũng bật `watch.sh` chạy nền: cứ 30 giây kiểm tra domain ngrok, hỏng 3 lần liên tiếp (ví dụ mất mạng rồi ngrok không nối lại được) thì tự mở lại tunnel, ghi vào `logs/watch.log`. Sau khi mạng có lại, tunnel trở lại trong khoảng 1–2 phút.
+
 `start.sh` dừng RiceManagement nếu đang chạy, vì hai bên dùng chung cổng 8080 và domain ngrok. Muốn quay về Rice:
 `~/vsmt/stop.sh && ~/run.sh`.
 
