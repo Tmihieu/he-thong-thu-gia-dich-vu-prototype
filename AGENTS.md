@@ -5,6 +5,7 @@
 - `backend/`: Java 21 / Spring Boot API. Domain modules live under `src/main/java/vn/dongthanh/vsmt/`; tests mirror them in `src/test/java/`. Flyway migrations and demo seeds are in `src/main/resources/db/`.
 - `web/`: React, TypeScript, Vite, and Ant Design. Use `src/features/` for business screens, `src/api/` for API access, `src/shared/` for reusable code, and `public/` for static assets.
 - `mobile/`: Expo / React Native citizen app. Routes belong in `src/app/`, business logic in `src/features/`, and images in `assets/`. Read `mobile/AGENTS.md` before editing this module.
+- `mobile-flutter/`: Flutter rewrite of the citizen app (same screens and API). Screens live in `lib/features/`, API clients and models in `lib/api/`, shared widgets/helpers in `lib/shared/`, routes in `lib/app.dart`.
 - `SPEC.md`, `docs/`, and `tasks/` contain requirements, business flows, demo instructions, and implementation tasks.
 
 ## Build, Test, and Development Commands
@@ -15,7 +16,8 @@ Run commands from the indicated directory. Install frontend dependencies with `n
 - `backend/`: `./mvnw spring-boot:run` starts the demo profile; `./mvnw verify` builds, runs unit/integration tests, and checks coverage. On Windows, use `.\mvnw.cmd`.
 - `web/`: `npm run dev` starts Vite; `npm run build`, `npm run lint`, and `npm test` validate changes.
 - `mobile/`: `npm start` starts Expo; `npm run typecheck` and `npm test -- --runInBand` validate changes.
-- Either app: `npm run gen:api` regenerates `src/api/schema.d.ts` from the running backend. Do not edit generated schemas manually.
+- `mobile-flutter/`: `flutter run --dart-define=API_URL=http://<lan-ip>:8080`; `flutter analyze` and `flutter test` validate changes; `flutter build apk --release --target-platform android-arm64 --dart-define=API_URL=...` builds the APK.
+- Either npm app: `npm run gen:api` regenerates `src/api/schema.d.ts` from the running backend. Do not edit generated schemas manually.
 
 ## Coding Style & Naming Conventions
 
