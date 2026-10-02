@@ -56,7 +56,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       TZ: Asia/Ho_Chi_Minh
-    # Không mở cổng ra host: web (nginx) proxy /jmix/ tới đây và nhúng vào trang admin bằng iframe.
+    # Không mở cổng ra host: web (nginx) proxy /jmix/ tới đây và mục Quản trị dữ liệu mở ở tab mới.
     # Cần backend đã chạy Flyway trước (bảng districts, areas, companies, fee_types, users).
 
   web:

@@ -1,6 +1,7 @@
 package vn.dongthanh.vsmt.jmixadmin.view.login;
 
 import com.vaadin.flow.component.login.AbstractLogin.LoginEvent;
+import com.vaadin.flow.component.login.LoginI18n;
 import com.vaadin.flow.router.Route;
 import io.jmix.flowui.component.loginform.JmixLoginForm;
 import io.jmix.flowui.view.StandardView;
@@ -37,10 +38,24 @@ public class LoginView extends StandardView {
 
     @Subscribe
     public void onInit(final InitEvent event) {
+        login.setI18n(vietnameseI18n());
         if (!defaultUsername.isBlank()) {
             login.setUsername(defaultUsername);
             login.setPassword(defaultPassword);
         }
+    }
+
+    private static LoginI18n vietnameseI18n() {
+        LoginI18n i18n = LoginI18n.createDefault();
+        i18n.getForm().setTitle("Đăng nhập");
+        i18n.getForm().setUsername("Tên đăng nhập");
+        i18n.getForm().setPassword("Mật khẩu");
+        i18n.getForm().setSubmit("Đăng nhập");
+        i18n.getErrorMessage().setTitle("Đăng nhập không thành công");
+        i18n.getErrorMessage().setMessage("Tên đăng nhập hoặc mật khẩu không đúng.");
+        i18n.getErrorMessage().setUsername("Hãy nhập tên đăng nhập");
+        i18n.getErrorMessage().setPassword("Hãy nhập mật khẩu");
+        return i18n;
     }
 
     @Subscribe("login")

@@ -14,6 +14,11 @@ jmix {
     projectId = 'vsmtadmin'
 }
 
+// Jmix tạo component từ XML nên Vaadin không quét ra được; tắt tối ưu để gói production đủ component (vd. vaadin-drawer-toggle).
+vaadin {
+    optimizeBundle = false
+}
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
