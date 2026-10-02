@@ -60,7 +60,7 @@ describe('api client', () => {
     setTokenGetter(() => 'abc');
     const fetchFn = mockFetch(new Response('jpeg', { status: 200, headers: { 'Content-Type': 'image/jpeg' } }));
 
-    const blob = await api.blob('/api/bulky-requests/6/photos/a.jpg');
+    const blob = await api.blob('/api/market/posts/6/images/1');
 
     expect(blob.type).toBe('image/jpeg');
     const [, init] = fetchFn.mock.calls[0] as unknown as [string, RequestInit];
