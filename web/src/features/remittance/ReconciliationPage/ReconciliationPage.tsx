@@ -8,6 +8,7 @@ import { MoneyText } from '../../../shared/MoneyText';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type LedgerRow, useCompanyLedger } from '../api';
 import { LedgerBreakdown } from '../LedgerBreakdown';
+import { RateRings } from '../RateRings';
 import { LockPeriodButton } from './LockPeriodButton';
 import { PeriodTrend } from './PeriodTrend';
 
@@ -64,6 +65,7 @@ export function ReconciliationPage() {
           </Col>
         ))}
       </Row>
+      <RateRings rows={rows} />
       <Table<LedgerRow>
         rowKey="companyId"
         loading={ledger.isLoading}
