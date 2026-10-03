@@ -100,7 +100,12 @@ export function AccountsPage() {
               columns={[
                 {
                   title: 'Người dùng',
-                  dataIndex: 'fullName',
+                  render: (_, a) => (
+                    <>
+                      <div>{a.fullName}</div>
+                      <Typography.Text type="secondary">{a.username}</Typography.Text>
+                    </>
+                  ),
                 },
                 { title: 'Vai trò', render: (_, a) => <Tag color="blue">{ROLE_LABELS[a.role]}</Tag> },
                 {
@@ -134,7 +139,7 @@ export function AccountsPage() {
                       {a.id !== me?.id && (
                         <Popconfirm
                           title={a.status === 'ACTIVE' ? `Khóa ${a.username}?` : `Mở khóa ${a.username}?`}
-                          description={a.status === 'ACTIVE' ? 'Tài khoản sẽ không đăng nhập được nữa.' : undefined}
+                          description={a.status === 'ACTIVE' ? 'Không đăng nhập lại được; phiên đang mở còn hiệu lực đến khi hết hạn.' : undefined}
                           okText={a.status === 'ACTIVE' ? 'Khóa' : 'Mở khóa'}
                           cancelText="Hủy"
                           onConfirm={() =>
@@ -166,6 +171,7 @@ export function AccountsPage() {
       <AccountForm
         open={editing !== undefined}
         account={editing ?? null}
+        isSelf={!!editing && editing.id === me?.id}
         companies={companies.data ?? []}
         submitting={saving.isPending}
         error={errorMessage(saving.error)}

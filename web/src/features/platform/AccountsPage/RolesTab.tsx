@@ -4,8 +4,8 @@ import { useState } from 'react';
 import type { Role } from '../../../app/auth/authContext';
 import { MENU, ROLE_LABELS } from '../../../app/layout/menuConfig';
 
-const SCOPES = ['Toàn xã', 'Đúng một công ty', 'Tổ công ty giao', 'Hệ thống'] as const;
-const RIGHTS = ['Xem', 'Tạo/cập nhật', 'Xuất dữ liệu', 'Duyệt/khóa sổ'] as const;
+const SCOPES = ['Toàn xã', 'Toàn xã (chỉ xem)', 'Đúng một công ty', 'Tổ công ty giao', 'Hệ thống'] as const;
+const RIGHTS = ['Xem', 'Tạo/cập nhật', 'Xuất dữ liệu', 'Duyệt/khóa sổ', 'Duyệt miễn giảm / hoàn / xóa nợ'] as const;
 
 interface RoleRow {
   role: Role;
