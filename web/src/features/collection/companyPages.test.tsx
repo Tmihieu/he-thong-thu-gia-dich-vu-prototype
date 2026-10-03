@@ -136,6 +136,20 @@ describe('Công ty: phân tổ', () => {
 });
 
 describe('Công ty: tổng quan', () => {
+  it('bấm thẻ số hộ / số tiền đã thu lọc hộ đã thu; bấm thẻ đã nộp về xã mở tab phiếu thu', async () => {
+    api();
+    renderApp('/company/assigned');
+
+    await screen.findByText('Hộ Cường');
+    await userEvent.click(screen.getByRole('button', { name: 'Xem chi tiết Số hộ đã thu' }));
+    await waitFor(() => expect(screen.queryByText('Hộ Cường')).not.toBeInTheDocument());
+    expect(screen.getByText('Hộ Bình')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Xem chi tiết Số tiền đã thu' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Xem chi tiết Số tiền đã nộp về xã' }));
+    expect(await screen.findByRole('tab', { name: 'Phiếu thu xã lập', selected: true })).toBeInTheDocument();
+  });
+
   it('vòng tiến độ lấy đúng dòng sổ công ty; nhận tiền mặt lỗi thì hiện thông báo tiếng Việt từ máy chủ', async () => {
     const fetchFn = api();
     renderApp('/company/assigned');
