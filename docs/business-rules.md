@@ -36,7 +36,7 @@ Cột "Kiểm" để các lane điền khi rà: ✔ khớp · ✘ lệch (ghi s�
 |---|---|---|---|---|
 | BR-MD-01 | Mỗi khu vực (tổ/ấp/thôn) tối đa 1 công ty trong cùng khoảng hiệu lực; đổi công ty tạo bản ghi mới, giữ lịch sử, backend tự đóng phân công cũ | SPEC §9.3 | Chốt | |
 | BR-MD-02 | Khu vực đổi công ty → tự kết thúc phân tổ người đi thu của công ty cũ | DD G14 | Chốt | |
-| BR-MD-03 | Công ty mã `DVnn` tự sinh; chỉ cán bộ xã thêm/sửa; trạng thái **Đang hợp tác / Ngừng hợp tác** | DD T51, 03/10 | Chốt | |
+| BR-MD-03 | Công ty mã `DVnn` tự sinh; **quản trị và cán bộ xã đều thêm/sửa được** (nút thêm ở `/admin/config` từ 29/09, màn Công ty của xã từ 28/09); vai trò khác 403; trạng thái **Đang hợp tác / Ngừng hợp tác** | DD T51, 29/09, QĐ-L1 04/10 | Chốt | |
 | BR-MD-04 | Công ty Ngừng hợp tác không nhận phân công khu vực mới (`COMPANY_INACTIVE`) | DD T51 | Chốt | |
 | BR-MD-05 | Công ty Ngừng hợp tác: khu vực đang phụ trách xử lý thế nào | DD T51 | **Chờ xã** (hiện giữ nguyên) | |
 | BR-MD-06 | Đối tượng: hộ gia đình / hộ kinh doanh / doanh nghiệp. Địa chỉ tách số nhà + đường (đường theo danh mục), khu vực. Hộ gia đình bắt buộc số thành viên; nhóm giá HGĐ phải khớp số thành viên (≤2 / ≥3) | 28/09, V23, V31 | Chốt | |
@@ -106,7 +106,7 @@ Sổ công ty–kỳ là nguồn số duy nhất cho: Tiến độ, Đối soát
 | BR-REM-10 | Cờ dưới 45%: cấp công ty theo đã nộp / phải thu; cấp tổ theo đã thu / phải thu; so số nguyên | DD P4 | Chốt | |
 | BR-REM-11 | Vòng tỷ lệ thu ở Đối soát: < 25% đỏ, 25–< 50% vàng, 50–< 75% cam, ≥ 75% xanh lá; "Thu 3 tháng gần nhất" chỉ kỳ tháng | 29/09 | Chốt | |
 | BR-REM-12 | Số liệu Tiến độ = Đối soát = màn Công ty = Dashboard/Báo cáo lãnh đạo cho cùng kỳ | SPEC §9.6, §9.10 | Chốt | |
-| BR-REM-13 | Cờ 45% và "phải thu" trong BR-REM-10 sau khi có phần cầm lại: so với `due` hay `payable` | — | **Cần hỏi** (P4 chốt trước 03/10) | |
+| BR-REM-13 | Cờ 45% cấp công ty sau khi có phần cầm lại: so **đã nộp / phải nộp xã (`payable`)**; `payable = 0` thì không gắn cờ. Cấp tổ giữ đã thu / phải thu | QĐ-L2 04/10 | Chốt | |
 | BR-REM-14 | Xã nộp phần vận chuyển về Sở, giữ ≤ 8% (QĐ 65) | QĐ 65 | Ngoài phạm vi demo | |
 
 ## 6. Lãnh đạo và đề nghị về tiền (`leadership`)
