@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useMarkAllRead, useMarkRead, useNotifications, type CitizenNotification, type NotificationKind } from '../../features/citizen/api';
-import { notificationHref, type NotificationLink } from '../../features/notifications/links';
+import { notificationTarget, type NotificationLink } from '../../features/notifications/links';
 import { formatDate } from '../../shared/format';
 import { colors, radius, spacing, touch, type as t } from '../../shared/theme';
 import { Button, EmptyState, ErrorState, IconCircle, ListGroup, Loading, Muted, Screen, type IconName } from '../../shared/ui';
@@ -34,7 +34,7 @@ export default function NotificationsTab() {
 
   const open = (n: CitizenNotification) => {
     if (!n.readAt) markRead.mutate(n.id);
-    const href = notificationHref(n.link as NotificationLink | null);
+    const href = notificationTarget({ kind: n.kind, link: n.link as NotificationLink | null });
     if (href) router.push(href);
   };
 
