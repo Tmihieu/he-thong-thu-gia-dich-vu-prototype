@@ -40,10 +40,10 @@ public class ChargeCalculator {
             months = period.getPeriodType() == PeriodType.QUARTER ? 3 : 1;
             if (group == TariffGroup.BY_VOLUME) {
                 // Nhóm theo ký: đơn giá đ/kg × định mức kg/tháng (cân tháng đầu, góp ý BA 03/10); chưa có định mức thì chưa lập được.
-                if (contract.getQuotaKg() == null) {
+                if (contract.getQuotaKg() == null && !contract.isExempt()) {
                     throw new BusinessRuleException("QUOTA_KG_REQUIRED", "Đăng ký thu phí nhóm tính theo ký chưa có định mức kg/tháng.");
                 }
-                quotaKg = contract.getQuotaKg();
+                quotaKg = contract.getQuotaKg() == null ? 1 : contract.getQuotaKg(); // chỉ null khi miễn 100% (amount = 0)
             }
         } else {
             if (enteredPrice != null && enteredPrice <= 0) {

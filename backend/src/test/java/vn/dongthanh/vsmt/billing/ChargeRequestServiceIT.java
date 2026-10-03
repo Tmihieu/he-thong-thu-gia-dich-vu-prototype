@@ -202,6 +202,14 @@ class ChargeRequestServiceIT extends IntegrationTest {
     }
 
     @Test
+    void enteredPriceZeroIsReportedBeforeAnyScopeOrEligibilityCheck() throws Exception {
+        // Phạm vi AREAS không có tổ nào cũng sẽ lỗi, nhưng lỗi giá phải đến trước (BR-BIL-09).
+        preview(officer, request(october, extra, "AREAS", "\"unitPrice\":0,", "2026-10-25"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("CHARGE_PRICE_INVALID"));
+    }
+
+    @Test
     void enteredPriceZeroIs422() throws Exception {
         preview(officer, request(october, extra, "ALL", "\"unitPrice\":0,", "2026-10-25"))
                 .andExpect(status().isUnprocessableEntity())

@@ -102,6 +102,11 @@ class ChargeCalculatorTest {
     }
 
     @Test
+    void exemptPerKgGroupWithoutQuotaIsZeroNotRejected() {
+        assertThat(calculator.calculate(env, october, contract(TariffGroup.BY_VOLUME, true), null).amount()).isZero();
+    }
+
+    @Test
     void perKgGroupIsRatePerKgTimesQuotaTimesMonths() {
         ServiceContract c = contract(TariffGroup.BY_VOLUME, false);
         c.setQuotaKg(600);

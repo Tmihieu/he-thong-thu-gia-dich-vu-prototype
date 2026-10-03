@@ -123,12 +123,16 @@ public class BillingController {
             @Schema(requiredMode = RequiredMode.REQUIRED) int exemptCount,
             @Schema(requiredMode = RequiredMode.REQUIRED) long totalAmount,
             @Schema(requiredMode = RequiredMode.REQUIRED) int warningCount,
-            @Schema(requiredMode = RequiredMode.REQUIRED) List<SkippedDto> skipped) {
+            @Schema(requiredMode = RequiredMode.REQUIRED) List<SkippedDto> skipped,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Số hộ bị bỏ qua theo từng lý do (chỉ lý do có hộ)")
+            Map<SkipReason, Long> skippedByReason) {
 
         static IssueResultDto of(IssueResult r) {
             return new IssueResultDto(r.requestCode(), r.chargeCount(), r.exemptCount(), r.totalAmount(),
                     r.warningCount(), r.skipped().stream().map(s -> new SkippedDto(s.subjectId(), s.subjectCode(),
-                            s.subjectName(), s.areaCode(), s.reason(), s.reason().warning(), s.message())).toList());
+                            s.subjectName(), s.areaCode(), s.reason(), s.reason().warning(), s.message())).toList(),
+                    r.skipped().stream().collect(java.util.stream.Collectors.groupingBy(s -> s.reason(),
+                            () -> new java.util.EnumMap<>(SkipReason.class), java.util.stream.Collectors.counting())));
         }
     }
 
