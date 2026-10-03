@@ -8,7 +8,7 @@ import { normalizeText } from '../../../shared/normalizeText';
 import { usePeriods } from '../../masterdata/api';
 import { type CollectorCharge, useCollectorAssignments, useCollectors, useCompanyWork } from '../api';
 import { ResultSheet } from '../CollectorListPage/ResultSheet';
-import { byChipOrder, countChips, WORK_CHIPS, type WorkChip, workChip, workState } from '../workState';
+import { byChipOrder, countChips, WORK_CHIPS, type WorkChip, matchesChip, workState } from '../workState';
 
 /** "Hộ được giao" của công ty (nằm dưới tổng quan): khoản các tổ mình phụ trách trong kỳ; lọc khu vực / người đi thu / trạng thái; ghi thay. */
 export function CompanyHouseholdsPage({
@@ -60,7 +60,7 @@ export function CompanyHouseholdsPage({
   const visible = useMemo(
     () =>
       scoped
-        .filter((w) => chip === 'ALL' || workChip(w) === chip)
+        .filter((w) => matchesChip(w, chip))
         .sort(byChipOrder),
     [scoped, chip],
   );

@@ -24,7 +24,7 @@ function Gap({ gap }: { gap: number }) {
         <MoneyText value={gap} />
       </Typography.Text>
       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-        {gap < 0 ? 'thu rồi chưa nộp' : 'nộp nhiều hơn báo thu'}
+        {gap < 0 ? 'thu rồi chưa nộp' : 'nộp trước'}
       </Typography.Text>
     </Space>
   );
@@ -57,7 +57,7 @@ export function ReconciliationPage() {
       <PeriodTrend />
       {ledger.error && <ErrorBlock error={ledger.error} onRetry={() => void ledger.refetch()} />}
       <StatGrid>
-        <StatCard label="Phải thu" value={<MoneyText value={rows.reduce((t, r) => t + r.due, 0)} />} />
+        <StatCard label="Phải nộp xã" tone="info" value={<MoneyText value={rows.reduce((t, r) => t + r.payable, 0)} />} />
         <StatCard label="Công ty đã thu" tone="info" value={<MoneyText value={rows.reduce((t, r) => t + r.collected, 0)} />} />
         <StatCard label="Đã nộp về xã" tone="success" value={<MoneyText value={rows.reduce((t, r) => t + r.received, 0)} />} />
         <StatCard label="Thu rồi chưa nộp" tone={notRemitted > 0 ? 'danger' : 'neutral'} value={<MoneyText value={notRemitted} />} />

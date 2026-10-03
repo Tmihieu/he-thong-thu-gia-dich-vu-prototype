@@ -12,14 +12,16 @@ import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type AreaProgress, type LedgerRow, useAreaProgress, useCompanyLedger } from '../api';
 import { LedgerBreakdown } from '../LedgerBreakdown';
 import { LedgerStats } from '../LedgerStats';
+import { cappedRate } from '../rateBand';
+import { RemainingText } from '../RemainingText';
 import { PROGRESS_TONES } from '../tones';
 import { ReminderModal } from './ReminderModal';
 
 function Rate({ rate, low }: { rate: number; low: boolean }) {
   return (
     <Space size={4} style={{ minWidth: 150 }}>
-      <Progress percent={rate} size="small" showInfo={false} status={low ? 'exception' : 'normal'} style={{ width: 80 }} />
-      <span style={{ fontVariantNumeric: 'tabular-nums' }}>{rate.toLocaleString('vi-VN')}%</span>
+      <Progress percent={cappedRate(rate)} size="small" showInfo={false} status={low ? 'exception' : 'normal'} style={{ width: 80 }} />
+      <span style={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{cappedRate(rate).toLocaleString('vi-VN')}%</span>
     </Space>
   );
 }
@@ -68,7 +70,7 @@ export function ProgressPage() {
         }
       />
       {ledger.error && <ErrorBlock error={ledger.error} onRetry={() => void ledger.refetch()} />}
-      <LedgerStats rows={rows} show={['due', 'collected', 'retained', 'payable', 'received', 'remaining', 'previousDebt']} />
+      <LedgerStats rows={rows} show={['due', 'payable', 'received', 'remaining']} />
       {unassigned.length > 0 && (
         <Alert
           type="warning"
@@ -82,6 +84,7 @@ export function ProgressPage() {
         loading={ledger.isLoading}
         dataSource={rows}
         pagination={false}
+        scroll={{ x: 'max-content' }}
         locale={{ emptyText: 'Kỳ này chưa có khoản phải thu' }}
         expandable={{
           expandedRowRender: (r) => (
@@ -102,7 +105,13 @@ export function ProgressPage() {
           ),
         }}
         columns={[
-          { title: 'Công ty', render: (_, r) => `${r.companyCode} · ${r.companyName}` },
+          {
+            title: 'Công ty',
+            width: 220,
+            render: (_, r) => (
+              <Typography.Text ellipsis={{ tooltip: true }} style={{ maxWidth: 200 }}>{`${r.companyCode} · ${r.companyName}`}</Typography.Text>
+            ),
+          },
           {
             title: 'Phải thu',
             dataIndex: 'due',
@@ -122,14 +131,14 @@ export function ProgressPage() {
               <>
                 <MoneyText value={v} />
                 <div>
-                  <Typography.Text type="secondary">{`${r.collectionRate.toLocaleString('vi-VN')}% đã thu`}</Typography.Text>
+                  <Typography.Text type="secondary" style={{ whiteSpace: 'nowrap' }}>{`${cappedRate(r.collectionRate).toLocaleString('vi-VN')}% đã thu`}</Typography.Text>
                 </div>
               </>
             ),
           },
           { title: 'Đã nộp về xã', dataIndex: 'received', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           { title: 'Tỷ lệ nộp', render: (_, r) => <Rate rate={r.remittedRate} low={r.lowRemittedRate} /> },
-          { title: 'Còn phải nộp', dataIndex: 'remaining', align: 'right', render: (v: number) => <MoneyText value={v} strong /> },
+          { title: 'Còn phải nộp', dataIndex: 'remaining', align: 'right', render: (v: number) => <RemainingText value={v} strong /> },
           {
             title: 'Nợ kỳ trước',
             dataIndex: 'previousDebt',

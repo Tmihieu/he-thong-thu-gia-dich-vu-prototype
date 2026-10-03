@@ -1,3 +1,4 @@
+import { WalletOutlined } from '@ant-design/icons';
 import { List, Typography } from 'antd';
 
 import { DateText } from '../../shared/DateText';
@@ -5,6 +6,7 @@ import { MoneyText } from '../../shared/MoneyText';
 import { StatCard, StatGrid } from '../../shared/StatCard';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../shared/StateBlock';
 import { type Handover, useCashHeld, useHandovers } from './api';
+import './collector.css';
 
 /** Tiền mặt của người đi thu: đang giữ (đã thu − đã bàn giao, G5) và lịch sử bàn giao cho công ty. */
 export function CollectorCashPage() {
@@ -19,11 +21,22 @@ export function CollectorCashPage() {
       {cash.isLoading ? (
         <LoadingBlock rows={2} />
       ) : (
-        <StatGrid>
-          <StatCard label="Tiền mặt đang giữ" tone={(mine?.held ?? 0) > 0 ? 'warning' : 'success'} value={<MoneyText value={mine?.held ?? 0} />} hint="Nhớ nộp lại cho công ty" />
-          <StatCard label="Đã thu tiền mặt" value={<MoneyText value={mine?.collectedCash ?? 0} />} />
-          <StatCard label="Đã bàn giao công ty" tone="success" value={<MoneyText value={mine?.handedOver ?? 0} />} />
-        </StatGrid>
+        <>
+          <div className="clm-held" role="status">
+            <WalletOutlined aria-hidden />
+            <div>
+              <small>Tiền mặt đang giữ</small>
+              <strong>
+                <MoneyText value={mine?.held ?? 0} />
+              </strong>
+              {(mine?.held ?? 0) > 0 && <small>Nhớ nộp lại cho quản lý công ty</small>}
+            </div>
+          </div>
+          <StatGrid>
+            <StatCard label="Đã thu tiền mặt" value={<MoneyText value={mine?.collectedCash ?? 0} />} />
+            <StatCard label="Đã bàn giao công ty" tone="success" value={<MoneyText value={mine?.handedOver ?? 0} />} />
+          </StatGrid>
+        </>
       )}
       <Typography.Title level={4} style={{ margin: 0 }}>
         Lịch sử bàn giao
