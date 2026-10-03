@@ -1,5 +1,5 @@
 import { AlertOutlined, AuditOutlined, FallOutlined } from '@ant-design/icons';
-import { Card, Col, Empty, List, Progress, Row, Space, Table, Typography } from 'antd';
+import { Alert, Card, Col, Empty, List, Progress, Row, Space, Table, Typography } from 'antd';
 import { type ReactNode, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 
@@ -39,12 +39,13 @@ export function LeaderDashboardPage() {
       rows.reduce(
         (t, r) => ({
           due: t.due + r.due,
+          payable: t.payable + r.payable,
           collected: t.collected + r.collected,
           received: t.received + r.received,
           remaining: t.remaining + r.remaining,
           previousDebt: t.previousDebt + r.previousDebt,
         }),
-        { due: 0, collected: 0, received: 0, remaining: 0, previousDebt: 0 },
+        { due: 0, payable: 0, collected: 0, received: 0, remaining: 0, previousDebt: 0 },
       ),
     [rows],
   );
@@ -54,6 +55,7 @@ export function LeaderDashboardPage() {
     () => (areas.data ?? []).filter((a) => a.chargeCount > 0).sort((a, b) => a.collectionRate - b.collectionRate).slice(0, 8),
     [areas.data],
   );
+  const noAlarm = !ledger.isLoading && late.length === 0 && lowRate.length === 0 && (pending.data?.length ?? 0) === 0;
   const error = ledger.error ?? areas.error ?? pending.error;
   const retry = () => void Promise.all([ledger.refetch(), areas.refetch(), pending.refetch()]);
 
@@ -72,14 +74,14 @@ export function LeaderDashboardPage() {
           value={<MoneyText value={total.collected} />}
           hint="trên số phải thu"
           tone="success"
-          aside={<Ring percent={pct(total.collected, total.due)} />}
+          aside={<Ring percent={Math.min(100, pct(total.collected, total.due))} />}
         />
         <StatCard
           label="Đã nộp về xã"
           value={<MoneyText value={total.received} />}
-          hint="trên số phải thu"
+          hint="trên số phải nộp xã"
           tone="info"
-          aside={<Ring percent={pct(total.received, total.due)} />}
+          aside={<Ring percent={Math.min(100, pct(total.received, total.payable))} />}
         />
         <StatCard
           label="Còn phải nộp"
@@ -98,6 +100,9 @@ export function LeaderDashboardPage() {
       </StatGrid>
       )}
 
+      {noAlarm ? (
+        <Alert type="success" showIcon style={{ marginTop: 16 }} message="Không có cảnh báo" />
+      ) : (
       <Card size="small" className="section-card" style={{ marginTop: 16 }} title="Cảnh báo">
         <Row gutter={[16, 16]}>
           <Col xs={24} lg={8}>
@@ -138,6 +143,7 @@ export function LeaderDashboardPage() {
           </Col>
         </Row>
       </Card>
+      )}
 
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col xs={24} xl={14}>
@@ -162,7 +168,7 @@ export function LeaderDashboardPage() {
                 {
                   title: 'Tỷ lệ nộp',
                   width: 150,
-                  render: (_, r) => <Progress size="small" percent={r.remittedRate} status={r.lowCollectionRate ? 'exception' : 'normal'} strokeColor="#175cd3" format={(p) => pctText(p ?? 0)} />,
+                  render: (_, r) => <Progress size="small" percent={Math.min(100, r.remittedRate)} status={r.lowCollectionRate ? 'exception' : 'normal'} strokeColor="#175cd3" format={(p) => pctText(p ?? 0)} />,
                 },
                 { title: 'Còn phải nộp', align: 'right', render: (_, r) => <RemainingText value={r.remaining} /> },
                 { title: 'Tiến độ', render: (_, r) => <StatusTag color={PROGRESS_COLORS[r.progress]}>{PROGRESS_LABELS[r.progress]}</StatusTag> },

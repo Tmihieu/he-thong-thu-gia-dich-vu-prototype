@@ -1,5 +1,5 @@
-import { PlusOutlined } from '@ant-design/icons';
-import { Alert, App, Button, DatePicker, Drawer, Form, Input, Modal, Select, Space, Table, Typography } from 'antd';
+import { ExclamationCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import { Alert, App, Button, Checkbox, DatePicker, Drawer, Form, Input, Modal, Select, Space, Table, Tooltip, Typography } from 'antd';
 import type { Dayjs } from 'dayjs';
 import { useState } from 'react';
 
@@ -75,7 +75,12 @@ export function SubjectsPage() {
   const { message } = App.useApp();
   const areas = useAreas();
   const [query, setQuery] = useState<SubjectQuery>({ page: 0, size: 20 });
+  const [unnormalizedOnly, setUnnormalizedOnly] = useState(false);
   const subjects = useSubjects(query);
+  const items = subjects.data?.items ?? [];
+  const isUnnormalized = (s: Subject) => s.streetPending || !s.streetId;
+  const unnormalizedCount = items.filter(isUnnormalized).length;
+  const shownItems = unnormalizedOnly ? items.filter(isUnnormalized) : items;
   const create = useCreateSubject();
   const update = useUpdateSubject();
   const addContract = useAddContract();
@@ -166,6 +171,9 @@ export function SubjectsPage() {
           onChange={(status?: Subject['status']) => setQuery((prev) => ({ ...prev, status, page: 0 }))}
           options={Object.entries(SUBJECT_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
         />
+        <Checkbox checked={unnormalizedOnly} onChange={(e) => setUnnormalizedOnly(e.target.checked)}>
+          Địa chỉ chưa chuẩn hóa ({unnormalizedCount} trên trang)
+        </Checkbox>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => openEditor({ mode: 'create' })}>
           Thêm hộ
         </Button>
@@ -173,7 +181,8 @@ export function SubjectsPage() {
       <Table<Subject>
         rowKey="id"
         loading={subjects.isFetching}
-        dataSource={subjects.data?.items ?? []}
+        dataSource={shownItems}
+        scroll={{ x: 1100 }}
         locale={{ emptyText: subjects.error ? errorMessage(subjects.error) : 'Không có hồ sơ phù hợp' }}
         pagination={{
           current: query.page + 1,
@@ -187,26 +196,33 @@ export function SubjectsPage() {
           {
             title: 'Mã',
             dataIndex: 'code',
+            className: 'cell-nowrap',
             render: (code: string, s) => (
               <Button type="link" style={{ padding: 0 }} onClick={() => openEditor({ mode: 'edit', subject: s })}>
                 {code}
               </Button>
             ),
           },
-          { title: 'Tên', dataIndex: 'name' },
-          { title: 'Loại', dataIndex: 'subjectType', render: (t: Subject['subjectType']) => SUBJECT_TYPE_LABELS[t] },
-          { title: 'Tổ/Ấp/Thôn', dataIndex: 'areaCode' },
+          { title: 'Tên', dataIndex: 'name', width: 220, ellipsis: true },
+          { title: 'Loại', dataIndex: 'subjectType', className: 'cell-nowrap', render: (t: Subject['subjectType']) => SUBJECT_TYPE_LABELS[t] },
+          { title: 'Tổ/Ấp/Thôn', dataIndex: 'areaCode', className: 'cell-nowrap' },
           {
             title: 'Địa chỉ',
             dataIndex: 'address',
+            ellipsis: true,
+            width: 260,
             render: (address: string, s) => (
               <>
-                {address}{' '}
-                {s.streetPending ? <StatusTag color="orange">Chờ xác minh đường</StatusTag> : !s.streetId && <StatusTag>Chưa chuẩn hóa</StatusTag>}
+                {address}
+                {(s.streetPending || !s.streetId) && (
+                  <Tooltip title={s.streetPending ? 'Đường đang chờ xác minh' : 'Địa chỉ chưa chuẩn hóa theo danh mục đường'}>
+                    <ExclamationCircleOutlined style={{ marginLeft: 8, color: s.streetPending ? '#8a5300' : '#7f8b99' }} aria-label="Địa chỉ cần chuẩn hóa" />
+                  </Tooltip>
+                )}
               </>
             ),
           },
-          { title: 'SĐT', dataIndex: 'phone', render: (p: string | null) => p ?? '—' },
+          { title: 'SĐT', dataIndex: 'phone', className: 'cell-nowrap', render: (p: string | null) => p ?? '—' },
           {
             title: 'Nhóm giá',
             render: (_, s) =>

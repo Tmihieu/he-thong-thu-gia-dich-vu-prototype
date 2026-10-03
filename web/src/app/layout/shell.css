@@ -351,3 +351,8 @@ body { font-size: 15px; line-height: 1.5; color: var(--gray-950); -webkit-font-s
   .login-panel { background: var(--navy-900); border-top: 4px solid var(--green-600); }
 }
 .stat-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+/* Quy ước bảng: cột mã / tiền / ngày không bẻ dòng; cột tên đặt `width` + `ellipsis` (antd tự gắn tooltip). */
+.ant-table-cell.cell-nowrap { white-space: nowrap; }
+.ant-table-cell.cell-money { white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
+.row-actions .ant-btn-link { padding-inline: 4px; }

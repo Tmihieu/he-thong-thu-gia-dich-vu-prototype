@@ -24,6 +24,7 @@ export function ChargesPage() {
   const [query, setQuery] = useState<ChargeQuery>({ page: 0, size: 50 });
   const charges = useCharges(query);
   const [proposing, setProposing] = useState<{ charge: Charge; type: 'REFUND' | 'WRITE_OFF' } | null>(null);
+  const periodLabel = new Map((periods.data ?? []).map((p) => [p.id, p.label]));
 
   return (
     <>
@@ -72,6 +73,7 @@ export function ChargesPage() {
       <Table<Charge>
         rowKey="id"
         size="small"
+        scroll={{ x: 1100 }}
         loading={charges.isFetching}
         dataSource={charges.data?.items ?? []}
         locale={{
@@ -87,12 +89,13 @@ export function ChargesPage() {
         }}
         columns={[
           {
-            title: 'Mã khoản / phiếu YC',
+            title: 'Mã khoản / phiếu yêu cầu thu',
+            className: 'cell-nowrap',
             render: (_, c) => (
               <>
-                {c.code}
+                <strong>{c.code}</strong>
                 <br />
-                <span style={{ color: brand.textMuted }}>{c.requestCode}</span>
+                <span style={{ color: brand.textMuted, fontSize: 13 }}>{c.requestCode}</span>
               </>
             ),
           },
@@ -106,20 +109,21 @@ export function ChargesPage() {
               </>
             ),
           },
-          { title: 'Kỳ', dataIndex: 'periodCode' },
+          { title: 'Kỳ', className: 'cell-nowrap', render: (_, c) => periodLabel.get(c.periodId) ?? c.periodCode },
           { title: 'Nhóm giá', dataIndex: 'tariffGroup', render: (g: Charge['tariffGroup']) => (g ? TARIFF_GROUP_LABELS[g] : '—') },
-          { title: 'Số tiền', dataIndex: 'amount', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-          { title: 'Công ty phụ trách', dataIndex: 'companyCode' },
+          { title: 'Số tiền', dataIndex: 'amount', align: 'right', className: 'cell-money', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Công ty phụ trách', dataIndex: 'companyCode', className: 'cell-nowrap' },
           { title: 'Trạng thái', render: (_, c) => <ChargeStatusTag charge={c} /> },
           {
             title: '',
+            className: 'row-actions cell-nowrap',
             render: (_, c) =>
               c.status === 'UNPAID' ? (
-                <Button size="small" onClick={() => setProposing({ charge: c, type: 'WRITE_OFF' })} aria-label={`Đề nghị xóa nợ ${c.code}`}>
+                <Button size="small" type="link" onClick={() => setProposing({ charge: c, type: 'WRITE_OFF' })} aria-label={`Đề nghị xóa nợ ${c.code}`}>
                   Đề nghị xóa nợ
                 </Button>
               ) : c.status === 'PAID' ? (
-                <Button size="small" onClick={() => setProposing({ charge: c, type: 'REFUND' })} aria-label={`Đề nghị hoàn ${c.code}`}>
+                <Button size="small" type="link" onClick={() => setProposing({ charge: c, type: 'REFUND' })} aria-label={`Đề nghị hoàn ${c.code}`}>
                   Đề nghị hoàn
                 </Button>
               ) : null,
