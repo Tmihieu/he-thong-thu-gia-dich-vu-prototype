@@ -33,7 +33,7 @@ const statusTag = (s: Company['status']) =>
 
 /**
  * Công ty môi trường. Cán bộ xã: danh sách, sửa, phân công tổ chưa có công ty, tiến độ nộp theo kỳ.
- * Quản trị ({@code admin}): thêm/sửa công ty và xem địa bàn công ty đang phụ trách.
+ * Quản trị ({@code admin}): xem địa bàn công ty đang phụ trách. Cả hai vai trò thêm/sửa công ty (BR-MD-03).
  */
 export function CompaniesPage({ admin = false }: { admin?: boolean }) {
   const { message } = App.useApp();
@@ -97,11 +97,9 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
             ]}
           />
         </Space>
-        {admin && (
-          <Button type="primary" onClick={() => openForm(null)}>
-            + Thêm công ty
-          </Button>
-        )}
+        <Button type="primary" onClick={() => openForm(null)}>
+          + Thêm công ty
+        </Button>
       </Flex>
       <Table<Company>
         rowKey="id"
