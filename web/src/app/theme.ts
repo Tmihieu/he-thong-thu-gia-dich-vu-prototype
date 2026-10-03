@@ -107,8 +107,3 @@ export const antdTheme: ThemeConfig = {
     Tag: { defaultBg: semantic.neutral.bg, defaultColor: semantic.neutral.fg },
   },
 };
-
-/** Màu theo tỷ lệ thu (BR-REM-11): < 25% đỏ, 25–< 50% vàng, 50–< 75% cam, ≥ 75% xanh lá. */
-export function rateColor(rate: number): string {
-  return rate < 25 ? '#cf1322' : rate < 50 ? '#d4a017' : rate < 75 ? '#d46b08' : '#2f8f3a';
-}

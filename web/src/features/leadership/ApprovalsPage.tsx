@@ -1,7 +1,7 @@
 import { Alert, App, Button, Form, Input, Modal, Segmented, Select, Space, Table, Typography } from 'antd';
 import { useState } from 'react';
 
-import { ApiError } from '../../api/client';
+import { errorTextOrNull } from '../../shared/errorText';
 import { StatusTag } from '../../shared/StatusTag';
 import { PageHeader } from '../../shared/PageHeader';
 import { useAuth } from '../../app/auth/authContext';
@@ -19,10 +19,6 @@ import {
 } from './api';
 
 const periodLabel = (code: string | null) => (code ? code.split('-').reverse().join('/') : '');
-
-function errorText(e: unknown) {
-  return e ? (e instanceof ApiError ? e.message : 'Không thực hiện được. Vui lòng thử lại.') : null;
-}
 
 /** Nội dung đề nghị: miễn giảm theo đăng ký thu phí; hoàn / xóa nợ theo khoản. */
 function Target({ a }: { a: Approval }) {
@@ -85,7 +81,7 @@ export function ApprovalsPage() {
           options={(Object.keys(APPROVAL_TYPE_LABELS) as ApprovalType[]).map((t) => ({ value: t, label: APPROVAL_TYPE_LABELS[t] }))}
         />
       </Space>
-      {approvals.error && <Alert type="error" showIcon message={errorText(approvals.error)} style={{ marginBottom: 12 }} />}
+      {approvals.error && <Alert type="error" showIcon message={errorTextOrNull(approvals.error)} style={{ marginBottom: 12 }} />}
       <Table<Approval>
         size="small"
         rowKey="id"
@@ -207,7 +203,7 @@ function DecisionModal({ deciding, onClose }: { deciding: Deciding | null; onClo
       onCancel={close}
       destroyOnHidden
     >
-      {decide.error && <Alert type="error" showIcon role="alert" style={{ marginBottom: 12 }} message={errorText(decide.error)} />}
+      {decide.error && <Alert type="error" showIcon role="alert" style={{ marginBottom: 12 }} message={errorTextOrNull(decide.error)} />}
       {a && (
         <>
           <Target a={a} />

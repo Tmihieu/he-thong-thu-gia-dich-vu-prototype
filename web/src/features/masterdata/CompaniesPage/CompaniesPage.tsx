@@ -2,7 +2,7 @@ import { App, Button, Descriptions, Drawer, Flex, Input, Segmented, Space, Stati
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 
-import { ApiError } from '../../../api/client';
+import { errorTextOrNull } from '../../../shared/errorText';
 import { StatusTag } from '../../../shared/StatusTag';
 import { PageHeader } from '../../../shared/PageHeader';
 import { ErrorBlock, LoadingBlock } from '../../../shared/StateBlock';
@@ -25,11 +25,6 @@ import { PeriodSelect } from '../PeriodSelect';
 import { CompanyFormModal } from './CompanyFormModal';
 
 type StatusFilter = 'all' | Company['status'];
-
-function errorMessage(err: unknown): string | null {
-  if (!err) return null;
-  return err instanceof ApiError ? err.message : 'Thao tác không thành công. Vui lòng thử lại.';
-}
 
 const statusTag = (s: Company['status']) =>
   s === 'ACTIVE' ? <StatusTag color="green">Đang hợp tác</StatusTag> : <StatusTag>Ngừng hợp tác</StatusTag>;
@@ -105,7 +100,7 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
         loading={companies.isLoading}
         dataSource={rows}
         pagination={false}
-        locale={{ emptyText: errorMessage(companies.error) ?? 'Không có công ty phù hợp' }}
+        locale={{ emptyText: errorTextOrNull(companies.error) ?? 'Không có công ty phù hợp' }}
         columns={[
           {
             title: 'Công ty',
@@ -242,7 +237,7 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
         open={editing !== undefined}
         company={editing ?? null}
         submitting={saving.isPending}
-        error={errorMessage(saving.error)}
+        error={errorTextOrNull(saving.error)}
         onCancel={() => setEditing(undefined)}
         onSubmit={(body) => {
           const onSuccess = (c: Company) => {
@@ -261,7 +256,7 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
           initialAreaIds={[]}
           initialCompanyId={detail.id}
           submitting={assign.isPending}
-          error={errorMessage(assign.error)}
+          error={errorTextOrNull(assign.error)}
           onCancel={() => setAssigning(false)}
           onSubmit={(req) =>
             assign.mutate(req, {

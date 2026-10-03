@@ -3,7 +3,7 @@ import { Alert, App, Button, Checkbox, DatePicker, Drawer, Form, Input, Modal, S
 import type { Dayjs } from 'dayjs';
 import { useState } from 'react';
 
-import { ApiError } from '../../../api/client';
+import { errorTextOrNull } from '../../../shared/errorText';
 import { StatusTag } from '../../../shared/StatusTag';
 import { DateText } from '../../../shared/DateText';
 import { PageHeader } from '../../../shared/PageHeader';
@@ -28,10 +28,6 @@ import {
   useUpdateSubject,
 } from '../api';
 import { type ProfileSubmit, SubjectProfileForm } from './SubjectProfileForm';
-
-function errorMessage(err: unknown): string {
-  return err instanceof ApiError ? err.message : 'Thao tác không thành công. Vui lòng thử lại.';
-}
 
 type Editing = { mode: 'create' } | { mode: 'edit'; subject: Subject } | null;
 
@@ -116,7 +112,7 @@ export function SubjectsPage() {
       }
       setEditing(null);
     } catch (err) {
-      setSaveError(errorMessage(err));
+      setSaveError(errorTextOrNull(err));
     }
   }
 
@@ -125,7 +121,7 @@ export function SubjectsPage() {
     try {
       openEditor({ mode: 'edit', subject: await getSubject(id) });
     } catch (err) {
-      setSaveError(errorMessage(err));
+      setSaveError(errorTextOrNull(err));
     }
   }
 
@@ -183,7 +179,7 @@ export function SubjectsPage() {
         loading={subjects.isFetching}
         dataSource={shownItems}
         scroll={{ x: 1100 }}
-        locale={{ emptyText: subjects.error ? errorMessage(subjects.error) : 'Không có hồ sơ phù hợp' }}
+        locale={{ emptyText: subjects.error ? errorTextOrNull(subjects.error) : 'Không có hồ sơ phù hợp' }}
         pagination={{
           current: query.page + 1,
           pageSize: query.size,
@@ -286,7 +282,7 @@ export function SubjectsPage() {
         onOk={() => endForm.submit()}
         destroyOnHidden
       >
-        {endSubject.error && <Alert type="error" showIcon message={errorMessage(endSubject.error)} role="alert" />}
+        {endSubject.error && <Alert type="error" showIcon message={errorTextOrNull(endSubject.error)} role="alert" />}
         <Form
           form={endForm}
           layout="vertical"

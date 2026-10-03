@@ -1,5 +1,5 @@
 import { AlertOutlined, AuditOutlined, FallOutlined } from '@ant-design/icons';
-import { Alert, Card, Col, Empty, List, Progress, Row, Space, Table, Typography } from 'antd';
+import { Alert, Card, Col, Empty, List, Progress, Row, Space, Table, theme, Typography } from 'antd';
 import { type ReactNode, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 
@@ -10,7 +10,7 @@ import { ErrorBlock, LoadingBlock } from '../../shared/StateBlock';
 import { PROGRESS_COLORS, PROGRESS_LABELS } from '../../shared/labels';
 import { MoneyText, RemainingText } from '../../shared/MoneyText';
 import { StatCard, StatGrid } from '../../shared/StatCard';
-import { rateColor } from '../../app/theme';
+import { cappedRate, rateBand } from '../remittance/rateBand';
 import { PeriodSelect } from '../masterdata/PeriodSelect';
 import { type AreaProgress, type LedgerRow, useAreaProgress, useCompanyLedger } from '../remittance/api';
 import { useApprovals } from './api';
@@ -19,9 +19,10 @@ const pct = (part: number, whole: number) => (whole > 0 ? Math.round((part * 100
 const pctText = formatPercent;
 
 /** Vòng tỷ lệ, màu theo dải BR-REM-11 (QĐ-L13). */
-const Ring = ({ percent }: { percent: number }) => (
-  <Progress type="circle" size={64} percent={percent} strokeColor={rateColor(percent)} format={(p) => pctText(p ?? 0)} />
-);
+function Ring({ percent }: { percent: number }) {
+  const { token } = theme.useToken();
+  return <Progress type="circle" size={64} percent={cappedRate(percent)} strokeColor={token[rateBand(percent)]} format={(p) => pctText(p ?? 0)} />;
+}
 
 /**
  * Dashboard điều hành của lãnh đạo (T59): tổng thu / nộp / nợ của kỳ lấy nguyên sổ công ty–kỳ, cảnh báo (nộp chậm /
@@ -74,14 +75,14 @@ export function LeaderDashboardPage() {
           value={<MoneyText value={total.collected} />}
           hint="trên số phải thu"
           tone="success"
-          aside={<Ring percent={Math.min(100, pct(total.collected, total.due))} />}
+          aside={<Ring percent={pct(total.collected, total.due)} />}
         />
         <StatCard
           label="Đã nộp về xã"
           value={<MoneyText value={total.received} />}
           hint="trên số phải nộp xã"
           tone="info"
-          aside={<Ring percent={Math.min(100, pct(total.received, total.payable))} />}
+          aside={<Ring percent={pct(total.received, total.payable)} />}
         />
         <StatCard
           label="Còn phải nộp"

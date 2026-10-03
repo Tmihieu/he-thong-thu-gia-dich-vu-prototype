@@ -1,7 +1,7 @@
 import { App, Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tabs, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 
-import { ApiError } from '../../../api/client';
+import { errorTextOrNull } from '../../../shared/errorText';
 import { StatusTag } from '../../../shared/StatusTag';
 import { PageHeader } from '../../../shared/PageHeader';
 import { useAuth } from '../../../app/auth/authContext';
@@ -20,11 +20,6 @@ import {
 } from '../api';
 import { AccountForm } from './AccountForm';
 import { RolesTab } from './RolesTab';
-
-function errorMessage(err: unknown): string | null {
-  if (!err) return null;
-  return err instanceof ApiError ? err.message : 'Thao tác không thành công. Vui lòng thử lại.';
-}
 
 /** Tài khoản & phân quyền (T51, quản trị): tạo, sửa vai trò/công ty, khóa/mở khóa, đặt lại mật khẩu; ma trận vai trò & phạm vi. */
 export function AccountsPage() {
@@ -97,7 +92,7 @@ export function AccountsPage() {
               loading={accounts.isLoading}
               dataSource={rows}
               pagination={{ pageSize: 20, hideOnSinglePage: true }}
-              locale={{ emptyText: errorMessage(accounts.error) ?? 'Không có tài khoản phù hợp' }}
+              locale={{ emptyText: errorTextOrNull(accounts.error) ?? 'Không có tài khoản phù hợp' }}
               columns={[
                 {
                   title: 'Người dùng',
@@ -148,7 +143,7 @@ export function AccountsPage() {
                               { id: a.id, locked: a.status === 'ACTIVE' },
                               {
                                 onSuccess: (r) => message.success(`${r.status === 'LOCKED' ? 'Đã khóa' : 'Đã mở khóa'} ${r.username}`),
-                                onError: (e) => message.error(errorMessage(e)),
+                                onError: (e) => message.error(errorTextOrNull(e)),
                               },
                             )
                           }
@@ -175,7 +170,7 @@ export function AccountsPage() {
         isSelf={!!editing && editing.id === me?.id}
         companies={companies.data ?? []}
         submitting={saving.isPending}
-        error={errorMessage(saving.error)}
+        error={errorTextOrNull(saving.error)}
         onCancel={() => setEditing(undefined)}
         onSubmit={({ username, password, ...body }) => {
           const onSuccess = (a: Account) => {
@@ -210,7 +205,7 @@ export function AccountsPage() {
         >
           {reset.error && (
             <Typography.Paragraph type="danger" role="alert">
-              {errorMessage(reset.error)}
+              {errorTextOrNull(reset.error)}
             </Typography.Paragraph>
           )}
           <Form.Item

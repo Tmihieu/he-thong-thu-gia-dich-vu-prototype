@@ -2,8 +2,9 @@ import { PlusOutlined } from '@ant-design/icons';
 import { Alert, Button, Drawer, Result, Space, Steps, Table, Typography } from 'antd';
 import { useState } from 'react';
 
-import { errorText } from '../../../shared/errorText';
+
 import { ErrorBlock, LoadingBlock } from '../../../shared/StateBlock';
+import { errorTextOrNull } from '../../../shared/errorText';
 import { DateText } from '../../../shared/DateText';
 import { CHARGE_SCOPE_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
@@ -19,8 +20,6 @@ import {
 } from '../api';
 import { ChargeRequestForm } from './ChargeRequestForm';
 import { PreviewPanel, SkippedList } from './PreviewPanel';
-
-const errorMessage = (err: unknown): string | null => (err ? errorText(err, 'Thao tác không thành công. Vui lòng thử lại.') : null);
 
 type Step = { kind: 'form' } | { kind: 'preview'; req: IssueRequest; result: IssueResult } | { kind: 'done'; result: IssueResult };
 
@@ -64,7 +63,7 @@ export function ChargeRequestTab() {
         loading={requests.isLoading}
         dataSource={requests.data ?? []}
         pagination={{ pageSize: 10, hideOnSinglePage: true }}
-        locale={{ emptyText: requests.error ? errorText(requests.error) : 'Chưa có phiếu nào' }}
+        locale={{ emptyText: requests.error ? errorTextOrNull(requests.error) : 'Chưa có phiếu nào' }}
         columns={[
           { title: 'Mã phiếu', dataIndex: 'code' },
           { title: 'Kỳ', dataIndex: 'periodCode' },
@@ -91,7 +90,7 @@ export function ChargeRequestTab() {
             areas={areas.data ?? []}
             companies={companies.data ?? []}
             loading={preview.isPending}
-            error={errorMessage(preview.error)}
+            error={errorTextOrNull(preview.error)}
             initial={draft}
             onPreview={(req) => {
               setDraft(req);
@@ -103,7 +102,7 @@ export function ChargeRequestTab() {
           <PreviewPanel
             result={step.result}
             publishing={publish.isPending}
-            error={errorMessage(publish.error)}
+            error={errorTextOrNull(publish.error)}
             onBack={() => {
               publish.reset();
               setStep({ kind: 'form' });
