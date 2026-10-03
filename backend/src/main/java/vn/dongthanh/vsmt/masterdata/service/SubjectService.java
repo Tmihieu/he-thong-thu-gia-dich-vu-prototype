@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
+import vn.dongthanh.vsmt.collection.domain.CollectorAssignmentRepository;
 import vn.dongthanh.vsmt.masterdata.domain.ActiveStatus;
 import vn.dongthanh.vsmt.masterdata.domain.AddressText;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
@@ -61,6 +62,7 @@ public class SubjectService {
     private final ApplicationEventPublisher events;
     private final CollectionPeriodRepository periods;
     private final Clock clock;
+    private final CollectorAssignmentRepository collectorAssignments;
 
     /**
      * @param streetId        đường chuẩn trong danh mục; null thì {@code street} là tên tạm (chờ xác minh) hoặc địa chỉ cũ
@@ -224,6 +226,11 @@ public class SubjectService {
                 assignments.companyOf(subject.getArea().getId(), LocalDate.now()).orElse(null), actor.companyId())) {
             throw notFound();
         }
+        // BR-GEN-04: người đi thu chỉ đọc hộ trong tổ được giao, không phải mọi hộ của công ty.
+        if (actor.role() == Role.COLLECTOR
+                && !collectorAssignments.findAreaIdsOf(actor.id(), LocalDate.now()).contains(subject.getArea().getId())) {
+            throw notFound();
+        }
         return subject;
     }
 
@@ -233,6 +240,10 @@ public class SubjectService {
         List<Long> areaIds = scoped
                 ? assignments.activeOn(LocalDate.now(), actor).stream().map(a -> a.getArea().getId()).toList()
                 : List.of();
+        if (actor.role() == Role.COLLECTOR) {
+            List<Long> mine = collectorAssignments.findAreaIdsOf(actor.id(), LocalDate.now());
+            areaIds = areaIds.stream().filter(mine::contains).toList();
+        }
         if (scoped && areaIds.isEmpty()) {
             return Page.empty(page);
         }
