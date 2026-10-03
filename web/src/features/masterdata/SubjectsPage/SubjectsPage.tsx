@@ -155,7 +155,7 @@ export function SubjectsPage() {
                   {s.currentContract.exempt && <Tag color="purple">Miễn 100%</Tag>}
                 </>
               ) : (
-                <Tag>Chưa có hợp đồng</Tag>
+                <Tag>Chưa đăng ký thu</Tag>
               ),
           },
           {

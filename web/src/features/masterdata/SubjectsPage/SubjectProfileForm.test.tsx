@@ -85,7 +85,7 @@ describe('SubjectProfileForm', () => {
     type('Đường / hẻm', 'Hẻm 3 ấp Mẫu');
     await userEvent.type(screen.getByLabelText('Số thành viên'), '2');
     await pickOption(screen.getByRole('combobox', { name: 'Tổ/Ấp/Thôn' }), 'KV24 · Tổ dân phố 24');
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Đăng ký dịch vụ cho hộ này' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Đưa hộ này vào danh sách thu phí' }));
     await userEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ' }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());

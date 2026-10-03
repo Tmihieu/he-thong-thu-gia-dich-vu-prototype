@@ -191,15 +191,17 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
       </Form.Item>
 
       <Divider />
-      <Typography.Title level={5}>Hợp đồng</Typography.Title>
+      {/* Góp ý BA 03/10: xã không ký hợp đồng với hộ, nên giao diện gọi là "Đăng ký thu phí" và ẩn số hợp đồng. */}
+      <Typography.Title level={5}>Đăng ký thu phí</Typography.Title>
       {current ? (
-        <Typography.Paragraph type="secondary">
-          Số đăng ký: <Typography.Text strong>{current.contractNo}</Typography.Text>{' '}
-          {current.exempt && <Tag color="purple">Miễn 100% · {current.exemptReason}</Tag>}
-        </Typography.Paragraph>
+        current.exempt && (
+          <Typography.Paragraph>
+            <Tag color="purple">Miễn 100% · {current.exemptReason}</Tag>
+          </Typography.Paragraph>
+        )
       ) : (
         <Form.Item name="hasContract" valuePropName="checked">
-          <Checkbox>Đăng ký dịch vụ cho hộ này</Checkbox>
+          <Checkbox>Đưa hộ này vào danh sách thu phí</Checkbox>
         </Form.Item>
       )}
       {showContract && (
