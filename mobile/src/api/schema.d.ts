@@ -490,6 +490,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/masterdata/subjects/duplicate-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hồ sơ nghi trùng địa chỉ (cùng tổ/ấp + đường + số nhà, kể cả đã ngừng); chỉ cán bộ xã */
+        post: operations["duplicateCheck"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/streets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bổ sung đường vào danh mục (cán bộ xã, có nhật ký) */
+        post: operations["create_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/masterdata/periods": {
         parameters: {
             query?: never;
@@ -555,7 +589,7 @@ export interface paths {
         get: operations["list_4"];
         put?: never;
         /** Cán bộ xã lập đề nghị hoàn (khoản đã thu) hoặc xóa nợ (khoản chưa thu); thông báo lãnh đạo */
-        post: operations["create_2"];
+        post: operations["create_3"];
         delete?: never;
         options?: never;
         head?: never;
@@ -607,7 +641,7 @@ export interface paths {
         get: operations["list_5"];
         put?: never;
         /** Cán bộ xã ghi nhận khiếu nại qua điện thoại / trực tiếp */
-        post: operations["create_3"];
+        post: operations["create_4"];
         delete?: never;
         options?: never;
         head?: never;
@@ -848,7 +882,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Đăng bài, hiển thị ngay (không kiểm duyệt); retry cùng clientRequestId trả bài cũ */
-        post: operations["create_4"];
+        post: operations["create_5"];
         delete?: never;
         options?: never;
         head?: never;
@@ -935,7 +969,7 @@ export interface paths {
         get: operations["list_7"];
         put?: never;
         /** Đăng ký thu gom rác cồng kềnh; công ty phụ trách khu vực của hộ nhận yêu cầu; ảnh là tên trả về từ POST /api/citizen/photos */
-        post: operations["create_5"];
+        post: operations["create_6"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1241,6 +1275,23 @@ export interface paths {
         };
         /** Lịch sử thay đổi số nhân khẩu của hộ, mới nhất trước */
         get: operations["memberHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/streets/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Gợi ý đường theo từ khóa: danh mục nội bộ trước, Goong chỉ bổ sung tham khảo (cán bộ xã) */
+        get: operations["suggest"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2021,8 +2072,8 @@ export interface components {
             name: string;
             /** @description Số nhà; bỏ trống nếu nhà chưa có số */
             houseNo?: string;
-            /** @description Đường / hẻm */
-            street: string;
+            /** @description Tên đường/hẻm: chỉ dùng khi không chọn streetId (đường chờ xác minh hoặc địa chỉ cũ) */
+            street?: string;
             /** Format: int64 */
             areaId: number;
             phone?: string;
@@ -2033,6 +2084,19 @@ export interface components {
             note?: string;
             /** @description Chỉ dùng khi tạo mới: hợp đồng đầu tiên (không bắt buộc) */
             contract?: components["schemas"]["ContractRequest"];
+            /**
+             * Format: int64
+             * @description Đường chuẩn trong danh mục (ưu tiên hơn street)
+             */
+            streetId?: number;
+            /** @description Không tìm thấy đường trong danh mục: ghi tên tạm ở street, chờ xác minh */
+            streetPending?: boolean;
+            /** @description Phòng/căn, phân biệt nhiều đối tượng chung địa chỉ */
+            unitNo?: string;
+            /** @description Vị trí bổ sung, nhất là khi nhà chưa có số */
+            locationNote?: string;
+            /** @description Lý do xác nhận là hộ khác khi địa chỉ nghi trùng */
+            duplicateReason?: string;
         };
         ContractDto: {
             /** Format: int64 */
@@ -2067,6 +2131,14 @@ export interface components {
             address: string;
             houseNo: string | null;
             street: string;
+            /**
+             * Format: int64
+             * @description Null: địa chỉ cũ chưa chuẩn hóa hoặc đường chờ xác minh
+             */
+            streetId: number | null;
+            streetPending: boolean;
+            unitNo: string | null;
+            locationNote: string | null;
             /** Format: int64 */
             areaId: number;
             /** @example KV07 */
@@ -2469,6 +2541,46 @@ export interface components {
             endDate: string;
             reason?: string;
         };
+        DuplicateCheckRequest: {
+            /** Format: int64 */
+            areaId: number;
+            /** Format: int64 */
+            streetId: number;
+            houseNo?: string;
+            unitNo?: string;
+            /**
+             * Format: int64
+             * @description Khi sửa hộ: loại chính hồ sơ đang sửa
+             */
+            excludeSubjectId?: number;
+        };
+        DuplicateDto: {
+            /** Format: int64 */
+            id: number;
+            code: string;
+            name: string;
+            phone: string | null;
+            /** @enum {string} */
+            status: "ACTIVE" | "PENDING" | "ENDED";
+            address: string;
+        };
+        CreateStreetRequest: {
+            /** Format: int64 */
+            districtId: number;
+            name: string;
+            goongPlaceId?: string;
+        };
+        StreetDto: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /** Format: int64 */
+            districtId: number;
+            /** @description Xã/phường, để phân biệt đường trùng tên */
+            districtName: string;
+            /** @description Đã đối chiếu với Goong */
+            goongLinked: boolean;
+        };
         OpenPeriodRequest: {
             /** @enum {string} */
             type: "MONTH" | "QUARTER";
@@ -2594,7 +2706,7 @@ export interface components {
             /** @enum {string} */
             channel: "APP" | "PHONE" | "IN_PERSON";
             /** @enum {string} */
-            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "OTHER";
+            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "FACILITY" | "COLLECTION_REQUEST" | "OTHER";
             summary: string;
             content: string;
             /**
@@ -2627,7 +2739,7 @@ export interface components {
             /** @enum {string} */
             channel: "APP" | "PHONE" | "IN_PERSON";
             /** @enum {string} */
-            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "OTHER";
+            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "FACILITY" | "COLLECTION_REQUEST" | "OTHER";
             summary: string;
             content: string;
             /** @enum {string} */
@@ -2913,7 +3025,7 @@ export interface components {
         };
         SubmitComplaintRequest: {
             /** @enum {string} */
-            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "OTHER";
+            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "FACILITY" | "COLLECTION_REQUEST" | "OTHER";
             content: string;
             /** @description Nơi xảy ra sự việc; để trống = địa chỉ hộ */
             location?: string;
@@ -2930,7 +3042,7 @@ export interface components {
             /** Format: date */
             receivedDate: string;
             /** @enum {string} */
-            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "OTHER";
+            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "FACILITY" | "COLLECTION_REQUEST" | "OTHER";
             summary: string;
             content: string;
             location: string | null;
@@ -3184,7 +3296,7 @@ export interface components {
             receiptCount: number;
             /**
              * Format: int64
-             * @description Còn phải nộp = phải thu − điều chỉnh − đã nộp
+             * @description Còn phải nộp = phải nộp xã − đã nộp
              */
             remaining: number;
             /**
@@ -3207,10 +3319,10 @@ export interface components {
             lowCollectionRate: boolean;
             /**
              * Format: double
-             * @description Đã nộp về xã / phải thu (%)
+             * @description Đã nộp về xã / phải nộp xã (%)
              */
             remittedRate: number;
-            /** @description Tỷ lệ đã nộp dưới 45% (cờ ở màn tiến độ) */
+            /** @description Tỷ lệ đã nộp dưới 45% phải nộp xã; phải nộp xã = 0 thì không gắn cờ */
             lowRemittedRate: boolean;
             /** @enum {string} */
             progress: "NO_COMPANY" | "PAID_IN_FULL" | "OVERDUE" | "PARTIAL" | "NOT_PAID";
@@ -3218,7 +3330,7 @@ export interface components {
             reconciliation: "MATCHED" | "PENDING" | "MISMATCH";
             /**
              * Format: int64
-             * @description Phần công ty giữ lại theo tỷ lệ cấu hình
+             * @description Phần thu gom công ty cầm lại, tính từ biểu giá
              */
             retained: number;
             /**
@@ -3313,6 +3425,21 @@ export interface components {
             from: number | null;
             /** Format: int32 */
             to: number | null;
+        };
+        ExternalStreetDto: {
+            placeId: string;
+            name: string;
+            secondaryText: string;
+        };
+        SuggestDto: {
+            streets: components["schemas"]["StreetDto"][];
+            /** @description Gợi ý tham khảo từ Goong, CHƯA có trong danh mục */
+            external: components["schemas"]["ExternalStreetDto"][];
+            /**
+             * @description OK | NOT_CONFIGURED | REJECTED | UNAVAILABLE
+             * @enum {string}
+             */
+            goongStatus: "OK" | "NOT_CONFIGURED" | "REJECTED" | "UNAVAILABLE";
         };
         FeeTypeDto: {
             /** Format: int64 */
@@ -4569,6 +4696,54 @@ export interface operations {
             };
         };
     };
+    duplicateCheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DuplicateCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DuplicateDto"][];
+                };
+            };
+        };
+    };
+    create_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateStreetRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StreetDto"];
+                };
+            };
+        };
+    };
     list_3: {
         parameters: {
             query?: {
@@ -4728,7 +4903,7 @@ export interface operations {
             };
         };
     };
-    create_2: {
+    create_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -4826,7 +5001,7 @@ export interface operations {
             };
         };
     };
-    create_3: {
+    create_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -5229,7 +5404,7 @@ export interface operations {
             };
         };
     };
-    create_4: {
+    create_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -5396,7 +5571,7 @@ export interface operations {
             };
         };
     };
-    create_5: {
+    create_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -5862,6 +6037,29 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MemberChangeDto"][];
+                };
+            };
+        };
+    };
+    suggest: {
+        parameters: {
+            query: {
+                q: string;
+                districtId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SuggestDto"];
                 };
             };
         };
