@@ -1,3 +1,5 @@
+import { router } from 'expo-router';
+
 import { marketApi, useMarketMutation, useSavedPosts } from '../../features/market/api';
 import { PagedList, PostCard } from '../../features/market/PostCard';
 import { Button, Card, InlineError, Muted } from '../../shared/ui';
@@ -27,6 +29,7 @@ export default function SavedScreen() {
       }
       empty="Chưa lưu bài nào"
       emptyIcon="bookmark-outline"
+      emptyAction={<Button title="Xem chợ đồ cũ" variant="secondary" fullWidth={false} onPress={() => router.push('/market')} />}
     />
   );
 }

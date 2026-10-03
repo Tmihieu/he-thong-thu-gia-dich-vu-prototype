@@ -73,6 +73,16 @@ Kết quả đợt 2: `npm run typecheck` xanh; bộ test chạy bằng cấu h�
 
 Rà lại toàn bộ màn, kết luận: không còn màu / cỡ chữ cứng ngoài theme (chỉ còn token); vùng chạm ≥ 44 (chip, nút, hàng, tab 48, nút xóa ảnh 32 + vùng mở rộng 6 mỗi cạnh); tên dài tự xuống dòng (không cắt) ở tiêu đề hàng, nhãn dòng, ô; chữ chợ cắt 3 dòng có chủ đích ở thẻ bài; mọi màn tải dữ liệu đều có trạng thái tải, lỗi (có Thử lại) và trống.
 
+## Đợt 3
+
+| # | Việc | Commit |
+|---|---|---|
+| 17 | Bỏ khai báo tạm `ComplaintCategory` và chỗ ép kiểu ở `complaints/new.tsx`; dùng type từ schema đã sinh lại. Không có cấu hình jest tạm nào trong repo (file tạm nằm ngoài repo) | 23265e8 |
+| 18 | `links.ts` xử lý link mới `citizen.charges` của nhắc nộp; thông báo cũ `link=null` vẫn mở danh sách khoản phí; có test cả hai | 23265e8 |
+| 19 | Rà UX: thứ tự tab (Trang chủ, Chợ đồ cũ, Thông báo, Tài khoản), nút quay lại và tiêu đề header từng màn, bàn phím số cho SĐT (`phone-pad`) / OTP, số lượng, SĐT liên hệ (`number-pad`), nhãn cho nút chỉ có icon (nút xóa ảnh, icon tab) đều đã đúng. Sửa: trạng thái trống chưa có việc làm tiếp. Nay: Chợ (xóa bộ lọc / đăng bài đầu tiên), Tin của tôi (đăng bài), Đã lưu (xem chợ), Xác nhận thanh toán (xem khoản phí) | thêm ở commit tiếp theo |
+
+Kết quả đợt 3: `npm run typecheck` xanh; `npm test -- --runInBand` chính thức: 15 suite, 88 test xanh (đã chép `node_modules` mới từ thư mục gốc bằng `cp -rn`, không `npm install`).
+
 ## Câu hỏi nghiệp vụ
 
 Đã chốt: QĐ-L4 (đã làm), QĐ-L5 giữ dòng "Số đăng ký", QĐ-L6 giữ "Chờ công ty báo phí". Không còn câu hỏi mở.
