@@ -25,6 +25,8 @@ export function notificationHref(link: NotificationLink | null | undefined): Hre
       const id = positiveId(link.params, 'requestId');
       return id ? { pathname: '/bulky/[id]', params: { id } } : '/bulky';
     }
+    case 'citizen.charges':
+      return '/charges';
     case 'citizen.marketDetail': {
       const id = positiveId(link.params, 'postId');
       return id ? { pathname: '/market/[id]', params: { id } } : '/market';
