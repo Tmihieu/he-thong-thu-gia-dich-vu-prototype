@@ -382,7 +382,7 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
       {current ? (
         current.exempt && (
           <Typography.Paragraph>
-            <Tag color="purple">Miễn 100% · {current.exemptReason}</Tag>
+            <Tag color="purple">Miễn 100%{current.exemptReason ? ` · ${current.exemptReason}` : ''}</Tag>
           </Typography.Paragraph>
         )
       ) : (

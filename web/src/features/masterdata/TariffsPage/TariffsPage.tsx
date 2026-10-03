@@ -2,6 +2,7 @@ import { App, Button, Flex, Popconfirm, Space, Table, Tag, Typography } from 'an
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { errorText } from '../../../shared/errorText';
 import { DateText } from '../../../shared/DateText';
 import { STATUS_COLORS, TARIFF_GROUP_LABELS, TARIFF_STATUS_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
@@ -83,7 +84,7 @@ export function TariffsPage() {
         dataSource={tariffs.data ?? []}
         pagination={false}
         locale={{
-          emptyText: tariffs.error instanceof ApiError ? tariffs.error.message : 'Chưa có biểu giá',
+          emptyText: tariffs.error ? errorText(tariffs.error) : 'Chưa có biểu giá',
         }}
         expandable={{ expandedRowRender: (v) => <RatesTable rates={v.rates} />, rowExpandable: (v) => v.rates.length > 0 }}
         columns={[

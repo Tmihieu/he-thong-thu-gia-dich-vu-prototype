@@ -4,6 +4,7 @@ import type { Dayjs } from 'dayjs';
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { DateText } from '../../../shared/DateText';
 import { PageHeader } from '../../../shared/PageHeader';
 import {
   SUBJECT_STATUS_COLORS,
@@ -59,7 +60,7 @@ function MemberHistory({ subjectId }: { subjectId: number }) {
         pagination={false}
         dataSource={rows}
         columns={[
-          { title: 'Ngày', dataIndex: 'at', render: (v: string) => new Date(v).toLocaleDateString('vi-VN') },
+          { title: 'Ngày', dataIndex: 'at', render: (v: string) => <DateText value={v} /> },
           { title: 'Người sửa', dataIndex: 'by' },
           { title: 'Số người', render: (_, r) => (r.from == null ? `Tạo hồ sơ: ${r.to ?? '—'}` : `${r.from} → ${r.to ?? '—'}`) },
         ]}
@@ -193,7 +194,6 @@ export function SubjectsPage() {
           },
           { title: 'Tên', dataIndex: 'name' },
           { title: 'Loại', dataIndex: 'subjectType', render: (t: Subject['subjectType']) => SUBJECT_TYPE_LABELS[t] },
-          { title: 'Địa chỉ', dataIndex: 'address' },
           { title: 'Tổ/Ấp/Thôn', dataIndex: 'areaCode' },
           {
             title: 'Địa chỉ',

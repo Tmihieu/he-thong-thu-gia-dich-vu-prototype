@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 
 import { ApiError } from '../../../api/client';
 import { PageHeader } from '../../../shared/PageHeader';
+import { ErrorBlock, LoadingBlock } from '../../../shared/StateBlock';
 import { DateText } from '../../../shared/DateText';
 import { COMPANY_TYPE_LABELS, PROGRESS_COLORS, PROGRESS_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
@@ -191,7 +192,11 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
                 <PeriodSelect value={periodId} onChange={setPeriodId} />
                 {row && <Tag color={PROGRESS_COLORS[row.progress]}>{PROGRESS_LABELS[row.progress]}</Tag>}
               </Space>
-              {row ? (
+              {ledger.isLoading ? (
+                <LoadingBlock rows={2} />
+              ) : ledger.error ? (
+                <ErrorBlock error={ledger.error} />
+              ) : row ? (
                 <Space size="large" wrap>
                   <Statistic title="Phải thu" valueRender={() => <MoneyText value={row.due} />} />
                   <Statistic title="Đã thu" valueRender={() => <MoneyText value={row.collected} />} />

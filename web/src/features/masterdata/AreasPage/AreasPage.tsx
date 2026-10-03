@@ -139,7 +139,7 @@ export function AreasPage() {
       <AssignAreaModal
         open={modalAreas !== null}
         areas={unassigned}
-        companies={companies.data ?? []}
+        companies={(companies.data ?? []).filter((c) => c.status === 'ACTIVE')}
         initialAreaIds={modalAreas ?? []}
         submitting={assign.isPending}
         error={errorMessage(assign.error)}
