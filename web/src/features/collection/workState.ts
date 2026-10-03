@@ -37,13 +37,16 @@ export function workChip(w: CollectorCharge): WorkChip | null {
   return g === 'UNPAID' && w.charge.overdue ? 'OVERDUE' : g;
 }
 
+/** Hộ có thuộc nút lọc không: "Chưa thu" gồm cả quá hạn, "Quá hạn" là tập con của "Chưa thu". */
+export function matchesChip(w: CollectorCharge, chip: WorkChip): boolean {
+  if (chip === 'ALL') return true;
+  const g = workState(w).group;
+  if (chip === 'OVERDUE') return g === 'UNPAID' && w.charge.overdue;
+  return g === chip;
+}
+
 export function countChips(items: CollectorCharge[]): Record<string, number> {
-  const c: Record<string, number> = { ALL: items.length };
-  items.forEach((w) => {
-    const k = workChip(w);
-    if (k) c[k] = (c[k] ?? 0) + 1;
-  });
-  return c;
+  return Object.fromEntries(WORK_CHIPS.map((c) => [c.value, items.filter((w) => matchesChip(w, c.value)).length]));
 }
 
 export function byChipOrder(a: CollectorCharge, b: CollectorCharge) {

@@ -2,9 +2,8 @@ import {
   BankOutlined,
   CheckCircleFilled,
   ClockCircleOutlined,
-  DownOutlined,
   ExclamationCircleFilled,
-  UpOutlined,
+  FilterOutlined,
   WalletOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
@@ -21,7 +20,7 @@ import { normalizeText } from '../../../shared/normalizeText';
 import { usePeriods } from '../../masterdata/api';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type CollectorCharge, useCashHeld, useMyWork, useMyWorkAllPeriods } from '../api';
-import { byChipOrder, COLLECTOR_CHIPS, countChips, RESULT_LABELS, type WorkChip, workChip, workState } from '../workState';
+import { byChipOrder, COLLECTOR_CHIPS, countChips, RESULT_LABELS, matchesChip, type WorkChip, workState } from '../workState';
 import '../collector.css';
 import { HouseholdHistory } from './HouseholdHistory';
 import { ReportSubjectForm } from './ReportSubjectForm';
@@ -46,7 +45,7 @@ export function CollectorListPage() {
   const [street, setStreet] = useState<string>();
   const [q, setQ] = useState('');
   const [paidOn, setPaidOn] = useState<Dayjs | null>(null);
-  const [statsOpen, setStatsOpen] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [editing, setEditing] = useState<{ item: CollectorCharge; method: Method } | null>(null);
   const [viewing, setViewing] = useState<CollectorCharge | null>(null);
   const [reporting, setReporting] = useState<CollectorCharge | null>(null);
@@ -84,13 +83,13 @@ export function CollectorListPage() {
     });
   }, [items, street, q, paidOn]);
   const counts = useMemo(() => countChips(items), [items]);
-  const visible = useMemo(() => scoped.filter((w) => chip === 'ALL' || workChip(w) === chip).sort(byChipOrder), [scoped, chip]);
+  const visible = useMemo(() => scoped.filter((w) => matchesChip(w, chip)).sort(byChipOrder), [scoped, chip]);
 
   const paid = counts.PAID ?? 0;
-  // Miễn giảm / đã xóa nợ không phải "chưa thu".
-  const unpaidCount = items.filter((w) => w.charge.status === 'UNPAID').length;
   const held = cash.data?.[0]?.held ?? 0;
   const period = items[0] ? periodLabel(items[0].charge.periodCode) : '';
+
+  const activeFilters = (street ? 1 : 0) + (paidOn ? 1 : 0);
 
   return (
     <div className="clm-page">
@@ -112,23 +111,14 @@ export function CollectorListPage() {
             </strong>
           </div>
         </div>
-        <button type="button" className="clm-stats-toggle" aria-expanded={statsOpen} onClick={() => setStatsOpen((o) => !o)}>
-          Thống kê kỳ {period} {statsOpen ? <UpOutlined /> : <DownOutlined />}
+        <p className="clm-statline">
+          Kỳ {period} · Đã thu <strong>{`${paid}/${items.length} hộ`}</strong> · Chưa thu <strong>{counts.UNPAID ?? 0}</strong>
+          {(counts.OVERDUE ?? 0) > 0 && <em>{` (${counts.OVERDUE} quá hạn)`}</em>}
+        </p>
+        <button type="button" className="clm-stats-toggle" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((o) => !o)}>
+          <FilterOutlined /> Lọc{activeFilters > 0 ? ` (${activeFilters})` : ''}
         </button>
-        {statsOpen && (
-          <div className="clm-stats">
-            <div>
-              <small>Đã thu</small>
-              <strong>{`${paid}/${items.length} hộ`}</strong>
-            </div>
-            <div>
-              <small>Chưa thu</small>
-              <strong>{unpaidCount}</strong>
-              {(counts.OVERDUE ?? 0) > 0 && <em>{counts.OVERDUE} quá hạn</em>}
-            </div>
-          </div>
-        )}
-        <div className="clm-filter-row">
+        <div className="clm-filter-row" hidden={!filtersOpen}>
           <label>
             <span>Kỳ thanh toán</span>
             <PeriodSelect value={periodId} onChange={setPeriodId} />
@@ -176,30 +166,16 @@ export function CollectorListPage() {
             return (
               <li key={w.charge.id} className="clm-card" aria-label={w.charge.subjectName}>
                 <header className="clm-card-head">
-                  <strong>Khoản thu · {w.charge.code}</strong>
+                  <strong>Kỳ {periodLabel(w.charge.periodCode)}</strong>
                   <StatusTag tone={s.tone}>{s.label}</StatusTag>
                 </header>
                 <div className="clm-card-body">
-                  <small className="clm-label">Thông tin khách hàng</small>
                   <h3 className="clm-name">{w.charge.subjectName}</h3>
                   <p>
-                    <b>Mã KH:</b> {w.charge.subjectCode} · {isBusiness(w) ? 'Hộ kinh doanh' : 'Hộ gia đình'}
+                    {w.charge.subjectAddress} ({w.charge.areaCode})
                   </p>
-                  <p>
-                    <b>Địa chỉ:</b> {w.charge.subjectAddress} ({w.charge.areaCode})
-                  </p>
-                  <div className="clm-kv">
-                    <small>Phiếu yêu cầu thu</small>
-                    <span>
-                      {w.charge.requestCode} · hạn {formatDate(w.charge.dueDate)}
-                    </span>
-                  </div>
-                  <div className="clm-kv">
-                    <small>Nhân viên thu gom</small>
-                    <span>{user?.fullName}</span>
-                  </div>
                   <div className="clm-amount">
-                    <small>Số tiền phải thu · kỳ {periodLabel(w.charge.periodCode)}</small>
+                    <small>Số tiền phải thu</small>
                     <strong>
                       <MoneyText value={w.charge.amount} />
                     </strong>
@@ -208,19 +184,6 @@ export function CollectorListPage() {
                     <p className="clm-partial">
                       Đã thu <MoneyText value={w.paidAmount} /> · còn thiếu <MoneyText value={w.remainingAmount} />
                     </p>
-                  )}
-                  {(w.lastPaidAt || w.lastVisit) && (
-                    <div className="clm-kv">
-                      <small>Nhật ký đi thu</small>
-                      <span>
-                        {w.lastPaidAt && <div>Đã thu lúc {formatDate(w.lastPaidAt, true)}</div>}
-                        {w.lastVisit && (
-                          <div>
-                            {RESULT_LABELS[w.lastVisit.result]} lúc {formatDate(w.lastVisit.visitedAt, true)}
-                          </div>
-                        )}
-                      </span>
-                    </div>
                   )}
                   {previous.length > 0 && (
                     <div className="clm-previous">
@@ -283,6 +246,42 @@ export function CollectorListPage() {
                       onClick={() => setReporting(w)}
                     />
                   </div>
+                  <details className="clm-details">
+                    <summary>Chi tiết</summary>
+                    <div className="clm-kv">
+                      <small>Mã khách hàng</small>
+                      <span>
+                        {w.charge.subjectCode} · {isBusiness(w) ? 'Hộ kinh doanh' : 'Hộ gia đình'}
+                      </span>
+                    </div>
+                    <div className="clm-kv">
+                      <small>Mã khoản</small>
+                      <span>{w.charge.code}</span>
+                    </div>
+                    <div className="clm-kv">
+                      <small>Phiếu yêu cầu thu</small>
+                      <span>
+                        {w.charge.requestCode} · hạn {formatDate(w.charge.dueDate)}
+                      </span>
+                    </div>
+                    <div className="clm-kv">
+                      <small>Nhân viên thu gom</small>
+                      <span>{user?.fullName}</span>
+                    </div>
+                    {(w.lastPaidAt || w.lastVisit) && (
+                      <div className="clm-kv">
+                        <small>Nhật ký đi thu</small>
+                        <span>
+                          {w.lastPaidAt && <div>Đã thu lúc {formatDate(w.lastPaidAt, true)}</div>}
+                          {w.lastVisit && (
+                            <div>
+                              {RESULT_LABELS[w.lastVisit.result]} lúc {formatDate(w.lastVisit.visitedAt, true)}
+                            </div>
+                          )}
+                        </span>
+                      </div>
+                    )}
+                  </details>
                 </div>
               </li>
             );
