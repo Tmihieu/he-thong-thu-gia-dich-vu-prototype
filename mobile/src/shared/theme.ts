@@ -21,7 +21,7 @@ export const colors = {
   text: '#14211a',
   textSecondary: '#46564c',
   textMuted: '#5b6a61',
-  placeholder: '#7a887f',
+  placeholder: '#66756c',
 
   border: '#c9d3cc',
   borderStrong: '#86958b',
