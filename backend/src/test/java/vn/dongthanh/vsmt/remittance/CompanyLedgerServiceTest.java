@@ -137,6 +137,7 @@ class CompanyLedgerServiceTest {
         // Công ty thu 1.000.000, cầm lại phần thu gom 100.000, nộp 900.000: nộp đủ, đối soát khớp, tỷ lệ nộp tính trên phần phải nộp.
         due(10L, 1L, 1_000_000, 10);
         when(queries.retainedByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 100_000, 0)));
+        when(queries.retainedOfCollectedByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 100_000, 0)));
         when(queries.collectedByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 1_000_000, 10)));
         when(remitted.receivedByCompany(10L)).thenReturn(Map.of(1L, new RemittedTotals.Received(900_000, 1)));
         LedgerRow r = service("2026-10-15").row(1L, 10L);
@@ -153,6 +154,22 @@ class CompanyLedgerServiceTest {
         LedgerRow half = service("2026-10-15").row(1L, 10L);
         assertThat(half.remaining()).isEqualTo(450_000);
         assertThat(half.remittedRate()).isEqualTo(50.0);
+    }
+
+    @Test
+    void gapComparesRemittedWithTheTransportShareOfWhatWasCollected() {
+        // QĐ-L15: phải thu 1.000.000, cầm lại 228.000 trên cả phải thu; mới thu 460.000 trong đó thu gom 105.000.
+        // Công ty chỉ phải nộp 355.000 trên số đã thu; đã nộp 355.000 thì không lệch (không báo "nộp nhiều hơn").
+        due(10L, 1L, 1_000_000, 10);
+        when(queries.retainedByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 228_000, 0)));
+        when(queries.retainedOfCollectedByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 105_000, 0)));
+        when(queries.collectedByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 460_000, 6)));
+        when(remitted.receivedByCompany(10L)).thenReturn(Map.of(1L, new RemittedTotals.Received(355_000, 1)));
+
+        assertThat(service("2026-10-15").row(1L, 10L).gap()).isZero();
+
+        when(remitted.receivedByCompany(10L)).thenReturn(Map.of(1L, new RemittedTotals.Received(300_000, 1)));
+        assertThat(service("2026-10-15").row(1L, 10L).gap()).isEqualTo(-55_000);
     }
 
     @Test

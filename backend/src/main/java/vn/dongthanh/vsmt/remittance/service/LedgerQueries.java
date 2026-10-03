@@ -119,6 +119,20 @@ public class LedgerQueries {
                 (rs, i) -> new CompanyPeriodAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), today);
     }
 
+    /**
+     * Phần thu gom nằm trong số tiền công ty ĐÃ THU của kỳ (QĐ-L15): mỗi khoản lấy Σ thanh toán ròng ghi ở kỳ ×
+     * collection_fee / monthly_total, làm tròn đồng một lần theo khoản. Khoản phí cố định (không có đơn giá nhóm) không có
+     * phần thu gom nên tính cả vào phần phải nộp. Số {@code count} không dùng.
+     */
+    public List<CompanyAmount> retainedOfCollectedByCompany(long periodId) {
+        return jdbc.query("select x.company_id, sum(x.v), 0 from ("
+                + " select c.company_id, coalesce(round(sum(p.amount) * r.collection_fee::numeric"
+                + " / nullif(r.monthly_total, 0)), 0) as v from payments p join charges c on c.id = p.charge_id"
+                + COLLECTION_JOIN + " where " + PAYMENT_PERIOD + " = ?"
+                + " group by c.id, c.company_id, r.collection_fee, r.monthly_total) x group by x.company_id",
+                (rs, i) -> new CompanyAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), periodId);
+    }
+
     /** Đã thu theo tổ chỉ gồm thanh toán ghi nhận ở chính kỳ (hoàn của kỳ đã khóa không làm đổi số kỳ đó, O10). */
     public List<AreaProgressRow> progressByArea(long periodId) {
         return jdbc.query("select c.area_id, c.company_id, sum(c.amount), coalesce(sum(p.paid), 0), count(*) filter (where " + NEEDS_PAYMENT + "),"

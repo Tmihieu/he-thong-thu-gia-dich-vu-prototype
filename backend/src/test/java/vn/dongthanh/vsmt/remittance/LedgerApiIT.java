@@ -76,6 +76,8 @@ class LedgerApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$[0].retained").value(228_000))
                 .andExpect(jsonPath("$[0].payable").value(92_000))
                 .andExpect(jsonPath("$[0].remaining").value(92_000))
+                // QĐ-L15: đã thu 80.000 (thu gom 57.000, vận chuyển 23.000), chưa nộp: thiếu 23.000, không phải 80.000 + giữ lại.
+                .andExpect(jsonPath("$[0].gap").value(-23_000))
                 .andExpect(jsonPath("$[1].retained").value(114_000))
                 .andExpect(jsonPath("$[1].payable").value(46_000));
     }
