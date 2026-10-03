@@ -19,7 +19,13 @@ function roleLabel(role: string): string {
 
 function BeforeAfter({ log }: { log: AuditLog }) {
   const rows = auditDiff(log.beforeData, log.afterData);
-  if (rows === null) return <Typography.Text type="secondary">Không có chi tiết thay đổi để hiển thị.</Typography.Text>;
+  if (rows === null) {
+    return (
+      <Typography.Paragraph type="secondary" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+        {[log.beforeData, log.afterData].filter(Boolean).join(' / ')}
+      </Typography.Paragraph>
+    );
+  }
   if (rows.length === 0) return <Typography.Text type="secondary">Không có trường nào thay đổi.</Typography.Text>;
   return (
     <Table<AuditDiffRow>

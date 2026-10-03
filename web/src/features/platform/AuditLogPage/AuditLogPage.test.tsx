@@ -16,7 +16,7 @@ const payment = {
   entityType: 'Charge',
   entityId: 'KT-1026-000001',
   beforeData: '{"status": "UNPAID", "paid": 0}',
-  afterData: 'không phải JSON',
+  afterData: '{"status": "PAID", "paid": 80000}',
   ipAddress: '10.0.0.7',
 };
 const citizenPayment = {
@@ -36,7 +36,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('Nhật ký', () => {
-  it('hiện dòng nhật ký, mở dòng thấy JSON trước/sau, bộ lọc gửi lên máy chủ', async () => {
+  it('hiện dòng nhật ký, mở dòng thấy trường thay đổi bằng nhãn tiếng Việt, bộ lọc gửi lên máy chủ', async () => {
     const fetchFn = mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, admin),
       'GET /api/platform/audit-logs': () =>
@@ -54,8 +54,8 @@ describe('Nhật ký', () => {
     expect(screen.getByText('Người dân')).toBeInTheDocument();
 
     await userEvent.click(screen.getAllByRole('button', { name: /mở rộng|expand/i })[0]!);
-    expect(await screen.findByText(/"status": "UNPAID"/)).toBeInTheDocument();
-    expect(screen.getByText('không phải JSON')).toBeInTheDocument();
+    expect(await screen.findByText('Trạng thái')).toBeInTheDocument();
+    expect(screen.queryByText(/"status"/)).not.toBeInTheDocument();
 
     // Danh sách lựa chọn của AntD là danh sách ảo, chỉ dựng vài dòng đầu: gõ tìm như người dùng rồi mới chọn.
     const actionFilter = screen.getByRole('combobox', { name: 'Lọc theo hành động' });
