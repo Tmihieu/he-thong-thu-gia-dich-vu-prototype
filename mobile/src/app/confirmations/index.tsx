@@ -5,7 +5,7 @@ import { useConfirmations } from '../../features/citizen/api';
 import { formatDate } from '../../shared/format';
 import { PAYMENT_METHOD_LABELS } from '../../shared/labels';
 import { colors, spacing } from '../../shared/theme';
-import { Amount, EmptyState, ListGroup, ListRow, ListScreen, Tag } from '../../shared/ui';
+import { Amount, Button, EmptyState, ListGroup, ListRow, ListScreen, Tag } from '../../shared/ui';
 
 /** Các lần đã thanh toán của hộ, mọi hình thức (tại nhà, chuyển khoản, app), mới nhất trước. */
 export default function ConfirmationsScreen() {
@@ -39,7 +39,7 @@ export default function ConfirmationsScreen() {
       onRetry={() => void list.refetch()}
       refreshing={list.isFetching && !list.isPending}
       onRefresh={() => void list.refetch()}
-      empty={<EmptyState icon="receipt-outline" title="Hộ chưa có lần thanh toán nào" message="Sau khi thanh toán hoặc được thu tại nhà, xác nhận sẽ hiện ở đây." />}
+      empty={<EmptyState icon="receipt-outline" title="Hộ chưa có lần thanh toán nào" message="Sau khi thanh toán hoặc được thu tại nhà, xác nhận sẽ hiện ở đây." action={<Button title="Xem khoản phí của hộ" variant="secondary" fullWidth={false} onPress={() => router.push('/charges')} />} />}
     />
   );
 }

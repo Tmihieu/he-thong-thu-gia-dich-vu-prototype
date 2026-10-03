@@ -40,8 +40,11 @@ describe('notificationHref', () => {
 });
 
 describe('notificationTarget', () => {
-  it('nhắc nộp không có link → danh sách khoản phí', () => {
+  it('nhắc nộp: link mới citizen.charges và thông báo cũ link=null đều mở danh sách khoản phí', () => {
+    expect(notificationTarget({ kind: 'REMINDER', link: { screen: 'citizen.charges' } })).toBe('/charges');
+    expect(notificationTarget({ kind: 'REMINDER', link: { screen: 'citizen.charges', params: {} } })).toBe('/charges');
     expect(notificationTarget({ kind: 'REMINDER', link: null })).toBe('/charges');
+    expect(notificationTarget({ kind: 'REMINDER', link: undefined })).toBe('/charges');
   });
 
   it('có link thì theo link, loại khác không link → null', () => {

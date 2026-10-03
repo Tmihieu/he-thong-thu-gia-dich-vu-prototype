@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -77,6 +77,7 @@ export function PagedList<T>({
   header,
   empty,
   emptyIcon,
+  emptyAction,
 }: {
   q: Paged;
   items: T[];
@@ -85,6 +86,8 @@ export function PagedList<T>({
   header?: ReactElement;
   empty: string;
   emptyIcon?: IconName;
+  /** Việc làm tiếp khi danh sách trống (đăng bài, xóa bộ lọc...). */
+  emptyAction?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
   return (
@@ -121,7 +124,7 @@ export function PagedList<T>({
               onRetry={() => void (q.data ? q.fetchNextPage() : q.refetch())}
             />
           ) : items.length === 0 ? (
-            <EmptyState icon={emptyIcon} title={empty} />
+            <EmptyState icon={emptyIcon} title={empty} action={emptyAction} />
           ) : null
         }
       />

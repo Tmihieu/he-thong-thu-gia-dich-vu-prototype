@@ -62,8 +62,7 @@ export const WEEKDAY_LABELS: Record<number, string> = {
   7: 'Chủ nhật',
 };
 
-// ponytail: FACILITY / COLLECTION_REQUEST (BR-CMP-05, backend V32) khai báo thêm ở đây tới khi `gen:api` sinh lại schema; sau đó hợp nhất tự dọn.
-export type ComplaintCategory = Schemas['CitizenComplaintDto']['category'] | 'FACILITY' | 'COLLECTION_REQUEST';
+export type ComplaintCategory = Schemas['CitizenComplaintDto']['category'];
 export type ComplaintStatus = Schemas['CitizenComplaintDto']['status'];
 export type ComplaintEventType = Schemas['CitizenComplaintEventDto']['eventType'];
 

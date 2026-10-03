@@ -23,6 +23,7 @@ export default function MarketTab() {
   const [filter, setFilter] = useState<FeedFilter>({ q: '', tags: [] });
   const meta = useMarketMetadata();
   const feed = useMarketFeed(filter);
+  const filtering = !!(filter.q || filter.tags.length || filter.category || filter.areaId);
   const set = (patch: Partial<FeedFilter>) => setFilter((f) => ({ ...f, ...patch }));
   const toggleTag = (tag: MarketTag) =>
     set({ tags: filter.tags.includes(tag) ? filter.tags.filter((x) => x !== tag) : [...filter.tags, tag] });
@@ -113,8 +114,23 @@ export default function MarketTab() {
       keyOf={(p) => String(p.id)}
       render={(p) => <PostCard p={p} />}
       header={header}
-      empty="Không có bài phù hợp"
+      empty={filtering ? 'Không có bài phù hợp bộ lọc' : 'Chợ chưa có bài nào'}
       emptyIcon="storefront-outline"
+      emptyAction={
+        filtering ? (
+          <Button
+            title="Xóa bộ lọc"
+            variant="secondary"
+            fullWidth={false}
+            onPress={() => {
+              setText('');
+              setFilter({ q: '', tags: [] });
+            }}
+          />
+        ) : (
+          <Button title="Đăng bài đầu tiên" variant="secondary" fullWidth={false} onPress={() => router.push('/market/new')} />
+        )
+      }
     />
   );
 }
