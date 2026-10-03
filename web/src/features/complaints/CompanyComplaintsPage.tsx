@@ -1,19 +1,21 @@
-import { Alert, App, Divider, Segmented, Space, Table, Tag, Typography } from 'antd';
+import { App, Divider, Segmented, Space, Table } from 'antd';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
-import { ApiError } from '../../api/client';
 import { DateText } from '../../shared/DateText';
+import { errorText as apiErrorText } from '../../shared/errorText';
+import { PageHeader } from '../../shared/PageHeader';
+import { StatCard, StatGrid } from '../../shared/StatCard';
+import { EmptyBlock, ErrorBlock } from '../../shared/StateBlock';
+import { StatusTag } from '../../shared/StatusTag';
 import { type Complaint, type ComplaintDetail, useComplaints, useReplyComplaint } from './api';
 import { ComplaintDrawer } from './ComplaintDrawer';
 import { TextActionForm } from './ComplaintForms';
-import { COMPLAINT_STATUS_COLORS, COMPLAINT_STATUS_LABELS } from './labels';
+import { COMPLAINT_STATUS_TONES, COMPLAINT_STATUS_LABELS } from './labels';
 
 type Filter = 'OPEN' | 'OVERDUE' | 'RESOLVED' | 'ALL';
 
-function errorText(e: unknown) {
-  return e ? (e instanceof ApiError ? e.message : 'Không thực hiện được. Vui lòng thử lại.') : null;
-}
+const errorText = (e: unknown) => (e ? apiErrorText(e) : null);
 
 function ReplyAction({ detail }: { detail: ComplaintDetail }) {
   const { message } = App.useApp();
@@ -60,22 +62,25 @@ export function CompanyComplaintsPage() {
 
   return (
     <>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        Giải quyết khiếu nại
-      </Typography.Title>
+      <PageHeader title="Giải quyết khiếu nại" description="Khiếu nại xã chuyển cho công ty; xử lý xong thì gửi phản hồi về xã để xã đóng." />
+      <StatGrid>
+        <StatCard label="Cần xử lý" tone="warning" value={items.filter((c) => match(c, 'OPEN')).length} />
+        <StatCard label="Quá hạn" tone={items.some((c) => c.overdue) ? 'danger' : 'neutral'} value={items.filter((c) => c.overdue).length} />
+        <StatCard label="Đã giải quyết" tone="success" value={items.filter((c) => match(c, 'RESOLVED')).length} />
+      </StatGrid>
       <Segmented<Filter>
         style={{ marginBottom: 12 }}
         value={filter}
         onChange={setFilter}
         options={(Object.keys(labels) as Filter[]).map((f) => ({ value: f, label: `${labels[f]} (${items.filter((c) => match(c, f)).length})` }))}
       />
-      {complaints.error && <Alert type="error" showIcon message={errorText(complaints.error)} style={{ marginBottom: 12 }} />}
+      {complaints.error && <ErrorBlock error={complaints.error} onRetry={() => void complaints.refetch()} />}
       <Table<Complaint>
         rowKey="id"
         loading={complaints.isLoading}
         dataSource={items.filter((c) => match(c, filter))}
         pagination={{ pageSize: 20, hideOnSinglePage: true }}
-        locale={{ emptyText: 'Không có khiếu nại được chuyển' }}
+        locale={{ emptyText: <EmptyBlock title="Không có khiếu nại được chuyển" hint="Khi xã chuyển khiếu nại cho công ty, khiếu nại hiện ở đây kèm hạn xử lý." /> }}
         onRow={(c) => ({ onClick: () => open(c.id), style: { cursor: 'pointer' } })}
         columns={[
           { title: 'Mã', dataIndex: 'code' },
@@ -86,8 +91,8 @@ export function CompanyComplaintsPage() {
             title: 'Trạng thái',
             render: (_, c) => (
               <Space size={4} wrap>
-                <Tag color={COMPLAINT_STATUS_COLORS[c.status]}>{COMPLAINT_STATUS_LABELS[c.status]}</Tag>
-                {c.overdue && <Tag color="red">Quá hạn xử lý</Tag>}
+                <StatusTag tone={COMPLAINT_STATUS_TONES[c.status]}>{COMPLAINT_STATUS_LABELS[c.status]}</StatusTag>
+                {c.overdue && <StatusTag tone="danger">Quá hạn xử lý</StatusTag>}
               </Space>
             ),
           },
