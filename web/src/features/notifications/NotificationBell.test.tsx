@@ -31,7 +31,7 @@ describe('notificationPath', () => {
     expect(notificationPath('COMMUNE_OFFICER', { screen: 'commune.subjects', params: { subjectId: 7 } }))
       .toBe('/commune/subjects');
     expect(notificationPath('COMPANY_MANAGER', { screen: 'company.households', params: { subjectId: 7 } }))
-      .toBe('/company/assigned?tab=households');
+      .toBe('/company/assigned?tab=overview');
     expect(notificationPath('COMPANY_MANAGER', { screen: 'commune.subjects' })).toBeNull();
     expect(notificationPath('COMMUNE_OFFICER', { screen: 'khong.co' })).toBeNull();
     expect(notificationPath('COMMUNE_OFFICER', null)).toBeNull();

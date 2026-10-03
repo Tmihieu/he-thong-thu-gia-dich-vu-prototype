@@ -54,6 +54,15 @@ export function NotificationCenterPage() {
           Đánh dấu tất cả đã đọc
         </Button>
       </Space>
+      {(markRead.error ?? markAll.error) && (
+        <Alert
+          type="error"
+          showIcon
+          role="alert"
+          style={{ marginBottom: 12 }}
+          message={(markRead.error ?? markAll.error) instanceof ApiError ? (markRead.error ?? markAll.error)!.message : 'Không đánh dấu đã đọc được'}
+        />
+      )}
       {list.error && (
         <Alert type="error" showIcon message={list.error instanceof ApiError ? list.error.message : 'Không tải được thông báo'} />
       )}
