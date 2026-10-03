@@ -231,6 +231,7 @@ Ba địa bàn sau sáp nhập của xã Đông Thạnh.
 | Số hợp đồng với xã  | `commune_contract_no` | `text(50)`          | Không    | Xã       | 12/2026/HĐ-UBND  | Thật |                                           |
 | Tài khoản ngân hàng | `bank_account`        | `text(50)`          | Không    | Công ty  |                  | Thật | Dùng đối chiếu tiền chuyển khoản về xã    |
 | Ngân hàng           | `bank_name`           | `text(100)`         | Không    | Công ty  |                  | Thật |                                           |
+| Tỷ lệ công ty giữ lại (%) | `retained_percent` | `numeric(5,2)` | Không | Xã | 8 | Demo | `0..100`; NULL = chưa cấu hình (không giữ lại). Phải nộp xã = (phải thu − điều chỉnh) − phần giữ lại (góp ý BA 03/10) |
 
 
 **Enum `CompanyType`:** `COMPANY` Công ty · `COOPERATIVE` Hợp tác xã · `PUBLIC_UNIT` Đơn vị sự nghiệp công
@@ -294,6 +295,7 @@ Hộ gia đình / hộ kinh doanh / doanh nghiệp. Hiển thị chung form "H�
 | Miễn 100%         | `exempt`             | `bool`              | Có           | Xã                 | false         | Demo | Mặc định false. Miễn giảm một phần ngoài phạm vi                    |
 | Lý do miễn        | `exempt_reason`      | `text(255)`         | Có điều kiện | Xã                 | Hộ nghèo      | Demo | Bắt buộc khi `exempt = true`                                        |
 | Số văn bản miễn   | `exempt_decision_no` | `text(50)`          | Không        | Xã                 |               | Thật |                                                                     |
+| Định mức kg/tháng | `quota_kg`           | `integer`           | Không        | Xã                 | 600           | Demo | `> 0`; dùng cho nhóm `BY_VOLUME`: tiền = đơn giá đ/kg × định mức × số tháng; NULL thì chưa lập được khoản (`QUOTA_KG_REQUIRED`) |
 | Ghi chú           | `note`               | `text`              | Không        | Xã                 |               | Demo |                                                                     |
 
 
@@ -346,7 +348,7 @@ Hộ gia đình / hộ kinh doanh / doanh nghiệp. Hiển thị chung form "H�
 
 **Khóa/ràng buộc:** duy nhất `(tariff_version_id, tariff_group)`; `CHECK monthly_total = collection_fee + transport_fee`. Biểu giá chỉ gồm **2 thành phần** thu gom + vận chuyển, không có VAT (G9; thành phần thứ hai đổi tên từ "xử lý" sang "vận chuyển" ngày 01/10/2026).
 
-**Seed `BG-65-2026`:** theo bảng QĐ 65/2026 như ở trên. Nhóm `BY_VOLUME` (500 đến dưới 9.000 kg/tháng) tính đ/kg nhưng chưa lập được khoản (`CHARGE_PER_KG_UNSUPPORTED`); doanh nghiệp mẫu tạm áp bậc `SMALL_250_TO_500`.
+**Seed `BG-65-2026`:** theo bảng QĐ 65/2026 như ở trên. Nhóm `BY_VOLUME` (500 đến dưới 9.000 kg/tháng) tính đ/kg × `quota_kg` của hợp đồng, chưa có định mức thì chưa lập được khoản (`QUOTA_KG_REQUIRED`); doanh nghiệp mẫu tạm áp bậc `SMALL_250_TO_500`.
 
 ### FeeType — Loại phí · `fee_types` · Phần A
 
@@ -1417,3 +1419,7 @@ Prototype có hai dạng: web `KN-2609-nnn` (YYMM) và app `PA-0926-nnn` (MMYY).
 **Hoàn tiền (T58):** một dòng `payments` với `method = REFUND`, `amount` **âm**, không có người đi thu; cột mới `ledger_period_id` = kỳ ghi nhận trong sổ công ty–kỳ (null với thanh toán thường = kỳ của khoản). Enum `PaymentMethod` thêm `REFUND` Hoàn tiền.
 
 **Sổ công ty–kỳ (`LedgerRowDto`):** thêm `adjustment` (Điều chỉnh kỳ trước: khoản kỳ đã khóa được xóa nợ, ghi ở kỳ này) và `refunded` (đã hoàn, ghi ở kỳ này). Còn phải nộp = phải thu − điều chỉnh − đã nộp; đã thu = Σ thanh toán (trừ hoàn) theo kỳ ghi nhận. O8, O9, O10 chốt 29/09/2026 (SPEC §11).
+
+### HouseholdReminder — Nhật ký nhắc hộ dân nộp phí · `household_reminders` (V28)
+
+Mỗi cặp `(charge_id, stage)` chỉ có một dòng nên mỗi mốc nhắc chỉ gửi một lần dù job chạy lại. `stage`: `OPEN` (vừa phát hành, còn hạn), `DUE_SOON` (trước hạn đóng của hộ 3 ngày), `OVERDUE` (sau hạn 1 ngày). Chỉ nhắc khoản còn `UNPAID` và hộ có tài khoản app; thông báo loại `REMINDER` gửi vào app người dân. Job chạy 08:00 mỗi ngày (giờ Việt Nam); cán bộ xã chạy tay bằng `POST /api/notifications/household-reminders/run`. SMS/Zalo chưa làm.
