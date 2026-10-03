@@ -125,7 +125,7 @@ export function AreasPage() {
             title: '',
             render: (_, r) =>
               !r.assignment && (
-                <Button size="small" onClick={() => openModal([r.id])} aria-label={`Phân công ${r.code}`}>
+                <Button size="small" type="link" onClick={() => openModal([r.id])} aria-label={`Phân công ${r.code}`}>
                   Phân công
                 </Button>
               ),

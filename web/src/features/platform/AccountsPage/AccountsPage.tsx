@@ -90,12 +90,14 @@ export function AccountsPage() {
             <Table<Account>
               rowKey="id"
               loading={accounts.isLoading}
+              scroll={{ x: 'max-content' }}
               dataSource={rows}
               pagination={{ pageSize: 20, hideOnSinglePage: true }}
               locale={{ emptyText: errorTextOrNull(accounts.error) ?? 'Không có tài khoản phù hợp' }}
               columns={[
                 {
                   title: 'Người dùng',
+                  className: 'cell-nowrap',
                   render: (_, a) => (
                     <>
                       <div>{a.fullName}</div>
@@ -103,13 +105,14 @@ export function AccountsPage() {
                     </>
                   ),
                 },
-                { title: 'Vai trò', render: (_, a) => <StatusTag color="blue">{ROLE_LABELS[a.role]}</StatusTag> },
+                { title: 'Vai trò', className: 'cell-nowrap', render: (_, a) => <StatusTag color="blue">{ROLE_LABELS[a.role]}</StatusTag> },
                 {
                   title: 'Công ty / đơn vị',
                   render: (_, a) => (a.companyId ? companyName.get(a.companyId) : a.organization) ?? '—',
                 },
                 {
                   title: 'Đăng nhập gần nhất',
+                  className: 'cell-nowrap',
                   render: (_, a) => (a.lastLoginAt ? <DateText value={a.lastLoginAt} withTime /> : 'Chưa đăng nhập'),
                 },
                 {
@@ -120,11 +123,12 @@ export function AccountsPage() {
                   title: '',
                   render: (_, a) => (
                     <Space size="small">
-                      <Button size="small" onClick={() => openForm(a)} aria-label={`Sửa ${a.username}`}>
+                      <Button size="small" type="link" onClick={() => openForm(a)} aria-label={`Sửa ${a.username}`}>
                         Sửa
                       </Button>
                       <Button
                         size="small"
+                        type="link"
                         onClick={() => {
                           reset.reset();
                           setResetting(a);
@@ -148,7 +152,7 @@ export function AccountsPage() {
                             )
                           }
                         >
-                          <Button size="small" danger={a.status === 'ACTIVE'}>
+                          <Button size="small" type="link" danger={a.status === 'ACTIVE'}>
                             {a.status === 'ACTIVE' ? 'Khóa' : 'Mở khóa'}
                           </Button>
                         </Popconfirm>

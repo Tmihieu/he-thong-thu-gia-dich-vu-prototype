@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { errorTextOrNull } from '../../shared/errorText';
 import { StatusTag } from '../../shared/StatusTag';
+import { EmptyBlock } from '../../shared/StateBlock';
 import { PageHeader } from '../../shared/PageHeader';
 import { useAuth } from '../../app/auth/authContext';
 import { DateText } from '../../shared/DateText';
@@ -59,7 +60,10 @@ export function ApprovalsPage() {
 
   return (
     <>
-      <PageHeader title={leader ? 'Chờ duyệt' : 'Đề nghị miễn giảm / hoàn / xóa nợ'} />
+      <PageHeader
+        title={leader ? 'Chờ duyệt' : 'Đề nghị miễn giảm / hoàn / xóa nợ'}
+        description={leader ? 'Duyệt hoặc từ chối đề nghị miễn giảm, hoàn tiền, xóa nợ do cán bộ xã lập.' : 'Đề nghị đã lập và kết quả duyệt của lãnh đạo.'}
+      />
       <Space wrap style={{ marginBottom: 12 }}>
         <Segmented<ApprovalStatus | 'ALL'>
           value={status}
@@ -88,7 +92,7 @@ export function ApprovalsPage() {
         loading={approvals.isLoading}
         dataSource={approvals.data ?? []}
         pagination={{ pageSize: 30, hideOnSinglePage: true, showTotal: (t) => `${t} đề nghị` }}
-        locale={{ emptyText: status === 'PENDING' ? 'Không có đề nghị chờ duyệt' : 'Chưa có đề nghị' }}
+        locale={{ emptyText: <EmptyBlock title={status === 'PENDING' ? 'Không có đề nghị chờ duyệt' : 'Chưa có đề nghị'} hint="Đề nghị mới sẽ hiện ở đây khi cán bộ xã lập." /> }}
         columns={[
           {
             title: 'Mã / ngày',

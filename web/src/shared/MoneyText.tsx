@@ -15,7 +15,7 @@ export function MoneyText({ value, strong = false }: MoneyTextProps) {
 export function RemainingText({ value, strong = false }: MoneyTextProps) {
   if (value !== null && value !== undefined && value < 0) {
     return (
-      <span style={{ color: semantic.info.fg, fontVariantNumeric: 'tabular-nums', fontWeight: strong ? 600 : undefined }}>
+      <span style={{ color: semantic.success.fg, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums', fontWeight: strong ? 600 : undefined }}>
         Nộp thừa {formatMoney(-value)}
       </span>
     );

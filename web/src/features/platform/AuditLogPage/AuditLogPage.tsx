@@ -96,7 +96,7 @@ export function AuditLogPage() {
           onChange: (page) => setQuery((prev) => ({ ...prev, page: page - 1 })),
         }}
         columns={[
-          { title: 'Thời gian', dataIndex: 'occurredAt', render: (v: string) => <DateText value={v} withTime /> },
+          { title: 'Thời gian', dataIndex: 'occurredAt', className: 'cell-nowrap', render: (v: string) => <DateText value={v} withTime /> },
           { title: 'Người thao tác', dataIndex: 'actorUsername' },
           { title: 'Vai trò', dataIndex: 'actorRole', render: roleLabel },
           {

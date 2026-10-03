@@ -97,6 +97,7 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
       </Flex>
       <Table<Company>
         rowKey="id"
+        scroll={{ x: 'max-content' }}
         loading={companies.isLoading}
         dataSource={rows}
         pagination={false}
@@ -112,6 +113,7 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
           },
           {
             title: 'Đầu mối',
+            className: 'cell-nowrap',
             render: (_, c) => (
               <>
                 <div>{c.contactName}</div>
@@ -121,6 +123,7 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
           },
           {
             title: 'Hiệu lực',
+            className: 'cell-nowrap',
             render: (_, c) => (
               <>
                 <DateText value={c.validFrom} /> – {c.validTo ? <DateText value={c.validTo} /> : 'chưa xác định'}
@@ -130,7 +133,7 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
           { title: 'Khu vực đang phụ trách', align: 'right', render: (_, c) => areaCount.get(c.id) ?? 0 },
           { title: 'Trạng thái', render: (_, c) => statusTag(c.status) },
           { title: 'Thao tác', align: 'right', render: (_, c) => (
-            <Button size="small" onClick={() => openForm(c)} aria-label={`Sửa ${c.name}`}>Sửa</Button>
+            <Button size="small" type="link" onClick={() => openForm(c)} aria-label={`Sửa ${c.name}`}>Sửa</Button>
           ) },
         ]}
       />

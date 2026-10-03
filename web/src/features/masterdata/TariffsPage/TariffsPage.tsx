@@ -115,7 +115,7 @@ export function TariffsPage() {
               (
                 <Space>
                   {v.status === 'DRAFT' && (
-                    <Button size="small" onClick={() => openForm(v)}>
+                    <Button size="small" type="link" onClick={() => openForm(v)}>
                       Sửa
                     </Button>
                   )}

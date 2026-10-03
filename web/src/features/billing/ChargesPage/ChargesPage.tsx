@@ -73,7 +73,7 @@ export function ChargesPage() {
       <Table<Charge>
         rowKey="id"
         size="small"
-        scroll={{ x: 1100 }}
+        scroll={{ x: 'max-content' }}
         loading={charges.isFetching}
         dataSource={charges.data?.items ?? []}
         locale={{
@@ -117,6 +117,7 @@ export function ChargesPage() {
           {
             title: '',
             className: 'row-actions cell-nowrap',
+            fixed: 'right',
             render: (_, c) =>
               c.status === 'UNPAID' ? (
                 <Button size="small" type="link" onClick={() => setProposing({ charge: c, type: 'WRITE_OFF' })} aria-label={`Đề nghị xóa nợ ${c.code}`}>
