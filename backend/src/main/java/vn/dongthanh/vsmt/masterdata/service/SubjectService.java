@@ -55,7 +55,12 @@ public class SubjectService {
     }
 
     public record ContractCommand(TariffGroup tariffGroup, LocalDate validFrom, LocalDate validTo, boolean exempt,
-            String exemptReason, String exemptDecisionNo, String note) {
+            String exemptReason, String exemptDecisionNo, String note, Integer quotaKg) {
+
+        public ContractCommand(TariffGroup tariffGroup, LocalDate validFrom, LocalDate validTo, boolean exempt,
+                String exemptReason, String exemptDecisionNo, String note) {
+            this(tariffGroup, validFrom, validTo, exempt, exemptReason, exemptDecisionNo, note, null);
+        }
     }
 
     public record SubjectFilter(Long districtId, Long areaId, SubjectStatus status, SubjectType subjectType, String q) {
@@ -162,6 +167,7 @@ public class SubjectService {
         contract.change(cmd.tariffGroup(), cmd.validFrom(), cmd.validTo(), cmd.exempt(), cmd.exemptReason(),
                 cmd.exemptDecisionNo());
         contract.setNote(cmd.note());
+        contract.setQuotaKg(cmd.quotaKg());
         audit.record(actor, "UPDATE_CONTRACT", CONTRACT, contract.getContractNo(), before, snapshot(contract));
         if (!wasExempt && contract.isExempt()) {
             publishExempted(contract, actor);
@@ -219,6 +225,7 @@ public class SubjectService {
         ServiceContract contract = ServiceContract.create(no, subject, cmd.tariffGroup(), cmd.validFrom(), cmd.validTo(),
                 cmd.exempt(), cmd.exemptReason(), cmd.exemptDecisionNo());
         contract.setNote(cmd.note());
+        contract.setQuotaKg(cmd.quotaKg());
         ServiceContract saved = contracts.save(contract);
         audit.record(actor, "CREATE_CONTRACT", CONTRACT, saved.getContractNo(), null, snapshot(saved));
         if (saved.isExempt()) {
@@ -316,6 +323,7 @@ public class SubjectService {
         m.put("validTo", c.getValidTo());
         m.put("exempt", c.isExempt());
         m.put("exemptReason", c.getExemptReason());
+        m.put("quotaKg", c.getQuotaKg());
         return m;
     }
 }
