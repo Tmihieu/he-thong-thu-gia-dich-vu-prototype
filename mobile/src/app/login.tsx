@@ -1,20 +1,16 @@
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ApiError } from '../api/client';
 import { DEMO_OTP, DEMO_PHONE } from '../features/auth/demo';
 import { useSession } from '../features/auth/SessionProvider';
 import { validateOtp, validatePhone } from '../features/auth/validate';
 import { citizenApi } from '../features/citizen/api';
-import { colors, radius, spacing } from '../shared/theme';
-import { Button } from '../shared/ui';
-
-function describe(err: unknown): string {
-  return err instanceof ApiError ? err.message : 'Có lỗi xảy ra. Vui lòng thử lại.';
-}
+import { errorMessage } from '../shared/errors';
+import { colors, radius, spacing, type as t } from '../shared/theme';
+import { Button, Callout, Field, InlineError, Muted, OfflineBar } from '../shared/ui';
 
 /** Đăng nhập người dân: SĐT → OTP (mô phỏng, không gửi SMS, O7). */
 export default function LoginScreen() {
@@ -39,11 +35,13 @@ export default function LoginScreen() {
   });
 
   const submitPhone = () => {
+    if (request.isPending) return;
     const error = validatePhone(phone);
     setFieldError(error);
     if (!error) request.mutate();
   };
   const submitOtp = () => {
+    if (verify.isPending) return;
     const error = validateOtp(otp);
     setFieldError(error);
     if (!error) verify.mutate();
@@ -59,31 +57,37 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <OfflineBar />
       <ScrollView
-        contentContainerStyle={[styles.container, { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.lg }]}
+        style={styles.flex}
+        contentContainerStyle={[styles.container, { paddingTop: insets.top + spacing.xxl, paddingBottom: insets.bottom + spacing.xl }]}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.hero}>
+        <View style={styles.brand}>
           <Image source={require('../../assets/logo-dong-thanh.jpg')} style={styles.logo} accessibilityLabel="Logo xã Đông Thạnh" />
-          <Text style={styles.brand}>Thu giá dịch vụ VSMT</Text>
-          <Text style={styles.heroSub}>Xã Đông Thạnh · ứng dụng người dân</Text>
+          <View style={styles.brandText}>
+            <Text accessibilityRole="header" style={styles.title}>
+              Thu giá dịch vụ VSMT
+            </Text>
+            <Muted>Xã Đông Thạnh, ứng dụng dành cho người dân</Muted>
+          </View>
         </View>
 
-        <View style={styles.card}>
+        <View style={styles.form}>
           {step === 'phone' ? (
             <>
-              <Text style={styles.title}>Đăng nhập</Text>
-              <Text style={styles.help}>Nhập số điện thoại đã đăng ký với UBND xã.</Text>
-              <TextInput
-                accessibilityLabel="Số điện thoại"
-                style={styles.input}
+              <Text accessibilityRole="header" style={styles.formTitle}>
+                Đăng nhập
+              </Text>
+              <Field
+                label="Số điện thoại"
+                hint="Số đã đăng ký với UBND xã"
+                error={fieldError}
                 value={phone}
                 onChangeText={(v) => {
                   setPhone(v);
                   setFieldError(null);
                 }}
-                placeholder="Số điện thoại"
-                placeholderTextColor={colors.textMuted}
                 keyboardType="phone-pad"
                 textContentType="telephoneNumber"
                 autoComplete="tel"
@@ -93,21 +97,24 @@ export default function LoginScreen() {
             </>
           ) : (
             <>
-              <Text style={styles.title}>Nhập mã OTP</Text>
-              <Text style={styles.help}>{notice}</Text>
-              <Text style={styles.phoneLine}>
-                Số điện thoại: <Text style={styles.phoneValue}>{phone}</Text>
+              <Text accessibilityRole="header" style={styles.formTitle}>
+                Nhập mã OTP
               </Text>
-              <TextInput
-                accessibilityLabel="Mã OTP"
-                style={[styles.input, styles.otpInput]}
+              <Callout tone="info" title="Đăng nhập mô phỏng">
+                {notice ?? 'Mã OTP là mã thử nghiệm cố định, không gửi tin nhắn SMS.'}
+              </Callout>
+              <Muted>
+                Số điện thoại: <Text style={styles.phoneValue}>{phone}</Text>
+              </Muted>
+              <Field
+                label="Mã OTP"
+                error={fieldError}
                 value={otp}
                 onChangeText={(v) => {
                   setOtp(v);
                   setFieldError(null);
                 }}
-                placeholder="Mã OTP"
-                placeholderTextColor={colors.textMuted}
+                style={styles.otpInput}
                 keyboardType="number-pad"
                 textContentType="oneTimeCode"
                 autoComplete="sms-otp"
@@ -119,58 +126,40 @@ export default function LoginScreen() {
             </>
           )}
 
-          {fieldError ? <Text style={styles.error}>{fieldError}</Text> : null}
-          {serverError ? <Text style={styles.error}>{describe(serverError)}</Text> : null}
+          {serverError ? <InlineError message={errorMessage(serverError, 'Có lỗi xảy ra. Vui lòng thử lại.')} /> : null}
 
           {step === 'phone' ? (
             <Button title="Nhận mã OTP" onPress={submitPhone} loading={request.isPending} />
           ) : (
             <>
               <Button title="Đăng nhập" onPress={submitOtp} loading={verify.isPending} />
-              <Pressable onPress={back} style={styles.linkButton} accessibilityRole="button">
-                <Text style={styles.link}>Đổi số điện thoại</Text>
-              </Pressable>
+              <Button title="Đổi số điện thoại" variant="quiet" onPress={back} />
             </>
           )}
         </View>
 
-        <Pressable onPress={() => router.push('/connection')} style={styles.linkButton} accessibilityRole="button">
-          <Text style={styles.link}>Kiểm tra kết nối máy chủ</Text>
-        </Pressable>
+        <Button title="Kiểm tra kết nối máy chủ" variant="quiet" icon="wifi-outline" onPress={() => router.push('/connection')} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.chrome },
-  container: { flexGrow: 1, padding: spacing.lg, gap: spacing.lg, backgroundColor: colors.chrome },
-  hero: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xl },
-  logo: { width: 96, height: 96, borderRadius: radius.pill, marginBottom: spacing.sm },
-  brand: { color: '#fff', fontSize: 24, fontWeight: '800', textAlign: 'center' },
-  heroSub: { color: colors.heroText, fontSize: 14 },
-  card: {
+  flex: { flex: 1, backgroundColor: colors.background },
+  container: { flexGrow: 1, paddingHorizontal: spacing.lg, gap: spacing.xl },
+  brand: { gap: spacing.lg },
+  logo: { width: 72, height: 72, borderRadius: radius.pill },
+  brandText: { gap: spacing.xs },
+  title: { ...t.title, fontSize: 28, lineHeight: 34, color: colors.text },
+  form: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    padding: spacing.xl,
-    gap: spacing.md,
-  },
-  title: { fontSize: 20, fontWeight: '700', color: colors.text },
-  help: { fontSize: 14, color: colors.textMuted, lineHeight: 20 },
-  phoneLine: { fontSize: 14, color: colors.textMuted },
-  phoneValue: { color: colors.text, fontWeight: '700' },
-  input: {
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm + 2,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 12,
-    fontSize: 17,
-    color: colors.text,
-    backgroundColor: colors.background,
+    borderColor: colors.divider,
+    padding: spacing.xl,
+    gap: spacing.lg,
   },
-  otpInput: { letterSpacing: 6, textAlign: 'center', fontSize: 22, fontWeight: '700' },
-  error: { color: colors.danger, fontSize: 14 },
-  linkButton: { alignItems: 'center', paddingVertical: spacing.sm },
-  link: { color: colors.heroText, fontSize: 14, textDecorationLine: 'underline' },
+  formTitle: { ...t.heading, color: colors.text },
+  phoneValue: { fontWeight: '700', color: colors.text },
+  otpInput: { letterSpacing: 6, textAlign: 'center', fontSize: 24, fontWeight: '700' },
 });
