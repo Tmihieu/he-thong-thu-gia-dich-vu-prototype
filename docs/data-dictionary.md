@@ -231,7 +231,6 @@ Ba địa bàn sau sáp nhập của xã Đông Thạnh.
 | Số hợp đồng với xã  | `commune_contract_no` | `text(50)`          | Không    | Xã       | 12/2026/HĐ-UBND  | Thật |                                           |
 | Tài khoản ngân hàng | `bank_account`        | `text(50)`          | Không    | Công ty  |                  | Thật | Dùng đối chiếu tiền chuyển khoản về xã    |
 | Ngân hàng           | `bank_name`           | `text(100)`         | Không    | Công ty  |                  | Thật |                                           |
-| Tỷ lệ công ty giữ lại (%) | `retained_percent` | `numeric(5,2)` | Không | Xã | 8 | Demo | `0..100`; NULL = chưa cấu hình (không giữ lại). Phải nộp xã = (phải thu − điều chỉnh) − phần giữ lại (góp ý BA 03/10) |
 
 
 **Enum `CompanyType`:** `COMPANY` Công ty · `COOPERATIVE` Hợp tác xã · `PUBLIC_UNIT` Đơn vị sự nghiệp công
@@ -1423,3 +1422,9 @@ Prototype có hai dạng: web `KN-2609-nnn` (YYMM) và app `PA-0926-nnn` (MMYY).
 ### HouseholdReminder — Nhật ký nhắc hộ dân nộp phí · `household_reminders` (V28)
 
 Mỗi cặp `(charge_id, stage)` chỉ có một dòng nên mỗi mốc nhắc chỉ gửi một lần dù job chạy lại. `stage`: `OPEN` (vừa phát hành, còn hạn), `DUE_SOON` (trước hạn đóng của hộ 3 ngày), `OVERDUE` (sau hạn 1 ngày). Chỉ nhắc khoản còn `UNPAID` và hộ có tài khoản app; thông báo loại `REMINDER` gửi vào app người dân. Job chạy 08:00 mỗi ngày (giờ Việt Nam); cán bộ xã chạy tay bằng `POST /api/notifications/household-reminders/run`. SMS/Zalo chưa làm.
+
+### Phần công ty cầm lại (thu gom) và đổi số nhân khẩu — chốt 03/10/2026
+
+- **Phần thu gom công ty cầm lại** không lưu thành cột: tính từ biểu giá của kỳ, mỗi khoản = `amount × collection_fee / monthly_total` của nhóm giá (làm tròn đồng). Sổ công ty–kỳ có thêm `retained` (Σ phần thu gom, đã trừ khoản kỳ khác xóa nợ ghi ở kỳ này) và `payable = due − adjustment − retained` (phải nộp xã). `remaining = payable − received`; nợ kỳ trước và nhắc nộp công ty cũng theo `payable`. Khoản không theo biểu giá (phí cố định) không có phần cầm lại. (Cột `companies.retained_percent` của V27 đã bỏ ở V30.)
+- **Phí xử lý** không thu và không đưa vào hệ thống (biểu giá chỉ có thu gom + vận chuyển).
+- **Đổi số người của hộ** áp từ kỳ sau: hợp đồng đang mở kết thúc hết kỳ đang chạy (`validTo` = ngày cuối kỳ), hợp đồng mới cùng nhóm giá mới bắt đầu ngày đầu kỳ kế tiếp, giữ nguyên miễn giảm và định mức. Không có kỳ nào đang chạy hoặc hợp đồng chưa bắt đầu thì đổi tại chỗ. Khoản đã phát hành giữ nhóm giá của nó.

@@ -92,28 +92,32 @@ describe('SubjectProfileForm', () => {
     expect(onSubmit.mock.calls[0]![0].contract).toBeNull();
   });
 
-  it('đổi số thành viên thì nhóm giá tự đổi theo; chọn tay nhóm không khớp thì báo lỗi, không gửi', async () => {
+  it('tạo mới: đổi số thành viên thì nhóm giá đã chọn tự đổi theo; chọn tay nhóm không khớp thì báo lỗi, không gửi', async () => {
     const onSubmit = vi.fn();
-    render(<SubjectProfileForm subject={existing} areas={areas} onSubmit={onSubmit} />);
+    render(<SubjectProfileForm areas={areas} onSubmit={onSubmit} />);
+    await userEvent.type(screen.getByLabelText('Số thành viên'), '4');
+    await pickOption(screen.getByRole('combobox', { name: 'Nhóm giá' }), 'HGĐ ≥ 3 người');
     await userEvent.clear(screen.getByLabelText('Số thành viên'));
     await userEvent.type(screen.getByLabelText('Số thành viên'), '2');
-    await waitFor(() => expect(screen.getByTitle('HGĐ ≤ 2 người')).toBeInTheDocument());
+    await waitFor(() => expect(document.querySelector('.ant-select-selection-item[title="HGĐ ≤ 2 người"]')).not.toBeNull());
 
     await pickOption(screen.getByRole('combobox', { name: 'Nhóm giá' }), 'HGĐ ≥ 3 người');
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu hồ sơ' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ' }));
     expect(await screen.findByText('Hộ có 2 thành viên phải chọn nhóm "HGĐ ≤ 2 người"')).toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it('đổi số thành viên rồi lưu: gửi nhóm giá đã tự đổi', async () => {
+  it('sửa hồ sơ đã có hợp đồng: đổi số thành viên không đổi nhóm giá trên form (máy chủ áp từ kỳ sau)', async () => {
     const onSubmit = vi.fn();
     render(<SubjectProfileForm subject={existing} areas={areas} onSubmit={onSubmit} />);
+    expect(screen.getByText('Đổi số người thì nhóm giá mới áp dụng từ kỳ thu sau.')).toBeInTheDocument();
     await userEvent.clear(screen.getByLabelText('Số thành viên'));
     await userEvent.type(screen.getByLabelText('Số thành viên'), '2');
     await userEvent.click(screen.getByRole('button', { name: 'Lưu hồ sơ' }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
-    expect(onSubmit.mock.calls[0]![0].contract).toMatchObject({ tariffGroup: 'HH_UP_TO_2' });
+    expect(onSubmit.mock.calls[0]![0].subject.memberCount).toBe(2);
+    expect(onSubmit.mock.calls[0]![0].contract).toMatchObject({ tariffGroup: 'HH_3_PLUS', validTo: undefined });
   });
 
   it('nhóm nguồn thải lớn có ô định mức kg và gửi quotaKg; nhóm khác không gửi', async () => {

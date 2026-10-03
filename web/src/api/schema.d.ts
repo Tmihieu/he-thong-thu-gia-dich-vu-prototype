@@ -2122,7 +2122,6 @@ export interface components {
             communeContractNo?: string;
             bankAccount?: string;
             bankName?: string;
-            retainedPercent?: number;
         };
         CompanyDto: {
             /** Format: int64 */
@@ -2146,8 +2145,6 @@ export interface components {
             communeContractNo: string | null;
             bankAccount: string | null;
             bankName: string | null;
-            /** @description % công ty giữ lại trên số phải thu; null = chưa cấu hình */
-            retainedPercent: number | null;
         };
         AreaRequest: {
             name: string;

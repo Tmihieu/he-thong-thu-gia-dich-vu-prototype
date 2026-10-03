@@ -64,6 +64,8 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
   const tariffGroup = Form.useWatch('tariffGroup', form);
   const current = subject?.currentContract ?? null;
   const showContract = current !== null || hasContract;
+  // Hộ gia đình đã có đăng ký: nhóm giá do số người quyết định và máy chủ tự đổi từ kỳ sau, không sửa tay ở đây.
+  const householdGroupLocked = current !== null && (current.tariffGroup === 'HH_UP_TO_2' || current.tariffGroup === 'HH_3_PLUS');
 
   const initialValues: Partial<FormValues> = subject
     ? {
@@ -123,9 +125,10 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
       initialValues={initialValues}
       onFinish={finish}
       onValuesChange={(changed, all) => {
-        // Đổi số người thì nhóm giá hộ gia đình đổi theo (máy chủ cũng tự đổi), khỏi bắt chọn tay.
+        // Tạo mới: đổi số người thì nhóm giá hộ gia đình đổi theo, khỏi bắt chọn tay. Hồ sơ đã có hợp đồng thì máy chủ
+        // tự đổi nhóm giá từ kỳ sau, form không đụng tới.
         const group = all.tariffGroup;
-        if ('memberCount' in changed && all.type === 'HOUSEHOLD' && all.memberCount && (group === 'HH_UP_TO_2' || group === 'HH_3_PLUS')) {
+        if (!current && 'memberCount' in changed && all.type === 'HOUSEHOLD' && all.memberCount && (group === 'HH_UP_TO_2' || group === 'HH_3_PLUS')) {
           form.setFieldValue('tariffGroup', all.memberCount <= 2 ? 'HH_UP_TO_2' : 'HH_3_PLUS');
         }
       }}
@@ -189,7 +192,12 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
         </Col>
         <Col xs={24} md={12}>
           {type === 'HOUSEHOLD' ? (
-            <Form.Item label="Số thành viên" name="memberCount" rules={[{ required: true, message: 'Vui lòng nhập số thành viên' }]}>
+            <Form.Item
+              label="Số thành viên"
+              name="memberCount"
+              rules={[{ required: true, message: 'Vui lòng nhập số thành viên' }]}
+              extra={current ? 'Đổi số người thì nhóm giá mới áp dụng từ kỳ thu sau.' : undefined}
+            >
               <InputNumber min={1} max={99} style={{ width: '100%' }} />
             </Form.Item>
           ) : (
@@ -229,10 +237,11 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
               label="Nhóm giá"
               name="tariffGroup"
               dependencies={['type', 'memberCount', 'validTo']}
-              rules={[{ required: true, message: 'Vui lòng chọn nhóm giá' }, groupFitsMembers]}
+              rules={[{ required: true, message: 'Vui lòng chọn nhóm giá' }, ...(current ? [] : [groupFitsMembers])]}
             >
               <Select
                 aria-label="Nhóm giá"
+                disabled={householdGroupLocked}
                 placeholder="Chọn nhóm"
                 options={Object.entries(TARIFF_GROUP_LABELS).map(([value, label]) => ({ value, label }))}
               />

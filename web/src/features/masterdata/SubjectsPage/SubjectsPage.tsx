@@ -11,6 +11,7 @@ import {
   TARIFF_GROUP_LABELS,
 } from '../../../shared/labels';
 import {
+  type ContractRequest,
   type Subject,
   type SubjectQuery,
   useAddContract,
@@ -29,6 +30,18 @@ function errorMessage(err: unknown): string {
 }
 
 type Editing = { mode: 'create' } | { mode: 'edit'; subject: Subject } | null;
+
+type CurrentContract = NonNullable<Subject['currentContract']>;
+
+/** Hợp đồng trên form không khác hợp đồng đang hiệu lực (nhóm giá, hiệu lực, định mức). */
+function sameContract(req: ContractRequest, c: CurrentContract): boolean {
+  return (
+    req.tariffGroup === c.tariffGroup &&
+    req.validFrom === c.validFrom &&
+    (req.validTo ?? null) === c.validTo &&
+    (req.quotaKg ?? null) === (c.quotaKg ?? null)
+  );
+}
 
 /** Lịch sử đổi số nhân khẩu của hộ (đọc từ nhật ký thao tác). Chỉ hiện khi từng có thay đổi. */
 function MemberHistory({ subjectId }: { subjectId: number }) {
@@ -78,8 +91,12 @@ export function SubjectsPage() {
       if (editing?.mode === 'edit') {
         const id = editing.subject.id;
         await update.mutateAsync({ id, body: values.subject });
+        const current = editing.subject.currentContract;
         if (values.contract && values.contractId !== null) {
-          await updateContract.mutateAsync({ id: values.contractId, body: values.contract });
+          // Đổi số người làm máy chủ tự tách hợp đồng theo kỳ; gửi lại hợp đồng cũ nguyên vẹn sẽ mở lại hợp đồng đã đóng.
+          if (!current || !sameContract(values.contract, current)) {
+            await updateContract.mutateAsync({ id: values.contractId, body: values.contract });
+          }
         } else if (values.contract) {
           await addContract.mutateAsync({ subjectId: id, body: values.contract });
         }
