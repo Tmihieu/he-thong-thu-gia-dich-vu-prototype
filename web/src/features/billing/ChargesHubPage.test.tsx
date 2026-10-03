@@ -46,6 +46,8 @@ function baseApi(publish: () => Response) {
 }
 
 async function fillAndPreview() {
+  await userEvent.click(await screen.findByRole('tab', { name: 'Phiếu YCT' }));
+  await userEvent.click(await screen.findByRole('button', { name: /Lập phiếu YCT/ }));
   await pickOption(await screen.findByRole('combobox', { name: 'Kỳ thu' }), 'Tháng 10/2026 (BG-65-2026)');
   pickDate(screen.getByLabelText('Hạn hộ đóng'), '25/10/2026');
   await userEvent.click(screen.getByRole('button', { name: 'Xem trước' }));

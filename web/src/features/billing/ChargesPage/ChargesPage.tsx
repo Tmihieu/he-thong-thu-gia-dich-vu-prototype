@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
 import { brand } from '../../../app/theme';
-import { CHARGE_STATUS_COLORS, CHARGE_STATUS_LABELS } from '../../../shared/labels';
+import { CHARGE_STATUS_COLORS, CHARGE_STATUS_LABELS, TARIFF_GROUP_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
 import { CreateApprovalModal } from '../../leadership/CreateApprovalModal';
 import { useAreas, useCompanies, usePeriods } from '../../masterdata/api';
@@ -106,6 +106,7 @@ export function ChargesPage() {
             ),
           },
           { title: 'Kỳ', dataIndex: 'periodCode' },
+          { title: 'Nhóm giá', dataIndex: 'tariffGroup', render: (g: Charge['tariffGroup']) => (g ? TARIFF_GROUP_LABELS[g] : '—') },
           { title: 'Số tiền', dataIndex: 'amount', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           { title: 'Công ty phụ trách', dataIndex: 'companyCode' },
           { title: 'Trạng thái', render: (_, c) => <ChargeStatusTag charge={c} /> },

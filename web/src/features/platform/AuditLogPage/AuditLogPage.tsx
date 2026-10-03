@@ -2,6 +2,7 @@ import { Col, DatePicker, Input, Row, Select, Space, Table, Typography } from 'a
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { PageHeader } from '../../../shared/PageHeader';
 import type { Role } from '../../../app/auth/authContext';
 import { ROLE_LABELS } from '../../../app/layout/menuConfig';
 import { DateText } from '../../../shared/DateText';
@@ -49,9 +50,7 @@ export function AuditLogPage() {
 
   return (
     <>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        Nhật ký
-      </Typography.Title>
+      <PageHeader title="Nhật ký" description="Lịch sử thao tác của người dùng trong hệ thống." />
       <Space wrap style={{ marginBottom: 16 }}>
         <DatePicker.RangePicker
           format="DD/MM/YYYY"

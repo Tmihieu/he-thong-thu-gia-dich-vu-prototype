@@ -41,6 +41,7 @@ export function StreetSearch({ districtId, value, onChange }: Props) {
     const mine = ++latest.current;
     const q = text.trim();
     if (q.length < MIN_CHARS) {
+      /* eslint-disable react-hooks/set-state-in-effect -- đặt lại trạng thái khi từ khóa ngắn / bắt đầu gọi yêu cầu có debounce */
       setResult(null);
       setLoading(false);
       setFailed(false);
@@ -48,6 +49,7 @@ export function StreetSearch({ districtId, value, onChange }: Props) {
     }
     const controller = new AbortController();
     setLoading(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
     const timer = setTimeout(() => {
       suggestStreets(q, districtId, controller.signal)
         .then((r) => {

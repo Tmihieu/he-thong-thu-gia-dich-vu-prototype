@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { PageHeader } from '../../../shared/PageHeader';
 import { DateText } from '../../../shared/DateText';
 import { COMPANY_TYPE_LABELS, PROGRESS_COLORS, PROGRESS_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
@@ -33,7 +34,7 @@ const statusTag = (s: Company['status']) =>
 
 /**
  * Công ty môi trường. Cán bộ xã: danh sách, sửa, phân công tổ chưa có công ty, tiến độ nộp theo kỳ.
- * Quản trị ({@code admin}): thêm/sửa công ty và xem địa bàn công ty đang phụ trách.
+ * Quản trị ({@code admin}): xem địa bàn công ty đang phụ trách. Cả hai vai trò thêm/sửa công ty (BR-MD-03).
  */
 export function CompaniesPage({ admin = false }: { admin?: boolean }) {
   const { message } = App.useApp();
@@ -79,11 +80,7 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
 
   return (
     <>
-      {!admin && (
-        <Typography.Title level={3} style={{ marginTop: 0 }}>
-          Công ty môi trường
-        </Typography.Title>
-      )}
+      {!admin && <PageHeader title="Công ty môi trường" description="Công ty thu gom, khu vực phụ trách và tiến độ nộp tiền về xã." />}
       <Flex wrap gap={8} justify="space-between" style={{ marginBottom: 16 }}>
         <Space wrap>
           <Input.Search allowClear placeholder="Tên, mã, đầu mối, điện thoại" style={{ width: 280 }} onChange={(e) => setQ(e.target.value)} />
@@ -97,11 +94,9 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
             ]}
           />
         </Space>
-        {admin && (
-          <Button type="primary" onClick={() => openForm(null)}>
-            + Thêm công ty
-          </Button>
-        )}
+        <Button type="primary" onClick={() => openForm(null)}>
+          + Thêm công ty
+        </Button>
       </Flex>
       <Table<Company>
         rowKey="id"

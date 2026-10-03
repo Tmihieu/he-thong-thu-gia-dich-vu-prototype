@@ -49,7 +49,7 @@ export function LocationsSettings() {
     />
     <Modal title={`Sửa địa bàn ${district?.code ?? ''}`} open={!!district} destroyOnHidden onCancel={() => setDistrict(null)}
       onOk={() => districtForm.submit()} okText="Lưu thay đổi" cancelText="Hủy" confirmLoading={updateDistrict.isPending}>
-      <Form form={districtForm} layout="vertical" preserve={false} initialValues={district ?? {}} onFinish={values => {
+      <Form name="district" form={districtForm} layout="vertical" preserve={false} initialValues={district ?? {}} onFinish={values => {
         if (district) updateDistrict.mutate({ id: district.id, body: { name: values.name.trim(), note: values.note?.trim() || null, sortOrder: values.sortOrder ?? null } },
           { onSuccess: () => { setDistrict(null); message.success('Đã lưu địa bàn'); } });
       }}>
@@ -61,7 +61,7 @@ export function LocationsSettings() {
     </Modal>
     <Modal title={`Sửa khu vực ${area?.code ?? ''}`} open={!!area} destroyOnHidden onCancel={() => setArea(null)}
       onOk={() => areaForm.submit()} okText="Lưu thay đổi" cancelText="Hủy" confirmLoading={updateArea.isPending}>
-      <Form form={areaForm} layout="vertical" preserve={false} initialValues={area ?? {}} onFinish={values => {
+      <Form name="area" form={areaForm} layout="vertical" preserve={false} initialValues={area ?? {}} onFinish={values => {
         if (area) updateArea.mutate({ id: area.id, body: { name: values.name.trim(), status: values.status } },
           { onSuccess: () => { setArea(null); message.success('Đã lưu khu vực'); } });
       }}>

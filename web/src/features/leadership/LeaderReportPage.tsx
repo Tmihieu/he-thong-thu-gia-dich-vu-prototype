@@ -3,6 +3,7 @@ import { Alert, Button, Card, Select, Space, Table, Tag, Typography } from 'antd
 import { useMemo, useState } from 'react';
 
 import { ApiError } from '../../api/client';
+import { PageHeader } from '../../shared/PageHeader';
 import { PROGRESS_LABELS, RECONCILIATION_LABELS } from '../../shared/labels';
 import { MoneyText } from '../../shared/MoneyText';
 import { PeriodSelect } from '../masterdata/PeriodSelect';
@@ -65,9 +66,7 @@ export function LeaderReportPage() {
 
   return (
     <>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        Báo cáo tổng hợp
-      </Typography.Title>
+      <PageHeader title="Báo cáo tổng hợp" description="Số liệu từng kỳ theo công ty và tổ; xuất ra file CSV." />
       <Space style={{ marginBottom: 16 }} wrap>
         <PeriodSelect value={periodId} onChange={setPeriodId} />
         <Select
