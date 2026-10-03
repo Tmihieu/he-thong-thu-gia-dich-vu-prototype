@@ -81,6 +81,19 @@ class LedgerApiIT extends IntegrationTest {
     }
 
     @Test
+    void exemptChargesAreOutOfTheHouseholdCountDenominator() throws Exception {
+        // DV01 có 4 khoản; một khoản miễn giảm thì chỉ còn 3 khoản cần thu, vẫn đếm 1 hộ miễn.
+        jdbc.update("update charges set status = 'EXEMPT', amount = 0 where id = (select min(id) from charges"
+                + " where company_id = ? and id <> ?)", fx.dv01.getId(), fx.chargeId("DTH-H000001"));
+
+        ledger(fx.officer).andExpect(jsonPath("$[0].chargeCount").value(3));
+        mvc.perform(get("/api/remittance/area-progress").param("periodId", fx.october.getId().toString())
+                .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer)))
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].chargeCount", contains(3)))
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].exemptCount", contains(1)));
+    }
+
+    @Test
     void companySeesOnlyItsOwnRowAndCollectorIsDenied() throws Exception {
         ledger(fx.dv07Manager)
                 .andExpect(jsonPath("$", hasSize(1)))
