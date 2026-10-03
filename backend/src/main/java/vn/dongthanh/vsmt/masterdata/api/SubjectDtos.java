@@ -31,10 +31,11 @@ public final class SubjectDtos {
             boolean exempt,
             @Size(max = 255) String exemptReason,
             @Size(max = 50) String exemptDecisionNo,
-            @Size(max = 2000) String note) {
+            @Size(max = 2000) String note,
+            @Schema(description = "Định mức kg/tháng (nhóm tính theo ký)") @Positive(message = "phải lớn hơn 0") Integer quotaKg) {
 
         ContractCommand toCommand() {
-            return new ContractCommand(tariffGroup, validFrom, validTo, exempt, exemptReason, exemptDecisionNo, note);
+            return new ContractCommand(tariffGroup, validFrom, validTo, exempt, exemptReason, exemptDecisionNo, note, quotaKg);
         }
     }
 
@@ -72,11 +73,12 @@ public final class SubjectDtos {
             @Schema(requiredMode = RequiredMode.REQUIRED) boolean exempt,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String exemptReason,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String exemptDecisionNo,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String note) {
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String note,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true, description = "Định mức kg/tháng") Integer quotaKg) {
 
         static ContractDto of(ServiceContract c) {
             return new ContractDto(c.getId(), c.getContractNo(), c.getTariffGroup(), c.getValidFrom(), c.getValidTo(),
-                    c.isExempt(), c.getExemptReason(), c.getExemptDecisionNo(), c.getNote());
+                    c.isExempt(), c.getExemptReason(), c.getExemptDecisionNo(), c.getNote(), c.getQuotaKg());
         }
     }
 

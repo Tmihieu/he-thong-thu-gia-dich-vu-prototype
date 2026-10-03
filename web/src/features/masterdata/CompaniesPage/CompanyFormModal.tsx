@@ -98,8 +98,8 @@ export function CompanyFormModal({ company, open, submitting, error, onSubmit, o
           <Select
             aria-label="Trạng thái"
             options={[
-              { value: 'ACTIVE', label: 'Hoạt động' },
-              { value: 'INACTIVE', label: 'Tạm ngưng' },
+              { value: 'ACTIVE', label: 'Đang hợp tác' },
+              { value: 'INACTIVE', label: 'Ngừng hợp tác' },
             ]}
           />
         </Form.Item>

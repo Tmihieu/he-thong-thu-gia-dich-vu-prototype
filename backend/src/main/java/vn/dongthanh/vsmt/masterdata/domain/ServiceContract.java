@@ -55,6 +55,11 @@ public class ServiceContract extends BaseEntity {
     @Setter
     private String note;
 
+    /** Định mức kg/tháng cho nhóm theo ký (BY_VOLUME); null = chưa cân, chưa lập được khoản. */
+    @Setter
+    @Column
+    private Integer quotaKg;
+
     public static ServiceContract create(String contractNo, ServiceSubject subject, TariffGroup group,
             LocalDate validFrom, LocalDate validTo, boolean exempt, String exemptReason, String exemptDecisionNo) {
         ServiceContract c = new ServiceContract();

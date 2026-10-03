@@ -386,6 +386,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/notifications/household-reminders/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Chạy ngay việc nhắc hộ dân nộp phí hôm nay (job tự chạy 08:00 mỗi ngày); không gửi trùng */
+        post: operations["run"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/masterdata/tariffs": {
         parameters: {
             query?: never;
@@ -1284,6 +1301,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/masterdata/subjects/{id}/member-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lịch sử thay đổi số nhân khẩu của hộ, mới nhất trước */
+        get: operations["memberHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/masterdata/periods/{id}": {
         parameters: {
             query?: never;
@@ -2129,6 +2163,11 @@ export interface components {
             exemptReason?: string;
             exemptDecisionNo?: string;
             note?: string;
+            /**
+             * Format: int32
+             * @description Định mức kg/tháng (nhóm tính theo ký)
+             */
+            quotaKg?: number;
         };
         SubjectRequest: {
             /** @enum {string} */
@@ -2164,6 +2203,11 @@ export interface components {
             exemptReason: string | null;
             exemptDecisionNo: string | null;
             note: string | null;
+            /**
+             * Format: int32
+             * @description Định mức kg/tháng
+             */
+            quotaKg: number | null;
         };
         SubjectDto: {
             /** Format: int64 */
@@ -2568,6 +2612,10 @@ export interface components {
         UnreadCountDto: {
             /** Format: int64 */
             unreadCount: number;
+        };
+        RunResult: {
+            /** Format: int32 */
+            sent: number;
         };
         CreateTariffRequest: {
             /** @example BG-70-2027 */
@@ -3375,6 +3423,16 @@ export interface components {
             progress: "NO_COMPANY" | "PAID_IN_FULL" | "OVERDUE" | "PARTIAL" | "NOT_PAID";
             /** @enum {string} */
             reconciliation: "MATCHED" | "PENDING" | "MISMATCH";
+            /**
+             * Format: int64
+             * @description Phần công ty giữ lại theo tỷ lệ cấu hình
+             */
+            retained: number;
+            /**
+             * Format: int64
+             * @description Phải nộp xã = phải thu − điều chỉnh − phần giữ lại
+             */
+            payable: number;
         };
         AreaProgressDto: {
             /** Format: int64 */
@@ -3393,6 +3451,11 @@ export interface components {
             chargeCount: number;
             /** Format: int64 */
             paidCount: number;
+            /**
+             * Format: int64
+             * @description Số khoản miễn giảm 100%
+             */
+            exemptCount: number;
             /** Format: int64 */
             subjectCount: number;
             /** Format: double */
@@ -3445,6 +3508,18 @@ export interface components {
             page: number;
             /** Format: int32 */
             size: number;
+        };
+        MemberChangeDto: {
+            /** Format: date-time */
+            at: string;
+            by: string;
+            /**
+             * Format: int32
+             * @description Số người trước đó; null khi tạo hồ sơ
+             */
+            from: number | null;
+            /** Format: int32 */
+            to: number | null;
         };
         FeeTypeDto: {
             /** Format: int64 */
@@ -4551,6 +4626,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["UnreadCountDto"];
+                };
+            };
+        };
+    };
+    run: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RunResult"];
                 };
             };
         };
@@ -6116,6 +6211,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["UnreadCountDto"];
+                };
+            };
+        };
+    };
+    memberHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MemberChangeDto"][];
                 };
             };
         };

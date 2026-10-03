@@ -31,7 +31,7 @@ function Target({ a }: { a: Approval }) {
       </div>
       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
         {a.type === 'EXEMPTION' ? (
-          <>Hợp đồng {a.contractNo} · miễn 100%</>
+          <>Miễn 100%</>
         ) : (
           <>
             {a.chargeCode} · kỳ {periodLabel(a.periodCode)} · {a.companyCode} · khoản <MoneyText value={a.chargeAmount} />
@@ -177,7 +177,7 @@ export function ApprovalsPage() {
 }
 
 const CONSEQUENCE: Record<ApprovalType, [string, string]> = {
-  EXEMPTION: ['Ghi nhận miễn 100% xã đã bật trên hợp đồng.', 'Bỏ cờ miễn; khoản Miễn giảm của kỳ chưa khóa quay về Chưa thu.'],
+  EXEMPTION: ['Ghi nhận miễn 100% xã đã bật cho hộ.', 'Bỏ cờ miễn; khoản Miễn giảm của kỳ chưa khóa quay về Chưa thu.'],
   REFUND: ['Ghi khoản hoàn, số "đã thu" của công ty giảm tương ứng. Công ty trả lại tiền cho hộ.', 'Không thay đổi số liệu.'],
   WRITE_OFF: ['Khoản chuyển "Đã xóa nợ", không còn tính vào số công ty phải thu / phải nộp.', 'Không thay đổi số liệu.'],
 };

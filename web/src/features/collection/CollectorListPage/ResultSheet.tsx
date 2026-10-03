@@ -1,51 +1,27 @@
-import { BankOutlined, CalendarOutlined, HomeOutlined, StopOutlined, WalletOutlined } from '@ant-design/icons';
+import { BankOutlined, WalletOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, DatePicker, Drawer, Form, Input, InputNumber, Radio, Select, Typography } from 'antd';
+import { Alert, App, Button, Drawer, Form, Radio, Select, Typography } from 'antd';
 import type { ReactNode } from 'react';
-import dayjs, { type Dayjs } from 'dayjs';
 import { useEffect } from 'react';
 
 import { api, ApiError } from '../../../api/client';
 import { formatMoney } from '../../../shared/format';
 import { MoneyText } from '../../../shared/MoneyText';
-import { type Collector, type CollectorCharge, collectionKeys, type PaymentResult, type Visit } from '../api';
-import { RESULT_LABELS, type ResultKind } from '../workState';
+import { type Collector, type CollectorCharge, collectionKeys, type PaymentResult } from '../api';
 
-/** Ô chọn kết quả như prototype (clm-result-grid). */
-const TILES: { value: ResultKind; label: string; icon: ReactNode }[] = [
+type Method = 'CASH' | 'TRANSFER';
+
+/**
+ * Góp ý BA 03/10: người đi thu chỉ đánh dấu đã thu và chọn hình thức, thu đủ số còn thiếu. Vắng nhà / hẹn / từ chối /
+ * thu một phần chỉ ẩn trên giao diện; API lượt ghé và thu một phần vẫn giữ.
+ */
+const TILES: { value: Method; label: string; icon: ReactNode }[] = [
   { value: 'CASH', label: 'Đã thu tiền mặt', icon: <WalletOutlined /> },
   { value: 'TRANSFER', label: 'Đã thu chuyển khoản', icon: <BankOutlined /> },
-  { value: 'ABSENT', label: 'Vắng nhà', icon: <HomeOutlined /> },
-  { value: 'APPOINTMENT', label: 'Đã hẹn', icon: <CalendarOutlined /> },
-  { value: 'REFUSED', label: 'Từ chối nộp', icon: <StopOutlined /> },
 ];
 
-function tip(result: ResultKind | undefined) {
-  if (result === 'CASH' || result === 'TRANSFER')
-    return (
-      <>
-        <strong>Đã thu:</strong> hệ thống xuất biên lai điện tử và gửi cho hộ ngay, không nhập số biên lai.
-      </>
-    );
-  if (result === 'REFUSED')
-    return (
-      <>
-        <strong>Từ chối nộp:</strong> ghi rõ lý do; công ty và xã sẽ thấy để xử lý.
-      </>
-    );
-  return (
-    <>
-      <strong>Chưa thu:</strong> hộ giữ trạng thái chưa thu, ghi ngày quay lại để nhắc lịch.
-    </>
-  );
-}
-
 interface Values {
-  result: ResultKind;
-  amount?: number;
-  bankRef?: string;
-  revisitDate?: Dayjs;
-  note?: string;
+  result: Method;
   collectorId?: number;
 }
 
@@ -73,41 +49,24 @@ interface Props {
   defaultCollectorId?: number;
 }
 
-/** Bottom sheet cập nhật kết quả thu một hộ: tiền mặt / chuyển khoản / vắng / hẹn (ngày hẹn) / từ chối. */
+/** Bottom sheet ghi nhận đã thu một hộ: tiền mặt / chuyển khoản, thu đủ số còn thiếu. */
 export function ResultSheet({ item, onClose, collectors, defaultCollectorId }: Props) {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [form] = Form.useForm<Values>();
-  const result = Form.useWatch('result', form);
-  const paying = result === 'CASH' || result === 'TRANSFER';
-
   const submit = useMutation({
     mutationFn: async (v: Values) => {
       const charge = item!.charge;
-      if (v.result === 'CASH' || v.result === 'TRANSFER') {
-        const key = `payment:${charge.id}`;
-        const r = await api.post<PaymentResult>('/api/collection/payments', {
-          chargeId: charge.id,
-          amount: v.amount,
-          method: v.result,
-          clientRequestId: requestIdFor(key),
-          bankRef: v.result === 'TRANSFER' ? v.bankRef?.trim() || undefined : undefined,
-          note: v.note?.trim() || undefined,
-          collectorId: v.collectorId,
-        });
-        pendingRequestIds.delete(key);
-        return `Đã thu ${formatMoney(r.payment.amount)} · ${charge.subjectName}`;
-      }
-      const key = `visit:${charge.id}`;
-      await api.post<Visit>('/api/collection/visits', {
+      const key = `payment:${charge.id}`;
+      const r = await api.post<PaymentResult>('/api/collection/payments', {
         chargeId: charge.id,
-        result: v.result,
-        revisitDate: v.revisitDate?.format('YYYY-MM-DD'),
-        note: v.note?.trim() || undefined,
+        amount: item!.remainingAmount,
+        method: v.result,
         clientRequestId: requestIdFor(key),
+        collectorId: v.collectorId,
       });
       pendingRequestIds.delete(key);
-      return `Đã ghi ${RESULT_LABELS[v.result].toLowerCase()} · ${charge.subjectName}`;
+      return `Đã thu ${formatMoney(r.payment.amount)} · ${charge.subjectName}`;
     },
     onSuccess: (text) => {
       message.success(text);
@@ -117,7 +76,7 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId }: P
   });
 
   useEffect(() => {
-    if (item) form.setFieldsValue({ result: 'CASH', amount: item.remainingAmount, collectorId: defaultCollectorId });
+    if (item) form.setFieldsValue({ result: 'CASH', collectorId: defaultCollectorId });
   }, [item, form, defaultCollectorId]);
 
   const remaining = item?.remainingAmount ?? 0;
@@ -134,7 +93,7 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId }: P
     >
       {item && (
         <Typography.Paragraph type="secondary" style={{ marginTop: -8 }}>
-          {item.charge.subjectName} · {item.charge.subjectAddress} · còn thiếu <MoneyText value={remaining} strong />
+          {item.charge.subjectName} · {item.charge.subjectAddress} · số tiền thu <MoneyText value={remaining} strong />
         </Typography.Paragraph>
       )}
       {submit.error && (
@@ -164,26 +123,7 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId }: P
             ))}
           </Radio.Group>
         </Form.Item>
-        {paying && (
-          <Form.Item
-            name="amount"
-            label="Số tiền thực thu"
-            rules={[
-              { required: true, message: 'Vui lòng nhập số tiền' },
-              { type: 'number', min: 1, message: 'Số tiền phải lớn hơn 0' },
-              { type: 'number', max: remaining, message: `Không vượt số còn thiếu (${formatMoney(remaining)})` },
-            ]}
-          >
-            <InputNumber<number>
-              style={{ width: '100%' }}
-              inputMode="numeric"
-              addonAfter="đ"
-              formatter={(v) => (v === undefined || v === null || `${v}` === '' ? '' : Number(v).toLocaleString('vi-VN'))}
-              parser={(v) => Number((v ?? '').replace(/\D/g, ''))}
-            />
-          </Form.Item>
-        )}
-        {paying && collectors && (
+        {collectors && (
           <Form.Item
             name="collectorId"
             label="Người đi thu đã nhận tiền"
@@ -195,29 +135,9 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId }: P
             />
           </Form.Item>
         )}
-        {result === 'TRANSFER' && (
-          <Form.Item name="bankRef" label="Mã giao dịch ngân hàng">
-            <Input maxLength={50} />
-          </Form.Item>
-        )}
-        {(result === 'APPOINTMENT' || result === 'ABSENT') && (
-          <Form.Item
-            name="revisitDate"
-            label={result === 'APPOINTMENT' ? 'Ngày hẹn' : 'Ngày quay lại'}
-            rules={result === 'APPOINTMENT' ? [{ required: true, message: 'Vui lòng chọn ngày hẹn' }] : []}
-          >
-            <DatePicker
-              format="DD/MM/YYYY"
-              style={{ width: '100%' }}
-              inputReadOnly={false}
-              disabledDate={(d) => d.isBefore(dayjs(), 'day')}
-            />
-          </Form.Item>
-        )}
-        <Form.Item name="note" label="Ghi chú">
-          <Input.TextArea rows={2} maxLength={500} placeholder="Ví dụ: hẹn sau 18:00, để giấy báo..." />
-        </Form.Item>
-        <p className="clm-tip">{tip(result)}</p>
+        <p className="clm-tip">
+          <strong>Đã thu:</strong> hệ thống ghi nhận và sinh mã thanh toán; hộ chưa nộp thì cứ để chưa thu.
+        </p>
         <div className="clm-sheet-actions">
           <Button size="large" onClick={onClose}>
             Hủy

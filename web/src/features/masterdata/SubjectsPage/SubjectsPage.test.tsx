@@ -44,7 +44,7 @@ describe('Hồ sơ hộ (cán bộ xã)', () => {
     );
   });
 
-  it('sửa hồ sơ ghi xuống hai API: đối tượng rồi hợp đồng', async () => {
+  it('sửa hồ sơ chỉ đổi thông tin hộ: chỉ ghi đối tượng, không gửi lại hợp đồng chưa đổi', async () => {
     const fetchFn = mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
       'GET /api/masterdata/areas': () => jsonResponse(200, areas),
@@ -60,7 +60,47 @@ describe('Hồ sơ hộ (cán bộ xã)', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     const writes = fetchFn.mock.calls.filter(([, init]) => (init as RequestInit | undefined)?.method === 'PUT').map(([url]) => url);
+    expect(writes).toEqual(['/api/masterdata/subjects/128']);
+  });
+
+  it('sửa hợp đồng (hiệu lực đến) ghi xuống hai API: đối tượng rồi hợp đồng', async () => {
+    const fetchFn = mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
+      'GET /api/masterdata/areas': () => jsonResponse(200, areas),
+      'GET /api/masterdata/subjects': () => jsonResponse(200, { items: [subject], total: 1, page: 0, size: 20 }),
+      'PUT /api/masterdata/subjects/128': () => jsonResponse(200, subject),
+      'PUT /api/masterdata/contracts/62': () => jsonResponse(200, subject.currentContract),
+    });
+    renderApp('/commune/subjects');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'DTH-H000128' }));
+    const drawer = await screen.findByRole('dialog');
+    pickDate(within(drawer).getByLabelText('Hiệu lực đến'), '31/12/2026');
+    await userEvent.click(within(drawer).getByRole('button', { name: 'Lưu hồ sơ' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    const writes = fetchFn.mock.calls.filter(([, init]) => (init as RequestInit | undefined)?.method === 'PUT').map(([url]) => url);
     expect(writes).toEqual(['/api/masterdata/subjects/128', '/api/masterdata/contracts/62']);
+  });
+
+  it('mở hồ sơ hiện lịch sử đổi số nhân khẩu, mới nhất trước', async () => {
+    mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
+      'GET /api/masterdata/areas': () => jsonResponse(200, areas),
+      'GET /api/masterdata/subjects': () => jsonResponse(200, { items: [subject], total: 1, page: 0, size: 20 }),
+      'GET /api/masterdata/subjects/128/member-history': () =>
+        jsonResponse(200, [
+          { at: '2026-10-02T03:00:00Z', by: 'canbo_xa', from: 2, to: 4 },
+          { at: '2026-01-05T03:00:00Z', by: 'canbo_xa', from: null, to: 2 },
+        ]),
+    });
+    renderApp('/commune/subjects');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'DTH-H000128' }));
+    const drawer = await screen.findByRole('dialog');
+    expect(await within(drawer).findByText('Lịch sử số nhân khẩu')).toBeInTheDocument();
+    expect(within(drawer).getByText('2 → 4')).toBeInTheDocument();
+    expect(within(drawer).getByText('Tạo hồ sơ: 2')).toBeInTheDocument();
   });
 
   it('ngừng cung cấp dịch vụ gửi ngày kết thúc', async () => {

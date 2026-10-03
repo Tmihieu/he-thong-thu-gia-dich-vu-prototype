@@ -9,10 +9,18 @@ import { ResultSheet } from '../CollectorListPage/ResultSheet';
 import { byChipOrder, countChips, WORK_CHIPS, type WorkChip, workChip, workState } from '../workState';
 
 /** "Hộ được giao" của công ty (nằm dưới tổng quan): khoản các tổ mình phụ trách trong kỳ; lọc khu vực / người đi thu / trạng thái; ghi thay. */
-export function CompanyHouseholdsPage({ periodId }: { periodId: number | undefined }) {
+export function CompanyHouseholdsPage({
+  periodId,
+  chip,
+  onChipChange: setChip,
+}: {
+  periodId: number | undefined;
+  /** Nút lọc trạng thái do tổng quan giữ, để bấm thẻ "Số hộ đã thu" / "Số tiền đã thu" lọc sẵn hộ đã thu. */
+  chip: WorkChip;
+  onChipChange: (chip: WorkChip) => void;
+}) {
   const [areaId, setAreaId] = useState<number>();
   const [collectorId, setCollectorId] = useState<number>();
-  const [chip, setChip] = useState<WorkChip>('ALL');
   const [q, setQ] = useState('');
   const [editing, setEditing] = useState<CollectorCharge | null>(null);
   const work = useCompanyWork(periodId);
@@ -55,7 +63,7 @@ export function CompanyHouseholdsPage({ periodId }: { periodId: number | undefin
 
   const error = work.error ?? assignments.error ?? collectors.error;
   return (
-    <Card size="small" title="Hộ được giao" className="section-card">
+    <Card size="small" title="Hộ được giao" className="section-card" id="company-households">
       <Space wrap style={{ marginBottom: 12 }}>
         <Input.Search
           allowClear

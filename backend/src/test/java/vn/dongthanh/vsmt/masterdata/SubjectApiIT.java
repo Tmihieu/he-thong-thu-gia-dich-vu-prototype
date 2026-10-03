@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -29,18 +30,32 @@ import vn.dongthanh.vsmt.masterdata.domain.Area;
 import vn.dongthanh.vsmt.masterdata.domain.AreaAssignment;
 import vn.dongthanh.vsmt.masterdata.domain.AreaAssignmentRepository;
 import vn.dongthanh.vsmt.masterdata.domain.AreaRepository;
+import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
+import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository;
 import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.masterdata.domain.CompanyRepository;
 import vn.dongthanh.vsmt.masterdata.domain.District;
 import vn.dongthanh.vsmt.masterdata.domain.DistrictRepository;
+import vn.dongthanh.vsmt.masterdata.domain.PeriodType;
+import vn.dongthanh.vsmt.masterdata.domain.TariffStatus;
+import vn.dongthanh.vsmt.masterdata.domain.TariffVersion;
+import vn.dongthanh.vsmt.masterdata.domain.TariffVersionRepository;
 import vn.dongthanh.vsmt.platform.domain.Role;
 import vn.dongthanh.vsmt.platform.domain.User;
 import vn.dongthanh.vsmt.platform.domain.UserRepository;
 import vn.dongthanh.vsmt.platform.security.JwtService;
+import vn.dongthanh.vsmt.support.FixedClockConfig;
 import vn.dongthanh.vsmt.support.IntegrationTest;
 
 @Transactional
+@Import(FixedClockConfig.class)
 class SubjectApiIT extends IntegrationTest {
+
+    @Autowired
+    TariffVersionRepository tariffs;
+
+    @Autowired
+    CollectionPeriodRepository periods;
 
     @Autowired
     MockMvc mvc;
@@ -117,7 +132,38 @@ class SubjectApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$.street").value("đường Mẫu"));
         assertThat(jdbc.queryForList("select action from audit_logs where entity_id in ('DTH-H000001', 'ĐK-DTH-0001')"
                 + " order by id", String.class)).containsExactly("CREATE_SUBJECT", "CREATE_CONTRACT", "UPDATE_SUBJECT",
-                "END_SUBJECT");
+                "UPDATE_CONTRACT", "END_SUBJECT");
+    }
+
+    @Test
+    void changingMemberCountSwitchesTariffGroupFromNextPeriodAndKeepsHistory() throws Exception {
+        // Hôm nay 01/10/2026, đang có kỳ tháng 10 (đến 31/10): nhóm giá mới phải bắt đầu từ 01/11/2026.
+        TariffVersion bg = tariffs.save(TariffVersion.create("BG-IT", "QĐ thử", LocalDate.of(2026, 9, 1), null, TariffStatus.ACTIVE));
+        periods.save(CollectionPeriod.open(PeriodType.MONTH, 2026, 10, null, LocalDate.of(2026, 10, 31), bg));
+        long id = body(create(officer, kv07.getId(), """
+                ,"contract":{"tariffGroup":"HH_3_PLUS","validFrom":"2026-01-01"}""")).get("id").asLong();
+
+        // 4 -> 2 người: hợp đồng ≥3 kết thúc 31/10, hợp đồng ≤2 nối tiếp từ 01/11; kỳ này vẫn thu theo nhóm cũ.
+        update(id, 2, "Nguyễn Văn Mẫu").andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentContract.tariffGroup").value("HH_3_PLUS"))
+                .andExpect(jsonPath("$.currentContract.validTo").value("2026-10-31"))
+                .andExpect(jsonPath("$.contracts.length()").value(2))
+                .andExpect(jsonPath("$.contracts[0].tariffGroup").value("HH_UP_TO_2"))
+                .andExpect(jsonPath("$.contracts[0].validFrom").value("2026-11-01"));
+        // 2 -> 3 người trước khi sang kỳ sau: hợp đồng nối tiếp đổi tại chỗ về ≥3, không sinh thêm hợp đồng.
+        update(id, 3, "Nguyễn Văn Mẫu").andExpect(status().isOk())
+                .andExpect(jsonPath("$.contracts.length()").value(2))
+                .andExpect(jsonPath("$.contracts[0].tariffGroup").value("HH_3_PLUS"));
+        // Sửa tên không đổi số người thì không thêm dòng lịch sử.
+        update(id, 3, "Tên khác").andExpect(status().isOk());
+
+        mvc.perform(get("/api/masterdata/subjects/" + id + "/member-history").header(HttpHeaders.AUTHORIZATION, officer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$[0].from").value(2)).andExpect(jsonPath("$[0].to").value(3))
+                .andExpect(jsonPath("$[1].from").value(4)).andExpect(jsonPath("$[1].to").value(2))
+                .andExpect(jsonPath("$[2].from").doesNotExist()).andExpect(jsonPath("$[2].to").value(4))
+                .andExpect(jsonPath("$[0].by").value("canbo_it"));
     }
 
     @Test
@@ -188,6 +234,13 @@ class SubjectApiIT extends IntegrationTest {
         mvc.perform(get("/api/masterdata/areas").header(HttpHeaders.AUTHORIZATION, officer))
                 .andExpect(jsonPath("$[?(@.code == 'KV07')].subjectCount").value(contains(2)))
                 .andExpect(jsonPath("$[?(@.code == 'KV17')].subjectCount").value(contains(0)));
+    }
+
+    private ResultActions update(long id, int members, String name) throws Exception {
+        return mvc.perform(put("/api/masterdata/subjects/" + id).header(HttpHeaders.AUTHORIZATION, officer)
+                .contentType(MediaType.APPLICATION_JSON).content("""
+                {"type":"HOUSEHOLD","name":"%s","houseNo":"Số 12","street":"đường Mẫu","areaId":%d,"memberCount":%d}"""
+                        .formatted(name, kv07.getId(), members)));
     }
 
     private ResultActions create(String token, Long areaId, String extra) throws Exception {

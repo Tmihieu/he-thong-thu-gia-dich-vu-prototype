@@ -6,10 +6,12 @@ import { api, ApiError } from '../../../api/client';
 import { DateText } from '../../../shared/DateText';
 import { PROGRESS_COLORS, PROGRESS_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
+import { useTabParam } from '../../../shared/useTabParam';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { remittanceKeys, useCompanyLedger } from '../../remittance/api';
 import { type CashHeld, collectionKeys, type Handover, useCashHeld, useCollectorAssignments, useCompanyWork, useHandovers } from '../api';
 import { CompanyHouseholdsPage } from '../CompanyHouseholdsPage/CompanyHouseholdsPage';
+import type { WorkChip } from '../workState';
 import { CashReceiveForm, type CashReceiveRequest } from './CashReceiveForm';
 
 type CollectorRow = CashHeld & { assigned: number; assignedAmount: number; paid: number; paidAmount: number; overdue: number };
@@ -29,12 +31,30 @@ interface RingProps {
   label: string;
   value: ReactNode;
   note: ReactNode;
+  /** Bấm thẻ để xem danh sách chi tiết. */
+  onOpen: () => void;
 }
 
-/** Thẻ vòng tiến độ như prototype (rsRingCard): vòng % bên trái, nhãn / số / ghi chú bên phải. */
-function RingCard({ loading, color, percent, hasData, label, value, note }: RingProps) {
+/** Thẻ vòng tiến độ như prototype (rsRingCard): vòng % bên trái, nhãn / số / ghi chú bên phải; bấm để xem chi tiết. */
+function RingCard({ loading, color, percent, hasData, label, value, note, onOpen }: RingProps) {
   return (
-    <Card size="small" loading={loading} className="section-card" style={{ height: '100%' }}>
+    <Card
+      size="small"
+      loading={loading}
+      className="section-card"
+      style={{ height: '100%', cursor: 'pointer' }}
+      hoverable
+      role="button"
+      tabIndex={0}
+      aria-label={`Xem chi tiết ${label}`}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+    >
       <Space size="middle" align="center">
         <Progress type="circle" size={88} strokeColor={color} percent={hasData ? percent : 0} format={(p) => (hasData ? `${pct(p)}%` : '—')} />
         <div>
@@ -62,6 +82,12 @@ export function CompanyOverviewPage() {
   const queryClient = useQueryClient();
   const [periodId, setPeriodId] = useState<number>();
   const [receiving, setReceiving] = useState<CashHeld | null>(null);
+  const [chip, setChip] = useState<WorkChip>('ALL');
+  const [, setTab] = useTabParam(['overview', 'collectors', 'receipts'], 'overview');
+  const showPaidHouseholds = () => {
+    setChip('PAID');
+    document.getElementById('company-households')?.scrollIntoView?.({ behavior: 'smooth' });
+  };
   const ledger = useCompanyLedger(periodId);
   const cash = useCashHeld();
   const handovers = useHandovers();
@@ -118,7 +144,8 @@ export function CompanyOverviewPage() {
             color="#175cd3"
             percent={households.total ? (households.paid / households.total) * 100 : 0}
             hasData={households.total > 0}
-            label="Hộ đã thu"
+            label="Số hộ đã thu"
+            onOpen={showPaidHouseholds}
             value={`${households.paid}/${households.total} hộ`}
             note={
               <>
@@ -133,7 +160,8 @@ export function CompanyOverviewPage() {
             color={row?.lowCollectionRate ? '#b42318' : '#16794a'}
             percent={row?.collectionRate ?? 0}
             hasData={!!row}
-            label="Đã thu"
+            label="Số tiền đã thu"
+            onOpen={showPaidHouseholds}
             value={<MoneyText value={row?.collected ?? 0} />}
             note={
               <>
@@ -148,7 +176,8 @@ export function CompanyOverviewPage() {
             color="#0b3a67"
             percent={row?.remittedRate ?? 0}
             hasData={!!row}
-            label="Đã nộp về xã"
+            label="Số tiền đã nộp về xã"
+            onOpen={() => setTab('receipts')}
             value={<MoneyText value={row?.received ?? 0} />}
             note={
               row ? (
@@ -251,7 +280,7 @@ export function CompanyOverviewPage() {
         />
       </Card>
       <div style={{ marginTop: 16 }}>
-        <CompanyHouseholdsPage periodId={periodId} />
+        <CompanyHouseholdsPage periodId={periodId} chip={chip} onChipChange={setChip} />
       </div>
       <Typography.Title level={5} style={{ marginTop: 24 }}>
         Lịch sử bàn giao

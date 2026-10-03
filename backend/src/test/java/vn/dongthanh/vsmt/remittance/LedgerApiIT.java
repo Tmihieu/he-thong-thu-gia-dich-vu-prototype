@@ -36,6 +36,7 @@ class LedgerApiIT extends IntegrationTest {
     @Autowired CollectionFixture fx;
     @Autowired CollectionService collection;
     @Autowired AreaAssignmentService areaAssignments;
+    @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     @BeforeEach
     void seed() {
@@ -63,6 +64,20 @@ class LedgerApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$[0].reconciliation").value("PENDING"))
                 .andExpect(jsonPath("$[1].due").value(160_000));
         ledger(fx.admin).andExpect(jsonPath("$", hasSize(2)));
+    }
+
+    @Test
+    void companyKeepsTheCollectionPartAndRemitsOnlyTheTransportPart() throws Exception {
+        // Xã chốt 03/10: công ty cầm lại phần thu gom, chỉ nộp phần vận chuyển. Biểu giá 57.000 thu gom + 23.000 vận chuyển.
+        jdbc.update("update tariff_rates set collection_fee = 57000, transport_fee = 23000 where tariff_group = 'HH_3_PLUS'");
+
+        ledger(fx.officer)
+                .andExpect(jsonPath("$[0].due").value(320_000))
+                .andExpect(jsonPath("$[0].retained").value(228_000))
+                .andExpect(jsonPath("$[0].payable").value(92_000))
+                .andExpect(jsonPath("$[0].remaining").value(92_000))
+                .andExpect(jsonPath("$[1].retained").value(114_000))
+                .andExpect(jsonPath("$[1].payable").value(46_000));
     }
 
     @Test

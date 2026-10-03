@@ -1,6 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import dayjs from 'dayjs';
 import { afterEach, beforeEach, vi } from 'vitest';
 
 import { TOKEN_KEY } from '../../app/auth/authContext';
@@ -122,12 +121,11 @@ describe('Người đi thu: danh sách thu', () => {
     expect(screen.queryByText('Hộ Phạm Thị Dung')).not.toBeInTheDocument();
   });
 
-  it('thu tiền mặt: mặc định số còn thiếu; bấm Xác nhận hai lần nhanh chỉ dùng một requestId', async () => {
+  it('thu tiền mặt: thu đủ số còn thiếu; bấm Xác nhận hai lần nhanh chỉ dùng một requestId', async () => {
     const fetchFn = api();
     renderApp('/collector/list');
 
     const dialog = await openSheet('Hộ Phạm Thị Dung');
-    expect(within(dialog).getByLabelText('Số tiền thực thu')).toHaveValue('50.000');
     const confirm = within(dialog).getByRole('button', { name: 'Lưu kết quả' });
     await userEvent.dblClick(confirm);
 
@@ -179,31 +177,23 @@ describe('Người đi thu: danh sách thu', () => {
     expect(posts(fetchFn, '/api/collection/payments')[2]!.clientRequestId).not.toBe(first!.clientRequestId);
   });
 
-  it('số tiền vượt số còn thiếu bị chặn; chọn "Hẹn lại" thì bắt buộc ngày hẹn', async () => {
+  it('chỉ có 2 lựa chọn đã thu, không nhập tay số tiền; chọn chuyển khoản gửi method TRANSFER', async () => {
     const fetchFn = api();
     renderApp('/collector/list');
 
     const dialog = await openSheet('Hộ Phạm Thị Dung');
-    const amount = within(dialog).getByLabelText('Số tiền thực thu');
-    await userEvent.clear(amount);
-    await userEvent.type(amount, '60000');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu kết quả' }));
-    expect(await within(dialog).findByText('Không vượt số còn thiếu (50.000 đ)', norm)).toBeInTheDocument();
+    expect(within(dialog).queryByText('Đã hẹn')).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('Vắng nhà')).not.toBeInTheDocument();
+    expect(within(dialog).queryByLabelText('Số tiền thực thu')).not.toBeInTheDocument();
 
-    await userEvent.click(within(dialog).getByText('Đã hẹn'));
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu kết quả' }));
-    expect(await within(dialog).findByText('Vui lòng chọn ngày hẹn')).toBeInTheDocument();
-    expect(posts(fetchFn, '/api/collection/visits')).toHaveLength(0);
-
-    const day = dayjs().add(3, 'day');
-    pickDate(within(dialog).getByLabelText('Ngày hẹn'), day.format('DD/MM/YYYY'));
+    await userEvent.click(within(dialog).getByText('Đã thu chuyển khoản'));
     await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu kết quả' }));
     await waitFor(() =>
-      expect(posts(fetchFn, '/api/collection/visits')[0]).toMatchObject({
-        chargeId: 4, result: 'APPOINTMENT', revisitDate: day.format('YYYY-MM-DD'),
+      expect(posts(fetchFn, '/api/collection/payments')[0]).toMatchObject({
+        chargeId: 4, amount: 50_000, method: 'TRANSFER',
       }),
     );
-    expect(posts(fetchFn, '/api/collection/payments')).toHaveLength(0);
+    expect(posts(fetchFn, '/api/collection/visits')).toHaveLength(0);
   });
 });
 

@@ -20,7 +20,7 @@ public class LedgerQueries {
     }
 
     /** Tiến độ theo tổ của một kỳ: công ty chụp trên khoản, phải thu, đã thu, số khoản, số khoản đã thu đủ. */
-    public record AreaProgressRow(long areaId, long companyId, long due, long collected, long chargeCount, long paidCount) {
+    public record AreaProgressRow(long areaId, long companyId, long due, long collected, long chargeCount, long paidCount, long exemptCount) {
     }
 
     private final JdbcTemplate jdbc;
@@ -78,16 +78,55 @@ public class LedgerQueries {
                 (rs, i) -> new CompanyPeriodAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), today);
     }
 
+    /**
+     * Phần thu gom của một khoản = số tiền × thu gom / (thu gom + vận chuyển) của nhóm giá trong biểu giá của kỳ. Công ty
+     * cầm lại phần này, chỉ nộp phần vận chuyển về xã (xã chốt 03/10). Khoản không theo biểu giá thì không có phần giữ lại.
+     */
+    private static final String COLLECTION_PART =
+            "coalesce(round(c.amount * r.collection_fee::numeric / nullif(r.monthly_total, 0)), 0)";
+
+    private static final String COLLECTION_JOIN = " join collection_periods cp on cp.id = c.period_id"
+            + " left join tariff_rates r on r.tariff_version_id = cp.tariff_version_id and r.tariff_group = c.tariff_group";
+
+    /**
+     * Phần công ty giữ lại của kỳ theo công ty: Σ phần thu gom các khoản còn tính phải thu, trừ phần thu gom của khoản kỳ
+     * khác được xóa nợ ghi nhận ở kỳ này (cùng cách tính với phải thu và điều chỉnh). Số {@code count} không dùng.
+     */
+    public List<CompanyAmount> retainedByCompany(long periodId) {
+        return jdbc.query("select x.company_id, sum(x.v), 0 from ("
+                + " select c.company_id, " + COLLECTION_PART + " as v from charges c" + COLLECTION_JOIN
+                + " where c.period_id = ? and " + COUNTED
+                + " union all"
+                + " select c.company_id, -" + COLLECTION_PART + " from charges c" + COLLECTION_JOIN
+                + " where c.written_off_period_id = ? and c.period_id <> c.written_off_period_id"
+                + ") x group by x.company_id",
+                (rs, i) -> new CompanyAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), periodId, periodId);
+    }
+
+    /** Như {@link #retainedByCompany} nhưng theo (công ty, kỳ) của các kỳ có hạn công ty nộp xã trước {@code today}. */
+    public List<CompanyPeriodAmount> retainedByCompanyAndPeriodBefore(LocalDate today) {
+        return jdbc.query("select x.company_id, x.period_id, sum(x.v) from ("
+                + " select c.company_id, c.period_id, " + COLLECTION_PART + " as v from charges c" + COLLECTION_JOIN
+                + " where " + COUNTED
+                + " union all"
+                + " select c.company_id, c.written_off_period_id, -" + COLLECTION_PART + " from charges c" + COLLECTION_JOIN
+                + " where c.written_off_period_id is not null and c.period_id <> c.written_off_period_id"
+                + ") x join collection_periods p on p.id = x.period_id"
+                + " where p.due_date < ? group by x.company_id, x.period_id",
+                (rs, i) -> new CompanyPeriodAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), today);
+    }
+
     /** Đã thu theo tổ chỉ gồm thanh toán ghi nhận ở chính kỳ (hoàn của kỳ đã khóa không làm đổi số kỳ đó, O10). */
     public List<AreaProgressRow> progressByArea(long periodId) {
         return jdbc.query("select c.area_id, c.company_id, sum(c.amount), coalesce(sum(p.paid), 0), count(*),"
-                + " count(*) filter (where c.status = 'PAID' or (c.amount > 0 and coalesce(p.paid, 0) >= c.amount))"
+                + " count(*) filter (where c.status = 'PAID' or (c.amount > 0 and coalesce(p.paid, 0) >= c.amount)),"
+                + " count(*) filter (where c.status = 'EXEMPT')"
                 + " from charges c"
                 + " left join (select p.charge_id, sum(p.amount) as paid from payments p join charges c on c.id = p.charge_id"
                 + " where " + PAYMENT_PERIOD + " = c.period_id group by p.charge_id) p on p.charge_id = c.id"
                 + " where c.period_id = ? and " + COUNTED
                 + " group by c.area_id, c.company_id",
                 (rs, i) -> new AreaProgressRow(rs.getLong(1), rs.getLong(2), rs.getLong(3), rs.getLong(4), rs.getLong(5),
-                        rs.getLong(6)), periodId);
+                        rs.getLong(6), rs.getLong(7)), periodId);
     }
 }

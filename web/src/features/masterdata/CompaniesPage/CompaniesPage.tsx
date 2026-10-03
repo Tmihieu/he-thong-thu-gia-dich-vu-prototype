@@ -29,7 +29,7 @@ function errorMessage(err: unknown): string | null {
 }
 
 const statusTag = (s: Company['status']) =>
-  s === 'ACTIVE' ? <Tag color="green">Hoạt động</Tag> : <Tag>Tạm ngưng</Tag>;
+  s === 'ACTIVE' ? <Tag color="green">Đang hợp tác</Tag> : <Tag>Ngừng hợp tác</Tag>;
 
 /**
  * Công ty môi trường. Cán bộ xã: danh sách, sửa, phân công tổ chưa có công ty, tiến độ nộp theo kỳ.
@@ -92,8 +92,8 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
             onChange={setStatus}
             options={[
               { value: 'all', label: 'Tất cả' },
-              { value: 'ACTIVE', label: 'Hoạt động' },
-              { value: 'INACTIVE', label: 'Tạm ngưng' },
+              { value: 'ACTIVE', label: 'Đang hợp tác' },
+              { value: 'INACTIVE', label: 'Ngừng hợp tác' },
             ]}
           />
         </Space>
