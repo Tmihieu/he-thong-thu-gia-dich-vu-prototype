@@ -19,6 +19,7 @@ const QUICK: { label: string; icon: IconName; to: Href }[] = [
 /** Chợ đồ cũ (spec §5.1): tìm caption, chips nhiều nhãn (OR), một danh mục, một tổ; tải thêm khi cuộn. */
 export default function MarketTab() {
   const [text, setText] = useState('');
+  const [filterOpen, setFilterOpen] = useState(false);
   const [filter, setFilter] = useState<FeedFilter>({ q: '', tags: [] });
   const meta = useMarketMetadata();
   const feed = useMarketFeed(filter);
@@ -63,6 +64,15 @@ export default function MarketTab() {
           ))}
         </View>
       </View>
+      <Button
+        title={filterOpen ? 'Ẩn lọc danh mục, khu vực' : filter.category || filter.areaId ? 'Lọc danh mục, khu vực (đang bật)' : 'Lọc danh mục, khu vực'}
+        variant="quiet"
+        compact
+        icon={filterOpen ? 'chevron-up' : 'options-outline'}
+        onPress={() => setFilterOpen((o) => !o)}
+      />
+      {filterOpen ? (
+        <>
       <View style={styles.filterBlock}>
         <Muted>Danh mục</Muted>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
@@ -81,6 +91,8 @@ export default function MarketTab() {
           ))}
         </ScrollView>
       </View>
+        </>
+      ) : null}
 
       <ListGroup>
         <ListRow

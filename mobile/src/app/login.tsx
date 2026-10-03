@@ -9,7 +9,7 @@ import { useSession } from '../features/auth/SessionProvider';
 import { validateOtp, validatePhone } from '../features/auth/validate';
 import { citizenApi } from '../features/citizen/api';
 import { errorMessage } from '../shared/errors';
-import { colors, radius, spacing, type as t } from '../shared/theme';
+import { colors, radius, size, spacing, type as t } from '../shared/theme';
 import { Button, Callout, Field, InlineError, Muted, OfflineBar } from '../shared/ui';
 
 /** Đăng nhập người dân: SĐT → OTP (mô phỏng, không gửi SMS, O7). */
@@ -148,9 +148,9 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   container: { flexGrow: 1, paddingHorizontal: spacing.lg, gap: spacing.xl },
   brand: { gap: spacing.lg },
-  logo: { width: 72, height: 72, borderRadius: radius.pill },
+  logo: { width: size.logo, height: size.logo, borderRadius: radius.pill },
   brandText: { gap: spacing.xs },
-  title: { ...t.title, fontSize: 28, lineHeight: 34, color: colors.text },
+  title: { ...t.brand, color: colors.text },
   form: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
@@ -161,5 +161,5 @@ const styles = StyleSheet.create({
   },
   formTitle: { ...t.heading, color: colors.text },
   phoneValue: { fontWeight: '700', color: colors.text },
-  otpInput: { letterSpacing: 6, textAlign: 'center', fontSize: 24, fontWeight: '700' },
+  otpInput: { ...t.code, letterSpacing: 6, textAlign: 'center' },
 });

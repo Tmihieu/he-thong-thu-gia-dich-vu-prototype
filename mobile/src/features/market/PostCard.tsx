@@ -5,12 +5,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatDate } from '../../shared/format';
 import { MARKET_CATEGORY_LABELS, MARKET_TAG_LABELS } from '../../shared/labels';
-import { colors, radius, spacing, type as t } from '../../shared/theme';
+import { colors, radius, size, spacing, type as t } from '../../shared/theme';
 import { EmptyState, ErrorState, Loading, OfflineBar, Tag, type IconName } from '../../shared/ui';
 import { StoredPhoto } from '../photos/PhotoStrip';
 import type { MarketPost } from './api';
 
-const THUMB_SIZE = { width: 88, height: 88 };
+const THUMB_SIZE = { width: size.thumb, height: size.thumb };
 
 export const openPost = (id: number) => router.push({ pathname: '/market/[id]', params: { id: String(id) } });
 

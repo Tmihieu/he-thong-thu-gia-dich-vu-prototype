@@ -2,12 +2,12 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing, touch, type as t } from '../../shared/theme';
+import { colors, radius, size, spacing, touch, type as t } from '../../shared/theme';
 import { Button, Caption } from '../../shared/ui';
 import { addPhotos, MAX_PHOTOS, type PhotoSender, type UploadedPhoto } from './photos';
 import { StoredPhoto } from './PhotoStrip';
 
-const THUMB_SIZE = { width: 88, height: 88 };
+const THUMB_SIZE = { width: size.thumb, height: size.thumb };
 
 /**
  * Chọn ảnh từ thư viện, tải lên ngay và giữ danh sách ảnh đã lên. `onBusyChange` (tùy chọn) để form khóa nút gửi

@@ -5,7 +5,7 @@ import { useSession } from '../../features/auth/SessionProvider';
 import { useProfile } from '../../features/citizen/api';
 import { confirmAction } from '../../shared/confirm';
 import { initials } from '../../shared/format';
-import { colors, radius, spacing, type as t } from '../../shared/theme';
+import { colors, radius, size, spacing, type as t } from '../../shared/theme';
 import { Button, ListGroup, ListRow, Muted, Screen, SectionTitle } from '../../shared/ui';
 
 export default function AccountScreen() {
@@ -70,8 +70,8 @@ export default function AccountScreen() {
 const styles = StyleSheet.create({
   identity: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   avatar: {
-    width: 64,
-    height: 64,
+    width: size.avatar,
+    height: size.avatar,
     borderRadius: radius.pill,
     backgroundColor: colors.brand,
     alignItems: 'center',

@@ -57,7 +57,13 @@ export const type = {
   caption: { fontSize: 14, lineHeight: 20, fontWeight: '400' },
   tag: { fontSize: 13, lineHeight: 16, fontWeight: '700' },
   button: { fontSize: 17, lineHeight: 22, fontWeight: '700' },
+  brand: { fontSize: 28, lineHeight: 34, fontWeight: '800' },
+  code: { fontSize: 24, lineHeight: 30, fontWeight: '700' },
+  tabLabel: { fontSize: 12, lineHeight: 16, fontWeight: '700' },
 } satisfies Record<string, TextStyle>;
+
+/** Kích thước hình học dùng lại (ảnh đại diện, chấm, ảnh thu nhỏ), để màn không viết số cứng. */
+export const size = { avatar: 64, logo: 72, dot: 12, thumb: 88, badge: 64, radio: 26, railDot: 22, railWidth: 24 } as const;
 
 /** Ngữ nghĩa trạng thái dùng chung cho Tag, Callout, thanh báo. */
 export type Tone = 'neutral' | 'success' | 'warning' | 'danger' | 'info';
