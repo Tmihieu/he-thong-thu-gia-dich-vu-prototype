@@ -62,14 +62,14 @@ public class CitizenComplaintController {
     public List<CitizenComplaintDto> list(@AuthenticationPrincipal CurrentCitizen citizen) {
         CitizenAccount account = citizens.requireActive(citizen);
         LocalDate today = complaints.today();
-        return complaints.listOfCitizen(account.getId()).stream().map(c -> CitizenComplaintDto.of(c, today)).toList();
+        return complaints.listOfCitizen(account.getSubject().getId()).stream().map(c -> CitizenComplaintDto.of(c, today)).toList();
     }
 
     @Operation(summary = "Chi tiết phản ánh kèm timeline (của hộ khác trả 404)")
     @GetMapping("/{id}")
     public CitizenComplaintDetailDto get(@AuthenticationPrincipal CurrentCitizen citizen, @PathVariable Long id) {
         CitizenAccount account = citizens.requireActive(citizen);
-        return CitizenComplaintDetailDto.of(complaints.getOfCitizen(id, account.getId()), complaints.today());
+        return CitizenComplaintDetailDto.of(complaints.getOfCitizen(id, account.getSubject().getId()), complaints.today());
     }
 
     public record SubmitComplaintRequest(
