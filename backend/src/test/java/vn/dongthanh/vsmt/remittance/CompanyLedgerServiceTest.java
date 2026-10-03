@@ -121,10 +121,10 @@ class CompanyLedgerServiceTest {
     }
 
     @Test
-    void retainedPercentReducesPayableAndKeepsReconciliationMatched() {
-        // Công ty thu 1.000.000, giữ 10% (100.000), nộp 900.000: nộp đủ, đối soát khớp, tỷ lệ nộp tính trên phần phải nộp.
-        ReflectionTestUtils.setField(dv01, "retainedPercent", new java.math.BigDecimal("10"));
+    void retainedCollectionPartReducesPayableAndKeepsReconciliationMatched() {
+        // Công ty thu 1.000.000, cầm lại phần thu gom 100.000, nộp 900.000: nộp đủ, đối soát khớp, tỷ lệ nộp tính trên phần phải nộp.
         due(10L, 1L, 1_000_000, 10);
+        when(queries.retainedByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 100_000, 0)));
         when(queries.collectedByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 1_000_000, 10)));
         when(remitted.receivedByCompany(10L)).thenReturn(Map.of(1L, new RemittedTotals.Received(900_000, 1)));
         LedgerRow r = service("2026-10-15").row(1L, 10L);
@@ -144,22 +144,24 @@ class CompanyLedgerServiceTest {
     }
 
     @Test
-    void noRetainedPercentMeansPayableEqualsDueAndRoundsToDong() {
+    void noRetainedMeansPayableEqualsDueMinusAdjustment() {
         due(10L, 1L, 1_000_000, 10);
         LedgerRow r = service("2026-10-15").row(1L, 10L);
         assertThat(r.retained()).isZero();
         assertThat(r.payable()).isEqualTo(1_000_000);
 
-        assertThat(CompanyLedgerService.retained(new java.math.BigDecimal("33.33"), 100)).isEqualTo(33);
-        assertThat(CompanyLedgerService.retained(new java.math.BigDecimal("33.33"), 1_000)).isEqualTo(333);
-        assertThat(CompanyLedgerService.retained(null, 1_000)).isZero();
+        // Khoản kỳ trước được xóa nợ ở kỳ này: điều chỉnh 200.000 trong đó thu gom 40.000 đã trừ khỏi phần giữ lại.
+        when(queries.writeOffAdjustmentByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 200_000, 2)));
+        when(queries.retainedByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 160_000, 0)));
+        LedgerRow adjusted = service("2026-10-15").row(1L, 10L);
+        assertThat(adjusted.payable()).isEqualTo(1_000_000 - 200_000 - 160_000);
+        assertThat(adjusted.remaining()).isEqualTo(adjusted.payable());
     }
 
     @Test
-    void retainedPercentAlsoAppliesToPreviousDebt() {
-        // Kỳ 9 phải thu 1.000.000, giữ 10%, nộp 900.000: không còn nợ kỳ trước. Nộp 800.000: nợ 100.000.
-        ReflectionTestUtils.setField(dv01, "retainedPercent", new java.math.BigDecimal("10"));
-        when(companies.findAll()).thenReturn(List.of(dv01));
+    void retainedCollectionPartAlsoAppliesToPreviousDebt() {
+        // Kỳ 9 phải thu 1.000.000, công ty cầm lại 100.000, nộp 900.000: không còn nợ kỳ trước. Nộp 800.000: nợ 100.000.
+        when(queries.retainedByCompanyAndPeriodBefore(any())).thenReturn(List.of(new CompanyPeriodAmount(1L, 9L, 100_000)));
         when(periods.findAllById(any())).thenReturn(List.of(sept));
         when(queries.dueByCompanyAndPeriodBefore(any())).thenReturn(List.of(new CompanyPeriodAmount(1L, 9L, 1_000_000)));
         when(remitted.receivedByCompanyAndPeriod()).thenReturn(List.of(new CompanyPeriodAmount(1L, 9L, 900_000)));

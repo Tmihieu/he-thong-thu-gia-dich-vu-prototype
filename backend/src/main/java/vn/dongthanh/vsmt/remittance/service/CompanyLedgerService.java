@@ -1,6 +1,5 @@
 package vn.dongthanh.vsmt.remittance.service;
 
-import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Comparator;
@@ -68,6 +67,7 @@ public class CompanyLedgerService {
         Map<Long, CompanyAmount> collected = byCompany(queries.collectedByCompany(periodId));
         Map<Long, CompanyAmount> adjustment = byCompany(queries.writeOffAdjustmentByCompany(periodId));
         Map<Long, CompanyAmount> refunded = byCompany(queries.refundedByCompany(periodId));
+        Map<Long, CompanyAmount> retained = byCompany(queries.retainedByCompany(periodId));
         Map<Long, Received> received = remitted.receivedByCompany(periodId);
         Map<Long, Long> previousDebt = previousDebts(periodId, today);
 
@@ -90,7 +90,7 @@ public class CompanyLedgerService {
         return ids.stream()
                 .filter(companyById::containsKey)
                 .map(id -> build(companyById.get(id), period, today, due.get(id), adjustment.get(id), refunded.get(id),
-                        collected.get(id), received.get(id), previousDebt.getOrDefault(id, 0L)))
+                        retained.get(id), collected.get(id), received.get(id), previousDebt.getOrDefault(id, 0L)))
                 .sorted(Comparator.comparing(LedgerRow::companyCode))
                 .toList();
     }
@@ -102,7 +102,7 @@ public class CompanyLedgerService {
                     Company c = companies.findAllById(List.of(companyId)).stream()
                             .filter(x -> x.getId().equals(companyId)).findFirst()
                             .orElseThrow(() -> new NotFoundException("COMPANY_NOT_FOUND", "Không tìm thấy công ty."));
-                    return build(c, period(periodId), LocalDate.now(clock), null, null, null, null, null, 0L);
+                    return build(c, period(periodId), LocalDate.now(clock), null, null, null, null, null, null, 0L);
                 });
     }
 
@@ -122,15 +122,18 @@ public class CompanyLedgerService {
 
     /** Các kỳ đã hết hạn công ty nộp xã mà công ty còn phải nộp &gt; 0, cũ trước (nhắc nộp R16, nợ kỳ trước). */
     public List<PeriodDebt> overdueDebtsOf(Long companyId) {
-        BigDecimal pct = retainedPercents().get(companyId);
         LocalDate today = LocalDate.now(clock);
+        Map<Long, Long> retainedByPeriod = new HashMap<>();
+        queries.retainedByCompanyAndPeriodBefore(today).stream().filter(r -> r.companyId() == companyId)
+                .forEach(r -> retainedByPeriod.merge(r.periodId(), r.amount(), Long::sum));
         Map<Long, Long> receivedByPeriod = new HashMap<>();
         remitted.receivedByCompanyAndPeriod().stream().filter(r -> r.companyId() == companyId)
                 .forEach(r -> receivedByPeriod.merge(r.periodId(), r.amount(), Long::sum));
         Map<Long, Long> remainingByPeriod = new HashMap<>();
         queries.dueByCompanyAndPeriodBefore(today).stream().filter(d -> d.companyId() == companyId)
                 .forEach(d -> remainingByPeriod.merge(d.periodId(),
-                        d.amount() - retained(pct, d.amount()) - receivedByPeriod.getOrDefault(d.periodId(), 0L), Long::sum));
+                        d.amount() - retainedByPeriod.getOrDefault(d.periodId(), 0L) - receivedByPeriod.getOrDefault(d.periodId(), 0L),
+                        Long::sum));
         List<Long> owing = remainingByPeriod.entrySet().stream().filter(e -> e.getValue() > 0).map(Map.Entry::getKey)
                 .toList();
         if (owing.isEmpty()) {
@@ -143,8 +146,8 @@ public class CompanyLedgerService {
     }
 
     private LedgerRow build(Company company, CollectionPeriod period, LocalDate today, CompanyAmount dueRow,
-            CompanyAmount adjustmentRow, CompanyAmount refundedRow, CompanyAmount collectedRow, Received receivedRow,
-            long previousDebt) {
+            CompanyAmount adjustmentRow, CompanyAmount refundedRow, CompanyAmount retainedRow, CompanyAmount collectedRow,
+            Received receivedRow, long previousDebt) {
         long due = dueRow == null ? 0 : dueRow.amount();
         long adjustment = adjustmentRow == null ? 0 : adjustmentRow.amount();
         long refunded = refundedRow == null ? 0 : refundedRow.amount();
@@ -152,8 +155,8 @@ public class CompanyLedgerService {
         long collected = collectedRow == null ? 0 : collectedRow.amount();
         long received = receivedRow == null ? 0 : receivedRow.amount();
         long receiptCount = receivedRow == null ? 0 : receivedRow.receiptCount();
-        // Phải nộp xã = phải thu − điều chỉnh − phần công ty giữ lại (tỷ lệ cấu hình ở công ty; chưa cấu hình thì không giữ lại).
-        long retained = retained(company.getRetainedPercent(), due - adjustment);
+        // Phải nộp xã = phải thu − điều chỉnh − phần thu gom công ty cầm lại (tính từ biểu giá, xã chốt 03/10).
+        long retained = retainedRow == null ? 0 : retainedRow.amount();
         long payable = due - adjustment - retained;
         long remaining = payable - received;
         // Điều chỉnh kỳ trước là phần công ty đã nộp thừa ở kỳ khóa, tính như đã nộp để đối soát khớp được.
@@ -190,11 +193,6 @@ public class CompanyLedgerService {
                 progress, reconciliation, retained, payable);
     }
 
-    /** Phần công ty giữ lại = base × tỷ lệ%, làm tròn đồng; tỷ lệ null (chưa cấu hình) thì 0. */
-    public static long retained(BigDecimal percent, long base) {
-        return percent == null ? 0 : BigDecimal.valueOf(base).multiply(percent).movePointLeft(2).setScale(0, java.math.RoundingMode.HALF_UP).longValue();
-    }
-
     /** Phần trăm làm tròn 1 chữ số để hiển thị; 0 khi phải thu 0. */
     static double percent(long part, long due) {
         return due == 0 ? 0.0 : Math.round(part * 1000.0 / due) / 10.0;
@@ -206,7 +204,9 @@ public class CompanyLedgerService {
     }
 
     private Map<Long, Long> previousDebts(Long currentPeriodId, LocalDate today) {
-        Map<Long, BigDecimal> pct = retainedPercents();
+        Map<String, Long> retainedByKey = new HashMap<>();
+        queries.retainedByCompanyAndPeriodBefore(today)
+                .forEach(r -> retainedByKey.merge(r.companyId() + ":" + r.periodId(), r.amount(), Long::sum));
         Map<String, Long> receivedByKey = new HashMap<>();
         remitted.receivedByCompanyAndPeriod()
                 .forEach(r -> receivedByKey.merge(r.companyId() + ":" + r.periodId(), r.amount(), Long::sum));
@@ -216,19 +216,9 @@ public class CompanyLedgerService {
                 continue;
             }
             long paid = receivedByKey.getOrDefault(d.companyId() + ":" + d.periodId(), 0L);
-            debt.merge(d.companyId(), Math.max(0, d.amount() - retained(pct.get(d.companyId()), d.amount()) - paid), Long::sum);
+            debt.merge(d.companyId(), Math.max(0, d.amount() - retainedByKey.getOrDefault(d.companyId() + ":" + d.periodId(), 0L) - paid), Long::sum);
         }
         return debt;
-    }
-
-    private Map<Long, BigDecimal> retainedPercents() {
-        Map<Long, BigDecimal> m = new HashMap<>();
-        companies.findAll().forEach(c -> {
-            if (c.getRetainedPercent() != null) {
-                m.put(c.getId(), c.getRetainedPercent());
-            }
-        });
-        return m;
     }
 
     private CollectionPeriod period(Long periodId) {

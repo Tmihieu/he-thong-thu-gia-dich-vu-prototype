@@ -1,7 +1,9 @@
 package vn.dongthanh.vsmt.masterdata.service;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -18,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
 import vn.dongthanh.vsmt.masterdata.domain.AreaRepository;
+import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
+import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceContract;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceContractRepository;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubject;
@@ -49,6 +53,8 @@ public class SubjectService {
     private final AreaAssignmentService assignments;
     private final AuditService audit;
     private final ApplicationEventPublisher events;
+    private final CollectionPeriodRepository periods;
+    private final Clock clock;
 
     public record SubjectCommand(SubjectType type, String name, String houseNo, String street, Long areaId, String phone,
             Integer memberCount, String representativeName, String taxCode, String note) {
@@ -106,9 +112,9 @@ public class SubjectService {
     }
 
     /**
-     * Số người của hộ đổi thì nhóm giá hộ gia đình (≤2 / ≥3) đổi theo, thay vì bắt cán bộ sửa hợp đồng bằng tay. Chỉ
-     * đổi hợp đồng đang mở; khoản đã phát hành giữ nhóm giá cũ, nhóm mới áp từ khoản phát hành sau.
-     * ponytail: chưa tính theo ngày hiệu lực giữa kỳ; chốt cách tính (từ kỳ sau / theo ngày) với xã rồi mới làm.
+     * Số người của hộ đổi thì nhóm giá hộ gia đình (≤2 / ≥3) đổi theo, áp từ kỳ sau (xã chốt 03/10): hợp đồng đang mở
+     * kết thúc hết kỳ đang chạy, hợp đồng mới cùng nhóm mới bắt đầu ngày đầu kỳ kế tiếp. Chưa có kỳ nào đang chạy, hoặc
+     * hợp đồng chưa bắt đầu, thì đổi tại chỗ. Khoản đã phát hành luôn giữ nhóm giá của nó.
      */
     private void syncHouseholdGroup(ServiceSubject subject, Integer membersBefore, CurrentUser actor) {
         Integer now = subject.getMemberCount();
@@ -116,12 +122,23 @@ public class SubjectService {
             return;
         }
         TariffGroup expected = now <= 2 ? TariffGroup.HH_UP_TO_2 : TariffGroup.HH_3_PLUS;
+        LocalDate effective = periods.findCovering(LocalDate.now(clock)).stream().map(CollectionPeriod::getEndDate)
+                .max(Comparator.naturalOrder()).map(d -> d.plusDays(1)).orElse(null);
         for (ServiceContract c : contracts.findBySubjectIdOrderByValidFromDesc(subject.getId())) {
             boolean householdGroup = c.getTariffGroup() == TariffGroup.HH_UP_TO_2 || c.getTariffGroup() == TariffGroup.HH_3_PLUS;
-            if (c.getValidTo() == null && householdGroup && c.getTariffGroup() != expected) {
-                Map<String, Object> before = snapshot(c);
+            if (c.getValidTo() != null || !householdGroup || c.getTariffGroup() == expected) {
+                continue;
+            }
+            Map<String, Object> before = snapshot(c);
+            if (effective == null || !c.getValidFrom().isBefore(effective)) {
                 c.change(expected, c.getValidFrom(), c.getValidTo(), c.isExempt(), c.getExemptReason(), c.getExemptDecisionNo());
                 audit.record(actor, "UPDATE_CONTRACT", CONTRACT, c.getContractNo(), before, snapshot(c));
+            } else {
+                c.closeOn(effective.minusDays(1));
+                audit.record(actor, "UPDATE_CONTRACT", CONTRACT, c.getContractNo(), before, snapshot(c));
+                // Hợp đồng nối tiếp giữ nguyên miễn giảm và định mức; không phát lại sự kiện miễn để khỏi tạo đề nghị trùng.
+                createContract(subject, new ContractCommand(expected, effective, null, c.isExempt(), c.getExemptReason(),
+                        c.getExemptDecisionNo(), c.getNote(), c.getQuotaKg()), actor, false);
             }
         }
     }
@@ -218,6 +235,11 @@ public class SubjectService {
     }
 
     private ServiceContract saveContract(ServiceSubject subject, ContractCommand cmd, CurrentUser actor) {
+        return createContract(subject, cmd, actor, true);
+    }
+
+    private ServiceContract createContract(ServiceSubject subject, ContractCommand cmd, CurrentUser actor,
+            boolean announceExempt) {
         requireNoOverlap(subject.getId(), cmd.validFrom(), cmd.validTo(), null);
         requireGroupFits(subject, cmd);
         String prefix = "ĐK-" + subject.getArea().getDistrict().getCode() + "-";
@@ -228,7 +250,7 @@ public class SubjectService {
         contract.setQuotaKg(cmd.quotaKg());
         ServiceContract saved = contracts.save(contract);
         audit.record(actor, "CREATE_CONTRACT", CONTRACT, saved.getContractNo(), null, snapshot(saved));
-        if (saved.isExempt()) {
+        if (announceExempt && saved.isExempt()) {
             publishExempted(saved, actor);
         }
         return saved;

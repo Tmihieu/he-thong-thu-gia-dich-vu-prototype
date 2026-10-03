@@ -1,14 +1,10 @@
 package vn.dongthanh.vsmt.masterdata.api;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
-import jakarta.validation.constraints.DecimalMax;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -100,14 +96,12 @@ public final class MasterDataDtos {
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String email,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String communeContractNo,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String bankAccount,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String bankName,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true,
-                    description = "% công ty giữ lại trên số phải thu; null = chưa cấu hình") BigDecimal retainedPercent) {
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String bankName) {
 
         static CompanyDto of(Company c) {
             return new CompanyDto(c.getId(), c.getCode(), c.getName(), c.getContactName(), c.getContactPhone(),
                     c.getStatus(), c.getValidFrom(), c.getValidTo(), c.getOrgType(), c.getTaxCode(), c.getAddress(),
-                    c.getEmail(), c.getCommuneContractNo(), c.getBankAccount(), c.getBankName(), c.getRetainedPercent());
+                    c.getEmail(), c.getCommuneContractNo(), c.getBankAccount(), c.getBankName());
         }
     }
 
@@ -125,13 +119,11 @@ public final class MasterDataDtos {
             @Email(message = "không đúng định dạng") @Size(max = 100) String email,
             @Size(max = 50) String communeContractNo,
             @Size(max = 50) String bankAccount,
-            @Size(max = 100) String bankName,
-            @DecimalMin(value = "0", message = "từ 0 đến 100") @DecimalMax(value = "100", message = "từ 0 đến 100")
-            @Digits(integer = 3, fraction = 2, message = "tối đa 2 chữ số thập phân") BigDecimal retainedPercent) {
+            @Size(max = 100) String bankName) {
 
         public CompanyCommand toCommand() {
             return new CompanyCommand(name, contactName, contactPhone, status, validFrom, validTo, orgType, taxCode,
-                    address, email, communeContractNo, bankAccount, bankName, retainedPercent);
+                    address, email, communeContractNo, bankAccount, bankName);
         }
     }
 }
