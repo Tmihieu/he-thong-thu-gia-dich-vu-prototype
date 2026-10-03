@@ -47,11 +47,15 @@ export function photoFormPart(asset: PickedAsset) {
   return { uri: asset.uri, name: asset.fileName ?? 'anh.jpg', type: asset.mimeType ?? 'image/jpeg' };
 }
 
-export async function uploadPhoto(asset: PickedAsset): Promise<UploadedPhoto> {
+/** Mặc định `POST /api/citizen/photos`; chợ đồ cũ truyền `send` riêng (`POST /api/citizen/market/images`). */
+export type PhotoSender = (form: FormData) => Promise<UploadedPhoto>;
+const defaultSend: PhotoSender = (form) => api.upload<UploadedPhoto>('/api/citizen/photos', form);
+
+export async function uploadPhoto(asset: PickedAsset, send: PhotoSender = defaultSend): Promise<UploadedPhoto> {
   const form = new FormData();
   // Kiểu DOM của TypeScript không biết dạng `{uri, name, type}` mà FormData của React Native nhận.
   form.append('file', photoFormPart(asset) as unknown as Blob);
-  return api.upload<UploadedPhoto>('/api/citizen/photos', form);
+  return send(form);
 }
 
 export function photoErrorMessage(err: unknown): string {
@@ -62,8 +66,11 @@ export function photoErrorMessage(err: unknown): string {
 }
 
 /** Tải song song; ảnh lỗi bị bỏ qua, giữ các ảnh đã lên và báo lỗi đầu tiên. */
-export async function uploadAll(assets: PickedAsset[]): Promise<{ uploaded: UploadedPhoto[]; error: string | null }> {
-  const results = await Promise.allSettled(assets.map(uploadPhoto));
+export async function uploadAll(
+  assets: PickedAsset[],
+  send?: PhotoSender,
+): Promise<{ uploaded: UploadedPhoto[]; error: string | null }> {
+  const results = await Promise.allSettled(assets.map((a) => uploadPhoto(a, send)));
   const uploaded = results.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []));
   const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
   return { uploaded, error: failed ? photoErrorMessage(failed.reason) : null };
@@ -77,6 +84,7 @@ export async function addPhotos(
   current: number,
   max: number,
   onBusyChange: (busy: boolean) => void,
+  send?: PhotoSender,
 ): Promise<{ uploaded: UploadedPhoto[]; error: string | null }> {
   let assets: ImagePicker.ImagePickerAsset[];
   try {
@@ -88,7 +96,7 @@ export async function addPhotos(
   if (assets.length === 0) return { uploaded: [], error: null };
   onBusyChange(true);
   try {
-    return await uploadAll(assets);
+    return await uploadAll(assets, send);
   } finally {
     onBusyChange(false);
   }

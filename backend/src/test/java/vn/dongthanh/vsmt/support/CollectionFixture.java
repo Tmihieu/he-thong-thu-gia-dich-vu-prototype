@@ -103,7 +103,9 @@ public class CollectionFixture {
         collectorAssignments.save(CollectorAssignment.create(thu12, kv12, dv07, LocalDate.of(2026, 9, 1), null, null));
 
         TariffVersion bg = TariffVersion.create("BG-FX", "QĐ thử", LocalDate.of(2026, 9, 1), null, TariffStatus.ACTIVE);
-        bg.addRate(TariffGroup.HH_3_PLUS, 57_000, 23_000, "đ/hộ/tháng");
+        // Phần thu gom = 0: công ty không cầm lại gì, "nộp đủ" = phải thu, để các IT thu/nộp không phải tính lại.
+        // Việc cầm lại phần thu gom có IT riêng ở LedgerApiIT.
+        bg.addRate(TariffGroup.HH_3_PLUS, 0, 80_000, "đ/hộ/tháng");
         tariffs.save(bg);
         october = periods.save(CollectionPeriod.open(PeriodType.MONTH, 2026, 10, null, LocalDate.of(2026, 10, 31), bg));
         env = feeTypes.save(FeeType.create("ENV", "Phí VSMT", PricingMode.TARIFF, null));

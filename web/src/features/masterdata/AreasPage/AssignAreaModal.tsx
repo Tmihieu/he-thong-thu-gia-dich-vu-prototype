@@ -24,7 +24,7 @@ interface Props {
   onCancel: () => void;
 }
 
-/** Popup phân công một hoặc nhiều tổ cho một công ty (§10 bước 2). Phân công cũ backend tự đóng. */
+/** Popup phân công một hoặc nhiều tổ chưa có công ty cho một công ty (§10 bước 2). */
 export function AssignAreaModal({ open, areas, companies, initialAreaIds, initialCompanyId, submitting, error, onSubmit, onCancel }: Props) {
   const [form] = Form.useForm<FormValues>();
 
@@ -80,7 +80,6 @@ export function AssignAreaModal({ open, areas, companies, initialAreaIds, initia
           label="Từ ngày"
           name="fromDate"
           rules={[{ required: true, message: 'Vui lòng chọn ngày bắt đầu' }]}
-          extra="Phân công đang có của tổ sẽ kết thúc vào ngày trước đó và được giữ trong lịch sử."
         >
           <DatePicker format="DD/MM/YYYY" placeholder="dd/mm/yyyy" />
         </Form.Item>

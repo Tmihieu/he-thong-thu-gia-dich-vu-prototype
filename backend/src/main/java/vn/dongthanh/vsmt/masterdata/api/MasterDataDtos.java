@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import vn.dongthanh.vsmt.masterdata.domain.ActiveStatus;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
@@ -22,6 +23,17 @@ import vn.dongthanh.vsmt.masterdata.service.CompanyService.CompanyCommand;
 public final class MasterDataDtos {
 
     private MasterDataDtos() {
+    }
+
+    public record DistrictRequest(
+            @NotBlank @Size(max = 100) String name,
+            @Size(max = 2000) String note,
+            @PositiveOrZero Integer sortOrder) {
+    }
+
+    public record AreaRequest(
+            @NotBlank @Size(max = 100) String name,
+            @NotNull ActiveStatus status) {
     }
 
     public record DistrictDto(

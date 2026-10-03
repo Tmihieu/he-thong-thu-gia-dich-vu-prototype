@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSession } from '../../features/auth/SessionProvider';
 import { useProfile } from '../../features/citizen/api';
 import { initials } from '../../shared/format';
-import { colors, radius, spacing } from '../../shared/theme';
+import { cardShadow, colors, radius, spacing } from '../../shared/theme';
 import { Button, Card, CardTitle, NavRow, Screen } from '../../shared/ui';
 
 export default function AccountScreen() {
@@ -61,11 +61,6 @@ export default function AccountScreen() {
             title="Kiểm tra kết nối máy chủ"
             onPress={() => router.push('/connection')}
           />
-          <NavRow
-            icon={<Ionicons name="information-circle-outline" size={20} color={colors.primary} />}
-            title="Bản demo"
-            subtitle="Thanh toán chỉ mô phỏng, không phát sinh giao dịch thật"
-          />
         </Card>
 
         <Button title="Đăng xuất" variant="ghost" onPress={() => void signOut()} />
@@ -76,10 +71,11 @@ export default function AccountScreen() {
 
 const styles = StyleSheet.create({
   screen: { padding: 0, gap: 0 },
-  hero: { backgroundColor: colors.primary, alignItems: 'center', gap: spacing.xs, padding: spacing.xl, paddingBottom: spacing.xl + spacing.sm, borderBottomLeftRadius: radius.lg, borderBottomRightRadius: radius.lg },
-  avatar: { width: 64, height: 64, borderRadius: radius.pill, backgroundColor: '#ffffff33', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xs },
-  avatarText: { color: '#fff', fontWeight: '800', fontSize: 24 },
-  name: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  // Cùng khung với Trang chủ: hero xanh gr-800, thân nền nhạt bo góc trên trồi lên.
+  hero: { backgroundColor: colors.chrome, alignItems: 'center', gap: spacing.xs, padding: spacing.xl, paddingBottom: spacing.xl + radius.lg },
+  avatar: { width: 64, height: 64, borderRadius: radius.pill, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xs, ...cardShadow },
+  avatarText: { color: colors.primary, fontWeight: '800', fontSize: 22 },
+  name: { color: '#fff', fontSize: 18, fontWeight: '800' },
   phone: { color: colors.heroText, fontSize: 13 },
-  body: { padding: spacing.lg, gap: spacing.md },
+  body: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, marginTop: -radius.lg, padding: spacing.lg, paddingBottom: spacing.xl * 2, gap: spacing.md },
 });

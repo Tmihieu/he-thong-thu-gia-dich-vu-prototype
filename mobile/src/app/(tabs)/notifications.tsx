@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   readAll: { color: colors.primary, fontWeight: '700', fontSize: 14 },
   readAllOff: { color: colors.textMuted },
   pressed: { opacity: 0.7 },
-  row: { flexDirection: 'row', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md },
+  row: { flexDirection: 'row', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.cardBorder, padding: spacing.md },
   rowUnread: { borderColor: colors.primary },
   icon: { width: 38, height: 38, borderRadius: radius.pill, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
   iconUnread: { backgroundColor: colors.primary },

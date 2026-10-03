@@ -13,9 +13,13 @@ afterEach(() => vi.unstubAllGlobals());
 
 async function fillLogin(username: string, password: string) {
   const user = userEvent.setup();
-  await user.type(await screen.findByLabelText('Tên đăng nhập'), username);
+  const usernameInput = await screen.findByLabelText('Tên đăng nhập');
+  // Form điền sẵn tài khoản demo nên xóa trước khi gõ.
+  await user.clear(usernameInput);
+  await user.type(usernameInput, username);
+  await user.clear(screen.getByLabelText('Mật khẩu'));
   await user.type(screen.getByLabelText('Mật khẩu'), password);
-  await user.click(screen.getByRole('button', { name: /Đăng nhập/ }));
+  await user.click(screen.getByRole('button', { name: 'Đăng nhập' }));
 }
 
 describe('đăng nhập', () => {
@@ -35,7 +39,10 @@ describe('đăng nhập', () => {
   it('bỏ trống thì báo lỗi ngay trên form', async () => {
     mockApi({});
     renderApp('/login');
-    await userEvent.setup().click(await screen.findByRole('button', { name: /Đăng nhập/ }));
+    const user = userEvent.setup();
+    await user.clear(await screen.findByLabelText('Tên đăng nhập'));
+    await user.clear(screen.getByLabelText('Mật khẩu'));
+    await user.click(screen.getByRole('button', { name: 'Đăng nhập' }));
     expect(await screen.findByText('Vui lòng nhập tên đăng nhập')).toBeInTheDocument();
     expect(screen.getByText('Vui lòng nhập mật khẩu')).toBeInTheDocument();
   });
@@ -50,11 +57,32 @@ describe('đăng nhập', () => {
     await fillLogin('canbo_xa', 'Demo@2026');
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/commune/subjects'));
-    const menu = await screen.findByRole('menu', { name: 'Menu chính' });
+    const menu = await screen.findByRole('navigation', { name: 'Menu chính' });
     expect(within(menu).getByText('Đối soát')).toBeInTheDocument();
     expect(within(menu).queryByText('Nhật ký')).not.toBeInTheDocument();
     expect(screen.getByText('Nguyễn Thị Mẫu')).toBeInTheDocument();
     expect(sessionStorage.getItem(TOKEN_KEY)).toBe('tok-1');
+    const body = JSON.parse(String((fetchFn.mock.calls[0]![1] as RequestInit).body));
+    expect(body).toEqual({ username: 'canbo_xa', password: 'Demo@2026' });
+  });
+
+  it('form điền sẵn tài khoản admin demo', async () => {
+    mockApi({});
+    renderApp('/login');
+    expect(await screen.findByLabelText('Tên đăng nhập')).toHaveValue('admin');
+    expect(screen.getByLabelText('Mật khẩu')).toHaveValue('Demo@2026');
+  });
+
+  it('bấm nút tài khoản demo thì đăng nhập luôn bằng tài khoản đó', async () => {
+    const fetchFn = mockApi({
+      'POST /api/platform/auth/login': () =>
+        jsonResponse(200, { accessToken: 'tok-2', tokenType: 'Bearer', expiresAt: '2026-10-01T08:00:00Z', user: officer }),
+    });
+    const { router } = renderApp('/login');
+
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Cán bộ xã' }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/commune/subjects'));
     const body = JSON.parse(String((fetchFn.mock.calls[0]![1] as RequestInit).body));
     expect(body).toEqual({ username: 'canbo_xa', password: 'Demo@2026' });
   });
@@ -81,7 +109,7 @@ describe('bảo vệ route', () => {
     renderApp('/commune/companies');
 
     expect(await screen.findByRole('heading', { name: 'Công ty môi trường' })).toBeInTheDocument();
-    expect(within(screen.getByRole('menu', { name: 'Menu chính' })).getByText('Hồ sơ hộ')).toBeInTheDocument();
+    expect(within(screen.getByRole('navigation', { name: 'Menu chính' })).getByText('Hồ sơ hộ')).toBeInTheDocument();
   });
 
   it('token hết hạn/sai (401 từ /me) thì xóa token và về trang đăng nhập', async () => {

@@ -25,7 +25,7 @@ function errorMessage(err: unknown): string | null {
   return err instanceof ApiError ? err.message : 'Thao tác không thành công. Vui lòng thử lại.';
 }
 
-/** Khu vực của cán bộ xã: 24 tổ, công ty đang phụ trách, lọc chưa có công ty, phân công, lịch sử. */
+/** Khu vực của cán bộ xã: 24 tổ, công ty đang phụ trách, lọc chưa có công ty, phân công tổ chưa có công ty, lịch sử. */
 export function AreasPage() {
   const { message } = App.useApp();
   const today = dayjs().format('YYYY-MM-DD');
@@ -49,7 +49,8 @@ export function AreasPage() {
       .filter((r) => !unassignedOnly || !r.assignment);
   }, [areas.data, active.data, districtId, unassignedOnly]);
 
-  const unassignedCount = (areas.data ?? []).filter((a) => !(active.data ?? []).some((x) => x.areaId === a.id)).length;
+  const unassigned = (areas.data ?? []).filter((a) => !(active.data ?? []).some((x) => x.areaId === a.id));
+  const unassignedCount = unassigned.length;
 
   function openModal(areaIds: number[]) {
     assign.reset();
@@ -62,8 +63,8 @@ export function AreasPage() {
         Khu vực
       </Typography.Title>
       <Typography.Paragraph type="secondary">
-        Mỗi tổ có một công ty phụ trách trong cùng thời gian hiệu lực. Phân công mới tự kết thúc phân công cũ và giữ
-        lịch sử. {unassignedCount > 0 && <Tag color="orange">{unassignedCount} tổ chưa có công ty</Tag>}
+        Mỗi tổ có một công ty phụ trách trong cùng thời gian hiệu lực. Chỉ phân công được tổ chưa có công ty phụ
+        trách. {unassignedCount > 0 && <Tag color="orange">{unassignedCount} tổ chưa có công ty</Tag>}
       </Typography.Paragraph>
       <Space wrap style={{ marginBottom: 16 }}>
         <Select
@@ -87,7 +88,11 @@ export function AreasPage() {
         loading={areas.isLoading || active.isLoading}
         dataSource={rows}
         pagination={false}
-        rowSelection={{ selectedRowKeys: selected, onChange: (keys) => setSelected(keys as number[]) }}
+        rowSelection={{
+          selectedRowKeys: selected,
+          onChange: (keys) => setSelected(keys as number[]),
+          getCheckboxProps: (r) => ({ disabled: !!r.assignment }),
+        }}
         locale={{ emptyText: errorMessage(areas.error ?? active.error) ?? 'Không có khu vực phù hợp' }}
         columns={[
           {
@@ -119,17 +124,18 @@ export function AreasPage() {
           },
           {
             title: '',
-            render: (_, r) => (
-              <Button size="small" onClick={() => openModal([r.id])} aria-label={`Phân công ${r.code}`}>
-                {r.assignment ? 'Đổi công ty' : 'Phân công'}
-              </Button>
-            ),
+            render: (_, r) =>
+              !r.assignment && (
+                <Button size="small" onClick={() => openModal([r.id])} aria-label={`Phân công ${r.code}`}>
+                  Phân công
+                </Button>
+              ),
           },
         ]}
       />
       <AssignAreaModal
         open={modalAreas !== null}
-        areas={areas.data ?? []}
+        areas={unassigned}
         companies={companies.data ?? []}
         initialAreaIds={modalAreas ?? []}
         submitting={assign.isPending}

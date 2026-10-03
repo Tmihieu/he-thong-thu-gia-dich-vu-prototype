@@ -1,4 +1,4 @@
-import { App, Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tabs, Tag, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 
 import { ApiError } from '../../../api/client';
@@ -17,13 +17,14 @@ import {
   useUpdateAccount,
 } from '../api';
 import { AccountForm } from './AccountForm';
+import { RolesTab } from './RolesTab';
 
 function errorMessage(err: unknown): string | null {
   if (!err) return null;
   return err instanceof ApiError ? err.message : 'Thao tác không thành công. Vui lòng thử lại.';
 }
 
-/** Tài khoản & phân quyền (T51, quản trị): tạo, sửa vai trò/công ty, khóa/mở khóa, đặt lại mật khẩu. */
+/** Tài khoản & phân quyền (T51, quản trị): tạo, sửa vai trò/công ty, khóa/mở khóa, đặt lại mật khẩu; ma trận vai trò & phạm vi. */
 export function AccountsPage() {
   const { message } = App.useApp();
   const { user: me } = useAuth();
@@ -69,87 +70,95 @@ export function AccountsPage() {
           + Thêm tài khoản
         </Button>
       </Space>
-      <Space wrap style={{ marginBottom: 16 }}>
-        <Input.Search allowClear placeholder="Tên, tên đăng nhập, đơn vị" style={{ width: 280 }} onChange={(e) => setQ(e.target.value)} />
-        <Select
-          aria-label="Lọc vai trò"
-          allowClear
-          placeholder="Tất cả vai trò"
-          style={{ width: 200 }}
-          value={role}
-          onChange={setRole}
-          options={(Object.keys(ROLE_LABELS) as Role[]).map((r) => ({ value: r, label: ROLE_LABELS[r] }))}
-        />
-      </Space>
-      <Table<Account>
-        rowKey="id"
-        loading={accounts.isLoading}
-        dataSource={rows}
-        pagination={{ pageSize: 20, hideOnSinglePage: true }}
-        locale={{ emptyText: errorMessage(accounts.error) ?? 'Không có tài khoản phù hợp' }}
-        columns={[
+      <Tabs
+        items={[
           {
-            title: 'Người dùng',
-            render: (_, a) => (
+            key: 'accounts',
+            label: 'Tài khoản',
+            children: (
               <>
-                <div>{a.fullName}</div>
-                <Typography.Text type="secondary">{a.username}</Typography.Text>
+            <Space wrap style={{ marginBottom: 16 }}>
+              <Input.Search allowClear placeholder="Tên, tên đăng nhập, đơn vị" style={{ width: 280 }} onChange={(e) => setQ(e.target.value)} />
+              <Select
+                aria-label="Lọc vai trò"
+                allowClear
+                placeholder="Tất cả vai trò"
+                style={{ width: 200 }}
+                value={role}
+                onChange={setRole}
+                options={(Object.keys(ROLE_LABELS) as Role[]).map((r) => ({ value: r, label: ROLE_LABELS[r] }))}
+              />
+            </Space>
+            <Table<Account>
+              rowKey="id"
+              loading={accounts.isLoading}
+              dataSource={rows}
+              pagination={{ pageSize: 20, hideOnSinglePage: true }}
+              locale={{ emptyText: errorMessage(accounts.error) ?? 'Không có tài khoản phù hợp' }}
+              columns={[
+                {
+                  title: 'Người dùng',
+                  dataIndex: 'fullName',
+                },
+                { title: 'Vai trò', render: (_, a) => <Tag color="blue">{ROLE_LABELS[a.role]}</Tag> },
+                {
+                  title: 'Công ty / đơn vị',
+                  render: (_, a) => (a.companyId ? companyName.get(a.companyId) : a.organization) ?? '—',
+                },
+                {
+                  title: 'Đăng nhập gần nhất',
+                  render: (_, a) => (a.lastLoginAt ? <DateText value={a.lastLoginAt} withTime /> : 'Chưa đăng nhập'),
+                },
+                {
+                  title: 'Trạng thái',
+                  render: (_, a) => (a.status === 'ACTIVE' ? <Tag color="green">Hoạt động</Tag> : <Tag>Đã khóa</Tag>),
+                },
+                {
+                  title: '',
+                  render: (_, a) => (
+                    <Space size="small">
+                      <Button size="small" onClick={() => openForm(a)} aria-label={`Sửa ${a.username}`}>
+                        Sửa
+                      </Button>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          reset.reset();
+                          setResetting(a);
+                        }}
+                      >
+                        Đặt lại mật khẩu
+                      </Button>
+                      {a.id !== me?.id && (
+                        <Popconfirm
+                          title={a.status === 'ACTIVE' ? `Khóa ${a.username}?` : `Mở khóa ${a.username}?`}
+                          description={a.status === 'ACTIVE' ? 'Tài khoản sẽ không đăng nhập được nữa.' : undefined}
+                          okText={a.status === 'ACTIVE' ? 'Khóa' : 'Mở khóa'}
+                          cancelText="Hủy"
+                          onConfirm={() =>
+                            setLocked.mutate(
+                              { id: a.id, locked: a.status === 'ACTIVE' },
+                              {
+                                onSuccess: (r) => message.success(`${r.status === 'LOCKED' ? 'Đã khóa' : 'Đã mở khóa'} ${r.username}`),
+                                onError: (e) => message.error(errorMessage(e)),
+                              },
+                            )
+                          }
+                        >
+                          <Button size="small" danger={a.status === 'ACTIVE'}>
+                            {a.status === 'ACTIVE' ? 'Khóa' : 'Mở khóa'}
+                          </Button>
+                        </Popconfirm>
+                      )}
+                    </Space>
+                  ),
+                },
+              ]}
+            />
               </>
             ),
           },
-          { title: 'Vai trò', render: (_, a) => <Tag color="blue">{ROLE_LABELS[a.role]}</Tag> },
-          {
-            title: 'Công ty / đơn vị',
-            render: (_, a) => (a.companyId ? companyName.get(a.companyId) : a.organization) ?? '—',
-          },
-          {
-            title: 'Đăng nhập gần nhất',
-            render: (_, a) => (a.lastLoginAt ? <DateText value={a.lastLoginAt} withTime /> : 'Chưa đăng nhập'),
-          },
-          {
-            title: 'Trạng thái',
-            render: (_, a) => (a.status === 'ACTIVE' ? <Tag color="green">Hoạt động</Tag> : <Tag>Đã khóa</Tag>),
-          },
-          {
-            title: '',
-            render: (_, a) => (
-              <Space size="small">
-                <Button size="small" onClick={() => openForm(a)} aria-label={`Sửa ${a.username}`}>
-                  Sửa
-                </Button>
-                <Button
-                  size="small"
-                  onClick={() => {
-                    reset.reset();
-                    setResetting(a);
-                  }}
-                >
-                  Đặt lại mật khẩu
-                </Button>
-                {a.id !== me?.id && (
-                  <Popconfirm
-                    title={a.status === 'ACTIVE' ? `Khóa ${a.username}?` : `Mở khóa ${a.username}?`}
-                    description={a.status === 'ACTIVE' ? 'Tài khoản sẽ không đăng nhập được nữa.' : undefined}
-                    okText={a.status === 'ACTIVE' ? 'Khóa' : 'Mở khóa'}
-                    cancelText="Hủy"
-                    onConfirm={() =>
-                      setLocked.mutate(
-                        { id: a.id, locked: a.status === 'ACTIVE' },
-                        {
-                          onSuccess: (r) => message.success(`${r.status === 'LOCKED' ? 'Đã khóa' : 'Đã mở khóa'} ${r.username}`),
-                          onError: (e) => message.error(errorMessage(e)),
-                        },
-                      )
-                    }
-                  >
-                    <Button size="small" danger={a.status === 'ACTIVE'}>
-                      {a.status === 'ACTIVE' ? 'Khóa' : 'Mở khóa'}
-                    </Button>
-                  </Popconfirm>
-                )}
-              </Space>
-            ),
-          },
+          { key: 'roles', label: 'Vai trò & phạm vi dữ liệu', children: <RolesTab /> },
         ]}
       />
       <AccountForm

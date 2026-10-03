@@ -11,12 +11,14 @@ import {
   TARIFF_GROUP_LABELS,
 } from '../../../shared/labels';
 import {
+  type ContractRequest,
   type Subject,
   type SubjectQuery,
   useAddContract,
   useAreas,
   useCreateSubject,
   useEndSubject,
+  useMemberHistory,
   useSubjects,
   useUpdateContract,
   useUpdateSubject,
@@ -29,7 +31,42 @@ function errorMessage(err: unknown): string {
 
 type Editing = { mode: 'create' } | { mode: 'edit'; subject: Subject } | null;
 
-/** Hồ sơ hộ của cán bộ xã: lọc theo tổ/trạng thái, tìm theo mã/tên/SĐT, tạo, sửa, ngừng cung cấp dịch vụ. */
+type CurrentContract = NonNullable<Subject['currentContract']>;
+
+/** Hợp đồng trên form không khác hợp đồng đang hiệu lực (nhóm giá, hiệu lực, định mức). */
+function sameContract(req: ContractRequest, c: CurrentContract): boolean {
+  return (
+    req.tariffGroup === c.tariffGroup &&
+    req.validFrom === c.validFrom &&
+    (req.validTo ?? null) === c.validTo &&
+    (req.quotaKg ?? null) === (c.quotaKg ?? null)
+  );
+}
+
+/** Lịch sử đổi số nhân khẩu của hộ (đọc từ nhật ký thao tác). Chỉ hiện khi từng có thay đổi. */
+function MemberHistory({ subjectId }: { subjectId: number }) {
+  const history = useMemberHistory(subjectId);
+  const rows = history.data ?? [];
+  if (rows.length === 0) return null;
+  return (
+    <div style={{ marginTop: 24 }}>
+      <Typography.Title level={5}>Lịch sử số nhân khẩu</Typography.Title>
+      <Table
+        size="small"
+        rowKey={(r) => `${r.at}-${r.to}`}
+        pagination={false}
+        dataSource={rows}
+        columns={[
+          { title: 'Ngày', dataIndex: 'at', render: (v: string) => new Date(v).toLocaleDateString('vi-VN') },
+          { title: 'Người sửa', dataIndex: 'by' },
+          { title: 'Số người', render: (_, r) => (r.from == null ? `Tạo hồ sơ: ${r.to ?? '—'}` : `${r.from} → ${r.to ?? '—'}`) },
+        ]}
+      />
+    </div>
+  );
+}
+
+/** Hồ sơ hộ của cán bộ xã: lọc theo tổ/loại hộ/trạng thái, tìm theo mã/tên/SĐT, tạo, sửa, ngừng cung cấp dịch vụ. */
 export function SubjectsPage() {
   const { message } = App.useApp();
   const areas = useAreas();
@@ -54,8 +91,12 @@ export function SubjectsPage() {
       if (editing?.mode === 'edit') {
         const id = editing.subject.id;
         await update.mutateAsync({ id, body: values.subject });
+        const current = editing.subject.currentContract;
         if (values.contract && values.contractId !== null) {
-          await updateContract.mutateAsync({ id: values.contractId, body: values.contract });
+          // Đổi số người làm máy chủ tự tách hợp đồng theo kỳ; gửi lại hợp đồng cũ nguyên vẹn sẽ mở lại hợp đồng đã đóng.
+          if (!current || !sameContract(values.contract, current)) {
+            await updateContract.mutateAsync({ id: values.contractId, body: values.contract });
+          }
         } else if (values.contract) {
           await addContract.mutateAsync({ subjectId: id, body: values.contract });
         }
@@ -99,6 +140,14 @@ export function SubjectsPage() {
           options={(areas.data ?? []).map((a) => ({ value: a.id, label: `${a.code} · ${a.name}` }))}
         />
         <Select
+          aria-label="Lọc theo loại hộ"
+          allowClear
+          placeholder="Mọi loại hộ"
+          style={{ width: 180 }}
+          onChange={(subjectType?: Subject['subjectType']) => setQuery((prev) => ({ ...prev, subjectType, page: 0 }))}
+          options={Object.entries(SUBJECT_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
+        />
+        <Select
           aria-label="Lọc theo trạng thái"
           allowClear
           placeholder="Mọi trạng thái"
@@ -135,6 +184,7 @@ export function SubjectsPage() {
           },
           { title: 'Tên', dataIndex: 'name' },
           { title: 'Loại', dataIndex: 'subjectType', render: (t: Subject['subjectType']) => SUBJECT_TYPE_LABELS[t] },
+          { title: 'Địa chỉ', dataIndex: 'address' },
           { title: 'Tổ/Ấp/Thôn', dataIndex: 'areaCode' },
           { title: 'SĐT', dataIndex: 'phone', render: (p: string | null) => p ?? '—' },
           {
@@ -146,7 +196,7 @@ export function SubjectsPage() {
                   {s.currentContract.exempt && <Tag color="purple">Miễn 100%</Tag>}
                 </>
               ) : (
-                <Tag>Chưa có hợp đồng</Tag>
+                <Tag>Chưa đăng ký thu</Tag>
               ),
           },
           {
@@ -182,6 +232,7 @@ export function SubjectsPage() {
             onCancel={() => setEditing(null)}
           />
         )}
+        {editing?.mode === 'edit' && <MemberHistory subjectId={editing.subject.id} />}
       </Drawer>
 
       <Modal

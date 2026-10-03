@@ -39,7 +39,7 @@ public class AreaProgressService {
     private final ServiceSubjectRepository subjects;
     private final Clock clock;
 
-    public record AreaProgress(Area area, Company company, long due, long collected, long chargeCount, long paidCount,
+    public record AreaProgress(Area area, Company company, long due, long collected, long chargeCount, long paidCount, long exemptCount,
             long subjectCount) {
 
         public double collectionRate() {
@@ -52,7 +52,7 @@ public class AreaProgressService {
     }
 
     public List<AreaProgress> progress(Long periodId, CurrentUser actor) {
-        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER);
+        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER, Role.LEADER);
         Map<Long, List<AreaProgressRow>> byArea = new HashMap<>();
         queries.progressByArea(periodId).forEach(r -> byArea.computeIfAbsent(r.areaId(), k -> new ArrayList<>()).add(r));
         Map<Long, Company> current = new HashMap<>();
@@ -69,12 +69,12 @@ public class AreaProgressService {
             long subjectsInArea = subjectCounts.getOrDefault(area.getId(), 0L);
             List<AreaProgressRow> rows = byArea.get(area.getId());
             if (rows == null) {
-                result.add(new AreaProgress(area, current.get(area.getId()), 0, 0, 0, 0, subjectsInArea));
+                result.add(new AreaProgress(area, current.get(area.getId()), 0, 0, 0, 0, 0, subjectsInArea));
             } else {
                 // Thường một dòng; nhiều dòng khi tổ đổi công ty giữa hai lần phát hành trong cùng kỳ.
                 for (AreaProgressRow r : rows) {
                     result.add(new AreaProgress(area, companyById.get(r.companyId()), r.due(), r.collected(),
-                            r.chargeCount(), r.paidCount(), subjectsInArea));
+                            r.chargeCount(), r.paidCount(), r.exemptCount(), subjectsInArea));
                 }
             }
         }

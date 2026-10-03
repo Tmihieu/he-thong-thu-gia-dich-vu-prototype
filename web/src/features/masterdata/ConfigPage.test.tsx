@@ -11,7 +11,7 @@ const tariffs = [
   {
     id: 1, code: 'BG-65-2026', legalBasis: 'QĐ 65/2026/QĐ-UBND', issuedDate: null, validFrom: '2026-09-01',
     validTo: '2027-06-30', status: 'ACTIVE', scopeNote: 'Số tạm', note: null,
-    rates: [{ tariffGroup: 'HH_3_PLUS', collectionFee: 57000, processingFee: 23000, monthlyTotal: 80000, unitLabel: 'đ/hộ/tháng' }],
+    rates: [{ tariffGroup: 'HH_3_PLUS', collectionFee: 57000, transportFee: 23000, monthlyTotal: 80000, unitLabel: 'đ/hộ/tháng' }],
   },
 ];
 const period = {
@@ -91,5 +91,89 @@ describe('Cấu hình · kỳ thu', () => {
     await userEvent.click(screen.getByRole('button', { name: /mở rộng|expand/i }));
     await waitFor(() => expect(screen.getByText('HGĐ ≥ 3 người')).toBeInTheDocument());
     expect(screen.getByText(/80\.000/)).toBeInTheDocument();
+  });
+});
+
+describe('Cấu hình · soạn và ban hành biểu giá', () => {
+  const groups = ['HH_UP_TO_2', 'HH_3_PLUS', 'SMALL_UP_TO_126', 'SMALL_126_TO_250', 'SMALL_250_TO_500', 'BY_VOLUME'];
+  const draft = {
+    id: 2, code: 'BG-70-2027', legalBasis: 'QĐ 70/2026/QĐ-UBND', issuedDate: null, validFrom: '2027-01-01', validTo: null,
+    status: 'DRAFT', scopeNote: null, note: null,
+    rates: groups.map((g) => ({ tariffGroup: g, collectionFee: 30000, transportFee: 10000, monthlyTotal: 40000, unitLabel: 'đ/hộ/tháng' })),
+  };
+
+  it('sửa dự thảo gửi đủ các nhóm giá; bản đã ban hành có nút Sửa', async () => {
+    const fetchFn = mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, admin),
+      'GET /api/masterdata/periods': () => jsonResponse(200, []),
+      'GET /api/masterdata/tariffs': () => jsonResponse(200, [draft, ...tariffs]),
+      'PUT /api/masterdata/tariffs/2': () => jsonResponse(200, draft),
+    });
+    renderApp('/admin/config');
+
+    await userEvent.click(await screen.findByRole('tab', { name: 'Biểu giá' }));
+    expect(await screen.findByText('BG-70-2027')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Sửa' })).toHaveLength(2);
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Sửa' })[0]!);
+    const dialog = await screen.findByRole('dialog');
+    const fee = within(dialog).getByLabelText('Thu gom HGĐ ≤ 2 người');
+    await userEvent.clear(fee);
+    await userEvent.type(fee, '35000');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu dự thảo' }));
+
+    await waitFor(() => expect(fetchFn.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === 'PUT')).toBe(true));
+    const put = fetchFn.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === 'PUT')!;
+    const body = JSON.parse(String((put[1] as RequestInit).body));
+    expect(body.rates).toHaveLength(6);
+    expect(body.rates[0]).toMatchObject({ tariffGroup: 'HH_UP_TO_2', collectionFee: 35000, transportFee: 10000 });
+    expect(body).toMatchObject({ legalBasis: 'QĐ 70/2026/QĐ-UBND', validFrom: '2027-01-01' });
+  });
+
+  it('ban hành dự thảo gọi API ban hành; lỗi từ máy chủ hiện tiếng Việt', async () => {
+    const fetchFn = mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, admin),
+      'GET /api/masterdata/periods': () => jsonResponse(200, []),
+      'GET /api/masterdata/tariffs': () => jsonResponse(200, [draft, ...tariffs]),
+      'POST /api/masterdata/tariffs/2/issue': () =>
+        jsonResponse(422, { code: 'TARIFF_PERIOD_ALREADY_OPEN', message: 'Đã mở Tháng 01/2027 theo biểu giá cũ.' }),
+    });
+    renderApp('/admin/config');
+
+    await userEvent.click(await screen.findByRole('tab', { name: 'Biểu giá' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Ban hành' }));
+    // Nút thứ hai là nút xác nhận trong Popconfirm.
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Ban hành' })).toHaveLength(2));
+    await userEvent.click(screen.getAllByRole('button', { name: 'Ban hành' })[1]!);
+
+    expect(await screen.findByText('Đã mở Tháng 01/2027 theo biểu giá cũ.')).toBeInTheDocument();
+    expect(fetchFn.mock.calls.some(([url]) => String(url) === '/api/masterdata/tariffs/2/issue')).toBe(true);
+  });
+
+  it('sửa biểu giá đã ban hành giữ hiệu lực và lưu đơn giá mới', async () => {
+    let published = { ...draft, status: 'ACTIVE', issuedDate: '2026-10-01' };
+    const fetchFn = mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, admin),
+      'GET /api/masterdata/periods': () => jsonResponse(200, []),
+      'GET /api/masterdata/tariffs': () => jsonResponse(200, [published]),
+      'PUT /api/masterdata/tariffs/2': (_, init) => {
+        published = { ...published, ...JSON.parse(String(init.body)) };
+        return jsonResponse(200, published);
+      },
+    });
+    renderApp('/admin/config');
+    await userEvent.click(await screen.findByRole('tab', { name: 'Biểu giá' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByLabelText('Hiệu lực từ')).toBeDisabled();
+    expect(within(dialog).getByLabelText('Hiệu lực đến')).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Ban hành' })).not.toBeInTheDocument();
+    fireEvent.change(within(dialog).getByLabelText('Thu gom HGĐ ≤ 2 người'), { target: { value: '45000' } });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu thay đổi' }));
+    await waitFor(() => expect(fetchFn.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(true));
+    const put = fetchFn.mock.calls.find(([, init]) => init?.method === 'PUT')!;
+    expect(JSON.parse(String(put[1]!.body))).toMatchObject({ validFrom: '2027-01-01', rates: [
+      { tariffGroup: 'HH_UP_TO_2', collectionFee: 45000 }, {}, {}, {}, {}, {},
+    ] });
   });
 });

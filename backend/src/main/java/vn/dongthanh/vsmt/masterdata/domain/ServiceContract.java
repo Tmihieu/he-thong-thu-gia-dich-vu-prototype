@@ -55,6 +55,11 @@ public class ServiceContract extends BaseEntity {
     @Setter
     private String note;
 
+    /** Định mức kg/tháng cho nhóm theo ký (BY_VOLUME); null = chưa cân, chưa lập được khoản. */
+    @Setter
+    @Column
+    private Integer quotaKg;
+
     public static ServiceContract create(String contractNo, ServiceSubject subject, TariffGroup group,
             LocalDate validFrom, LocalDate validTo, boolean exempt, String exemptReason, String exemptDecisionNo) {
         ServiceContract c = new ServiceContract();
@@ -79,6 +84,13 @@ public class ServiceContract extends BaseEntity {
         this.exempt = exempt;
         this.exemptReason = exempt ? exemptReason.trim() : null;
         this.exemptDecisionNo = exempt ? exemptDecisionNo : null;
+    }
+
+    /** Lãnh đạo từ chối miễn giảm (O8): bỏ cờ miễn, giữ nhóm giá và hiệu lực. */
+    public void revokeExemption() {
+        this.exempt = false;
+        this.exemptReason = null;
+        this.exemptDecisionNo = null;
     }
 
     public boolean covers(LocalDate date) {

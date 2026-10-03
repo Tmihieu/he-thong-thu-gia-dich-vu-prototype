@@ -115,9 +115,60 @@ class CompanyLedgerServiceTest {
         assertThat(service("2026-10-15").row(1L, 10L).lowCollectionRate()).isTrue();
 
         // Cấp tổ vẫn theo đã thu / phải thu.
-        assertThat(new AreaProgress(null, null, 800_000, 359_999, 10, 5, 10).lowCollectionRate()).isTrue();
-        assertThat(new AreaProgress(null, null, 800_000, 360_000, 10, 5, 10).lowCollectionRate()).isFalse();
-        assertThat(new AreaProgress(null, null, 0, 0, 0, 0, 10).lowCollectionRate()).isFalse();
+        assertThat(new AreaProgress(null, null, 800_000, 359_999, 10, 5, 0, 10).lowCollectionRate()).isTrue();
+        assertThat(new AreaProgress(null, null, 800_000, 360_000, 10, 5, 0, 10).lowCollectionRate()).isFalse();
+        assertThat(new AreaProgress(null, null, 0, 0, 0, 0, 0, 10).lowCollectionRate()).isFalse();
+    }
+
+    @Test
+    void retainedCollectionPartReducesPayableAndKeepsReconciliationMatched() {
+        // Công ty thu 1.000.000, cầm lại phần thu gom 100.000, nộp 900.000: nộp đủ, đối soát khớp, tỷ lệ nộp tính trên phần phải nộp.
+        due(10L, 1L, 1_000_000, 10);
+        when(queries.retainedByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 100_000, 0)));
+        when(queries.collectedByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 1_000_000, 10)));
+        when(remitted.receivedByCompany(10L)).thenReturn(Map.of(1L, new RemittedTotals.Received(900_000, 1)));
+        LedgerRow r = service("2026-10-15").row(1L, 10L);
+
+        assertThat(r.retained()).isEqualTo(100_000);
+        assertThat(r.payable()).isEqualTo(900_000);
+        assertThat(r.remaining()).isZero();
+        assertThat(r.progress()).isEqualTo(Progress.PAID_IN_FULL);
+        assertThat(r.reconciliation()).isEqualTo(Reconciliation.MATCHED);
+        assertThat(r.gap()).isZero();
+
+        // Mới nộp 450.000: còn phải nộp 450.000, tỷ lệ nộp = 450.000 / (1.000.000 − 100.000) = 50%.
+        when(remitted.receivedByCompany(10L)).thenReturn(Map.of(1L, new RemittedTotals.Received(450_000, 1)));
+        LedgerRow half = service("2026-10-15").row(1L, 10L);
+        assertThat(half.remaining()).isEqualTo(450_000);
+        assertThat(half.remittedRate()).isEqualTo(50.0);
+    }
+
+    @Test
+    void noRetainedMeansPayableEqualsDueMinusAdjustment() {
+        due(10L, 1L, 1_000_000, 10);
+        LedgerRow r = service("2026-10-15").row(1L, 10L);
+        assertThat(r.retained()).isZero();
+        assertThat(r.payable()).isEqualTo(1_000_000);
+
+        // Khoản kỳ trước được xóa nợ ở kỳ này: điều chỉnh 200.000 trong đó thu gom 40.000 đã trừ khỏi phần giữ lại.
+        when(queries.writeOffAdjustmentByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 200_000, 2)));
+        when(queries.retainedByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 160_000, 0)));
+        LedgerRow adjusted = service("2026-10-15").row(1L, 10L);
+        assertThat(adjusted.payable()).isEqualTo(1_000_000 - 200_000 - 160_000);
+        assertThat(adjusted.remaining()).isEqualTo(adjusted.payable());
+    }
+
+    @Test
+    void retainedCollectionPartAlsoAppliesToPreviousDebt() {
+        // Kỳ 9 phải thu 1.000.000, công ty cầm lại 100.000, nộp 900.000: không còn nợ kỳ trước. Nộp 800.000: nợ 100.000.
+        when(queries.retainedByCompanyAndPeriodBefore(any())).thenReturn(List.of(new CompanyPeriodAmount(1L, 9L, 100_000)));
+        when(periods.findAllById(any())).thenReturn(List.of(sept));
+        when(queries.dueByCompanyAndPeriodBefore(any())).thenReturn(List.of(new CompanyPeriodAmount(1L, 9L, 1_000_000)));
+        when(remitted.receivedByCompanyAndPeriod()).thenReturn(List.of(new CompanyPeriodAmount(1L, 9L, 900_000)));
+        assertThat(service("2026-10-15").overdueDebtsOf(1L)).isEmpty();
+
+        when(remitted.receivedByCompanyAndPeriod()).thenReturn(List.of(new CompanyPeriodAmount(1L, 9L, 800_000)));
+        assertThat(service("2026-10-15").overdueDebtsOf(1L)).singleElement().satisfies(d -> assertThat(d.remaining()).isEqualTo(100_000));
     }
 
     @Test

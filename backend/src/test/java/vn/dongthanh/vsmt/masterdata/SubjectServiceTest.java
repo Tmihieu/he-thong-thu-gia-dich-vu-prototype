@@ -15,6 +15,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -44,7 +45,9 @@ class SubjectServiceTest {
     final AreaRepository areas = mock(AreaRepository.class);
     final AreaAssignmentService assignments = mock(AreaAssignmentService.class);
     final AuditService audit = mock(AuditService.class);
-    final SubjectService service = new SubjectService(subjects, contracts, areas, assignments, audit);
+    final SubjectService service = new SubjectService(subjects, contracts, areas, assignments, audit,
+            mock(ApplicationEventPublisher.class), mock(vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository.class),
+            java.time.Clock.fixed(java.time.Instant.parse("2026-10-15T05:00:00Z"), java.time.ZoneId.of("Asia/Ho_Chi_Minh")));
 
     final CurrentUser officer = new CurrentUser(2L, "canbo_xa", Role.COMMUNE_OFFICER, null);
     final Area kv07 = withId(Area.create("KV07", "Tổ dân phố 07", District.create("DTH", "Đông Thạnh")), 7L);

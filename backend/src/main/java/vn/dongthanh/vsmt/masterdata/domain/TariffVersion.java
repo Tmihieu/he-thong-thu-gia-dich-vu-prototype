@@ -66,10 +66,30 @@ public class TariffVersion extends BaseEntity {
         return v;
     }
 
-    public TariffRate addRate(TariffGroup group, long collectionFee, long processingFee, String unitLabel) {
-        TariffRate rate = TariffRate.create(this, group, collectionFee, processingFee, unitLabel);
+    public TariffRate addRate(TariffGroup group, long collectionFee, long transportFee, String unitLabel) {
+        TariffRate rate = TariffRate.create(this, group, collectionFee, transportFee, unitLabel);
         rates.add(rate);
         return rate;
+    }
+
+    /** Đặt đơn giá một nhóm (dự thảo): có rồi thì sửa tại chỗ, chưa có thì thêm. */
+    public void putRate(TariffGroup group, long collectionFee, long transportFee, String unitLabel) {
+        rateFor(group).ifPresentOrElse(r -> r.update(collectionFee, transportFee, unitLabel),
+                () -> addRate(group, collectionFee, transportFee, unitLabel));
+    }
+
+    /** Ban hành dự thảo: chuyển sang Đang áp dụng, ghi ngày ban hành. */
+    public void issue(LocalDate today) {
+        status = TariffStatus.ACTIVE;
+        issuedDate = today;
+    }
+
+    /** Kết thúc hiệu lực ngay trước {@code nextFrom} (bị bản mới thay); hết hạn trước hôm nay thì chuyển Hết hiệu lực. */
+    public void endBefore(LocalDate nextFrom, LocalDate today) {
+        validTo = nextFrom.minusDays(1);
+        if (validTo.isBefore(today)) {
+            status = TariffStatus.EXPIRED;
+        }
     }
 
     /** Ngày {@code date} nằm trong hiệu lực (hai đầu tính cả; không có ngày hết hạn = vô thời hạn). */

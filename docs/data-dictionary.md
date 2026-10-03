@@ -294,6 +294,7 @@ Hộ gia đình / hộ kinh doanh / doanh nghiệp. Hiển thị chung form "H�
 | Miễn 100%         | `exempt`             | `bool`              | Có           | Xã                 | false         | Demo | Mặc định false. Miễn giảm một phần ngoài phạm vi                    |
 | Lý do miễn        | `exempt_reason`      | `text(255)`         | Có điều kiện | Xã                 | Hộ nghèo      | Demo | Bắt buộc khi `exempt = true`                                        |
 | Số văn bản miễn   | `exempt_decision_no` | `text(50)`          | Không        | Xã                 |               | Thật |                                                                     |
+| Định mức kg/tháng | `quota_kg`           | `integer`           | Không        | Xã                 | 600           | Demo | `> 0`; dùng cho nhóm `BY_VOLUME`: tiền = đơn giá đ/kg × định mức × số tháng; NULL thì chưa lập được khoản (`QUOTA_KG_REQUIRED`) |
 | Ghi chú           | `note`               | `text`              | Không        | Xã                 |               | Demo |                                                                     |
 
 
@@ -301,12 +302,14 @@ Hộ gia đình / hộ kinh doanh / doanh nghiệp. Hiển thị chung form "H�
 
 
 | Giá trị           | Nhãn               | Giá prototype (đ/tháng)      |
-| ----------------- | ------------------ | ---------------------------- |
-| `HH_UP_TO_2`      | HGĐ ≤ 2 người      | 40.000                       |
-| `HH_3_PLUS`       | HGĐ ≥ 3 người      | 80.000                       |
-| `SMALL_GENERATOR` | Chủ nguồn thải nhỏ | 119.000                      |
-| `BY_VOLUME` | Theo khối lượng | 1.266.000 (số tạm; đơn vị tính chờ QĐ 65/2026) |
-
+| Giá trị | Nhãn | Đơn giá demo (thu gom + vận chuyển) |
+| ----------------- | ------------------------------------ | --------------------------------------- |
+| `HH_UP_TO_2` | HGĐ ≤ 2 người | 29.000 + 11.000 = 40.000 đ/hộ/tháng |
+| `HH_3_PLUS` | HGĐ ≥ 3 người | 57.000 + 23.000 = 80.000 đ/hộ/tháng |
+| `SMALL_UP_TO_126` | Chủ nguồn thải nhỏ ≤ 126 kg/tháng | 57.000 + 23.000 = 80.000 đ/tháng |
+| `SMALL_126_TO_250` | Chủ nguồn thải nhỏ 126–250 kg/tháng | 85.000 + 34.000 = 119.000 đ/tháng |
+| `SMALL_250_TO_500` | Chủ nguồn thải nhỏ 250–500 kg/tháng | 170.000 + 68.000 = 238.000 đ/tháng |
+| `BY_VOLUME` | Chủ nguồn thải lớn 500–9.000 kg/tháng | 453 + 180 = 633 đ/kg (chưa lập được khoản, chờ tính theo ký) |
 
 **Khóa/ràng buộc:** `contract_no` duy nhất; mỗi `subject_id` tối đa 1 hợp đồng hiệu lực tại một thời điểm (exclusion constraint theo `daterange(valid_from, valid_to)`); `valid_to ≥ valid_from`.
 
@@ -337,14 +340,14 @@ Hộ gia đình / hộ kinh doanh / doanh nghiệp. Hiển thị chung form "H�
 | Phiên bản biểu giá | `tariff_version_id` | `FK→TariffVersion` | Có       | Hệ thống | 1           | Demo |                                               |
 | Nhóm giá           | `tariff_group`      | `enum TariffGroup` | Có       | Xã       | `HH_3_PLUS` | Demo |                                               |
 | Thu gom | `collection_fee` | `money` | Có | Xã | 57000 | Demo | Số tạm cho tới khi có QĐ 65/2026 (G9) |
-| Xử lý | `processing_fee` | `money` | Có | Xã | 23000 | Demo | Số tạm (G9) |
-| Tổng mỗi tháng | `monthly_total` | `money` | Có | Hệ thống | 80000 | Demo | = thu gom + xử lý (CHECK) |
-| Đơn vị tính | `unit_label` | `text(30)` | Có | Xã | đ/hộ/tháng | Demo | ⚠ Đơn vị của nhóm `BY_VOLUME` chưa rõ; tạm `đ/tháng` như prototype |
+| Vận chuyển | `transport_fee` | `money` | Có | Xã | 23000 | Demo | Số tạm (G9); trước đây gọi là "xử lý" |
+| Tổng mỗi tháng | `monthly_total` | `money` | Có | Hệ thống | 80000 | Demo | = thu gom + vận chuyển (CHECK); với nhóm đ/kg là tổng đơn giá mỗi kg |
+| Đơn vị tính | `unit_label` | `text(30)` | Có | Xã | đ/hộ/tháng | Demo | Cố định theo nhóm: `đ/hộ/tháng` (hộ gia đình), `đ/tháng` (chủ nguồn thải nhỏ), `đ/kg` (`BY_VOLUME`) |
 
 
-**Khóa/ràng buộc:** duy nhất `(tariff_version_id, tariff_group)`; `CHECK monthly_total = collection_fee + processing_fee`. Biểu giá chỉ gồm **2 thành phần** thu gom + xử lý, không tách vận chuyển và VAT (G9, trả lời 24/09/2026).
+**Khóa/ràng buộc:** duy nhất `(tariff_version_id, tariff_group)`; `CHECK monthly_total = collection_fee + transport_fee`. Biểu giá chỉ gồm **2 thành phần** thu gom + vận chuyển, không có VAT (G9; thành phần thứ hai đổi tên từ "xử lý" sang "vận chuyển" ngày 01/10/2026).
 
-**Seed tạm (số tạm, thay khi có QĐ 65/2026):** `HH_UP_TO_2` 29.000 + 11.000 = 40.000 · `HH_3_PLUS` 57.000 + 23.000 = 80.000 · `SMALL_GENERATOR` 119.000 + 0 · `BY_VOLUME` 1.266.000 + 0.
+**Seed `BG-65-2026`:** theo bảng QĐ 65/2026 như ở trên. Nhóm `BY_VOLUME` (500 đến dưới 9.000 kg/tháng) tính đ/kg × `quota_kg` của hợp đồng, chưa có định mức thì chưa lập được khoản (`QUOTA_KG_REQUIRED`); doanh nghiệp mẫu tạm áp bậc `SMALL_250_TO_500`.
 
 ### FeeType — Loại phí · `fee_types` · Phần A
 
@@ -689,30 +692,43 @@ Timeline lưu nối tiếp, không ghi đè. Không có `updated_at`, `updated_b
 
 ### MarketPost — Bài đăng chợ đồ cũ · `market_posts` · Phần B
 
+Chợ đồ cũ v2 (V25, [spec](cho-do-cu-spec.md)): thay tiêu đề/mô tả/loại/nơi nhận bằng caption + tag + danh mục. Không có trường giá (D01). Cột cũ `title`, `description`, `post_type`, `pickup_location`, `photo_urls` giữ làm dữ liệu legacy, bỏ NOT NULL, không dùng trong API.
 
-| Tên hiển thị (VI) | Tên kỹ thuật      | Kiểu                    | Bắt buộc | Nguồn     | Ví dụ                       | Mức  | Ghi chú                            |
-| ----------------- | ----------------- | ----------------------- | -------- | --------- | --------------------------- | ---- | ---------------------------------- |
-| Mã bài            | `code`            | `text(20)`              | Có       | Hệ thống  | `CDC-041`                   | Demo | Duy nhất                           |
-| Người đăng        | `author_id`       | `FK→CitizenAccount`     | Có       | Hệ thống  | 1                           | Demo | Hiển thị "tên · tổ"                |
-| Tiêu đề           | `title`           | `text(150)`             | Có       | Người dân | Ghế sofa 3 chỗ còn dùng tốt | Demo |                                    |
-| Hình thức         | `post_type`       | `enum MarketPostType`   | Có       | Người dân | `GIVE`                      | Demo |                                    |
-| Mô tả             | `description`     | `text(2000)`            | Có       | Người dân |                             | Demo |                                    |
-| Ảnh               | `photo_urls`      | `text` (danh sách)      | Không    | Người dân |                             | Demo | Tối đa 5 ảnh, ≤ 5 MB/ảnh, JPEG/PNG/WebP (T47 (3, 4)) |
-| Nơi nhận          | `pickup_location` | `text(255)`             | Không    | Người dân | Hẻm 12, Tổ 5                | Demo |                                    |
-| Trạng thái | `status` | `enum MarketPostStatus` | Có | Hệ thống | `OPEN` | Demo | Người đăng tự đóng, không mở lại; bài đã đóng không nhận bình luận mới; không kiểm duyệt (D9, T47 (1, 2), O6) |
+| Tên hiển thị (VI) | Tên kỹ thuật | Kiểu | Bắt buộc | Nguồn | Ví dụ | Mức | Ghi chú |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Mã bài | `code` | `text(20)` | Có | Hệ thống | `CDC-041` | Demo | Duy nhất |
+| Người đăng | `author_id` | `FK→CitizenAccount` | Có | Hệ thống | 1 | Demo | Chủ bài theo tài khoản, không theo hộ |
+| Tổ | `area_id` | `FK→Area` | Có | Hệ thống | 7 | Demo | Snapshot tổ của hộ lúc đăng; bài cũ lấy tổ lúc nâng cấp |
+| Nội dung | `caption` | `text(2500)` | Có | Người dân | Ghế sofa 3 chỗ… | Demo | Trim, plain text; bài cũ = tiêu đề + 2 xuống dòng + mô tả |
+| Danh mục | `category` | `enum MarketCategory` | Có | Người dân | `OTHER` | Demo | Mặc định OTHER |
+| Trạng thái | `status` | `enum MarketPostStatus` | Có | Hệ thống | `OPEN` | Demo | Chủ bài đóng/mở lại; đóng thì không nhận bình luận/gọi mới |
+| Ẩn | `hidden` | `boolean` | Có | Người dân | false | Demo | Độc lập với trạng thái; chỉ chủ bài thấy bài ẩn |
+| Chia sẻ SĐT | `share_phone` | `boolean` | Có | Người dân | false | Demo | Mặc định tắt |
+| SĐT liên hệ | `contact_phone` | `text(15)` | Không | Người dân | 0912345678 | Demo | Tự nhập, null khi không chia sẻ; chỉ trả qua endpoint liên hệ |
+| Mã yêu cầu | `client_request_id`, `request_fingerprint` | `uuid`, `text(64)` | Không | Hệ thống | | Demo | Chống tạo trùng khi retry; unique(author, request) |
+| Lần sửa | `edited_at` | `timestamp` | Không | Hệ thống | | Demo | Hiện "Đã chỉnh sửa" |
 
-
-**Enum `MarketPostType`:** `GIVE` Cho tặng · `EXCHANGE` Trao đổi
-**Enum `MarketPostStatus`** (D9): `OPEN` Đang đăng · `CLOSED` Đã cho/đổi xong
+**Enum `MarketTag`** (bảng `market_post_tags`, 1–4 tag mỗi bài): `FIND` Tìm đồ · `SELL` Bán đồ · `GIVE` Cho tặng · `EXCHANGE` Đổi đồ
+**Enum `MarketCategory`:** `HOUSEHOLD` Đồ gia dụng · `ELECTRONICS` Điện tử · `FURNITURE` Nội thất · `CHILDREN` Đồ trẻ em · `TOOLS_VEHICLES` Xe đạp và dụng cụ · `OTHER` Khác
+**Enum `MarketPostStatus`:** `OPEN` Đang đăng · `CLOSED` Đã xong
 
 ### MarketComment — Bình luận chợ đồ cũ · `market_comments` · Phần B
 
 
-| Tên hiển thị (VI) | Tên kỹ thuật | Kiểu                | Bắt buộc | Nguồn     | Ví dụ          | Mức  | Ghi chú                        |
-| ----------------- | ------------ | ------------------- | -------- | --------- | -------------- | ---- | ------------------------------ |
-| Bài đăng          | `post_id`    | `FK→MarketPost`     | Có       | Hệ thống  | 41             | Demo |                                |
-| Người bình luận   | `author_id`  | `FK→CitizenAccount` | Có       | Hệ thống  | 2              | Demo |                                |
-| Nội dung          | `content`    | `text(1000)`        | Có       | Người dân | Còn không chị? | Demo | Có thể cắt khỏi demo (plan C4) |
+| Tên hiển thị (VI) | Tên kỹ thuật | Kiểu | Bắt buộc | Nguồn | Ví dụ | Mức | Ghi chú |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Bài đăng | `post_id` | `FK→MarketPost` | Có | Hệ thống | 41 | Demo | |
+| Người bình luận | `author_id` | `FK→CitizenAccount` | Có | Hệ thống | 2 | Demo | |
+| Nội dung | `content` | `text(1000)` | Có | Người dân | Còn không chị? | Demo | Phẳng, không sửa/xóa |
+| Mã yêu cầu | `client_request_id`, `request_fingerprint` | `uuid`, `text(64)` | Không | Hệ thống | | Demo | Chống ghi trùng khi retry |
+
+### Bảng phụ chợ đồ cũ v2 (V25)
+
+| Bảng | Khóa / cột | Ghi chú |
+| --- | --- | --- |
+| `market_saved_posts` | PK(`citizen_id`, `post_id`), `created_at` | Bài đã lưu, riêng từng tài khoản |
+| `market_user_blocks` | PK(`blocker_id`, `blocked_id`), `created_at` | Có hướng, hiệu lực hai chiều trong chợ; không chặn chính mình |
+| `market_images` | `id`, `storage_name`, `uploader_id`, `post_id`, `sort_order`, `legacy`, `created_at` | Metadata quyền ảnh (bytes ở thư mục upload); không xóa khi tháo ảnh để route ảnh cũ vẫn biết file thuộc chợ |
 
 
 ### BulkyWasteRequest — Đăng ký thu gom rác cồng kềnh · `bulky_waste_requests` · Phần B
@@ -822,7 +838,7 @@ Timeline lưu nối tiếp, không ghi đè. Không có `updated_at`, `updated_b
 | code (BG-65-G2-H3, mỗi nhóm một mã) | → `TariffVersion.code` (một mã cho cả phiên bản) + `TariffRate` (mỗi nhóm một dòng)                             |
 | legal                               | → `TariffVersion.legal_basis`                                                                                   |
 | scope                               | → `TariffVersion.scope_note` + `TariffRate.tariff_group`                                                        |
-| collection / transport / processing | → `TariffRate.collection_fee` / `processing_fee` (tiền số); vận chuyển bỏ — biểu giá chỉ 2 thành phần (G9); "Theo định mức" bỏ |
+| collection / transport / processing | → `TariffRate.collection_fee` / `transport_fee` (tiền số); biểu giá chỉ 2 thành phần thu gom + vận chuyển (G9); "Theo định mức" bỏ |
 | effective                           | → `TariffVersion.valid_from`, `valid_to`                                                                        |
 | status                              | → `TariffVersion.status`                                                                                        |
 | Không liên kết với giá tính tiền    | bỏ hành vi — giá tính tiền lấy từ `TariffRate` của phiên bản gắn kỳ                                             |
@@ -1016,7 +1032,7 @@ Timeline lưu nối tiếp, không ghi đè. Không có `updated_at`, `updated_b
 | `RS_USERS.lastLogin`                               | → `User.last_login_at`                                                                                                                                        |
 | `RS_USERS.status` Hoạt động / Đã khóa              | → `User.status`                                                                                                                                               |
 | `RS_USERS.status` Bắt buộc 2FA                     | bỏ — 2FA ngoài phạm vi 4 tuần                                                                                                                                 |
-| `RS_ROLES` (name, scope, functions, perms) | bỏ — vai trò cố định bằng enum `Role` (4 vai trò nội bộ; người dân dùng `CitizenAccount`, G8), quyền cài trong code backend; màn vai trò (nếu có) chỉ hiển thị tĩnh. Vai trò Kế toán và Lãnh đạo bỏ theo intent 23/09 |
+| `RS_ROLES` (name, scope, functions, perms) | bỏ — vai trò cố định bằng enum `Role` (4 vai trò nội bộ; người dân dùng `CitizenAccount`, G8), quyền cài trong code backend; màn vai trò (nếu có) chỉ hiển thị tĩnh. Vai trò Kế toán bỏ theo intent 23/09; **Lãnh đạo thêm lại 29/09/2026** (`Role.LEADER`, SPEC §9.10) |
 | `RS_DISTRICTS.code`, `name`, `note`                | → `District.code`, `name`, `note`                                                                                                                             |
 | `RS_DISTRICTS.groups`, `subjects`                  | bỏ — dẫn xuất, đếm `Area` và `ServiceSubject`                                                                                                                 |
 | `RS_BACKUPS`                                       | bỏ — sao lưu là việc vận hành CSDL, không phải dữ liệu nghiệp vụ                                                                                              |
@@ -1039,7 +1055,7 @@ Timeline lưu nối tiếp, không ghi đè. Không có `updated_at`, `updated_b
 | `CITIZEN_PROFILE.address`                                            | → `ServiceSubject.address` + `Area.name` + `District.name`                            |
 | `CITIZEN_PROFILE.company`                                            | → dẫn xuất từ `AreaAssignment` hiện hành của khu vực hộ                               |
 | `CITIZEN_BILL.period`, `due`, `total`                                | → `Charge` (`period_id`, `due_date`, `amount`)                                        |
-| `CITIZEN_BILL.lines` (45k/20k/12k/3k) | → 2 dòng thu gom + xử lý từ `TariffRate` (G9) |
+| `CITIZEN_BILL.lines` (45k/20k/12k/3k) | → 2 dòng thu gom + vận chuyển từ `TariffRate` (G9) |
 | `CITIZEN_BILL.history`                                               | → danh sách `Charge` các kỳ trước + `Payment`                                         |
 | `CITIZEN_SCHEDULE` \[thứ, khung giờ, loại rác\]                      | → `CollectionSchedule.weekday`/`week_of_month`, `start_time`/`end_time`, `waste_type` |
 | `CITIZEN_COMPLAINTS.id` (PA-…) | → `Complaint.code` (một mã chung `KN-MMYY-nnn`, D8) |
@@ -1091,7 +1107,7 @@ Người duyệt trả lời trực tiếp trong mục 5.1–5.3; ba chỗ trả
 | G6 | "Đã xử lý" = đóng kèm ghi chú; phiếu sai thì lập phiếu mới, không sửa/hủy | `ReceiptIssue`, `CompanyReceipt.status` |
 | G7 | Báo sai thông tin hộ chỉ phát thông báo `INFO`, không có entity | T53 |
 | G8 | Người dân chỉ ở `CitizenAccount`; bỏ `CITIZEN` khỏi enum `Role` | `User.role`, `CitizenAccount` |
-| G9 | Biểu giá gồm **thu gom + xử lý** (không tách vận chuyển, VAT). **Hỏi lại:** dùng số tạm, thay khi có QĐ | `TariffRate` |
+| G9 | Biểu giá gồm **thu gom + vận chuyển** (không có VAT; trước 01/10/2026 gọi thành phần này là "xử lý"). **Hỏi lại:** dùng số tạm, thay khi có QĐ | `TariffRate` |
 | G10 | Duyệt dependency: Lombok, JaCoCo, `spring-boot-starter-oauth2-resource-server`, `@ant-design/icons`, `fetch` tự bọc (không axios), `expo-secure-store`, `expo-image-picker` | T03, T04, T06, T22, T47 |
 | G11 | Kỳ quý dùng `Q{quý}{YY}` thay MMYY, vd. `YCT-Q426-01` | các cột `code` |
 | G12 | Công ty chỉ thấy khiếu nại đã được chuyển cho mình | `Complaint` |
@@ -1374,3 +1390,41 @@ Prototype có hai dạng: web `KN-2609-nnn` (YYMM) và app `PA-0926-nnn` (MMYY).
 - Nhận file qua kênh xã chỉ định; không lưu vào repo, không gửi qua dịch vụ công cộng; không dùng làm seed.
 - Khi triển khai thật, import qua công cụ riêng (ngoài phạm vi 4 tuần), không qua migration.
 
+
+
+## Bổ sung 29/09/2026 — Vai trò Lãnh đạo và đề nghị về tiền (SPEC §9.10, todo T54–T59)
+
+**Enum `Role`:** thêm `LEADER` Lãnh đạo (chỉ đọc nghiệp vụ + duyệt đề nghị; không khóa kỳ, không cấu hình / phân quyền).
+
+**Entity `ApprovalRequest` (Đề nghị)** — mức: Demo · nguồn: Xã tạo, Lãnh đạo duyệt
+
+| Trường | Tên kỹ thuật | Kiểu | Bắt buộc | Ghi chú |
+|---|---|---|---|---|
+| Mã đề nghị | `code` | `varchar(20)` | Có | `DN-MMYY-nnn`, duy nhất |
+| Loại | `type` | enum `ApprovalType` | Có | `EXEMPTION` Miễn giảm · `REFUND` Hoàn · `WRITE_OFF` Xóa nợ |
+| Hợp đồng | `contract_id` | FK | Khi miễn giảm | Miễn 100% theo hợp đồng |
+| Khoản thu | `charge_id` | FK | Khi hoàn / xóa nợ | Xóa nợ: khoản Chưa thu, chưa có thanh toán · Hoàn: khoản đã có thanh toán |
+| Số tiền | `amount` | `bigint` | Khi hoàn | 0 < số tiền ≤ đã thu − đã hoàn |
+| Lý do | `reason` | `varchar(1000)` | Có | |
+| Số văn bản | `decision_no` | `varchar(50)` | Không | |
+| Trạng thái | `status` | enum `ApprovalStatus` | Có | `PENDING` Chờ duyệt · `APPROVED` Đã duyệt · `REJECTED` Từ chối |
+| Người / lúc đề nghị | `requested_by`, `requested_at` | FK, `timestamptz` | Có | |
+| Người / lúc duyệt | `decided_by`, `decided_at` | FK, `timestamptz` | Khi đã quyết | Chỉ `LEADER` |
+| Ý kiến lãnh đạo | `decision_note` | `varchar(1000)` | Khi từ chối | |
+| Kỳ ghi nhận | `effective_period_id` | FK | Khi duyệt | Kỳ đang mở lúc duyệt (khoản thuộc kỳ đã khóa vẫn ghi vào kỳ đang mở) |
+
+**Enum `ChargeStatus`:** thêm `WRITTEN_OFF` Đã xóa nợ (T57). Bảng `charges` thêm `written_off_period_id` (kỳ ghi nhận xóa nợ: kỳ của khoản nếu chưa khóa, ngược lại kỳ đang thu lúc duyệt); `amount` chỉ đổi khi lãnh đạo từ chối miễn giảm (tính lại đơn giá × số tháng).
+
+**Hoàn tiền (T58):** một dòng `payments` với `method = REFUND`, `amount` **âm**, không có người đi thu; cột mới `ledger_period_id` = kỳ ghi nhận trong sổ công ty–kỳ (null với thanh toán thường = kỳ của khoản). Enum `PaymentMethod` thêm `REFUND` Hoàn tiền.
+
+**Sổ công ty–kỳ (`LedgerRowDto`):** thêm `adjustment` (Điều chỉnh kỳ trước: khoản kỳ đã khóa được xóa nợ, ghi ở kỳ này) và `refunded` (đã hoàn, ghi ở kỳ này). Còn phải nộp = phải thu − điều chỉnh − đã nộp; đã thu = Σ thanh toán (trừ hoàn) theo kỳ ghi nhận. O8, O9, O10 chốt 29/09/2026 (SPEC §11).
+
+### HouseholdReminder — Nhật ký nhắc hộ dân nộp phí · `household_reminders` (V28)
+
+Mỗi cặp `(charge_id, stage)` chỉ có một dòng nên mỗi mốc nhắc chỉ gửi một lần dù job chạy lại. `stage`: `OPEN` (vừa phát hành, còn hạn), `DUE_SOON` (trước hạn đóng của hộ 3 ngày), `OVERDUE` (sau hạn 1 ngày). Chỉ nhắc khoản còn `UNPAID` và hộ có tài khoản app; thông báo loại `REMINDER` gửi vào app người dân. Job chạy 08:00 mỗi ngày (giờ Việt Nam); cán bộ xã chạy tay bằng `POST /api/notifications/household-reminders/run`. SMS/Zalo chưa làm.
+
+### Phần công ty cầm lại (thu gom) và đổi số nhân khẩu — chốt 03/10/2026
+
+- **Phần thu gom công ty cầm lại** không lưu thành cột: tính từ biểu giá của kỳ, mỗi khoản = `amount × collection_fee / monthly_total` của nhóm giá (làm tròn đồng). Sổ công ty–kỳ có thêm `retained` (Σ phần thu gom, đã trừ khoản kỳ khác xóa nợ ghi ở kỳ này) và `payable = due − adjustment − retained` (phải nộp xã). `remaining = payable − received`; nợ kỳ trước và nhắc nộp công ty cũng theo `payable`. Khoản không theo biểu giá (phí cố định) không có phần cầm lại. (Cột `companies.retained_percent` của V27 đã bỏ ở V30.)
+- **Phí xử lý** không thu và không đưa vào hệ thống (biểu giá chỉ có thu gom + vận chuyển).
+- **Đổi số người của hộ** áp từ kỳ sau: hợp đồng đang mở kết thúc hết kỳ đang chạy (`validTo` = ngày cuối kỳ), hợp đồng mới cùng nhóm giá mới bắt đầu ngày đầu kỳ kế tiếp, giữ nguyên miễn giảm và định mức. Không có kỳ nào đang chạy hoặc hợp đồng chưa bắt đầu thì đổi tại chỗ. Khoản đã phát hành giữ nhóm giá của nó.

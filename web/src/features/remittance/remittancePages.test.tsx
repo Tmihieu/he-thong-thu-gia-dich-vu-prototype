@@ -99,6 +99,18 @@ describe('Đối soát', () => {
   });
 });
 
+describe('Thu 3 tháng gần nhất', () => {
+  it('tháng mới nhất bên trái', async () => {
+    const fetchFn = api();
+    renderApp('/commune/reconciliation');
+
+    const card = (await screen.findByText('Thu 3 tháng gần nhất')).closest('.ant-card')!;
+    const months = (await within(card as HTMLElement).findAllByText(/^Tháng \d{2}\/2026$/)).map((e) => e.textContent);
+    expect(months).toEqual(['Tháng 10/2026', 'Tháng 08/2026']);
+    expect(fetchFn.mock.calls.some(([url]) => String(url) === '/api/remittance/ledger?periodId=8')).toBe(true);
+  });
+});
+
 describe('Khóa kỳ', () => {
   it('còn công ty nợ thì hiện lý do tiếng Việt từ máy chủ', async () => {
     const fetchFn = mockApi({

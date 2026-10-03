@@ -1,5 +1,7 @@
 package vn.dongthanh.vsmt.citizen.domain;
 
+import java.util.UUID;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -29,11 +31,20 @@ public class MarketComment extends BaseEntity {
     @Column(nullable = false, updatable = false, length = 1000)
     private String content;
 
-    public static MarketComment create(MarketPost post, CitizenAccount author, String content) {
+    @Column(updatable = false)
+    private UUID clientRequestId;
+
+    @Column(updatable = false, length = 64)
+    private String requestFingerprint;
+
+    public static MarketComment create(MarketPost post, CitizenAccount author, String content, UUID requestId,
+            String fingerprint) {
         MarketComment c = new MarketComment();
         c.post = post;
         c.author = author;
         c.content = content;
+        c.clientRequestId = requestId;
+        c.requestFingerprint = fingerprint;
         return c;
     }
 }

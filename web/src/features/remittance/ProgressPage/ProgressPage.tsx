@@ -1,7 +1,9 @@
-import { Alert, Button, Card, Col, Progress, Row, Space, Statistic, Table, Tag, Typography } from 'antd';
+import { BellOutlined } from '@ant-design/icons';
+import { Alert, Button, Card, Col, Popover, Progress, Row, Space, Statistic, Table, Tag, Typography } from 'antd';
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { useAuth } from '../../../app/auth/authContext';
 import { PROGRESS_COLORS, PROGRESS_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
@@ -28,10 +30,13 @@ function sum(rows: LedgerRow[], key: 'due' | 'collected' | 'received' | 'remaini
 export function ProgressPage() {
   const [periodId, setPeriodId] = useState<number>();
   const [reminding, setReminding] = useState<number | null>(null);
+  // Lãnh đạo xem màn này chỉ đọc: không nhắc nộp (SPEC §9.10).
+  const readOnly = useAuth().user?.role === 'LEADER';
   const ledger = useCompanyLedger(periodId);
   const areas = useAreaProgress(periodId);
   const rows = ledger.data ?? [];
   const unassigned = (areas.data ?? []).filter((a) => a.noCompany && a.subjectCount > 0);
+  const overdue = rows.filter((r) => r.progress === 'OVERDUE');
 
   return (
     <>
@@ -40,6 +45,23 @@ export function ProgressPage() {
       </Typography.Title>
       <Space style={{ marginBottom: 16 }}>
         <PeriodSelect value={periodId} onChange={setPeriodId} />
+        {overdue.length > 0 && !readOnly && (
+          <Popover
+            trigger="click"
+            title={`${overdue.length} công ty quá hạn nộp`}
+            content={
+              <Space direction="vertical">
+                {overdue.map((r) => (
+                  <Button key={r.companyId} size="small" danger block onClick={() => setReminding(r.companyId)}>
+                    {`Nhắc nộp ${r.companyCode} · ${r.companyName}`}
+                  </Button>
+                ))}
+              </Space>
+            }
+          >
+            <Button danger icon={<BellOutlined />}>{`Nhắc công ty nộp (${overdue.length})`}</Button>
+          </Popover>
+        )}
       </Space>
       {ledger.error && <Alert type="error" showIcon message={ledger.error instanceof ApiError ? ledger.error.message : 'Không tải được số liệu'} />}
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
@@ -93,7 +115,23 @@ export function ProgressPage() {
         }}
         columns={[
           { title: 'Công ty', render: (_, r) => `${r.companyCode} · ${r.companyName}` },
-          { title: 'Phải thu', dataIndex: 'due', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          {
+            title: 'Phải thu',
+            dataIndex: 'due',
+            align: 'right',
+            render: (v: number, r) => (
+              <>
+                <MoneyText value={v} />
+                {r.retained > 0 && (
+                  <div>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      phải nộp xã <MoneyText value={r.payable} />
+                    </Typography.Text>
+                  </div>
+                )}
+              </>
+            ),
+          },
           {
             title: 'Đã thu',
             dataIndex: 'collected',
@@ -119,16 +157,16 @@ export function ProgressPage() {
           {
             title: 'Trạng thái',
             dataIndex: 'progress',
-            render: (p: LedgerRow['progress']) => <Tag color={PROGRESS_COLORS[p]}>{PROGRESS_LABELS[p]}</Tag>,
-          },
-          {
-            title: '',
-            render: (_, r) =>
-              r.progress === 'OVERDUE' ? (
-                <Button size="small" danger onClick={() => setReminding(r.companyId)} aria-label={`Nhắc nộp ${r.companyCode}`}>
-                  Nhắc nộp
-                </Button>
-              ) : null,
+            render: (p: LedgerRow['progress'], r) => (
+              <Space size={4} wrap>
+                <Tag color={PROGRESS_COLORS[p]}>{PROGRESS_LABELS[p]}</Tag>
+                {p === 'OVERDUE' && !readOnly && (
+                  <Button size="small" danger onClick={() => setReminding(r.companyId)} aria-label={`Nhắc nộp ${r.companyCode}`}>
+                    Nhắc nộp
+                  </Button>
+                )}
+              </Space>
+            ),
           },
         ]}
       />

@@ -16,12 +16,13 @@ Dựng lại prototype HTML/JS v3.1 thành ứng dụng demo có backend và cơ
 | Cán bộ xã (gộp kế toán) | Web desktop | Đối tượng & hợp đồng, kỳ thu, phiếu yêu cầu thu, khu vực & phân công công ty, lập phiếu thu khi công ty nộp tiền, nhắc nộp, báo cáo tiến độ, đối soát, khóa kỳ, khiếu nại |
 | Công ty môi trường | Web desktop | Hộ được giao, phân tổ cho người đi thu, nhận tiền mặt từ người đi thu, xem phiếu thu xã lập và báo sai sót, xử lý khiếu nại, nhận/báo phí rác cồng kềnh |
 | Người đi thu | Web giao diện mobile | Danh sách hộ của tổ được giao, cập nhật kết quả thu (tiền mặt / chuyển khoản / vắng / hẹn / từ chối), tiền mặt đang giữ, báo sai thông tin hộ |
+| Lãnh đạo (thêm 29/09/2026, §9.10) | Web desktop | Dashboard điều hành (thu / nợ / tỷ lệ nộp theo công ty và địa bàn, cảnh báo), xem + xuất báo cáo tổng hợp, duyệt / từ chối miễn giảm – hoàn – xóa nợ. Chỉ giám sát: không chốt kỳ, không cấu hình, không phân quyền |
 | Quản trị | Web desktop | Tài khoản & vai trò, địa bàn, biểu giá, mở kỳ thu (ai mở kỳ: xem G1), nhật ký. **Khóa kỳ do cán bộ xã** (quyết định 23/09) |
 | Người dân | App Expo (cài qua store) | Thông tin hộ, khoản phải đóng, thanh toán **mô phỏng**, biên lai, lịch thu gom, khiếu nại, chợ đồ cũ, rác cồng kềnh, thông báo |
 
 **Luồng tiền đã chốt (tạm):** hộ → công ty (người đi thu hoặc app dân) → công ty nộp **toàn bộ** tiền đã thu về xã → xã lập phiếu thu cho công ty → xã đối soát `phải thu / công ty đã thu / đã nộp về xã` → xã khóa kỳ.
 
-**Không làm trong 4 tuần:** vai trò Lãnh đạo; miễn giảm / hoàn / xóa nợ (chỉ giữ cờ miễn 100% trên hợp đồng như prototype); thanh toán thật, VietQR, sao kê ngân hàng; HĐĐT; KBNN; import Excel thật; triển khai production.
+**Không làm trong 4 tuần:** ~~vai trò Lãnh đạo; miễn giảm / hoàn / xóa nợ~~ (29/09/2026 người dùng đưa vào, làm sau T53, xem §9.10); thanh toán thật, VietQR, sao kê ngân hàng; HĐĐT; KBNN; import Excel thật; triển khai production.
 
 ---
 
@@ -237,7 +238,7 @@ Mục tiêu: service layer của `billing`, `collection`, `remittance` có cover
 - `District` (DTH/TTT/NB), `Area` (tổ, thuộc địa bàn), `Company` (tên, đầu mối, SĐT, trạng thái, hiệu lực).
 - `AreaAssignment` (khu vực, công ty, từ ngày, đến ngày, ghi chú): **mỗi khu vực tối đa 1 công ty trong cùng khoảng hiệu lực; đổi công ty tạo bản ghi mới và giữ lịch sử**. UI: **popup phân công đơn giản** (chọn công ty + ngày bắt đầu; có thể chọn nhiều tổ), backend tự đóng phân công cũ.
 - `ServiceSubject` (đối tượng: hộ gia đình / hộ kinh doanh / doanh nghiệp; tên, địa chỉ, SĐT, khu vực, trạng thái) và `ServiceContract` (số hợp đồng, nhóm giá, từ ngày, đến ngày, miễn 100% + lý do). **Hai bảng riêng, hiển thị gộp trên một form hồ sơ hộ**; mỗi đối tượng tối đa 1 hợp đồng hiệu lực tại một thời điểm.
-- `TariffVersion` (căn cứ pháp lý, hiệu lực, trạng thái) + `TariffRate` (nhóm giá, thu gom, vận chuyển, xử lý, VAT, tổng/tháng). **Giá tính tiền lấy từ phiên bản biểu giá đang hiệu lực của kỳ** (mặc định QĐ 65/2026/QĐ-UBND); số tiền được chụp lại vào khoản khi sinh.
+- `TariffVersion` (căn cứ pháp lý, hiệu lực, trạng thái) + `TariffRate` (nhóm giá, thu gom, vận chuyển, tổng; 6 nhóm giá theo QĐ 65/2026). **Giá tính tiền lấy từ phiên bản biểu giá đang hiệu lực của kỳ** (mặc định QĐ 65/2026/QĐ-UBND); số tiền được chụp lại vào khoản khi sinh.
 - `FeeType` (vệ sinh môi trường, rác cồng kềnh, phụ phí), `CollectionPeriod` (tháng hoặc quý, ngày mở, hạn nộp, phiên bản biểu giá, trạng thái Đã mở → Đang thu → Đã khóa).
 - `CollectionSchedule` (khu vực, thứ, khung giờ, loại rác) cho màn lịch thu gom của dân.
 - **Nghiệm thu:** CRUD đối tượng + hợp đồng; phân công chồng lấn bị chặn; đổi công ty giữ lịch sử và báo cáo kỳ cũ vẫn tính cho công ty cũ; mở kỳ tháng/quý.
@@ -278,9 +279,30 @@ Mục tiêu: service layer của `billing`, `collection`, `remittance` có cover
 ### 9.9 `citizen-app`
 - `CitizenAccount` gắn với một `ServiceSubject`; đăng nhập demo bằng SĐT + mã OTP cố định (mô phỏng).
 - Màn: trang chủ, thông tin hộ, khoản phải đóng & lịch sử (từ `Charge`), thanh toán **mô phỏng** (tạo `Payment` hình thức app → khoản thành Đã thu, công ty và xã thấy ngay), biên lai, lịch thu gom, khiếu nại, thông báo, tài khoản.
-- **Chợ đồ cũ:** `MarketPost` (tiêu đề, loại Cho tặng / Trao đổi, mô tả, ảnh, nơi nhận, trạng thái) + `MarketComment`.
+- **Chợ đồ cũ** (thay bởi [chợ đồ cũ v2](docs/cho-do-cu-spec.md), V25, 30/09/2026): `MarketPost` caption + 1–4 tag (Tìm/Bán/Cho tặng/Đổi) + danh mục + tối đa 5 ảnh, không trường giá; đóng/mở lại, ẩn/hiện; liên hệ bằng bình luận và SĐT tự nguyện; lưu bài, chặn hai chiều, thông báo bình luận. Người dân tương tác; 5 vai trò nội bộ chỉ đọc qua `/api/market`. Quy tắc cũ tiêu đề/mô tả/loại/nơi nhận và "đóng không mở lại" (D9/T47) không còn áp dụng.
 - **Rác cồng kềnh:** `BulkyWasteRequest` (loại vật dụng, số lượng, địa chỉ, ngày mong muốn, ảnh, công ty phụ trách theo khu vực, phí công ty báo, trạng thái Chờ xác nhận → Đã báo phí → Đã thu gom / Hủy). Công ty có màn nhận và báo phí.
 - **Nghiệm thu:** dân thanh toán mô phỏng → số liệu công ty/xã cập nhật; dân gửi khiếu nại và nhận thông báo khi được xử lý; đăng bài chợ đồ cũ, đăng ký rác cồng kềnh và thấy công ty báo phí.
+
+### 9.10 `leadership` — vai trò Lãnh đạo (thêm 29/09/2026, làm sau T53)
+
+**Lãnh đạo chủ yếu giám sát.** Việc xử lý (phân công, lập phiếu yêu cầu thu, lập phiếu thu, khóa kỳ) vẫn do cán bộ xã làm.
+
+- **Khi vào thấy:** dashboard điều hành (thu / nợ / tỷ lệ nộp theo công ty và theo tổ), báo cáo tổng hợp, hàng chờ duyệt các đề nghị về tiền.
+- **Được:** xem toàn hệ thống (chỉ đọc mọi màn nghiệp vụ của xã: hộ & hợp đồng, kỳ, phiếu YCT, tiến độ, đối soát, phiếu thu, khiếu nại); xuất báo cáo; Duyệt / Từ chối đề nghị miễn giảm – hoàn – xóa nợ.
+- **Không được:** chốt / khóa kỳ (bỏ theo người dùng 29/09/2026, khóa kỳ vẫn là cán bộ xã); cấu hình, tài khoản, phân quyền; sửa dữ liệu nghiệp vụ trực tiếp. **Không làm "hủy hóa đơn"** (HĐĐT ngoài phạm vi).
+- **Báo cáo:** lãnh đạo **chỉ xem + xuất**, không có bước xác nhận / ký báo cáo (người dùng chốt 29/09/2026).
+- **Cảnh báo trên dashboard** (dùng cờ đã có, không thêm ngưỡng mới): công ty nộp chậm / còn nợ kỳ trước (cờ quá hạn + nợ kỳ trước của sổ công ty–kỳ); tỷ lệ thu thấp (`lowCollectionRate`); số đề nghị chờ duyệt.
+
+**Đề nghị (`ApprovalRequest`)** — một bảng chung cho 3 loại, mã `DN-MMYY-nnn`: loại, đối tượng (hợp đồng hoặc khoản), số tiền (chỉ hoàn), lý do, số văn bản (tùy chọn), người đề nghị + lúc, trạng thái **Chờ duyệt → Đã duyệt / Từ chối**, người duyệt + lúc, ý kiến (bắt buộc khi từ chối), kỳ ghi nhận. Mỗi lần tạo / duyệt / từ chối có audit + thông báo (đề nghị mới → lãnh đạo; kết quả → người đề nghị).
+
+| Loại | Ai đề nghị | Áp vào | Khi được duyệt | Khi bị từ chối |
+|---|---|---|---|---|
+| **Miễn giảm** (100%, giữ mô hình cờ) | Cán bộ xã | Hợp đồng | Chỉ ghi nhận: xã **vẫn bật cờ miễn trực tiếp như hiện nay**; bật cờ tự tạo đề nghị để lãnh đạo xem lại (người dùng chốt 29/09/2026) | Bỏ cờ miễn; khoản Miễn giảm của kỳ đang mở quay về Chưa thu; kỳ đã khóa giữ nguyên; thông báo xã (O8 chốt 29/09/2026) |
+| **Hoàn** | Cán bộ xã (hoặc công ty đề nghị qua xã) | Một khoản đã thu (hộ nộp thừa / thu nhầm hộ) | Ghi một bút toán hoàn (âm), công ty "đã thu" giảm tương ứng; **công ty trả lại hộ ngoài hệ thống**. Hoàn một phần: khoản **giữ Đã thu**; hoàn hết: khoản về Chưa thu (O9 chốt 29/09/2026) | Không đổi gì |
+| **Xóa nợ** | Cán bộ xã | Khoản Chưa thu (hộ chuyển đi, nhà bỏ trống, không xác định được…) | Khoản sang trạng thái mới **Đã xóa nợ**, không còn tính vào phải thu / phải nộp của công ty | Không đổi gì |
+
+- **Kỳ đã khóa:** vẫn được đề nghị hoàn / xóa nợ cho khoản thuộc kỳ đã khóa; **số của kỳ đã khóa giữ nguyên**, phần điều chỉnh ghi nhận ở **kỳ đang mở** (giống quyết định "sai sót sau khóa" 28/09/2026).
+- **Nghiệm thu:** đăng nhập lãnh đạo thấy dashboard + cảnh báo đúng số với màn tiến độ của xã; xã đề nghị xóa nợ 1 khoản → lãnh đạo duyệt → phải thu của công ty giảm đúng số, khoản hiện "Đã xóa nợ"; đề nghị hoàn được duyệt → công ty "đã thu" giảm; từ chối bắt buộc ý kiến; lãnh đạo gọi API ghi (lập phiếu, khóa kỳ, sửa hộ) → 403.
 
 ---
 
@@ -309,5 +331,8 @@ Mục tiêu: service layer của `billing`, `collection`, `remittance` có cover
 | O3 | Dữ liệu thật về hộ: trường nào xã/công ty có | Chờ kết quả xin dữ liệu theo data dictionary |
 | O4 | Một người đi thu phụ trách mấy tổ, một tổ mấy người | Schema cho phép nhiều–nhiều; seed 1 người/tổ |
 | O5 | Phí rác cồng kềnh có thành khoản phải thu (`Charge`) và nộp về xã không | Chỉ lưu phí công ty báo trên yêu cầu; không sinh `Charge` |
-| O6 | Ai kiểm duyệt bài chợ đồ cũ | Không kiểm duyệt trong demo |
+| O6 | Ai kiểm duyệt bài chợ đồ cũ | Không kiểm duyệt trong demo; đăng là hiển thị (chợ v2 D05). Báo cáo/kiểm duyệt để nghiên cứu sau |
 | O7 | Đăng nhập người dân thật (VNeID / OTP SMS) | OTP cố định mô phỏng |
+| O8 | Lãnh đạo từ chối miễn giảm | **Chốt 29/09/2026:** bỏ cờ, khoản Miễn giảm kỳ đang mở về Chưa thu, kỳ khóa giữ nguyên |
+| O9 | Hoàn một phần | **Chốt 29/09/2026:** giữ Đã thu, chỉ giảm số đã thu; hoàn hết thì về Chưa thu |
+| O10 | Hoàn / xóa nợ khoản kỳ đã khóa | **Chốt 29/09/2026:** kỳ khóa giữ nguyên số; sổ công ty–kỳ đang mở có cột điều chỉnh kỳ trước (xóa nợ giảm nợ kỳ trước, hoàn giảm đã thu kỳ đang mở) |

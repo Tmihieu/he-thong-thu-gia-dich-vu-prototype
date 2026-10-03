@@ -14,6 +14,9 @@ public interface CollectionPeriodRepository extends JpaRepository<CollectionPeri
 
     boolean existsByCode(String code);
 
+    /** Kỳ đầu tiên (sớm nhất) bắt đầu từ ngày {@code date} trở đi. */
+    Optional<CollectionPeriod> findFirstByStartDateGreaterThanEqualOrderByStartDateAsc(LocalDate date);
+
     Optional<CollectionPeriod> findByCode(String code);
 
     /** Khóa dòng kỳ thu tới hết transaction (SELECT … FOR UPDATE): tuần tự hóa lập phiếu thu, khóa kỳ. */
@@ -30,6 +33,9 @@ public interface CollectionPeriodRepository extends JpaRepository<CollectionPeri
 
     @Query("select p from CollectionPeriod p join fetch p.tariffVersion order by p.startDate desc, p.periodType")
     List<CollectionPeriod> findAllWithTariff();
+
+    /** Kỳ theo trạng thái, mới nhất trước (kỳ đang thu để ghi nhận hoàn / xóa nợ của kỳ đã khóa, O10). */
+    List<CollectionPeriod> findByStatusOrderByStartDateDesc(PeriodStatus status);
 
     /** Các kỳ (tháng và/hoặc quý) chứa ngày {@code date}. */
     @Query("select p from CollectionPeriod p join fetch p.tariffVersion"

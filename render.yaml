@@ -1,0 +1,114 @@
+# Paid, always-on demo. Review Render's monthly estimate before applying.
+services:
+  - type: pserv
+    name: vsmt-demo-backend
+    runtime: docker
+    region: singapore
+    plan: starter
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: demo
+      - key: SERVER_PORT
+        value: "8080"
+      - key: JAVA_TOOL_OPTIONS
+        value: -Xmx256m -XX:MaxMetaspaceSize=160m
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: vsmt-demo-db
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: vsmt-demo-db
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: vsmt-demo-db
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: vsmt-demo-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: vsmt-demo-db
+          property: password
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CITIZEN_DEMO_OTP
+        value: "123456"
+      - key: UPLOAD_DIR
+        value: /app/uploads
+      - key: TZ
+        value: Asia/Ho_Chi_Minh
+    disk:
+      name: vsmt-demo-uploads
+      mountPath: /app/uploads
+      sizeGB: 1
+
+  # Jmix Admin: quản trị dữ liệu danh mục, nhúng vào trang admin qua nginx tại /jmix. Cần RAM >= 512 MB.
+  - type: pserv
+    name: vsmt-demo-jmix
+    runtime: docker
+    region: singapore
+    plan: starter
+    rootDir: jmix-admin
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: JAVA_TOOL_OPTIONS
+        value: -Xmx320m -XX:MaxMetaspaceSize=160m
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: vsmt-demo-db
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: vsmt-demo-db
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: vsmt-demo-db
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: vsmt-demo-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: vsmt-demo-db
+          property: password
+      - key: TZ
+        value: Asia/Ho_Chi_Minh
+
+  - type: web
+    name: vsmt-demo-web
+    runtime: docker
+    region: singapore
+    plan: starter
+    rootDir: web
+    dockerfilePath: ./Dockerfile.render
+    healthCheckPath: /healthz
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: BACKEND_HOST
+        fromService:
+          name: vsmt-demo-backend
+          type: pserv
+          property: host
+      - key: JMIX_HOST
+        fromService:
+          name: vsmt-demo-jmix
+          type: pserv
+          property: host
+
+databases:
+  - name: vsmt-demo-db
+    region: singapore
+    plan: basic-256mb
+    postgresMajorVersion: "16"
+    databaseName: vsmt
+    user: vsmt
+    diskSizeGB: 1
+    ipAllowList: []

@@ -47,14 +47,14 @@ function baseApi(extra: Parameters<typeof mockApi>[0] = {}) {
 }
 
 describe('Công ty (cán bộ xã)', () => {
-  it('danh sách có số khu vực, lọc Tạm ngưng', async () => {
+  it('danh sách có số khu vực, lọc Ngừng hợp tác', async () => {
     baseApi();
     renderApp('/commune/companies');
 
     expect(await screen.findByRole('button', { name: 'DV01 · Công ty MTĐT Đông Thạnh' })).toBeInTheDocument();
     expect(screen.getByText('HTX Môi trường An Phú', { exact: false })).toBeInTheDocument();
 
-    await userEvent.click(screen.getByText('Tạm ngưng', { selector: '.ant-segmented-item-label' }));
+    await userEvent.click(screen.getByText('Ngừng hợp tác', { selector: '.ant-segmented-item-label' }));
     await waitFor(() => expect(screen.queryByRole('button', { name: 'DV01 · Công ty MTĐT Đông Thạnh' })).not.toBeInTheDocument());
     expect(screen.getByRole('button', { name: 'DV02 · HTX Môi trường An Phú' })).toBeInTheDocument();
   });

@@ -26,6 +26,7 @@ interface FormValues {
   tariffGroup?: TariffGroup;
   validFrom?: Dayjs | null;
   validTo?: Dayjs | null;
+  quotaKg?: number | null;
 }
 
 const DATE_FORMAT = 'DD/MM/YYYY';
@@ -60,8 +61,11 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
   const [form] = Form.useForm<FormValues>();
   const type = Form.useWatch('type', form) ?? subject?.subjectType ?? 'HOUSEHOLD';
   const hasContract = Form.useWatch('hasContract', form);
+  const tariffGroup = Form.useWatch('tariffGroup', form);
   const current = subject?.currentContract ?? null;
   const showContract = current !== null || hasContract;
+  // Hộ gia đình đã có đăng ký: nhóm giá do số người quyết định và máy chủ tự đổi từ kỳ sau, không sửa tay ở đây.
+  const householdGroupLocked = current !== null && (current.tariffGroup === 'HH_UP_TO_2' || current.tariffGroup === 'HH_3_PLUS');
 
   const initialValues: Partial<FormValues> = subject
     ? {
@@ -79,6 +83,7 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
         tariffGroup: current?.tariffGroup,
         validFrom: current ? dayjs(current.validFrom) : undefined,
         validTo: current?.validTo ? dayjs(current.validTo) : undefined,
+        quotaKg: current?.quotaKg,
       }
     : { type: 'HOUSEHOLD', hasContract: true };
 
@@ -105,13 +110,29 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
             exempt: current?.exempt ?? false,
             exemptReason: current?.exemptReason ?? undefined,
             exemptDecisionNo: current?.exemptDecisionNo ?? undefined,
+            quotaKg: v.tariffGroup === 'BY_VOLUME' ? (v.quotaKg ?? undefined) : undefined,
           }
         : null;
     onSubmit({ subject: subjectReq, contract, contractId: current?.id ?? null });
   }
 
   return (
-    <Form<FormValues> form={form} layout="vertical" requiredMark={false} disabled={submitting} initialValues={initialValues} onFinish={finish}>
+    <Form<FormValues>
+      form={form}
+      layout="vertical"
+      requiredMark={false}
+      disabled={submitting}
+      initialValues={initialValues}
+      onFinish={finish}
+      onValuesChange={(changed, all) => {
+        // Tạo mới: đổi số người thì nhóm giá hộ gia đình đổi theo, khỏi bắt chọn tay. Hồ sơ đã có hợp đồng thì máy chủ
+        // tự đổi nhóm giá từ kỳ sau, form không đụng tới.
+        const group = all.tariffGroup;
+        if (!current && 'memberCount' in changed && all.type === 'HOUSEHOLD' && all.memberCount && (group === 'HH_UP_TO_2' || group === 'HH_3_PLUS')) {
+          form.setFieldValue('tariffGroup', all.memberCount <= 2 ? 'HH_UP_TO_2' : 'HH_3_PLUS');
+        }
+      }}
+    >
       {error && <Alert type="error" showIcon message={error} role="alert" style={{ marginBottom: 16 }} />}
       <Typography.Title level={5}>Thông tin hộ</Typography.Title>
       {subject && (
@@ -171,7 +192,12 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
         </Col>
         <Col xs={24} md={12}>
           {type === 'HOUSEHOLD' ? (
-            <Form.Item label="Số thành viên" name="memberCount" rules={[{ required: true, message: 'Vui lòng nhập số thành viên' }]}>
+            <Form.Item
+              label="Số thành viên"
+              name="memberCount"
+              rules={[{ required: true, message: 'Vui lòng nhập số thành viên' }]}
+              extra={current ? 'Đổi số người thì nhóm giá mới áp dụng từ kỳ thu sau.' : undefined}
+            >
               <InputNumber min={1} max={99} style={{ width: '100%' }} />
             </Form.Item>
           ) : (
@@ -191,15 +217,17 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
       </Form.Item>
 
       <Divider />
-      <Typography.Title level={5}>Hợp đồng</Typography.Title>
+      {/* Góp ý BA 03/10: xã không ký hợp đồng với hộ, nên giao diện gọi là "Đăng ký thu phí" và ẩn số hợp đồng. */}
+      <Typography.Title level={5}>Đăng ký thu phí</Typography.Title>
       {current ? (
-        <Typography.Paragraph type="secondary">
-          Số đăng ký: <Typography.Text strong>{current.contractNo}</Typography.Text>{' '}
-          {current.exempt && <Tag color="purple">Miễn 100% · {current.exemptReason}</Tag>}
-        </Typography.Paragraph>
+        current.exempt && (
+          <Typography.Paragraph>
+            <Tag color="purple">Miễn 100% · {current.exemptReason}</Tag>
+          </Typography.Paragraph>
+        )
       ) : (
         <Form.Item name="hasContract" valuePropName="checked">
-          <Checkbox>Đăng ký dịch vụ cho hộ này</Checkbox>
+          <Checkbox>Đưa hộ này vào danh sách thu phí</Checkbox>
         </Form.Item>
       )}
       {showContract && (
@@ -209,15 +237,27 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
               label="Nhóm giá"
               name="tariffGroup"
               dependencies={['type', 'memberCount', 'validTo']}
-              rules={[{ required: true, message: 'Vui lòng chọn nhóm giá' }, groupFitsMembers]}
+              rules={[{ required: true, message: 'Vui lòng chọn nhóm giá' }, ...(current ? [] : [groupFitsMembers])]}
             >
               <Select
                 aria-label="Nhóm giá"
+                disabled={householdGroupLocked}
                 placeholder="Chọn nhóm"
                 options={Object.entries(TARIFF_GROUP_LABELS).map(([value, label]) => ({ value, label }))}
               />
             </Form.Item>
           </Col>
+          {tariffGroup === 'BY_VOLUME' && (
+            <Col xs={24}>
+              <Form.Item
+                label="Định mức (kg/tháng)"
+                name="quotaKg"
+                extra="Cân tháng đầu để lấy định mức; tiền mỗi tháng = đơn giá đ/kg × định mức. Chưa nhập thì chưa lập được khoản."
+              >
+                <InputNumber<number> aria-label="Định mức kg/tháng" min={1} precision={0} addonAfter="kg" style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+          )}
           <Col xs={12} md={8}>
             <Form.Item label="Hiệu lực từ" name="validFrom" rules={[{ required: true, message: 'Vui lòng chọn ngày bắt đầu' }]}>
               <DatePicker format={DATE_FORMAT} placeholder="dd/mm/yyyy" style={{ width: '100%' }} />

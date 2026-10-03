@@ -11,7 +11,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { colors, radius, spacing } from './theme';
+import { cardShadow, colors, radius, spacing } from './theme';
 
 /** Màn cuộn có lề chuẩn; `onRefresh` bật kéo-để-tải-lại. */
 export function Screen({
@@ -62,7 +62,7 @@ export function Line({ label, value, bold = false }: { label: string; value: Rea
 export type Tone = 'default' | 'success' | 'warning' | 'danger' | 'info';
 
 const TONES: Record<Tone, { bg: string; fg: string }> = {
-  default: { bg: '#eef2f0', fg: colors.textMuted },
+  default: { bg: colors.iconBg, fg: colors.textMuted },
   success: { bg: colors.primarySoft, fg: colors.primaryDark },
   warning: { bg: colors.warningSoft, fg: colors.warning },
   danger: { bg: colors.dangerSoft, fg: colors.danger },
@@ -198,18 +198,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
+    borderColor: colors.cardBorder,
+    padding: 14,
     gap: spacing.sm,
+    ...cardShadow,
   },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+  cardTitle: { fontSize: 15, fontWeight: '800', color: colors.text },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.text,
     textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    marginTop: spacing.xs,
+    letterSpacing: 0.3,
+    marginTop: spacing.sm,
   },
   line: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.md, paddingVertical: 4 },
   lineLabel: { fontSize: 14, color: colors.textMuted, flexShrink: 0 },
@@ -217,12 +218,12 @@ const styles = StyleSheet.create({
   lineValueBold: { fontSize: 17, fontWeight: '800', color: colors.primaryDark },
   lineValueSlot: { flex: 1, alignItems: 'flex-end' },
   tag: { alignSelf: 'flex-start', borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 3 },
-  tagText: { fontSize: 12, fontWeight: '700' },
-  button: { backgroundColor: colors.primary, borderRadius: radius.sm + 2, paddingVertical: 14, alignItems: 'center' },
+  tagText: { fontSize: 12, fontWeight: '800' },
+  button: { backgroundColor: colors.primary, borderRadius: radius.pill, paddingVertical: 14, alignItems: 'center' },
   buttonGhost: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.primary },
   buttonDanger: { backgroundColor: colors.danger },
   buttonPressed: { opacity: 0.75 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  buttonText: { color: '#fff', fontSize: 15, fontWeight: '800' },
   buttonTextGhost: { color: colors.primary },
   chip: {
     borderWidth: 1,
@@ -232,22 +233,22 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: colors.surface,
   },
-  chipSelected: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
-  chipText: { fontSize: 13, color: colors.text },
-  chipTextSelected: { color: colors.primaryDark, fontWeight: '700' },
+  chipSelected: { borderColor: colors.chrome, backgroundColor: colors.chrome },
+  chipText: { fontSize: 12, fontWeight: '700', color: '#3f4d46' },
+  chipTextSelected: { color: '#fff' },
   navRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 10 },
   navRowPressed: { opacity: 0.6 },
   navIcon: {
     width: 38,
     height: 38,
     borderRadius: radius.pill,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.iconBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   navBody: { flex: 1, gap: 2 },
-  navTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
-  navSubtitle: { fontSize: 13, color: colors.textMuted },
+  navTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
+  navSubtitle: { fontSize: 12, color: colors.textMuted },
   chevron: { fontSize: 22, color: colors.textMuted, marginTop: -2 },
   center: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
   muted: { fontSize: 14, color: colors.textMuted },

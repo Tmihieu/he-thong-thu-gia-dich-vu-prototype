@@ -35,7 +35,7 @@ public class LedgerController {
             + " Xã và quản trị thấy mọi công ty; công ty chỉ thấy dòng của mình")
     @GetMapping("/ledger")
     public List<LedgerRowDto> ledger(@RequestParam Long periodId, @AuthenticationPrincipal CurrentUser actor) {
-        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER);
+        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER, Role.LEADER);
         if (actor.role() == Role.COMPANY_MANAGER) {
             return List.of(LedgerRowDto.of(ledger.row(actor.companyId(), periodId)));
         }
@@ -60,6 +60,7 @@ public class LedgerController {
             @Schema(requiredMode = RequiredMode.REQUIRED) long collected,
             @Schema(requiredMode = RequiredMode.REQUIRED) long chargeCount,
             @Schema(requiredMode = RequiredMode.REQUIRED) long paidCount,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Số khoản miễn giảm 100%") long exemptCount,
             @Schema(requiredMode = RequiredMode.REQUIRED) long subjectCount,
             @Schema(requiredMode = RequiredMode.REQUIRED) double collectionRate,
             @Schema(requiredMode = RequiredMode.REQUIRED) boolean lowCollectionRate,
@@ -69,7 +70,7 @@ public class LedgerController {
             return new AreaProgressDto(p.area().getId(), p.area().getCode(), p.area().getName(),
                     p.area().getDistrict().getCode(), p.company() == null ? null : p.company().getId(),
                     p.company() == null ? null : p.company().getCode(), p.due(), p.collected(), p.chargeCount(),
-                    p.paidCount(), p.subjectCount(), p.collectionRate(), p.lowCollectionRate(), p.company() == null);
+                    p.paidCount(), p.exemptCount(), p.subjectCount(), p.collectionRate(), p.lowCollectionRate(), p.company() == null);
         }
     }
 
@@ -80,10 +81,14 @@ public class LedgerController {
             @Schema(requiredMode = RequiredMode.REQUIRED) Long periodId,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phải thu") long due,
             @Schema(requiredMode = RequiredMode.REQUIRED) long chargeCount,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Công ty đã thu của hộ") long collected,
+            @Schema(requiredMode = RequiredMode.REQUIRED,
+                    description = "Điều chỉnh kỳ trước: khoản kỳ đã khóa được xóa nợ, ghi nhận ở kỳ này") long adjustment,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã hoàn cho hộ, ghi nhận ở kỳ này") long refunded,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Công ty đã thu của hộ (đã trừ hoàn)") long collected,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã nộp về xã") long received,
             @Schema(requiredMode = RequiredMode.REQUIRED) long receiptCount,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Còn phải nộp") long remaining,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Còn phải nộp = phải thu − điều chỉnh − đã nộp")
+            long remaining,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã nộp − đã thu; âm là thu rồi chưa nộp") long gap,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Nợ các kỳ trước đã hết hạn") long previousDebt,
             @Schema(requiredMode = RequiredMode.REQUIRED) boolean overdue,
@@ -93,13 +98,15 @@ public class LedgerController {
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Tỷ lệ đã nộp dưới 45% (cờ ở màn tiến độ)")
             boolean lowRemittedRate,
             @Schema(requiredMode = RequiredMode.REQUIRED) Progress progress,
-            @Schema(requiredMode = RequiredMode.REQUIRED) Reconciliation reconciliation) {
+            @Schema(requiredMode = RequiredMode.REQUIRED) Reconciliation reconciliation,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phần công ty giữ lại theo tỷ lệ cấu hình") long retained,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phải nộp xã = phải thu − điều chỉnh − phần giữ lại") long payable) {
 
         static LedgerRowDto of(LedgerRow r) {
             return new LedgerRowDto(r.companyId(), r.companyCode(), r.companyName(), r.periodId(), r.due(),
-                    r.chargeCount(), r.collected(), r.received(), r.receiptCount(), r.remaining(), r.gap(),
+                    r.chargeCount(), r.adjustment(), r.refunded(), r.collected(), r.received(), r.receiptCount(), r.remaining(), r.gap(),
                     r.previousDebt(), r.overdue(), r.collectionRate(), r.lowCollectionRate(), r.remittedRate(),
-                    r.lowRemittedRate(), r.progress(), r.reconciliation());
+                    r.lowRemittedRate(), r.progress(), r.reconciliation(), r.retained(), r.payable());
         }
     }
 }

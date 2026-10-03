@@ -23,6 +23,7 @@ import vn.dongthanh.vsmt.collection.domain.Payment;
 import vn.dongthanh.vsmt.collection.domain.PaymentMethod;
 import vn.dongthanh.vsmt.collection.domain.PaymentRepository;
 import vn.dongthanh.vsmt.collection.domain.VisitResult;
+import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
 import vn.dongthanh.vsmt.masterdata.service.PeriodGuard;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 import vn.dongthanh.vsmt.platform.common.ConflictException;
@@ -91,9 +92,9 @@ public class CollectionService {
             return replay(existing.get(), cmd.chargeId());
         }
         requireCollectable(charge);
-        if (cmd.method() == PaymentMethod.APP_SIMULATED) {
+        if (cmd.method() == PaymentMethod.APP_SIMULATED || cmd.method() == PaymentMethod.REFUND) {
             throw new BusinessRuleException("PAYMENT_METHOD_INVALID",
-                    "Thanh toán qua app người dân không ghi nhận ở đây.");
+                    "Thanh toán qua app người dân và hoàn tiền không ghi nhận ở đây.");
         }
         Long collectorId = collectorFor(cmd, actor);
 
@@ -165,6 +166,35 @@ public class CollectionService {
         return new PaymentOutcome(payment, charge, charge.getAmount(), 0, false);
     }
 
+    /**
+     * Hoàn tiền đã được lãnh đạo duyệt (T58): ghi dòng thanh toán âm (không gắn người đi thu nên tiền mặt đang giữ
+     * không đổi), ghi nhận vào sổ ở {@code ledgerPeriod}. Hoàn một phần giữ Đã thu; hoàn hết thì khoản về Chưa thu (O9).
+     */
+    public Payment recordRefund(Charge charge, long amount, CollectionPeriod ledgerPeriod, String note, String requestKey,
+            Long actorId) {
+        charges.lockById(charge.getId());
+        long paidBefore = payments.sumByChargeId(charge.getId());
+        if (amount <= 0 || amount > paidBefore) {
+            throw new BusinessRuleException("REFUND_AMOUNT_INVALID",
+                    "Số tiền hoàn phải lớn hơn 0 và không vượt số đã thu (" + Money.format(paidBefore) + ").");
+        }
+        Payment refund = payments.save(Payment.builder()
+                .code(nextCode(charge)).charge(charge).amount(-amount).method(PaymentMethod.REFUND)
+                .paidAt(OffsetDateTime.now(clock)).confirmedBy(actorId).note(blankToNull(note))
+                .clientRequestId(requestKey).ledgerPeriod(ledgerPeriod)
+                .build());
+        if (paidBefore == amount && charge.getStatus() == ChargeStatus.PAID) {
+            charge.markUnpaidAfterRefund();
+        }
+        return refund;
+    }
+
+    /** Đã thu (sau hoàn) của một khoản. */
+    @Transactional(readOnly = true)
+    public long paidOf(Long chargeId) {
+        return payments.sumByChargeId(chargeId);
+    }
+
     /** Các lần thanh toán của một hộ (mọi hình thức), mới nhất trước — danh sách xác nhận trên app người dân. */
     @Transactional(readOnly = true)
     public List<Payment> paymentsOfSubject(Long subjectId) {
@@ -201,7 +231,7 @@ public class CollectionService {
     /** Lịch sử thu của một khoản: các lần thanh toán và lượt ghé (theo phạm vi người gọi). */
     @Transactional(readOnly = true)
     public Activity activity(Long chargeId, CurrentUser actor) {
-        Charge charge = actor.role() == Role.COMMUNE_OFFICER || actor.role() == Role.ADMIN
+        Charge charge = actor.hasRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.LEADER)
                 ? charges.findByIdWithDetails(chargeId).orElseThrow(CollectionService::chargeNotFound)
                 : loadInScope(chargeId, actor);
         return new Activity(charge, payments.findByChargeIdOrderByPaidAtAsc(chargeId),
@@ -216,14 +246,18 @@ public class CollectionService {
             return result;
         }
         Map<Long, Long> paid = new HashMap<>();
-        payments.sumsByChargeIds(chargeIds).forEach(r -> paid.put((Long) r[0], ((Number) r[1]).longValue()));
+        Map<Long, OffsetDateTime> paidAt = new HashMap<>();
+        payments.sumsByChargeIds(chargeIds).forEach(r -> {
+            paid.put((Long) r[0], ((Number) r[1]).longValue());
+            paidAt.put((Long) r[0], (OffsetDateTime) r[2]);
+        });
         Map<Long, CollectionVisit> latest = new HashMap<>();
         visits.findLatestByChargeIds(chargeIds).forEach(v -> latest.put(v.getCharge().getId(), v));
-        chargeIds.forEach(id -> result.put(id, new ChargeProgress(paid.getOrDefault(id, 0L), latest.get(id))));
+        chargeIds.forEach(id -> result.put(id, new ChargeProgress(paid.getOrDefault(id, 0L), paidAt.get(id), latest.get(id))));
         return result;
     }
 
-    public record ChargeProgress(long paidAmount, CollectionVisit lastVisit) {
+    public record ChargeProgress(long paidAmount, OffsetDateTime lastPaidAt, CollectionVisit lastVisit) {
     }
 
     private PaymentOutcome replay(Payment existing, Long chargeId) {
@@ -252,6 +286,9 @@ public class CollectionService {
         }
         if (charge.getStatus() == ChargeStatus.PAID) {
             throw new BusinessRuleException("CHARGE_ALREADY_PAID", "Khoản " + charge.getCode() + " đã thu đủ.");
+        }
+        if (charge.getStatus() == ChargeStatus.WRITTEN_OFF) {
+            throw new BusinessRuleException("CHARGE_WRITTEN_OFF", "Khoản " + charge.getCode() + " đã xóa nợ, không thu.");
         }
     }
 

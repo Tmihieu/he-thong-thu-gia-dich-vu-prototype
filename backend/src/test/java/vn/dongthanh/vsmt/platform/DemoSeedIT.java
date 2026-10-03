@@ -85,20 +85,21 @@ class DemoSeedIT extends IntegrationTest {
     }
 
     @Test
-    void demoProfileSeedsTariffQd65WithFourGroupsAndFeeTypes() {
+    void demoProfileSeedsTariffQd65WithAllGroupsAndFeeTypes() {
         assertThat(demoDb.queryForList("select code || ':' || status from tariff_versions order by valid_from",
                 String.class)).containsExactly("BG-67-2025:EXPIRED", "BG-65-2026:ACTIVE");
 
         List<Map<String, Object>> rates = demoDb.queryForList("""
-                select r.tariff_group, r.collection_fee, r.processing_fee, r.monthly_total
+                select r.tariff_group, r.collection_fee, r.transport_fee, r.monthly_total
                 from tariff_rates r join tariff_versions v on v.id = r.tariff_version_id
-                where v.code = 'BG-65-2026' order by r.monthly_total""");
+                where v.code = 'BG-65-2026' order by r.monthly_total, r.tariff_group""");
         assertThat(rates).extracting(r -> r.get("tariff_group"))
-                .containsExactly("HH_UP_TO_2", "HH_3_PLUS", "SMALL_GENERATOR", "BY_VOLUME");
+                .containsExactly("BY_VOLUME", "HH_UP_TO_2", "HH_3_PLUS", "SMALL_UP_TO_126", "SMALL_126_TO_250",
+                        "SMALL_250_TO_500");
         assertThat(rates).extracting(r -> ((Number) r.get("monthly_total")).longValue())
-                .containsExactly(40_000L, 80_000L, 119_000L, 1_266_000L);
+                .containsExactly(633L, 40_000L, 80_000L, 80_000L, 119_000L, 238_000L);
         assertThat(rates).allSatisfy(r -> assertThat(((Number) r.get("monthly_total")).longValue())
-                .isEqualTo(((Number) r.get("collection_fee")).longValue() + ((Number) r.get("processing_fee")).longValue()));
+                .isEqualTo(((Number) r.get("collection_fee")).longValue() + ((Number) r.get("transport_fee")).longValue()));
 
         assertThat(demoDb.queryForList("select code from fee_types order by code", String.class))
                 .containsExactly("ENV", "EXTRA");
@@ -196,6 +197,17 @@ class DemoSeedIT extends IntegrationTest {
                 join service_subjects s on s.id = a.subject_id where p.code = 'CDC-035'""", String.class))
                 .isEqualTo("DTH-H000128");
         assertThat(demoDb.queryForObject("select count(*) from market_comments", Integer.class)).isEqualTo(3);
+        // V25 nâng cấp dữ liệu cũ: caption = title + 2 xuống dòng + mô tả, không lấy địa điểm nhận; post_type → tag;
+        // danh mục OTHER, tổ của hộ, không chia sẻ SĐT.
+        assertThat(demoDb.queryForList("""
+                select p.code || ':' || string_agg(t.tag, ',') || ':' || p.category || ':' || p.share_phone
+                    || ':' || (p.area_id = s.area_id) || ':' || (p.caption = p.title || E'\\n\\n' || p.description)
+                    || ':' || (position(coalesce(p.pickup_location, '#') in p.caption) = 0)
+                from market_posts p join market_post_tags t on t.post_id = p.id
+                join citizen_accounts a on a.id = p.author_id join service_subjects s on s.id = a.subject_id
+                group by p.id, s.area_id order by p.code""", String.class))
+                .containsExactly("CDC-033:GIVE:OTHER:false:true:true:true", "CDC-035:GIVE:OTHER:false:true:true:true",
+                        "CDC-039:EXCHANGE:OTHER:false:true:true:true", "CDC-041:GIVE:OTHER:false:true:true:true");
     }
 
     @Test

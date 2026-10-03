@@ -19,11 +19,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.AreaDto;
+import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.AreaRequest;
+import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.DistrictRequest;
 import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.CollectionScheduleDto;
 import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.CompanyDto;
 import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.CompanyRequest;
 import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.DistrictDto;
 import vn.dongthanh.vsmt.masterdata.service.CompanyService;
+import vn.dongthanh.vsmt.masterdata.service.LocationService;
 import vn.dongthanh.vsmt.masterdata.service.MasterDataQueryService;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
 
@@ -35,6 +38,22 @@ public class MasterDataController {
 
     private final MasterDataQueryService query;
     private final CompanyService companies;
+    private final LocationService locations;
+
+    @Operation(summary = "Sửa địa bàn (quản trị)")
+    @PutMapping("/districts/{id}")
+    public DistrictDto updateDistrict(@PathVariable Long id, @Valid @RequestBody DistrictRequest req,
+            @AuthenticationPrincipal CurrentUser actor) {
+        return DistrictDto.of(locations.updateDistrict(id, req.name(), req.note(), req.sortOrder(), actor));
+    }
+
+    @Operation(summary = "Sửa tên và trạng thái khu vực (quản trị)")
+    @PutMapping("/areas/{id}")
+    public AreaDto updateArea(@PathVariable Long id, @Valid @RequestBody AreaRequest req,
+            @AuthenticationPrincipal CurrentUser actor) {
+        var area = locations.updateArea(id, req.name(), req.status(), actor);
+        return AreaDto.of(area, query.subjectCountByArea().getOrDefault(id, 0L));
+    }
 
     @Operation(summary = "Danh sách địa bàn")
     @GetMapping("/districts")
@@ -67,14 +86,14 @@ public class MasterDataController {
         return CompanyDto.of(query.company(actor, id));
     }
 
-    @Operation(summary = "Thêm công ty (cán bộ xã); mã DVnn tự sinh")
+    @Operation(summary = "Thêm công ty (quản trị); mã DVnn tự sinh")
     @PostMapping("/companies")
     @ResponseStatus(HttpStatus.CREATED)
     public CompanyDto createCompany(@Valid @RequestBody CompanyRequest req, @AuthenticationPrincipal CurrentUser actor) {
         return CompanyDto.of(companies.create(req.toCommand(), actor));
     }
 
-    @Operation(summary = "Sửa thông tin công ty (cán bộ xã)")
+    @Operation(summary = "Sửa thông tin công ty (cán bộ xã, quản trị)")
     @PutMapping("/companies/{id}")
     public CompanyDto updateCompany(@PathVariable Long id, @Valid @RequestBody CompanyRequest req,
             @AuthenticationPrincipal CurrentUser actor) {

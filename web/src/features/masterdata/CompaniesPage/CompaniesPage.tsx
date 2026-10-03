@@ -1,4 +1,4 @@
-import { App, Button, Descriptions, Drawer, Input, Segmented, Space, Statistic, Table, Tag, Typography } from 'antd';
+import { App, Button, Descriptions, Drawer, Flex, Input, Segmented, Space, Statistic, Table, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 
@@ -29,10 +29,13 @@ function errorMessage(err: unknown): string | null {
 }
 
 const statusTag = (s: Company['status']) =>
-  s === 'ACTIVE' ? <Tag color="green">Hoạt động</Tag> : <Tag>Tạm ngưng</Tag>;
+  s === 'ACTIVE' ? <Tag color="green">Đang hợp tác</Tag> : <Tag>Ngừng hợp tác</Tag>;
 
-/** Công ty môi trường (cán bộ xã): danh sách, thêm/sửa, chi tiết có khu vực phụ trách và tiến độ nộp theo kỳ. */
-export function CompaniesPage() {
+/**
+ * Công ty môi trường. Cán bộ xã: danh sách, sửa, phân công tổ chưa có công ty, tiến độ nộp theo kỳ.
+ * Quản trị ({@code admin}): thêm/sửa công ty và xem địa bàn công ty đang phụ trách.
+ */
+export function CompaniesPage({ admin = false }: { admin?: boolean }) {
   const { message } = App.useApp();
   const today = dayjs().format('YYYY-MM-DD');
   const companies = useCompanies();
@@ -48,7 +51,7 @@ export function CompaniesPage() {
   const [editing, setEditing] = useState<Company | null | undefined>(undefined);
   const [assigning, setAssigning] = useState(false);
   const [periodId, setPeriodId] = useState<number | undefined>();
-  const ledger = useCompanyLedger(detailId === null ? undefined : periodId);
+  const ledger = useCompanyLedger(detailId === null || admin ? undefined : periodId);
 
   const areaCount = useMemo(() => {
     const m = new Map<number, number>();
@@ -62,6 +65,7 @@ export function CompaniesPage() {
       .filter((c) => !needle || normalizeText(`${c.code} ${c.name} ${c.contactName} ${c.contactPhone}`).includes(needle));
   }, [companies.data, q, status]);
 
+  const unassigned = (areas.data ?? []).filter((a) => !(active.data ?? []).some((x) => x.areaId === a.id));
   const detail = companies.data?.find((c) => c.id === detailId) ?? null;
   const detailAreas = (active.data ?? []).filter((a) => a.companyId === detailId);
   const row = ledger.data?.find((r) => r.companyId === detailId);
@@ -75,26 +79,30 @@ export function CompaniesPage() {
 
   return (
     <>
-      <Space style={{ width: '100%', justifyContent: 'space-between' }} align="start">
+      {!admin && (
         <Typography.Title level={3} style={{ marginTop: 0 }}>
           Công ty môi trường
         </Typography.Title>
-        <Button type="primary" onClick={() => openForm(null)}>
-          + Thêm công ty
-        </Button>
-      </Space>
-      <Space wrap style={{ marginBottom: 16 }}>
-        <Input.Search allowClear placeholder="Tên, mã, đầu mối, điện thoại" style={{ width: 280 }} onChange={(e) => setQ(e.target.value)} />
-        <Segmented<StatusFilter>
-          value={status}
-          onChange={setStatus}
-          options={[
-            { value: 'all', label: 'Tất cả' },
-            { value: 'ACTIVE', label: 'Hoạt động' },
-            { value: 'INACTIVE', label: 'Tạm ngưng' },
-          ]}
-        />
-      </Space>
+      )}
+      <Flex wrap gap={8} justify="space-between" style={{ marginBottom: 16 }}>
+        <Space wrap>
+          <Input.Search allowClear placeholder="Tên, mã, đầu mối, điện thoại" style={{ width: 280 }} onChange={(e) => setQ(e.target.value)} />
+          <Segmented<StatusFilter>
+            value={status}
+            onChange={setStatus}
+            options={[
+              { value: 'all', label: 'Tất cả' },
+              { value: 'ACTIVE', label: 'Đang hợp tác' },
+              { value: 'INACTIVE', label: 'Ngừng hợp tác' },
+            ]}
+          />
+        </Space>
+        {admin && (
+          <Button type="primary" onClick={() => openForm(null)}>
+            + Thêm công ty
+          </Button>
+        )}
+      </Flex>
       <Table<Company>
         rowKey="id"
         loading={companies.isLoading}
@@ -129,6 +137,9 @@ export function CompaniesPage() {
           },
           { title: 'Khu vực đang phụ trách', align: 'right', render: (_, c) => areaCount.get(c.id) ?? 0 },
           { title: 'Trạng thái', render: (_, c) => statusTag(c.status) },
+          { title: 'Thao tác', align: 'right', render: (_, c) => (
+            <Button size="small" onClick={() => openForm(c)} aria-label={`Sửa ${c.name}`}>Sửa</Button>
+          ) },
         ]}
       />
 
@@ -141,16 +152,18 @@ export function CompaniesPage() {
           detail && (
             <Space>
               <Button onClick={() => openForm(detail)}>Sửa thông tin</Button>
-              <Button
-                type="primary"
-                disabled={detail.status !== 'ACTIVE'}
-                onClick={() => {
-                  assign.reset();
-                  setAssigning(true);
-                }}
-              >
-                + Phân công khu vực
-              </Button>
+              {!admin && (
+                <Button
+                  type="primary"
+                  disabled={detail.status !== 'ACTIVE' || unassigned.length === 0}
+                  onClick={() => {
+                    assign.reset();
+                    setAssigning(true);
+                  }}
+                >
+                  + Phân công khu vực
+                </Button>
+              )}
             </Space>
           )
         }
@@ -174,25 +187,29 @@ export function CompaniesPage() {
               </Descriptions.Item>
             </Descriptions>
 
-            <Space style={{ margin: '24px 0 12px' }}>
-              <Typography.Title level={5} style={{ margin: 0 }}>
-                Tiến độ nộp
-              </Typography.Title>
-              <PeriodSelect value={periodId} onChange={setPeriodId} />
-              {row && <Tag color={PROGRESS_COLORS[row.progress]}>{PROGRESS_LABELS[row.progress]}</Tag>}
-            </Space>
-            {row ? (
-              <Space size="large" wrap>
-                <Statistic title="Phải thu" valueRender={() => <MoneyText value={row.due} />} />
-                <Statistic title="Đã thu" valueRender={() => <MoneyText value={row.collected} />} />
-                <Statistic title="Đã nộp về xã" valueRender={() => <MoneyText value={row.received} />} />
-                <Statistic title="Còn phải nộp" valueRender={() => <MoneyText value={row.remaining} />} />
-                {row.previousDebt > 0 && (
-                  <Statistic title="Nợ kỳ trước" valueRender={() => <Typography.Text type="danger"><MoneyText value={row.previousDebt} /></Typography.Text>} />
-                )}
+            {!admin && (
+              <>
+              <Space style={{ margin: '24px 0 12px' }}>
+                <Typography.Title level={5} style={{ margin: 0 }}>
+                  Tiến độ nộp
+                </Typography.Title>
+                <PeriodSelect value={periodId} onChange={setPeriodId} />
+                {row && <Tag color={PROGRESS_COLORS[row.progress]}>{PROGRESS_LABELS[row.progress]}</Tag>}
               </Space>
-            ) : (
-              <Typography.Text type="secondary">Kỳ này công ty chưa có khoản phải thu.</Typography.Text>
+              {row ? (
+                <Space size="large" wrap>
+                  <Statistic title="Phải thu" valueRender={() => <MoneyText value={row.due} />} />
+                  <Statistic title="Đã thu" valueRender={() => <MoneyText value={row.collected} />} />
+                  <Statistic title="Đã nộp về xã" valueRender={() => <MoneyText value={row.received} />} />
+                  <Statistic title="Còn phải nộp" valueRender={() => <MoneyText value={row.remaining} />} />
+                  {row.previousDebt > 0 && (
+                    <Statistic title="Nợ kỳ trước" valueRender={() => <Typography.Text type="danger"><MoneyText value={row.previousDebt} /></Typography.Text>} />
+                  )}
+                </Space>
+              ) : (
+                <Typography.Text type="secondary">Kỳ này công ty chưa có khoản phải thu.</Typography.Text>
+              )}
+              </>
             )}
 
             <Typography.Title level={5} style={{ margin: '24px 0 12px' }}>
@@ -238,7 +255,7 @@ export function CompaniesPage() {
       {detail && (
         <AssignAreaModal
           open={assigning}
-          areas={areas.data ?? []}
+          areas={unassigned}
           companies={[detail]}
           initialAreaIds={[]}
           initialCompanyId={detail.id}

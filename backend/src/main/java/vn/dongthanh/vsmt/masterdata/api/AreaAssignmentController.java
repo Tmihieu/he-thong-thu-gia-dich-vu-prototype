@@ -57,7 +57,7 @@ public class AreaAssignmentController {
     @Operation(summary = "Lịch sử phân công của một khu vực, mới nhất trước (cán bộ xã, quản trị)")
     @GetMapping("/areas/{areaId}/assignments")
     public List<AreaAssignmentDto> history(@PathVariable Long areaId, @AuthenticationPrincipal CurrentUser actor) {
-        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN);
+        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.LEADER);
         return assignments.history(areaId).stream().map(AreaAssignmentDto::of).toList();
     }
 

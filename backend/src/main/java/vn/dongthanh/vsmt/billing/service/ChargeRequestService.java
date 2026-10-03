@@ -230,12 +230,13 @@ public class ChargeRequestService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Charge> searchCharges(Long periodId, Long areaId, ChargeStatus status, Long subjectId, Pageable page,
+    public Page<Charge> searchCharges(Long periodId, Long areaId, ChargeStatus status, Long subjectId, Long companyId,
+            Pageable page,
             CurrentUser actor) {
         // Người đi thu chỉ xem khoản trong tổ được giao, qua /api/collection/my-charges.
-        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER);
-        Long companyId = actor.role().belongsToCompany() ? actor.companyId() : null;
-        return charges.search(periodId, areaId, status, subjectId, companyId, page);
+        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER, Role.LEADER);
+        Long scope = actor.role().belongsToCompany() ? actor.companyId() : companyId;
+        return charges.search(periodId, areaId, status, subjectId, scope, page);
     }
 
     /** Mọi khoản của một đối tượng, kỳ mới trước (app người dân; phạm vi hộ kiểm ở module citizen). */
@@ -257,7 +258,7 @@ public class ChargeRequestService {
 
     @Transactional(readOnly = true)
     public List<RequestSummary> listRequests(Long periodId, CurrentUser actor) {
-        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN);
+        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.LEADER);
         List<ChargeRequest> list = requests.findForList(periodId);
         Map<Long, Object[]> totals = new HashMap<>();
         if (!list.isEmpty()) {

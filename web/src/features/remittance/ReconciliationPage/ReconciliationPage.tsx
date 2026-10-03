@@ -2,11 +2,13 @@ import { Alert, Card, Col, Row, Space, Statistic, Table, Tag, Typography } from 
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { useAuth } from '../../../app/auth/authContext';
 import { RECONCILIATION_COLORS, RECONCILIATION_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type LedgerRow, useCompanyLedger } from '../api';
 import { LockPeriodButton } from './LockPeriodButton';
+import { PeriodTrend } from './PeriodTrend';
 
 function Gap({ gap }: { gap: number }) {
   if (gap === 0) return <MoneyText value={0} />;
@@ -27,6 +29,8 @@ function Gap({ gap }: { gap: number }) {
  * hết hạn còn chưa nộp hoặc nợ kỳ trước: Lệch. Cán bộ xã khóa kỳ từ màn này (G1).
  */
 export function ReconciliationPage() {
+  // Lãnh đạo xem màn này chỉ đọc: không khóa kỳ (SPEC §9.10).
+  const readOnly = useAuth().user?.role === 'LEADER';
   const [periodId, setPeriodId] = useState<number>();
   const ledger = useCompanyLedger(periodId);
   const rows = ledger.data ?? [];
@@ -37,9 +41,10 @@ export function ReconciliationPage() {
       <Typography.Title level={3} style={{ marginTop: 0 }}>
         Đối soát
       </Typography.Title>
+      <PeriodTrend />
       <Space style={{ marginBottom: 16 }} wrap>
         <PeriodSelect value={periodId} onChange={setPeriodId} />
-        {periodId !== undefined && <LockPeriodButton periodId={periodId} />}
+        {periodId !== undefined && !readOnly && <LockPeriodButton periodId={periodId} />}
       </Space>
       {ledger.error && <Alert type="error" showIcon message={ledger.error instanceof ApiError ? ledger.error.message : 'Không tải được số liệu'} />}
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>

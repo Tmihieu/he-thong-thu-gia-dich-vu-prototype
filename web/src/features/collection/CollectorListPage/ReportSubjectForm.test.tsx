@@ -12,6 +12,7 @@ const item = {
   charge: { id: 5, subjectId: 42, subjectCode: 'DTH-H000121', subjectName: 'Hộ Nguyễn Văn An', subjectAddress: '1 Đường Mẫu' },
   paidAmount: 0,
   remainingAmount: 80_000,
+  lastPaidAt: null,
   lastVisit: null,
 } as unknown as CollectorCharge;
 
@@ -40,20 +41,20 @@ describe('ReportSubjectForm', () => {
     const { sent } = setup();
     await userEvent.click(screen.getByRole('button', { name: 'Gửi báo cáo' }));
 
-    expect(await screen.findByText('Vui lòng chọn loại')).toBeInTheDocument();
-    expect(screen.getByText('Vui lòng mô tả thông tin sai')).toBeInTheDocument();
+    expect(await screen.findByText('Vui lòng chọn lý do')).toBeInTheDocument();
+    expect(screen.getByText('Vui lòng ghi rõ thông tin sai')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByText('Sai thông tin hộ'));
-    await userEvent.type(screen.getByLabelText('Mô tả'), '   ');
+    await userEvent.click(screen.getByText('Sai thông tin hộ (tên, địa chỉ, SĐT)'));
+    await userEvent.type(screen.getByLabelText('Ghi chú'), '   ');
     await userEvent.click(screen.getByRole('button', { name: 'Gửi báo cáo' }));
-    expect(await screen.findByText('Vui lòng mô tả thông tin sai')).toBeInTheDocument();
+    expect(await screen.findByText('Vui lòng ghi rõ thông tin sai')).toBeInTheDocument();
     expect(sent()).toHaveLength(0);
   });
 
   it('gửi đúng hộ, loại và mô tả đã bỏ khoảng trắng thừa; gửi xong thì đóng', async () => {
     const { sent, onClose } = setup();
     await userEvent.click(screen.getByText('Hộ đã chuyển đi'));
-    await userEvent.type(screen.getByLabelText('Mô tả'), '  Cả nhà chuyển về quê từ tháng 9  ');
+    await userEvent.type(screen.getByLabelText('Ghi chú'), '  Cả nhà chuyển về quê từ tháng 9  ');
     await userEvent.click(screen.getByRole('button', { name: 'Gửi báo cáo' }));
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
@@ -65,8 +66,8 @@ describe('ReportSubjectForm', () => {
     const { onClose } = setup(() =>
       jsonResponse(404, { code: 'CHARGE_NOT_FOUND', message: 'Không tìm thấy khoản thu trong tổ được giao.' }),
     );
-    await userEvent.click(screen.getByText('Sai thông tin hộ'));
-    await userEvent.type(screen.getByLabelText('Mô tả'), 'Sai số nhà');
+    await userEvent.click(screen.getByText('Sai thông tin hộ (tên, địa chỉ, SĐT)'));
+    await userEvent.type(screen.getByLabelText('Ghi chú'), 'Sai số nhà');
     await userEvent.click(screen.getByRole('button', { name: 'Gửi báo cáo' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Không tìm thấy khoản thu trong tổ được giao.');

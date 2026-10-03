@@ -7,6 +7,6 @@ describe('App', () => {
     sessionStorage.clear();
     render(<App />);
     expect(await screen.findByRole('button', { name: /Đăng nhập/ })).toBeInTheDocument();
-    expect(screen.getByText('Thu giá dịch vụ VSMT')).toBeInTheDocument();
+    expect(screen.getByText('Quản lý thu giá dịch vụ vệ sinh môi trường')).toBeInTheDocument();
   });
 });

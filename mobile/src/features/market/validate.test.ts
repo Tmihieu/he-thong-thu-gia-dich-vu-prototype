@@ -1,29 +1,26 @@
 import { validateMarketPost } from './validate';
 
+const ok = { caption: 'Cho tủ lạnh cũ', tags: ['GIVE' as const], sharePhone: false, contactPhone: '' };
+
 describe('validateMarketPost', () => {
-  it('hợp lệ khi có tên, hình thức, mô tả; nơi nhận không bắt buộc', () => {
-    expect(validateMarketPost({ title: 'Ghế sofa 3 chỗ', postType: 'GIVE', description: 'Còn chắc', pickupLocation: '' })).toEqual({});
+  it('hợp lệ khi có caption và 1 nhãn; tắt chia sẻ thì bỏ qua SĐT', () => {
+    expect(validateMarketPost(ok)).toEqual({});
   });
 
-  it('bắt buộc tên vật dụng và hình thức cho tặng / trao đổi (khoảng trắng không tính)', () => {
-    const errors = validateMarketPost({ title: '   ', postType: null, description: 'Còn chắc', pickupLocation: '' });
-    expect(errors.title).toMatch(/Nhập tên/);
-    expect(errors.postType).toMatch(/cho tặng hoặc trao đổi/);
+  it('caption bắt buộc (khoảng trắng không tính) và tối đa 2500', () => {
+    expect(validateMarketPost({ ...ok, caption: '   ' }).caption).toMatch(/Nhập nội dung/);
+    expect(validateMarketPost({ ...ok, caption: 'x'.repeat(2500) })).toEqual({});
+    expect(validateMarketPost({ ...ok, caption: 'x'.repeat(2501) }).caption).toMatch(/2500/);
   });
 
-  it('bắt buộc mô tả như backend', () => {
-    expect(validateMarketPost({ title: 'Tủ', postType: 'EXCHANGE', description: ' ', pickupLocation: '' }).description).toMatch(/mô tả/);
+  it('nhãn 1–4', () => {
+    expect(validateMarketPost({ ...ok, tags: [] }).tags).toMatch(/ít nhất/);
+    expect(validateMarketPost({ ...ok, tags: ['FIND', 'SELL', 'GIVE', 'EXCHANGE'] })).toEqual({});
   });
 
-  it('giới hạn độ dài như backend', () => {
-    const errors = validateMarketPost({
-      title: 'x'.repeat(151),
-      postType: 'GIVE',
-      description: 'y'.repeat(2001),
-      pickupLocation: 'z'.repeat(256),
-    });
-    expect(errors.title).toMatch(/150/);
-    expect(errors.description).toMatch(/2000/);
-    expect(errors.pickupLocation).toMatch(/255/);
+  it('bật chia sẻ thì SĐT phải hợp lệ', () => {
+    expect(validateMarketPost({ ...ok, sharePhone: true, contactPhone: '' }).contactPhone).toBeTruthy();
+    expect(validateMarketPost({ ...ok, sharePhone: true, contactPhone: '12ab' }).contactPhone).toBeTruthy();
+    expect(validateMarketPost({ ...ok, sharePhone: true, contactPhone: '+84 902 000 128' })).toEqual({});
   });
 });

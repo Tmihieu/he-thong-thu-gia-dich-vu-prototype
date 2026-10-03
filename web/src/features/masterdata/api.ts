@@ -6,6 +6,8 @@ import type { components } from '../../api/schema';
 
 export type TariffVersion = components['schemas']['TariffVersionDto'];
 export type TariffRate = components['schemas']['TariffRateDto'];
+export type TariffDraftRequest = components['schemas']['TariffDraftRequest'];
+export type CreateTariffRequest = components['schemas']['CreateTariffRequest'];
 export type Period = components['schemas']['PeriodDto'];
 export type OpenPeriodRequest = components['schemas']['OpenPeriodRequest'];
 export type District = components['schemas']['DistrictDto'];
@@ -23,6 +25,7 @@ export type ContractRequest = components['schemas']['ContractRequest'];
 export interface SubjectQuery {
   areaId?: number;
   status?: Subject['status'];
+  subjectType?: Subject['subjectType'];
   q?: string;
   page: number;
   size: number;
@@ -45,6 +48,25 @@ export function useTariffs() {
   });
 }
 
+function useTariffMutation<V>(fn: (v: V) => Promise<TariffVersion>) {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: fn, onSuccess: () => qc.invalidateQueries({ queryKey: masterdataKeys.tariffs }) });
+}
+
+export function useCreateTariffDraft() {
+  return useTariffMutation((body: CreateTariffRequest) => api.post<TariffVersion>('/api/masterdata/tariffs', body));
+}
+
+export function useUpdateTariffDraft() {
+  return useTariffMutation(({ id, body }: { id: number; body: TariffDraftRequest }) =>
+    api.put<TariffVersion>(`/api/masterdata/tariffs/${id}`, body),
+  );
+}
+
+export function useIssueTariff() {
+  return useTariffMutation((id: number) => api.post<TariffVersion>(`/api/masterdata/tariffs/${id}/issue`));
+}
+
 export function usePeriods() {
   return useQuery({
     queryKey: masterdataKeys.periods,
@@ -60,6 +82,27 @@ export function useAreas() {
   return useQuery({ queryKey: masterdataKeys.areas, queryFn: () => api.get<Area[]>('/api/masterdata/areas') });
 }
 
+export function useUpdateDistrict() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: Pick<District, 'name' | 'note' | 'sortOrder'> }) =>
+      api.put<District>(`/api/masterdata/districts/${id}`, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: masterdataKeys.districts }),
+  });
+}
+
+export function useUpdateArea() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: Pick<Area, 'name' | 'status'> }) =>
+      api.put<Area>(`/api/masterdata/areas/${id}`, body),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: masterdataKeys.areas });
+      await qc.invalidateQueries({ queryKey: masterdataKeys.assignments });
+    },
+  });
+}
+
 export function useCompanies() {
   return useQuery({ queryKey: masterdataKeys.companies, queryFn: () => api.get<Company[]>('/api/masterdata/companies') });
 }
@@ -69,6 +112,17 @@ export function useActiveAssignments(date: string) {
   return useQuery({
     queryKey: [...masterdataKeys.assignments, 'active', date],
     queryFn: () => api.get<AreaAssignment[]>('/api/masterdata/area-assignments', { params: { date } }),
+  });
+}
+
+export type MemberChange = components['schemas']['MemberChangeDto'];
+
+/** Lịch sử đổi số nhân khẩu của một hộ, mới nhất trước. */
+export function useMemberHistory(subjectId: number | null) {
+  return useQuery({
+    queryKey: [...masterdataKeys.subjects, 'member-history', subjectId],
+    queryFn: () => api.get<MemberChange[]>(`/api/masterdata/subjects/${subjectId}/member-history`),
+    enabled: subjectId !== null,
   });
 }
 

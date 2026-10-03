@@ -5,11 +5,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository;
 import vn.dongthanh.vsmt.masterdata.domain.FeeTypeRepository;
 import vn.dongthanh.vsmt.masterdata.domain.TariffGroup;
 import vn.dongthanh.vsmt.masterdata.domain.TariffStatus;
@@ -17,11 +19,13 @@ import vn.dongthanh.vsmt.masterdata.domain.TariffVersion;
 import vn.dongthanh.vsmt.masterdata.domain.TariffVersionRepository;
 import vn.dongthanh.vsmt.masterdata.service.TariffService;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
+import vn.dongthanh.vsmt.platform.service.AuditService;
 
 class TariffServiceTest {
 
     final TariffVersionRepository repo = mock(TariffVersionRepository.class);
-    final TariffService service = new TariffService(repo, mock(FeeTypeRepository.class));
+    final TariffService service = new TariffService(repo, mock(FeeTypeRepository.class),
+            mock(CollectionPeriodRepository.class), mock(AuditService.class), Clock.systemDefaultZone());
 
     final TariffVersion bg67 = version("BG-67-2025", "2025-06-01", "2026-08-31", TariffStatus.EXPIRED);
     final TariffVersion bg65 = version("BG-65-2026", "2026-09-01", "2027-06-30", TariffStatus.ACTIVE);
@@ -107,7 +111,7 @@ class TariffServiceTest {
     void rateTotalIsSumOfComponentsAndNegativeIsRejected() {
         TariffVersion v = version("BG-X", "2026-01-01", null, TariffStatus.DRAFT);
 
-        assertThat(v.addRate(TariffGroup.SMALL_GENERATOR, 119_000, 0, "đ/tháng").getMonthlyTotal()).isEqualTo(119_000);
+        assertThat(v.addRate(TariffGroup.SMALL_UP_TO_126, 119_000, 0, "đ/tháng").getMonthlyTotal()).isEqualTo(119_000);
         assertThatThrownBy(() -> v.addRate(TariffGroup.BY_VOLUME, -1, 0, "đ/tháng"))
                 .isInstanceOf(IllegalArgumentException.class);
     }

@@ -25,20 +25,24 @@ export const SUBJECT_STATUS_LABELS: Record<SubjectStatus, string> = {
 export const TARIFF_GROUP_LABELS: Record<TariffGroup, string> = {
   HH_UP_TO_2: 'Hộ gia đình ≤ 2 người',
   HH_3_PLUS: 'Hộ gia đình ≥ 3 người',
-  SMALL_GENERATOR: 'Chủ nguồn thải nhỏ',
-  BY_VOLUME: 'Theo khối lượng',
+  SMALL_UP_TO_126: 'Chủ nguồn thải nhỏ ≤ 126 kg/tháng',
+  SMALL_126_TO_250: 'Chủ nguồn thải nhỏ 126–250 kg/tháng',
+  SMALL_250_TO_500: 'Chủ nguồn thải nhỏ 250–500 kg/tháng',
+  BY_VOLUME: 'Chủ nguồn thải lớn 500–9.000 kg/tháng',
 };
 
 export const CHARGE_STATUS_LABELS: Record<ChargeStatus, string> = {
   UNPAID: 'Chưa đóng',
   PAID: 'Đã đóng',
   EXEMPT: 'Miễn',
+  WRITTEN_OFF: 'Đã xóa nợ',
 };
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   CASH: 'Tiền mặt',
   TRANSFER: 'Chuyển khoản',
   APP_SIMULATED: 'Ứng dụng (mô phỏng)',
+  REFUND: 'Hoàn tiền',
 };
 
 export const WASTE_TYPE_LABELS: Record<WasteType, string> = {
@@ -107,9 +111,21 @@ export const DAY_SLOT_LABELS: Record<DaySlot, string> = {
   AFTERNOON: 'Buổi chiều',
 };
 
-export type MarketPostType = Schemas['MarketPostDto']['postType'];
+export type MarketTag = Schemas['MarketPostDto']['tags'][number];
+export type MarketCategory = Schemas['MarketPostDto']['category'];
 
-export const MARKET_TYPE_LABELS: Record<MarketPostType, string> = {
+export const MARKET_TAG_LABELS: Record<MarketTag, string> = {
+  FIND: 'Tìm đồ',
+  SELL: 'Bán đồ',
   GIVE: 'Cho tặng',
-  EXCHANGE: 'Trao đổi',
+  EXCHANGE: 'Đổi đồ',
+};
+
+export const MARKET_CATEGORY_LABELS: Record<MarketCategory, string> = {
+  HOUSEHOLD: 'Đồ gia dụng',
+  ELECTRONICS: 'Điện tử',
+  FURNITURE: 'Nội thất',
+  CHILDREN: 'Đồ trẻ em',
+  TOOLS_VEHICLES: 'Xe đạp và dụng cụ',
+  OTHER: 'Khác',
 };

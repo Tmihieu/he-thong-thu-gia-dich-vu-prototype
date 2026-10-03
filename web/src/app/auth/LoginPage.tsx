@@ -1,12 +1,14 @@
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
-import { Alert, Button, Card, Form, Input, Typography } from 'antd';
+import { Alert, Button, Card, Divider, Flex, Form, Input, Typography } from 'antd';
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 
 import { ApiError } from '../../api/client';
 import { homePath, ROLE_BASE } from '../layout/menuConfig';
 import { FullPageSpin } from '../pages/StatusPages';
+import { brand } from '../theme';
 import { type Role, useAuth } from './authContext';
+import { DEMO_ACCOUNTS, DEMO_LOGIN_ENABLED, DEMO_PASSWORD } from './demoAccounts';
 
 interface LoginForm {
   username: string;
@@ -44,14 +46,21 @@ export function LoginPage() {
   }
 
   return (
-    <div style={{ display: 'grid', placeItems: 'center', minHeight: '100vh', padding: 16, background: '#f5f7f5' }}>
+    <div style={{ display: 'grid', placeItems: 'center', minHeight: '100vh', padding: 16, background: brand.chrome, borderTop: '4px solid #218a58' }}>
       <Card style={{ width: '100%', maxWidth: 400 }}>
-        <Typography.Title level={3} style={{ marginTop: 0 }}>
-          Thu giá dịch vụ VSMT
+        <img src="/logo-dong-thanh.jpg" alt="Logo xã Đông Thạnh" width={88} height={88} style={{ display: 'block', margin: '0 auto 12px', borderRadius: '50%' }} />
+        <Typography.Title level={4} style={{ marginTop: 0, textAlign: 'center' }}>
+          Quản lý thu giá dịch vụ vệ sinh môi trường
         </Typography.Title>
-        <Typography.Paragraph type="secondary">Xã Đông Thạnh · đăng nhập cho cán bộ xã, công ty và quản trị</Typography.Paragraph>
+        <Typography.Paragraph type="secondary" style={{ textAlign: 'center' }}>UBND xã Đông Thạnh · Thành phố Hồ Chí Minh</Typography.Paragraph>
         {error && <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} role="alert" />}
-        <Form<LoginForm> layout="vertical" onFinish={onFinish} requiredMark={false} disabled={submitting}>
+        <Form<LoginForm>
+          layout="vertical"
+          onFinish={onFinish}
+          requiredMark={false}
+          disabled={submitting}
+          initialValues={DEMO_LOGIN_ENABLED ? { username: DEMO_ACCOUNTS[0]!.username, password: DEMO_PASSWORD } : undefined}
+        >
           <Form.Item
             label="Tên đăng nhập"
             name="username"
@@ -66,6 +75,26 @@ export function LoginPage() {
             Đăng nhập
           </Button>
         </Form>
+        {DEMO_LOGIN_ENABLED && (
+          <>
+            <Divider plain style={{ fontSize: 13 }}>
+              Đăng nhập nhanh tài khoản demo
+            </Divider>
+            <Flex wrap gap={8} justify="center">
+              {DEMO_ACCOUNTS.map((a) => (
+                <Button
+                  key={a.username}
+                  size="small"
+                  disabled={submitting}
+                  title={a.username}
+                  onClick={() => void onFinish({ username: a.username, password: DEMO_PASSWORD })}
+                >
+                  {a.label}
+                </Button>
+              ))}
+            </Flex>
+          </>
+        )}
       </Card>
     </div>
   );

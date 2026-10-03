@@ -28,8 +28,10 @@ export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
 export const TARIFF_GROUP_LABELS: Record<TariffGroup, string> = {
   HH_UP_TO_2: 'HGĐ ≤ 2 người',
   HH_3_PLUS: 'HGĐ ≥ 3 người',
-  SMALL_GENERATOR: 'Chủ nguồn thải nhỏ',
-  BY_VOLUME: 'Theo khối lượng',
+  SMALL_UP_TO_126: 'Chủ nguồn thải nhỏ ≤ 126 kg/tháng',
+  SMALL_126_TO_250: 'Chủ nguồn thải nhỏ 126–250 kg/tháng',
+  SMALL_250_TO_500: 'Chủ nguồn thải nhỏ 250–500 kg/tháng',
+  BY_VOLUME: 'Chủ nguồn thải lớn 500–9.000 kg/tháng',
 };
 
 export const TARIFF_STATUS_LABELS: Record<TariffStatus, string> = {
@@ -70,12 +72,14 @@ export const CHARGE_STATUS_LABELS: Record<ChargeStatus, string> = {
   UNPAID: 'Chưa thu',
   PAID: 'Đã thu',
   EXEMPT: 'Miễn giảm',
+  WRITTEN_OFF: 'Đã xóa nợ',
 };
 
 export const CHARGE_STATUS_COLORS: Record<ChargeStatus, string> = {
   UNPAID: 'orange',
   PAID: 'green',
   EXEMPT: 'purple',
+  WRITTEN_OFF: 'default',
 };
 
 export const CHARGE_SCOPE_LABELS: Record<ChargeScope, string> = {
@@ -124,6 +128,7 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   CASH: 'Tiền mặt',
   TRANSFER: 'Chuyển khoản',
   APP_SIMULATED: 'App người dân (mô phỏng)',
+  REFUND: 'Hoàn tiền',
 };
 
 /** Loại sai sót phiếu thu công ty báo (R28). */
@@ -151,4 +156,29 @@ export const STATUS_COLORS: Record<TariffStatus | PeriodStatus, string> = {
   EXPIRED: 'default',
   COLLECTING: 'green',
   LOCKED: 'default',
+};
+
+export type MarketTag = Schemas['MarketPostDto']['tags'][number];
+export type MarketCategory = Schemas['MarketPostDto']['category'];
+export type MarketPostStatus = Schemas['MarketPostDto']['status'];
+
+export const MARKET_TAG_LABELS: Record<MarketTag, string> = {
+  FIND: 'Tìm đồ',
+  SELL: 'Bán đồ',
+  GIVE: 'Cho tặng',
+  EXCHANGE: 'Đổi đồ',
+};
+
+export const MARKET_CATEGORY_LABELS: Record<MarketCategory, string> = {
+  HOUSEHOLD: 'Đồ gia dụng',
+  ELECTRONICS: 'Điện tử',
+  FURNITURE: 'Nội thất',
+  CHILDREN: 'Đồ trẻ em',
+  TOOLS_VEHICLES: 'Xe đạp và dụng cụ',
+  OTHER: 'Khác',
+};
+
+export const MARKET_STATUS_LABELS: Record<MarketPostStatus, string> = {
+  OPEN: 'Đang đăng',
+  CLOSED: 'Đã xong',
 };

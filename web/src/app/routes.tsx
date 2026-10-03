@@ -9,12 +9,17 @@ import { CollectorListPage } from '../features/collection/CollectorListPage/Coll
 import { CompanyHubPage } from '../features/collection/CompanyHubPage';
 import { CommuneComplaintsPage } from '../features/complaints/CommuneComplaintsPage';
 import { CompanyComplaintsPage } from '../features/complaints/CompanyComplaintsPage';
+import { MarketListPage, MarketPostPage } from '../features/market/MarketPages';
 import { AreasPage } from '../features/masterdata/AreasPage/AreasPage';
+import { ApprovalsPage } from '../features/leadership/ApprovalsPage';
+import { LeaderDashboardPage } from '../features/leadership/LeaderDashboardPage';
+import { LeaderReportPage } from '../features/leadership/LeaderReportPage';
 import { CompaniesPage } from '../features/masterdata/CompaniesPage/CompaniesPage';
 import { ConfigPage } from '../features/masterdata/ConfigPage';
 import { SubjectsPage } from '../features/masterdata/SubjectsPage/SubjectsPage';
 import { NotificationCenterPage } from '../features/notifications/NotificationCenterPage';
 import { AccountsPage } from '../features/platform/AccountsPage/AccountsPage';
+import { DataAdminPage } from '../features/platform/DataAdminPage';
 import { AuditLogPage } from '../features/platform/AuditLogPage/AuditLogPage';
 import { ProgressPage } from '../features/remittance/ProgressPage/ProgressPage';
 import { ReconciliationPage } from '../features/remittance/ReconciliationPage/ReconciliationPage';
@@ -30,6 +35,7 @@ const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'ADMIN:accounts': <AccountsPage />,
   'ADMIN:config': <ConfigPage />,
   'ADMIN:logs': <AuditLogPage />,
+  'ADMIN:data': <DataAdminPage />,
   'COMMUNE_OFFICER:areas': <AreasPage />,
   'COMMUNE_OFFICER:companies': <CompaniesPage />,
   'COMMUNE_OFFICER:subjects': <SubjectsPage />,
@@ -37,6 +43,12 @@ const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'COMMUNE_OFFICER:progress': <ProgressPage />,
   'COMMUNE_OFFICER:reconciliation': <ReconciliationPage />,
   'COMMUNE_OFFICER:complaints': <CommuneComplaintsPage />,
+  'COMMUNE_OFFICER:approvals': <ApprovalsPage />,
+  'LEADER:dashboard': <LeaderDashboardPage />,
+  'LEADER:approvals': <ApprovalsPage />,
+  'LEADER:report': <LeaderReportPage />,
+  'LEADER:progress': <ProgressPage />,
+  'LEADER:reconciliation': <ReconciliationPage />,
   'COMPANY_MANAGER:complaints': <CompanyComplaintsPage />,
   'COMPANY_MANAGER:assigned': <CompanyHubPage />,
   'COMPANY_MANAGER:bulky': <BulkyRequestsPage />,
@@ -60,8 +72,10 @@ export const routes: RouteObject[] = [
       { index: true, element: <Navigate to={homePath(role)} replace /> },
       ...MENU[role].map((entry) => ({
         path: entry.path,
-        element: PAGES[`${role}:${entry.path}`] ?? <NotFoundPage />,
+        // Chợ cộng đồng chỉ đọc: một màn cho cả 5 vai trò.
+        element: entry.path === 'market' ? <MarketListPage /> : (PAGES[`${role}:${entry.path}`] ?? <NotFoundPage />),
       })),
+      { path: 'market/:id', element: <MarketPostPage /> },
       { path: 'notifications', element: <NotificationCenterPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],

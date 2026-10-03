@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
-import type { ColorValue } from 'react-native';
+import { View, type ColorValue } from 'react-native';
 
 import { useUnreadCount } from '../../features/citizen/api';
 import { colors } from '../../shared/theme';
@@ -8,8 +8,20 @@ import { colors } from '../../shared/theme';
 type IconName = keyof typeof Ionicons.glyphMap;
 
 function tabIcon(name: IconName, focusedName: IconName) {
-  return ({ color, focused, size }: { color: ColorValue; focused: boolean; size: number }) => (
-    <Ionicons name={focused ? focusedName : name} size={size} color={color} />
+  // Icon trong vòng tròn 30px, tab đang chọn tô nền gr-100 (`.phone-tab-item.active` của prototype).
+  return ({ color, focused }: { color: ColorValue; focused: boolean }) => (
+    <View
+      style={{
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: focused ? colors.primarySoft : 'transparent',
+      }}
+    >
+      <Ionicons name={focused ? focusedName : name} size={20} color={color} />
+    </View>
   );
 }
 
@@ -19,12 +31,13 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: colors.primary },
+        headerStyle: { backgroundColor: colors.chrome },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: '700' },
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: { borderTopColor: colors.border },
+        tabBarInactiveTintColor: '#5d6b63',
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
+        tabBarStyle: { borderTopColor: colors.border, backgroundColor: colors.surface, paddingTop: 4 },
         sceneStyle: { backgroundColor: colors.background },
       }}
     >
@@ -39,7 +52,7 @@ export default function TabLayout() {
           title: 'Thông báo',
           tabBarIcon: tabIcon('notifications-outline', 'notifications'),
           tabBarBadge: unread.data ? unread.data : undefined,
-          tabBarBadgeStyle: { backgroundColor: colors.danger },
+          tabBarBadgeStyle: { backgroundColor: colors.badge, fontSize: 10 },
         }}
       />
       <Tabs.Screen

@@ -86,7 +86,7 @@ public class ReceiptIssueService {
     /** Xã và quản trị thấy mọi sai sót; công ty chỉ thấy sai sót trên phiếu của mình. */
     @Transactional(readOnly = true)
     public List<ReceiptIssue> list(ReceiptIssueStatus status, CurrentUser actor) {
-        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER);
+        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER, Role.LEADER);
         return issues.search(status, actor.role() == Role.COMPANY_MANAGER ? actor.companyId() : null);
     }
 
