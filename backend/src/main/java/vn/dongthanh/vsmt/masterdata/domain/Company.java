@@ -1,5 +1,6 @@
 package vn.dongthanh.vsmt.masterdata.domain;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import jakarta.persistence.Column;
@@ -64,6 +65,10 @@ public class Company extends BaseEntity {
 
     @Column(length = 100)
     private String bankName;
+
+    /** Tỷ lệ % công ty giữ lại trên số phải thu; null = chưa cấu hình (không giữ lại). */
+    @Column(precision = 5, scale = 2)
+    private BigDecimal retainedPercent;
 
     public static Company create(String code, String name, String contactName, String contactPhone,
             LocalDate validFrom) {

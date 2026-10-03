@@ -20,7 +20,7 @@ public class LedgerQueries {
     }
 
     /** Tiến độ theo tổ của một kỳ: công ty chụp trên khoản, phải thu, đã thu, số khoản, số khoản đã thu đủ. */
-    public record AreaProgressRow(long areaId, long companyId, long due, long collected, long chargeCount, long paidCount) {
+    public record AreaProgressRow(long areaId, long companyId, long due, long collected, long chargeCount, long paidCount, long exemptCount) {
     }
 
     private final JdbcTemplate jdbc;
@@ -81,13 +81,14 @@ public class LedgerQueries {
     /** Đã thu theo tổ chỉ gồm thanh toán ghi nhận ở chính kỳ (hoàn của kỳ đã khóa không làm đổi số kỳ đó, O10). */
     public List<AreaProgressRow> progressByArea(long periodId) {
         return jdbc.query("select c.area_id, c.company_id, sum(c.amount), coalesce(sum(p.paid), 0), count(*),"
-                + " count(*) filter (where c.status = 'PAID' or (c.amount > 0 and coalesce(p.paid, 0) >= c.amount))"
+                + " count(*) filter (where c.status = 'PAID' or (c.amount > 0 and coalesce(p.paid, 0) >= c.amount)),"
+                + " count(*) filter (where c.status = 'EXEMPT')"
                 + " from charges c"
                 + " left join (select p.charge_id, sum(p.amount) as paid from payments p join charges c on c.id = p.charge_id"
                 + " where " + PAYMENT_PERIOD + " = c.period_id group by p.charge_id) p on p.charge_id = c.id"
                 + " where c.period_id = ? and " + COUNTED
                 + " group by c.area_id, c.company_id",
                 (rs, i) -> new AreaProgressRow(rs.getLong(1), rs.getLong(2), rs.getLong(3), rs.getLong(4), rs.getLong(5),
-                        rs.getLong(6)), periodId);
+                        rs.getLong(6), rs.getLong(7)), periodId);
     }
 }

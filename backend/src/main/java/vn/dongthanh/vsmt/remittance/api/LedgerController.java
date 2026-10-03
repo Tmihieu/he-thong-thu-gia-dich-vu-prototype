@@ -60,6 +60,7 @@ public class LedgerController {
             @Schema(requiredMode = RequiredMode.REQUIRED) long collected,
             @Schema(requiredMode = RequiredMode.REQUIRED) long chargeCount,
             @Schema(requiredMode = RequiredMode.REQUIRED) long paidCount,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Số khoản miễn giảm 100%") long exemptCount,
             @Schema(requiredMode = RequiredMode.REQUIRED) long subjectCount,
             @Schema(requiredMode = RequiredMode.REQUIRED) double collectionRate,
             @Schema(requiredMode = RequiredMode.REQUIRED) boolean lowCollectionRate,
@@ -69,7 +70,7 @@ public class LedgerController {
             return new AreaProgressDto(p.area().getId(), p.area().getCode(), p.area().getName(),
                     p.area().getDistrict().getCode(), p.company() == null ? null : p.company().getId(),
                     p.company() == null ? null : p.company().getCode(), p.due(), p.collected(), p.chargeCount(),
-                    p.paidCount(), p.subjectCount(), p.collectionRate(), p.lowCollectionRate(), p.company() == null);
+                    p.paidCount(), p.exemptCount(), p.subjectCount(), p.collectionRate(), p.lowCollectionRate(), p.company() == null);
         }
     }
 
@@ -97,13 +98,15 @@ public class LedgerController {
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Tỷ lệ đã nộp dưới 45% (cờ ở màn tiến độ)")
             boolean lowRemittedRate,
             @Schema(requiredMode = RequiredMode.REQUIRED) Progress progress,
-            @Schema(requiredMode = RequiredMode.REQUIRED) Reconciliation reconciliation) {
+            @Schema(requiredMode = RequiredMode.REQUIRED) Reconciliation reconciliation,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phần công ty giữ lại theo tỷ lệ cấu hình") long retained,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phải nộp xã = phải thu − điều chỉnh − phần giữ lại") long payable) {
 
         static LedgerRowDto of(LedgerRow r) {
             return new LedgerRowDto(r.companyId(), r.companyCode(), r.companyName(), r.periodId(), r.due(),
                     r.chargeCount(), r.adjustment(), r.refunded(), r.collected(), r.received(), r.receiptCount(), r.remaining(), r.gap(),
                     r.previousDebt(), r.overdue(), r.collectionRate(), r.lowCollectionRate(), r.remittedRate(),
-                    r.lowRemittedRate(), r.progress(), r.reconciliation());
+                    r.lowRemittedRate(), r.progress(), r.reconciliation(), r.retained(), r.payable());
         }
     }
 }

@@ -1,5 +1,6 @@
 package vn.dongthanh.vsmt.remittance.service;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Comparator;
@@ -55,7 +56,8 @@ public class CompanyLedgerService {
     public record LedgerRow(Long companyId, String companyCode, String companyName, Long periodId, long due,
             long chargeCount, long adjustment, long refunded, long collected, long received, long receiptCount, long remaining, long gap,
             long previousDebt, boolean overdue, double collectionRate, boolean lowCollectionRate, double remittedRate,
-            boolean lowRemittedRate, Progress progress, Reconciliation reconciliation) {
+            boolean lowRemittedRate, Progress progress, Reconciliation reconciliation,
+            long retained, long payable) {
     }
 
     /** Mọi công ty có khoản, thanh toán, phiếu thu trong kỳ hoặc còn nợ kỳ trước; sắp theo mã công ty. */
@@ -120,6 +122,7 @@ public class CompanyLedgerService {
 
     /** Các kỳ đã hết hạn công ty nộp xã mà công ty còn phải nộp &gt; 0, cũ trước (nhắc nộp R16, nợ kỳ trước). */
     public List<PeriodDebt> overdueDebtsOf(Long companyId) {
+        BigDecimal pct = retainedPercents().get(companyId);
         LocalDate today = LocalDate.now(clock);
         Map<Long, Long> receivedByPeriod = new HashMap<>();
         remitted.receivedByCompanyAndPeriod().stream().filter(r -> r.companyId() == companyId)
@@ -127,7 +130,7 @@ public class CompanyLedgerService {
         Map<Long, Long> remainingByPeriod = new HashMap<>();
         queries.dueByCompanyAndPeriodBefore(today).stream().filter(d -> d.companyId() == companyId)
                 .forEach(d -> remainingByPeriod.merge(d.periodId(),
-                        d.amount() - receivedByPeriod.getOrDefault(d.periodId(), 0L), Long::sum));
+                        d.amount() - retained(pct, d.amount()) - receivedByPeriod.getOrDefault(d.periodId(), 0L), Long::sum));
         List<Long> owing = remainingByPeriod.entrySet().stream().filter(e -> e.getValue() > 0).map(Map.Entry::getKey)
                 .toList();
         if (owing.isEmpty()) {
@@ -149,9 +152,13 @@ public class CompanyLedgerService {
         long collected = collectedRow == null ? 0 : collectedRow.amount();
         long received = receivedRow == null ? 0 : receivedRow.amount();
         long receiptCount = receivedRow == null ? 0 : receivedRow.receiptCount();
-        long remaining = due - adjustment - received;
+        // Phải nộp xã = phải thu − điều chỉnh − phần công ty giữ lại (tỷ lệ cấu hình ở công ty; chưa cấu hình thì không giữ lại).
+        long retained = retained(company.getRetainedPercent(), due - adjustment);
+        long payable = due - adjustment - retained;
+        long remaining = payable - received;
         // Điều chỉnh kỳ trước là phần công ty đã nộp thừa ở kỳ khóa, tính như đã nộp để đối soát khớp được.
-        long gap = received + adjustment - collected;
+        // Phần công ty giữ lại cũng không phải nộp, nên cộng vào vế đã nộp.
+        long gap = received + adjustment + retained - collected;
         boolean pastDue = period.getDueDate().isBefore(today);
         boolean overdue = pastDue && remaining > 0;
 
@@ -179,8 +186,13 @@ public class CompanyLedgerService {
         // Phải thu 0 thì tỷ lệ 0% và vẫn gắn cờ, như prototype.
         return new LedgerRow(company.getId(), company.getCode(), company.getName(), period.getId(), due, chargeCount,
                 adjustment, refunded, collected, received, receiptCount, remaining, gap, previousDebt, overdue, percent(collected, due),
-                due == 0 || lowRate(collected, due), percent(received, due), due == 0 || lowRate(received, due),
-                progress, reconciliation);
+                due == 0 || lowRate(collected, due), percent(received, due - retained), due == 0 || lowRate(received, due - retained),
+                progress, reconciliation, retained, payable);
+    }
+
+    /** Phần công ty giữ lại = base × tỷ lệ%, làm tròn đồng; tỷ lệ null (chưa cấu hình) thì 0. */
+    public static long retained(BigDecimal percent, long base) {
+        return percent == null ? 0 : BigDecimal.valueOf(base).multiply(percent).movePointLeft(2).setScale(0, java.math.RoundingMode.HALF_UP).longValue();
     }
 
     /** Phần trăm làm tròn 1 chữ số để hiển thị; 0 khi phải thu 0. */
@@ -194,6 +206,7 @@ public class CompanyLedgerService {
     }
 
     private Map<Long, Long> previousDebts(Long currentPeriodId, LocalDate today) {
+        Map<Long, BigDecimal> pct = retainedPercents();
         Map<String, Long> receivedByKey = new HashMap<>();
         remitted.receivedByCompanyAndPeriod()
                 .forEach(r -> receivedByKey.merge(r.companyId() + ":" + r.periodId(), r.amount(), Long::sum));
@@ -203,9 +216,19 @@ public class CompanyLedgerService {
                 continue;
             }
             long paid = receivedByKey.getOrDefault(d.companyId() + ":" + d.periodId(), 0L);
-            debt.merge(d.companyId(), Math.max(0, d.amount() - paid), Long::sum);
+            debt.merge(d.companyId(), Math.max(0, d.amount() - retained(pct.get(d.companyId()), d.amount()) - paid), Long::sum);
         }
         return debt;
+    }
+
+    private Map<Long, BigDecimal> retainedPercents() {
+        Map<Long, BigDecimal> m = new HashMap<>();
+        companies.findAll().forEach(c -> {
+            if (c.getRetainedPercent() != null) {
+                m.put(c.getId(), c.getRetainedPercent());
+            }
+        });
+        return m;
     }
 
     private CollectionPeriod period(Long periodId) {

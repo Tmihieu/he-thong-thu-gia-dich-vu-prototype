@@ -1,5 +1,6 @@
 package vn.dongthanh.vsmt.masterdata.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -31,7 +32,7 @@ public class CompanyService {
 
     public record CompanyCommand(String name, String contactName, String contactPhone, ActiveStatus status,
             LocalDate validFrom, LocalDate validTo, CompanyType orgType, String taxCode, String address, String email,
-            String communeContractNo, String bankAccount, String bankName) {
+            String communeContractNo, String bankAccount, String bankName, BigDecimal retainedPercent) {
     }
 
     public Company create(CompanyCommand cmd, CurrentUser actor) {
@@ -77,6 +78,7 @@ public class CompanyService {
         c.setCommuneContractNo(blankToNull(cmd.communeContractNo()));
         c.setBankAccount(blankToNull(cmd.bankAccount()));
         c.setBankName(blankToNull(cmd.bankName()));
+        c.setRetainedPercent(cmd.retainedPercent());
     }
 
     private static String blankToNull(String s) {
@@ -99,6 +101,7 @@ public class CompanyService {
         m.put("communeContractNo", c.getCommuneContractNo());
         m.put("bankAccount", c.getBankAccount());
         m.put("bankName", c.getBankName());
+        m.put("retainedPercent", c.getRetainedPercent());
         return m;
     }
 }
