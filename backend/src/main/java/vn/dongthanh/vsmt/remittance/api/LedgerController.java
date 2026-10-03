@@ -89,7 +89,7 @@ public class LedgerController {
             @Schema(requiredMode = RequiredMode.REQUIRED) long receiptCount,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Còn phải nộp = phải nộp xã − đã nộp")
             long remaining,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã nộp − đã thu; âm là thu rồi chưa nộp") long gap,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã nộp về xã (kể cả điều chỉnh kỳ trước) − phần vận chuyển của số tiền đã thu; âm là thu rồi chưa nộp đủ") long gap,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Nợ các kỳ trước đã hết hạn") long previousDebt,
             @Schema(requiredMode = RequiredMode.REQUIRED) boolean overdue,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã thu / phải thu (%)") double collectionRate,
