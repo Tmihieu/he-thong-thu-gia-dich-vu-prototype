@@ -49,24 +49,12 @@ Quy ước: chữ thân 15px, ô nhập / nút cao 40px, tiêu đề bảng 13px
 Tổng: 18 mục. Test đỏ của lane đã xanh: ChargesHubPage 3, AreasPage 1, CompaniesPage 1, LocationsSettings 1.
 
 ## Sạn chưa sửa (kèm lý do)
-- Nhật ký: ô Trước/Sau in JSON thô (khóa và giá trị tiếng Anh). Cần bảng nhãn khóa, tốn công, ưu tiên thấp.
-- Phiếu YCT: nhánh "Không có khoản mới" chưa liệt kê hộ bị bỏ qua và lý do.
-- Quản trị dữ liệu: iframe Jmix chưa có trạng thái tải / lỗi.
-- Nhiều màn còn `errorMessage` tự viết (AccountsPage, ApprovalsPage, CreateApprovalModal); nên chuyển sang `errorText` dần.
-- ConfigPage không nhớ tab qua URL (`useTabParam` có sẵn).
-- Nút ☰ luôn `aria-label="Mở menu"`; cột Công ty ở bảng khoản chỉ hiện mã.
-- Mới áp `PageHeader` cho mọi màn của lane; `StatCard` / `StatusTag` mới có trong shared, chưa thay hết `Tag` màu antd và thẻ KPI có vòng tròn của dashboard.
-- Không xem được màn thật nên chưa chỉnh khoảng cách theo mắt; cần một lượt nhìn bằng trình duyệt.
+- Ô Trước/Sau ở Nhật ký: trường lạ không có trong bảng nhãn hiện "Thông tin khác" (bảng `AUDIT_FIELD_LABELS` bổ sung dần khi backend ghi trường mới).
+- Tab ở Cấu hình chưa nhớ qua URL (`useTabParam` có sẵn).
+- Mới chụp và soát lại các màn Hồ sơ hộ, Khoản thu, Khu vực, Công ty, Tài khoản, Nhật ký, Dashboard, Chờ duyệt; chưa chụp form hồ sơ hộ, form lập phiếu YCT, form biểu giá và Báo cáo sau đợt này.
 
 ## Câu hỏi nghiệp vụ
-| # | Tình huống | Code đang làm gì | Tài liệu nói gì | Đề xuất |
-|---|---|---|---|---|
-| 1 | Sửa biểu giá đã ban hành | UI và backend `updateDraft` vẫn cho sửa đơn giá của bản ACTIVE / EXPIRED; nhật ký có nhãn "Sửa biểu giá đã ban hành" | BR-MD-11: bản đã ban hành không sửa | Chốt rule theo thực tế (cho sửa có ghi nhật ký) hoặc khóa nút Sửa + backend trả `TARIFF_NOT_DRAFT` |
-| 2 | "Còn phải nộp" khi công ty nộp dư | Dashboard cộng `max(remaining, 0)`; Báo cáo "Tổng toàn xã" cộng thẳng | BR-REM-12: các màn khớp số | Dùng chung một cách (đề xuất: không kẹp 0, hiện số âm là "nộp dư") |
-| 3 | Vòng tỷ lệ ở Dashboard | Màu cố định xanh lá / xanh dương | BR-REM-11 chỉ nói màn Đối soát | Áp dải 4 màu của Đối soát cho Dashboard |
-| 4 | Hạn mức đề nghị hoàn | Form giới hạn theo `charge.amount` | BR-LD-05: ≤ đã thu − đã hoàn | Nếu `Charge` trả `refunded`, chặn theo `amount − refunded` |
-| 5 | Cảnh báo ở xem trước phiếu YCT | Chỉ `AREA_WITHOUT_COMPANY` có `warning=true` | BR-BIL-06: cả 3 loại bỏ qua "kèm cảnh báo" | Cảnh báo cả 3 loại, Alert viết chung |
-| 6 | Hộ nhóm theo ký chưa có định mức | Một hộ thiếu định mức làm hỏng cả lần xem trước (`QUOTA_KG_REQUIRED`) | BR-BIL-03 chỉ nói không lập được | Bỏ qua riêng hộ đó, nêu mã hộ trong cảnh báo |
+Đã chốt ở `docs/ra-soat/quyet-dinh-leader.md`: QĐ-L7 (biểu giá đã ban hành không sửa đơn giá), QĐ-L12 (còn phải nộp không kẹp 0, âm hiện "Nộp thừa X đ"), QĐ-L13 (vòng tỷ lệ Dashboard theo dải BR-REM-11), QĐ-L14 (xem trước phiếu YCT liệt kê mọi nhóm bị bỏ qua), QĐ-L16 (tỷ lệ tối đa 100%). Còn chờ: hạn mức đề nghị hoàn theo đã thu − đã hoàn khi `ChargeDto` có `refunded`.
 
 ## Yêu cầu sang lane khác
 | # | Gửi lane | Cần gì | Vì sao | Trạng thái |
@@ -76,3 +64,18 @@ Tổng: 18 mục. Test đỏ của lane đã xanh: ChargesHubPage 3, AreasPage 1
 | 3 | Backend | Nếu chốt câu hỏi 4: thêm `refunded` vào `ChargeDto` | Chặn hạn mức hoàn ở form | Chờ quyết định |
 | 4 | Web công ty | Dùng `PageHeader` / `StatCard` / `StateBlock` / `errorText`; bỏ override cỡ chữ `.clm-*`; Select ít lựa chọn thêm `virtual={false}` | Đồng bộ giao diện, test ổn định | Đã báo leader |
 | 5 | Web công ty | Nhãn hai loại khiếu nại mới (BR-CMP-05) nằm ở thư mục khiếu nại; thư mục lane này không có chỗ dùng | — | Chờ |
+
+## Đợt 3 (cập nhật)
+| # | Việc | Commit |
+|---|---|---|
+| 19 | `Tag` màu antd → `StatusTag` ở mọi màn lane; biểu giá đã ban hành ẩn nút Sửa (QĐ-L7) | 4a36ed6, d3e54e3 |
+| 20 | Dashboard: 4 thẻ đầu dùng `StatCard`; còn phải nộp không kẹp 0, số âm "Nộp thừa X đ" (QĐ-L12); vòng tỷ lệ theo `rateBand`/`cappedRate` (QĐ-L13, L16); vòng "Đã nộp về xã" tính trên số phải nộp xã; Cảnh báo thu gọn thành một dòng khi cả 3 mục bằng 0 | 80a46e1, 74b30b2, 359a5b8 |
+| 21 | Xem trước phiếu YCT liệt kê mọi nhóm bị bỏ qua kèm số hộ, danh sách lọc theo nhóm; cũng hiện sau khi phát hành (QĐ-L14) | 80a46e1 |
+| 22 | Nhật ký: trường thay đổi hiện bảng Trường / Trước / Sau bằng nhãn tiếng Việt, giá trị enum / ngày / tiền được đổi dạng | d7400f0, 37af5f8 |
+| 23 | Quản trị dữ liệu: kiểm Jmix trước khi nhúng, không chạy thì hiện `ErrorBlock` có Thử lại | d7400f0 |
+| 24 | `errorTextOrNull` dùng chung thay mọi `errorMessage` tự viết trong lane | 359a5b8 |
+| 25 | Token nền Alert (warning / error / info / success) sáng, chữ đậm; quy ước bảng `.cell-nowrap`, `.cell-money`, `.row-actions` | 74b30b2, 1dd19d4 |
+| 26 | Hồ sơ hộ: cột Mã cố định, độ rộng cột chia lại, bỏ tag "Chưa chuẩn hóa" từng dòng, thay bằng biểu tượng + ô lọc đếm; Khoản thu: mã không bẻ dòng, kỳ ghi "Tháng MM/YYYY", nút đề nghị dạng link; Công ty, Tài khoản, Khu vực, Cấu hình: nút thao tác dạng link, cột không bẻ dòng, cuộn ngang | 74b30b2, 1dd19d4 |
+| 27 | Chờ duyệt có mô tả và trạng thái trống bằng `EmptyBlock` | 1dd19d4 |
+
+Kiểm sau commit `d3e54e3`: `tsc --noEmit` sạch, `eslint src` sạch; vitest chạy từng thư mục (máy 7,3 GB, chỉ một việc nặng một lúc): masterdata 49 test, billing 9, platform 5, leadership 7, app + shared 27, đều xanh.
