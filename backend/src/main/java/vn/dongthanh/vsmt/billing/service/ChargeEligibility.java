@@ -67,7 +67,7 @@ public class ChargeEligibility {
         Optional<ServiceContract> contract = contracts.stream().filter(c -> c.covers(issueDate)).findFirst();
         if (contract.isEmpty()) {
             return new Skipped(SkipReason.NO_ACTIVE_CONTRACT,
-                    "Không có hợp đồng hiệu lực vào ngày " + VN_DATE.format(issueDate) + ".");
+                    "Không có đăng ký thu phí hiệu lực vào ngày " + VN_DATE.format(issueDate) + ".");
         }
         if (companyIdOnIssue == null) {
             return new Skipped(SkipReason.AREA_WITHOUT_COMPANY,

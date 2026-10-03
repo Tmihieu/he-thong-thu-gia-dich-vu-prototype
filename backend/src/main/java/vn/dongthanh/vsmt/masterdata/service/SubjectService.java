@@ -201,7 +201,7 @@ public class SubjectService {
     public ServiceContract updateContract(Long contractId, ContractCommand cmd, CurrentUser actor) {
         actor.requireRole(Role.COMMUNE_OFFICER);
         ServiceContract contract = contracts.findById(contractId)
-                .orElseThrow(() -> new NotFoundException("CONTRACT_NOT_FOUND", "Không tìm thấy hợp đồng."));
+                .orElseThrow(() -> new NotFoundException("CONTRACT_NOT_FOUND", "Không tìm thấy đăng ký thu phí."));
         requireNoOverlap(contract.getSubject().getId(), cmd.validFrom(), cmd.validTo(), contract.getId());
         requireGroupFits(contract.getSubject(), cmd);
         Map<String, Object> before = snapshot(contract);
@@ -295,7 +295,7 @@ public class SubjectService {
                 .filter(c -> c.overlaps(from, to))
                 .findFirst()
                 .ifPresent(c -> {
-                    throw new BusinessRuleException("CONTRACT_OVERLAP", "Đối tượng đã có hợp đồng " + c.getContractNo()
+                    throw new BusinessRuleException("CONTRACT_OVERLAP", "Đối tượng đã có đăng ký thu phí " + c.getContractNo()
                             + " còn hiệu lực trong khoảng thời gian này.");
                 });
     }

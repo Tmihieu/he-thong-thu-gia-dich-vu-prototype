@@ -41,7 +41,7 @@ public class ChargeCalculator {
             if (group == TariffGroup.BY_VOLUME) {
                 // Nhóm theo ký: đơn giá đ/kg × định mức kg/tháng (cân tháng đầu, góp ý BA 03/10); chưa có định mức thì chưa lập được.
                 if (contract.getQuotaKg() == null) {
-                    throw new BusinessRuleException("QUOTA_KG_REQUIRED", "Hợp đồng nhóm tính theo ký chưa có định mức kg/tháng.");
+                    throw new BusinessRuleException("QUOTA_KG_REQUIRED", "Đăng ký thu phí nhóm tính theo ký chưa có định mức kg/tháng.");
                 }
                 quotaKg = contract.getQuotaKg();
             }
