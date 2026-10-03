@@ -139,7 +139,13 @@ export function useAreaHistory(areaId: number | null) {
 
 function useCompanyMutation<V>(fn: (v: V) => Promise<Company>) {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: fn, onSuccess: () => qc.invalidateQueries({ queryKey: masterdataKeys.companies }) });
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: masterdataKeys.companies });
+      await qc.invalidateQueries({ queryKey: masterdataKeys.assignments });
+    },
+  });
 }
 
 export function useCreateCompany() {

@@ -1,6 +1,6 @@
 import { Drawer, Table } from 'antd';
 
-import { ApiError } from '../../../api/client';
+import { errorText } from '../../../shared/errorText';
 import { DateText } from '../../../shared/DateText';
 import { type Area, type AreaAssignment, useAreaHistory } from '../api';
 
@@ -15,7 +15,7 @@ export function AssignmentHistoryDrawer({ area, onClose }: { area: Area | null; 
         pagination={false}
         loading={history.isLoading}
         dataSource={history.data ?? []}
-        locale={{ emptyText: history.error instanceof ApiError ? history.error.message : 'Chưa từng phân công' }}
+        locale={{ emptyText: history.error ? errorText(history.error) : 'Chưa từng phân công' }}
         columns={[
           { title: 'Công ty', render: (_, a) => `${a.companyCode} · ${a.companyName}` },
           { title: 'Từ ngày', dataIndex: 'validFrom', render: (d: string) => <DateText value={d} /> },

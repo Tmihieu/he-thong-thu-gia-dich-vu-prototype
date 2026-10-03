@@ -2,6 +2,7 @@ import { Alert, App, Button, Form, Input, InputNumber, Modal, Select, Table, Tag
 import { useState } from 'react';
 
 import { ApiError } from '../../api/client';
+import { errorText } from '../../shared/errorText';
 import { type Area, type District, useAreas, useDistricts, useUpdateArea, useUpdateDistrict } from './api';
 
 export function LocationsSettings() {
@@ -19,7 +20,7 @@ export function LocationsSettings() {
   const nameRules = [{ required: true, whitespace: true, message: 'Vui lòng nhập tên' }];
 
   return <>
-    {(districts.error || areas.error) && <Alert type="error" showIcon message={error(districts.error ?? areas.error)} />}
+    {(districts.error || areas.error) && <Alert type="error" showIcon message={errorText(districts.error ?? areas.error, 'Không thể tải danh sách. Vui lòng thử lại.')} />}
     <Table<District>
       rowKey="id" dataSource={districts.data ?? []} loading={districts.isLoading} pagination={false}
       columns={[

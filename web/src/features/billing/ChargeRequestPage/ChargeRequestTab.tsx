@@ -1,8 +1,9 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { Alert, Button, Drawer, Result, Space, Spin, Steps, Table, Typography } from 'antd';
+import { Alert, Button, Drawer, Result, Space, Steps, Table, Typography } from 'antd';
 import { useState } from 'react';
 
-import { ApiError } from '../../../api/client';
+import { errorText } from '../../../shared/errorText';
+import { ErrorBlock, LoadingBlock } from '../../../shared/StateBlock';
 import { DateText } from '../../../shared/DateText';
 import { CHARGE_SCOPE_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
@@ -19,10 +20,7 @@ import {
 import { ChargeRequestForm } from './ChargeRequestForm';
 import { PreviewPanel } from './PreviewPanel';
 
-function errorMessage(err: unknown): string | null {
-  if (!err) return null;
-  return err instanceof ApiError ? err.message : 'Thao tác không thành công. Vui lòng thử lại.';
-}
+const errorMessage = (err: unknown): string | null => (err ? errorText(err, 'Thao tác không thành công. Vui lòng thử lại.') : null);
 
 type Step = { kind: 'form' } | { kind: 'preview'; req: IssueRequest; result: IssueResult } | { kind: 'done'; result: IssueResult };
 
@@ -37,15 +35,19 @@ export function ChargeRequestTab() {
   const publish = usePublishCharges();
   const [step, setStep] = useState<Step>({ kind: 'form' });
   const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<IssueRequest | null>(null);
 
   function startNew() {
     preview.reset();
     publish.reset();
+    setDraft(null);
     setStep({ kind: 'form' });
     setOpen(true);
   }
 
-  if (periods.isLoading || feeTypes.isLoading) return <Spin />;
+  if (periods.isLoading || feeTypes.isLoading) return <LoadingBlock />;
+  const loadError = periods.error ?? feeTypes.error;
+  if (loadError) return <ErrorBlock error={loadError} onRetry={() => void Promise.all([periods.refetch(), feeTypes.refetch()])} />;
 
   return (
     <>
@@ -62,7 +64,7 @@ export function ChargeRequestTab() {
         loading={requests.isLoading}
         dataSource={requests.data ?? []}
         pagination={{ pageSize: 10, hideOnSinglePage: true }}
-        locale={{ emptyText: 'Chưa có phiếu nào' }}
+        locale={{ emptyText: requests.error ? errorText(requests.error) : 'Chưa có phiếu nào' }}
         columns={[
           { title: 'Mã phiếu', dataIndex: 'code' },
           { title: 'Kỳ', dataIndex: 'periodCode' },
@@ -90,7 +92,11 @@ export function ChargeRequestTab() {
             companies={companies.data ?? []}
             loading={preview.isPending}
             error={errorMessage(preview.error)}
-            onPreview={(req) => preview.mutate(req, { onSuccess: (result) => setStep({ kind: 'preview', req, result }) })}
+            initial={draft}
+            onPreview={(req) => {
+              setDraft(req);
+              preview.mutate(req, { onSuccess: (result) => setStep({ kind: 'preview', req, result }) });
+            }}
           />
         )}
         {step.kind === 'preview' && (

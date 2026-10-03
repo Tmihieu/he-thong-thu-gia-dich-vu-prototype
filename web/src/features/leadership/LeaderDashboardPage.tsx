@@ -1,10 +1,11 @@
 import { AlertOutlined, AuditOutlined, FallOutlined } from '@ant-design/icons';
-import { Alert, Card, Col, Empty, List, Progress, Row, Space, Table, Tag, Typography } from 'antd';
+import { Card, Col, Empty, List, Progress, Row, Space, Table, Tag, Typography } from 'antd';
 import { type ReactNode, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 
-import { ApiError } from '../../api/client';
+import { formatPercent } from '../../shared/format';
 import { PageHeader } from '../../shared/PageHeader';
+import { ErrorBlock, LoadingBlock } from '../../shared/StateBlock';
 import { PROGRESS_COLORS, PROGRESS_LABELS } from '../../shared/labels';
 import { MoneyText } from '../../shared/MoneyText';
 import { PeriodSelect } from '../masterdata/PeriodSelect';
@@ -12,7 +13,7 @@ import { type AreaProgress, type LedgerRow, useAreaProgress, useCompanyLedger } 
 import { useApprovals } from './api';
 
 const pct = (part: number, whole: number) => (whole > 0 ? Math.round((part * 1000) / whole) / 10 : 0);
-const pctText = (v: number) => `${v.toLocaleString('vi-VN')}%`;
+const pctText = formatPercent;
 
 function Kpi({ label, value, note, percent, color }: { label: string; value: number; note: ReactNode; percent?: number; color: string }) {
   return (
@@ -66,7 +67,8 @@ export function LeaderDashboardPage() {
     () => (areas.data ?? []).filter((a) => a.chargeCount > 0).sort((a, b) => a.collectionRate - b.collectionRate).slice(0, 8),
     [areas.data],
   );
-  const error = ledger.error ?? areas.error;
+  const error = ledger.error ?? areas.error ?? pending.error;
+  const retry = () => void Promise.all([ledger.refetch(), areas.refetch(), pending.refetch()]);
 
   return (
     <>
@@ -74,7 +76,8 @@ export function LeaderDashboardPage() {
       <Space style={{ marginBottom: 16 }}>
         <PeriodSelect value={periodId} onChange={setPeriodId} />
       </Space>
-      {error && <Alert type="error" showIcon style={{ marginBottom: 12 }} message={error instanceof ApiError ? error.message : 'Không tải được số liệu'} />}
+      {error && <ErrorBlock error={error} onRetry={retry} />}
+      {ledger.isLoading ? <LoadingBlock rows={3} /> : (
       <Row gutter={[16, 16]}>
         <Col xs={24} md={12} xl={6}>
           <Kpi label="Phải thu" value={total.due} note={`${rows.length} công ty`} color="#0b3a67" />
@@ -102,6 +105,7 @@ export function LeaderDashboardPage() {
           />
         </Col>
       </Row>
+      )}
 
       <Card size="small" className="section-card" style={{ marginTop: 16 }} title="Cảnh báo">
         <Row gutter={[16, 16]}>
@@ -123,11 +127,11 @@ export function LeaderDashboardPage() {
             </Alarm>
           </Col>
           <Col xs={24} lg={8}>
-            <Alarm icon={<FallOutlined />} title="Tỷ lệ thu thấp (dưới 45%)" count={lowRate.length} tone="orange">
+            <Alarm icon={<FallOutlined />} title="Tỷ lệ nộp thấp (dưới 45%)" count={lowRate.length} tone="orange">
               {lowRate.map((r) => (
                 <List.Item key={r.companyId}>
                   <span>{r.companyCode}</span>
-                  <span>{pctText(r.collectionRate)}</span>
+                  <span>{pctText(r.remittedRate)}</span>
                 </List.Item>
               ))}
             </Alarm>
@@ -161,13 +165,13 @@ export function LeaderDashboardPage() {
                   title: 'Tỷ lệ thu',
                   width: 150,
                   render: (_, r) => (
-                    <Progress size="small" percent={r.collectionRate} status={r.lowCollectionRate ? 'exception' : 'normal'} format={(p) => pctText(p ?? 0)} />
+                    <Progress size="small" percent={r.collectionRate} format={(p) => pctText(p ?? 0)} />
                   ),
                 },
                 {
                   title: 'Tỷ lệ nộp',
                   width: 150,
-                  render: (_, r) => <Progress size="small" percent={r.remittedRate} strokeColor="#175cd3" format={(p) => pctText(p ?? 0)} />,
+                  render: (_, r) => <Progress size="small" percent={r.remittedRate} status={r.lowCollectionRate ? 'exception' : 'normal'} strokeColor="#175cd3" format={(p) => pctText(p ?? 0)} />,
                 },
                 { title: 'Còn phải nộp', align: 'right', render: (_, r) => <MoneyText value={r.remaining} /> },
                 { title: 'Tiến độ', render: (_, r) => <Tag color={PROGRESS_COLORS[r.progress]}>{PROGRESS_LABELS[r.progress]}</Tag> },

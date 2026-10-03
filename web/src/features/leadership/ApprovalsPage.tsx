@@ -23,7 +23,7 @@ function errorText(e: unknown) {
   return e ? (e instanceof ApiError ? e.message : 'Không thực hiện được. Vui lòng thử lại.') : null;
 }
 
-/** Nội dung đề nghị: miễn giảm theo hợp đồng; hoàn / xóa nợ theo khoản. */
+/** Nội dung đề nghị: miễn giảm theo đăng ký thu phí; hoàn / xóa nợ theo khoản. */
 function Target({ a }: { a: Approval }) {
   return (
     <>
@@ -50,7 +50,7 @@ interface Deciding {
 
 /**
  * Đề nghị miễn giảm / hoàn / xóa nợ (SPEC §9.10). Lãnh đạo: hàng chờ duyệt, Duyệt / Từ chối từng dòng (từ chối bắt
- * buộc ý kiến). Cán bộ xã: theo dõi đề nghị đã lập (lập ở màn Khoản thu; miễn giảm tự tạo khi bật cờ trên hợp đồng).
+ * buộc ý kiến). Cán bộ xã: theo dõi đề nghị đã lập (lập ở màn Khoản thu; miễn giảm tự tạo khi bật cờ trên đăng ký thu phí).
  */
 export function ApprovalsPage() {
   const { user } = useAuth();
