@@ -15,3 +15,6 @@ Người dùng giao leader tự quyết các câu hỏi nghiệp vụ trong đ�
 | QĐ-L9 | 04/10 | Hoàn cho khoản mới thu một phần (chưa Đã thu) | **Cho phép**, 0 < số hoàn ≤ đã thu − đã hoàn | Thu nhầm một phần vẫn cần trả lại | BR-LD-05 |
 | QĐ-L10 | 04/10 | Khiếu nại / đồ cồng kềnh của hộ có nhiều tài khoản app | Lọc **theo hộ**: mọi tài khoản của hộ thấy chung | BR-CIT-02 "dữ liệu của hộ mình" | BR-CIT-02 |
 | QĐ-L11 | 04/10 | Hộ ngừng dịch vụ giữa kỳ; ngưỡng hạn đóng trước ngày phát hành / hạn kỳ xa | **Giữ hiện trạng**, chờ xã | Cần ngưỡng và cách tính do xã chốt | — |
+| QĐ-L12 | 04/10 | "Còn phải nộp" âm: Dashboard kẹp về 0, Báo cáo thì không | **Không kẹp ở đâu cả**, hiển thị đúng số của sổ công ty–kỳ; số âm hiện là "Nộp thừa X đ" | Hai màn phải ra cùng một số (BR-REM-12); kẹp 0 che mất việc nộp thừa | BR-REM-12 |
+| QĐ-L13 | 04/10 | Vòng tỷ lệ ở Dashboard lãnh đạo dùng màu gì | Cùng dải màu BR-REM-11 như Đối soát | Một ngưỡng màu cho cả hệ thống | BR-REM-11 |
+| QĐ-L14 | 04/10 | Xem trước phiếu YCT cảnh báo những gì; hộ theo ký thiếu định mức | Hiện đủ 3 nhóm bị bỏ qua (không có đăng ký hiệu lực, khu vực chưa có công ty, đã có khoản trùng kỳ) kèm số lượng + danh sách; hộ theo ký thiếu định mức là nhóm bị bỏ qua thứ 4, không làm hỏng cả lượt | BR-BIL-06 | BR-BIL-03, BR-BIL-06 |
