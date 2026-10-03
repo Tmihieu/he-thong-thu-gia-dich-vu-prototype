@@ -28,12 +28,15 @@ public class LedgerQueries {
     /** Khoản còn tính phải thu ở kỳ của nó: bỏ khoản đã xóa nợ ghi nhận ngay trong kỳ đó (T57). */
     private static final String COUNTED = "not (c.status = 'WRITTEN_OFF' and c.written_off_period_id = c.period_id)";
 
+    /** Khoản hộ còn phải đóng: miễn giảm và đã xóa nợ không nằm trong mẫu số "đã thu / cần thu". */
+    private static final String NEEDS_PAYMENT = "c.status not in ('EXEMPT', 'WRITTEN_OFF')";
+
     /** Kỳ ghi nhận của một thanh toán: hoàn tiền có kỳ riêng (T58, O10), còn lại là kỳ của khoản. */
     private static final String PAYMENT_PERIOD = "coalesce(p.ledger_period_id, c.period_id)";
 
     /** Phải thu: Σ số tiền khoản theo công ty chụp lúc phát hành (G3), kèm số khoản. */
     public List<CompanyAmount> dueByCompany(long periodId) {
-        return jdbc.query("select c.company_id, sum(c.amount), count(*) from charges c where c.period_id = ? and " + COUNTED
+        return jdbc.query("select c.company_id, sum(c.amount), count(*) filter (where " + NEEDS_PAYMENT + ") from charges c where c.period_id = ? and " + COUNTED
                 + " group by c.company_id",
                 (rs, i) -> new CompanyAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), periodId);
     }
@@ -118,7 +121,7 @@ public class LedgerQueries {
 
     /** Đã thu theo tổ chỉ gồm thanh toán ghi nhận ở chính kỳ (hoàn của kỳ đã khóa không làm đổi số kỳ đó, O10). */
     public List<AreaProgressRow> progressByArea(long periodId) {
-        return jdbc.query("select c.area_id, c.company_id, sum(c.amount), coalesce(sum(p.paid), 0), count(*),"
+        return jdbc.query("select c.area_id, c.company_id, sum(c.amount), coalesce(sum(p.paid), 0), count(*) filter (where " + NEEDS_PAYMENT + "),"
                 + " count(*) filter (where c.status = 'PAID' or (c.amount > 0 and coalesce(p.paid, 0) >= c.amount)),"
                 + " count(*) filter (where c.status = 'EXEMPT')"
                 + " from charges c"

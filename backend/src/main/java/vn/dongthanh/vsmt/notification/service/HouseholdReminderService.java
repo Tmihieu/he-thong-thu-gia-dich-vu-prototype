@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -82,7 +83,8 @@ public class HouseholdReminderService {
             String body = "Phí vệ sinh môi trường còn " + money + " đ, hạn nộp " + d.dueDate().format(DMY)
                     + ". Vui lòng nộp cho người đi thu hoặc thanh toán trong app.";
             for (Long citizenId : accounts) {
-                notifications.publish(NotificationCommand.toCitizen(citizenId, NotificationKind.REMINDER, title, body, null),
+                notifications.publish(NotificationCommand.toCitizen(citizenId, NotificationKind.REMINDER, title, body,
+                        Map.of("screen", "citizen.charges")),
                         null);
                 sent++;
             }

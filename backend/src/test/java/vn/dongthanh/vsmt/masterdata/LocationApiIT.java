@@ -85,7 +85,7 @@ class LocationApiIT extends IntegrationTest {
     }
 
     private String token(Role role) {
-        User user = users.save(User.create("location_" + role, "Người dùng", role, null, "x"));
+        User user = users.save(User.create("location_" + role.name().toLowerCase(), "Người dùng", role, null, "x"));
         return "Bearer " + jwt.issue(user).value();
     }
 }

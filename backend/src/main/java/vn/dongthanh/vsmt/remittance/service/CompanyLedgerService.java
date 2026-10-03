@@ -189,13 +189,13 @@ public class CompanyLedgerService {
         // Phải thu 0 thì tỷ lệ 0% và vẫn gắn cờ, như prototype.
         return new LedgerRow(company.getId(), company.getCode(), company.getName(), period.getId(), due, chargeCount,
                 adjustment, refunded, collected, received, receiptCount, remaining, gap, previousDebt, overdue, percent(collected, due),
-                due == 0 || lowRate(collected, due), percent(received, due - retained), due == 0 || lowRate(received, due - retained),
+                due == 0 || lowRate(collected, due), percent(received, payable), payable > 0 && lowRate(received, payable),
                 progress, reconciliation, retained, payable);
     }
 
     /** Phần trăm làm tròn 1 chữ số để hiển thị; 0 khi phải thu 0. */
     static double percent(long part, long due) {
-        return due == 0 ? 0.0 : Math.round(part * 1000.0 / due) / 10.0;
+        return due <= 0 ? 0.0 : Math.round(part * 1000.0 / due) / 10.0;
     }
 
     /** Dưới 45%, so bằng số nguyên (không so số đã làm tròn: 44,96% hiện "45,0" nhưng vẫn thấp). */

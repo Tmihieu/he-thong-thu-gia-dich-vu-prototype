@@ -94,7 +94,8 @@ class CompanyLedgerServiceTest {
         assertThat(r.remittedRate()).isEqualTo(62.5);
         assertThat(r.lowRemittedRate()).isFalse();
         assertThat(rows.get(1).remittedRate()).isZero();
-        assertThat(rows.get(1).lowRemittedRate()).isTrue();
+        // BR-REM-13 (QĐ-L2): không có gì phải nộp xã thì không gắn cờ nộp thấp.
+        assertThat(rows.get(1).lowRemittedRate()).isFalse();
     }
 
     @Test
