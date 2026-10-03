@@ -23,6 +23,8 @@ export const WORK_CHIPS: { value: WorkChip; label: string }[] = [
   { value: 'ABSENT', label: 'Vắng nhà' },
   { value: 'PAID', label: 'Đã thu' },
 ];
+/** BR-COL-04: giao diện người đi thu không có vắng / hẹn, nên không có nút lọc cho hai nhóm đó. */
+export const COLLECTOR_CHIPS = WORK_CHIPS.filter((c) => c.value !== 'APPOINTMENT' && c.value !== 'ABSENT');
 /** Thứ tự hiển thị: quá hạn trên cùng, đã thu xuống cuối, miễn giảm sau cùng. */
 const CHIP_ORDER: Record<string, number> = { OVERDUE: 0, UNPAID: 1, ABSENT: 2, APPOINTMENT: 3, PAID: 4 };
 

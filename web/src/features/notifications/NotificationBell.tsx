@@ -1,5 +1,5 @@
 import { BellOutlined } from '@ant-design/icons';
-import { Badge, Button, Empty, List, Popover, Spin, Typography } from 'antd';
+import { Badge, Button, Empty, List, Popover, Spin, theme, Typography } from 'antd';
 import { useState } from 'react';
 import { Link } from 'react-router';
 
@@ -10,10 +10,11 @@ import { type Notification, useNotifications, useUnreadCount } from './api';
 import { useOpenNotification } from './useOpenNotification';
 
 function Item({ n, onOpen }: { n: Notification; onOpen: (n: Notification) => void }) {
+  const { token } = theme.useToken();
   return (
     <List.Item
       onClick={() => onOpen(n)}
-      style={{ cursor: 'pointer', paddingInline: 8, background: n.readAt ? undefined : 'rgba(22, 119, 255, 0.06)' }}
+      style={{ cursor: 'pointer', paddingInline: 8, background: n.readAt ? undefined : token.colorPrimaryBg }}
     >
       <List.Item.Meta
         title={<Typography.Text strong={!n.readAt}>{n.title}</Typography.Text>}

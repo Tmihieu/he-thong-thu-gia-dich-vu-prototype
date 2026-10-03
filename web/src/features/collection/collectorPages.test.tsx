@@ -78,9 +78,9 @@ function posts(fetchFn: ReturnType<typeof mockApi>, path: string) {
 
 const norm = { normalizer: (s: string) => s.replace(/\s+/g, ' ').trim() };
 
-async function openSheet(name: string) {
+async function openSheet(name: string, method = 'Đã thu tiền mặt') {
   const row = await screen.findByRole('listitem', { name });
-  await userEvent.click(within(row).getByRole('button', { name: 'Cập nhật kết quả' }));
+  await userEvent.click(within(row).getByRole('button', { name: method }));
   return screen.findByRole('dialog');
 }
 
@@ -93,13 +93,15 @@ describe('Người đi thu: danh sách thu', () => {
     expect(screen.getByText('1/4 hộ')).toBeInTheDocument();
     expect(await screen.findByText('160.000 đ', norm)).toBeInTheDocument();
     expect(within(screen.getByRole('listitem', { name: 'Hộ Lê Văn Cường' })).getByText('Vắng nhà')).toBeInTheDocument();
-    expect(within(screen.getByRole('listitem', { name: 'Hộ Trần Thị Bình' })).queryByRole('button', { name: 'Cập nhật kết quả' }))
+    expect(within(screen.getByRole('listitem', { name: 'Hộ Trần Thị Bình' })).queryByRole('button', { name: /^Đã thu (tiền mặt|chuyển khoản)$/ }))
       .not.toBeInTheDocument();
     expect(within(screen.getByRole('listitem', { name: 'Hộ Phạm Thị Dung' })).getByText('50.000 đ', norm)).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Vắng nhà 1' }));
+    // BR-COL-04: không có nút lọc vắng / hẹn, chỉ Tất cả / Chưa thu / Quá hạn / Đã thu.
+    expect(screen.queryByRole('button', { name: /^Vắng nhà/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Đã thu 1' }));
     expect(screen.queryByText('Hộ Nguyễn Văn An')).not.toBeInTheDocument();
-    expect(screen.getByText('Hộ Lê Văn Cường')).toBeInTheDocument();
+    expect(screen.getByText('Hộ Trần Thị Bình')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Tất cả 4' }));
     await userEvent.type(screen.getByRole('searchbox', { name: 'Tìm hộ' }), 'tran thi')
@@ -126,7 +128,7 @@ describe('Người đi thu: danh sách thu', () => {
     renderApp('/collector/list');
 
     const dialog = await openSheet('Hộ Phạm Thị Dung');
-    const confirm = within(dialog).getByRole('button', { name: 'Lưu kết quả' });
+    const confirm = within(dialog).getByRole('button', { name: /^Xác nhận đã thu/ });
     await userEvent.dblClick(confirm);
 
     await waitFor(() => expect(posts(fetchFn, '/api/collection/payments').length).toBeGreaterThan(0));
@@ -143,7 +145,7 @@ describe('Người đi thu: danh sách thu', () => {
     renderApp('/collector/list');
 
     const dialog = await openSheet('Hộ Nguyễn Văn An');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu kết quả' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: /^Xác nhận đã thu/ }));
     await waitFor(() => expect(posts(fetchFn, '/api/collection/payments')).toHaveLength(1));
     expect(posts(fetchFn, '/api/collection/payments')[0]!.clientRequestId).toMatch(/^[0-9a-f]{32}$/);
   });
@@ -163,16 +165,16 @@ describe('Người đi thu: danh sách thu', () => {
     renderApp('/collector/list');
 
     let dialog = await openSheet('Hộ Nguyễn Văn An');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu kết quả' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: /^Xác nhận đã thu/ }));
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('Không kết nối được máy chủ');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu kết quả' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: /^Xác nhận đã thu/ }));
     await waitFor(() => expect(posts(fetchFn, '/api/collection/payments')).toHaveLength(2));
     const [first, retry] = posts(fetchFn, '/api/collection/payments');
     expect(retry!.clientRequestId).toBe(first!.clientRequestId);
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     dialog = await openSheet('Hộ Phạm Thị Dung');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu kết quả' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: /^Xác nhận đã thu/ }));
     await waitFor(() => expect(posts(fetchFn, '/api/collection/payments')).toHaveLength(3));
     expect(posts(fetchFn, '/api/collection/payments')[2]!.clientRequestId).not.toBe(first!.clientRequestId);
   });
@@ -181,13 +183,12 @@ describe('Người đi thu: danh sách thu', () => {
     const fetchFn = api();
     renderApp('/collector/list');
 
-    const dialog = await openSheet('Hộ Phạm Thị Dung');
+    const dialog = await openSheet('Hộ Phạm Thị Dung', 'Đã thu chuyển khoản');
     expect(within(dialog).queryByText('Đã hẹn')).not.toBeInTheDocument();
     expect(within(dialog).queryByText('Vắng nhà')).not.toBeInTheDocument();
     expect(within(dialog).queryByLabelText('Số tiền thực thu')).not.toBeInTheDocument();
 
-    await userEvent.click(within(dialog).getByText('Đã thu chuyển khoản'));
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu kết quả' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: /^Xác nhận đã thu/ }));
     await waitFor(() =>
       expect(posts(fetchFn, '/api/collection/payments')[0]).toMatchObject({
         chargeId: 4, amount: 50_000, method: 'TRANSFER',

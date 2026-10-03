@@ -1,13 +1,14 @@
 import {
+  BankOutlined,
   CheckCircleFilled,
   ClockCircleOutlined,
   DownOutlined,
-  EditOutlined,
   ExclamationCircleFilled,
   UpOutlined,
+  WalletOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
-import { Alert, Button, DatePicker, Empty, Input, Select, Spin, Tag } from 'antd';
+import { Alert, Button, DatePicker, Empty, Input, Select, Skeleton, Tag } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useMemo, useState } from 'react';
 
@@ -16,12 +17,14 @@ import { useAuth } from '../../../app/auth/authContext';
 import { formatDate } from '../../../shared/format';
 import { MoneyText } from '../../../shared/MoneyText';
 import { normalizeText } from '../../../shared/normalizeText';
+import { usePeriods } from '../../masterdata/api';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type CollectorCharge, useCashHeld, useMyWork, useMyWorkAllPeriods } from '../api';
-import { byChipOrder, countChips, RESULT_LABELS, WORK_CHIPS, type WorkChip, workChip, workState } from '../workState';
+import { byChipOrder, COLLECTOR_CHIPS, countChips, RESULT_LABELS, type WorkChip, workChip, workState } from '../workState';
+import '../collector.css';
 import { HouseholdHistory } from './HouseholdHistory';
 import { ReportSubjectForm } from './ReportSubjectForm';
-import { ResultSheet } from './ResultSheet';
+import { type Method, ResultSheet } from './ResultSheet';
 
 /** "2026-09" → "09/2026". */
 const periodLabel = (code: string) => code.split('-').reverse().join('/');
@@ -43,12 +46,14 @@ export function CollectorListPage() {
   const [q, setQ] = useState('');
   const [paidOn, setPaidOn] = useState<Dayjs | null>(null);
   const [statsOpen, setStatsOpen] = useState(true);
-  const [editing, setEditing] = useState<CollectorCharge | null>(null);
+  const [editing, setEditing] = useState<{ item: CollectorCharge; method: Method } | null>(null);
   const [viewing, setViewing] = useState<CollectorCharge | null>(null);
   const [reporting, setReporting] = useState<CollectorCharge | null>(null);
   const work = useMyWork(periodId);
   const all = useMyWorkAllPeriods();
   const cash = useCashHeld();
+  // BR-COL-12: kỳ đã khóa không ghi thu nữa.
+  const locked = usePeriods().data?.find((p) => p.id === periodId)?.status === 'LOCKED';
   const items = useMemo(() => work.data ?? [], [work.data]);
 
   const streets = useMemo(
@@ -81,6 +86,8 @@ export function CollectorListPage() {
   const visible = useMemo(() => scoped.filter((w) => chip === 'ALL' || workChip(w) === chip).sort(byChipOrder), [scoped, chip]);
 
   const paid = counts.PAID ?? 0;
+  // Miễn giảm / đã xóa nợ không phải "chưa thu".
+  const unpaidCount = items.filter((w) => w.charge.status === 'UNPAID').length;
   const held = cash.data?.[0]?.held ?? 0;
   const period = items[0] ? periodLabel(items[0].charge.periodCode) : '';
 
@@ -95,6 +102,15 @@ export function CollectorListPage() {
           onChange={(e) => setQ(e.target.value)}
           aria-label="Tìm hộ"
         />
+        <div className="clm-held" role="status">
+          <WalletOutlined aria-hidden />
+          <div>
+            <small>Tiền mặt đang giữ</small>
+            <strong>
+              <MoneyText value={held} />
+            </strong>
+          </div>
+        </div>
         <button type="button" className="clm-stats-toggle" aria-expanded={statsOpen} onClick={() => setStatsOpen((o) => !o)}>
           Thống kê kỳ {period} {statsOpen ? <UpOutlined /> : <DownOutlined />}
         </button>
@@ -106,14 +122,8 @@ export function CollectorListPage() {
             </div>
             <div>
               <small>Chưa thu</small>
-              <strong>{items.length - paid}</strong>
+              <strong>{unpaidCount}</strong>
               {(counts.OVERDUE ?? 0) > 0 && <em>{counts.OVERDUE} quá hạn</em>}
-            </div>
-            <div>
-              <small>Tiền mặt đang giữ</small>
-              <strong>
-                <MoneyText value={held} />
-              </strong>
             </div>
           </div>
         )}
@@ -141,7 +151,7 @@ export function CollectorListPage() {
       </section>
 
       <div className="clm-chips" role="group" aria-label="Lọc theo kết quả">
-        {WORK_CHIPS.map((c) => (
+        {COLLECTOR_CHIPS.map((c) => (
           <button key={c.value} type="button" className={`clm-chip${chip === c.value ? ' active' : ''}`} aria-pressed={chip === c.value} onClick={() => setChip(c.value)}>
             {c.label} <b>{counts[c.value] ?? 0}</b>
           </button>
@@ -150,7 +160,7 @@ export function CollectorListPage() {
 
       {work.error && <Alert type="error" showIcon message={work.error instanceof ApiError ? work.error.message : 'Không tải được danh sách thu'} />}
       {work.isLoading ? (
-        <Spin />
+        <Skeleton active paragraph={{ rows: 6 }} />
       ) : visible.length === 0 ? (
         <Empty description={items.length === 0 ? 'Chưa có hộ nào trong tổ được giao' : 'Không có hộ phù hợp'} />
       ) : (
@@ -229,9 +239,31 @@ export function CollectorListPage() {
                   )}
                   <div className="clm-actions">
                     {unpaid ? (
-                      <Button type="primary" size="large" icon={<EditOutlined />} aria-label="Cập nhật kết quả" onClick={() => setEditing(w)}>
-                        Cập nhật kết quả
-                      </Button>
+                      <div className="clm-pay">
+                        <Button
+                          type="primary"
+                          size="large"
+                          icon={<WalletOutlined />}
+                          aria-label="Đã thu tiền mặt"
+                          disabled={locked}
+                          title={locked ? 'Kỳ đã khóa' : undefined}
+                          onClick={() => setEditing({ item: w, method: 'CASH' })}
+                        >
+                          Đã thu tiền mặt
+                        </Button>
+                        <Button
+                          type="primary"
+                          size="large"
+                          className="clm-pay-transfer"
+                          icon={<BankOutlined />}
+                          aria-label="Đã thu chuyển khoản"
+                          disabled={locked}
+                          title={locked ? 'Kỳ đã khóa' : undefined}
+                          onClick={() => setEditing({ item: w, method: 'TRANSFER' })}
+                        >
+                          Đã thu chuyển khoản
+                        </Button>
+                      </div>
                     ) : (
                       <span className="clm-done">
                         <CheckCircleFilled /> {s.label}
@@ -253,7 +285,7 @@ export function CollectorListPage() {
           })}
         </ul>
       )}
-      <ResultSheet item={editing} onClose={() => setEditing(null)} />
+      <ResultSheet item={editing?.item ?? null} initialMethod={editing?.method} onClose={() => setEditing(null)} />
       <HouseholdHistory item={viewing} onClose={() => setViewing(null)} />
       <ReportSubjectForm item={reporting} onClose={() => setReporting(null)} />
     </div>
