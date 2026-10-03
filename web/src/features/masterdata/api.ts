@@ -21,6 +21,9 @@ export type SubjectPage = components['schemas']['SubjectPageDto'];
 export type SubjectRequest = components['schemas']['SubjectRequest'];
 export type Contract = components['schemas']['ContractDto'];
 export type ContractRequest = components['schemas']['ContractRequest'];
+export type Street = components['schemas']['StreetDto'];
+export type StreetSuggestions = components['schemas']['SuggestDto'];
+export type DuplicateSubject = components['schemas']['DuplicateDto'];
 
 export interface SubjectQuery {
   areaId?: number;
@@ -163,6 +166,20 @@ export function useSubjects(query: SubjectQuery) {
     queryFn: () => api.get<SubjectPage>('/api/masterdata/subjects', { params: { ...query } }),
     placeholderData: (prev) => prev,
   });
+}
+
+/** Gợi ý đường: danh mục nội bộ trước, Goong chỉ bổ sung tham khảo. {@code signal} để bỏ yêu cầu cũ khi đổi từ khóa. */
+export function suggestStreets(q: string, districtId: number | undefined, signal?: AbortSignal) {
+  return api.get<StreetSuggestions>('/api/masterdata/streets/suggest', { params: { q, districtId }, signal });
+}
+
+/** Hồ sơ nghi trùng địa chỉ (cùng tổ/ấp + đường + số nhà, kể cả đã ngừng). */
+export function checkDuplicates(body: components['schemas']['DuplicateCheckRequest']) {
+  return api.post<DuplicateSubject[]>('/api/masterdata/subjects/duplicate-check', body);
+}
+
+export function getSubject(id: number) {
+  return api.get<Subject>(`/api/masterdata/subjects/${id}`);
 }
 
 function useSubjectMutation<V, R>(fn: (v: V) => Promise<R>) {

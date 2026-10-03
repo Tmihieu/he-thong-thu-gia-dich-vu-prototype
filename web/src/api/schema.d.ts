@@ -2021,8 +2021,8 @@ export interface components {
             name: string;
             /** @description Số nhà; bỏ trống nếu nhà chưa có số */
             houseNo?: string;
-            /** @description Đường / hẻm */
-            street: string;
+            /** @description Tên đường/hẻm: chỉ dùng khi không chọn streetId (đường chờ xác minh hoặc địa chỉ cũ) */
+            street?: string;
             /** Format: int64 */
             areaId: number;
             phone?: string;
@@ -2033,6 +2033,69 @@ export interface components {
             note?: string;
             /** @description Chỉ dùng khi tạo mới: hợp đồng đầu tiên (không bắt buộc) */
             contract?: components["schemas"]["ContractRequest"];
+            /**
+             * Format: int64
+             * @description Đường chuẩn trong danh mục (ưu tiên hơn street)
+             */
+            streetId?: number;
+            /** @description Không tìm thấy đường trong danh mục: ghi tên tạm ở street, chờ xác minh */
+            streetPending?: boolean;
+            /** @description Phòng/căn, phân biệt nhiều đối tượng chung địa chỉ */
+            unitNo?: string;
+            /** @description Vị trí bổ sung, nhất là khi nhà chưa có số */
+            locationNote?: string;
+            /** @description Lý do xác nhận là hộ khác khi địa chỉ nghi trùng */
+            duplicateReason?: string;
+        };
+        DuplicateCheckRequest: {
+            /** Format: int64 */
+            areaId: number;
+            /** Format: int64 */
+            streetId: number;
+            houseNo?: string;
+            unitNo?: string;
+            /**
+             * Format: int64
+             * @description Khi sửa hộ: loại chính hồ sơ đang sửa
+             */
+            excludeSubjectId?: number;
+        };
+        /** @description Thông tin tối thiểu để cán bộ đối chiếu hồ sơ nghi trùng. */
+        DuplicateDto: {
+            /** Format: int64 */
+            id: number;
+            code: string;
+            name: string;
+            phone: string | null;
+            /** @enum {string} */
+            status: "ACTIVE" | "PENDING" | "ENDED";
+            address: string;
+        };
+        StreetDto: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /** Format: int64 */
+            districtId: number;
+            /** @description Xã/phường, để phân biệt đường trùng tên */
+            districtName: string;
+            /** @description Đã đối chiếu với Goong */
+            goongLinked: boolean;
+        };
+        ExternalStreetDto: {
+            placeId: string;
+            name: string;
+            secondaryText: string;
+        };
+        SuggestDto: {
+            streets: components["schemas"]["StreetDto"][];
+            /** @description Gợi ý tham khảo từ Goong, CHƯA có trong danh mục */
+            external: components["schemas"]["ExternalStreetDto"][];
+            /**
+             * @description OK | NOT_CONFIGURED | REJECTED | UNAVAILABLE
+             * @enum {string}
+             */
+            goongStatus: "OK" | "NOT_CONFIGURED" | "REJECTED" | "UNAVAILABLE";
         };
         ContractDto: {
             /** Format: int64 */
@@ -2067,6 +2130,14 @@ export interface components {
             address: string;
             houseNo: string | null;
             street: string;
+            /**
+             * Format: int64
+             * @description Null: địa chỉ cũ chưa chuẩn hóa hoặc đường chờ xác minh
+             */
+            streetId: number | null;
+            streetPending: boolean;
+            unitNo: string | null;
+            locationNote: string | null;
             /** Format: int64 */
             areaId: number;
             /** @example KV07 */
