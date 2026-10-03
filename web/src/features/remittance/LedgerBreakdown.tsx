@@ -18,7 +18,7 @@ export function LedgerBreakdown({ row }: { row: LedgerRow }) {
   return (
     <>
       {shown.map(([label, v]) => (
-        <div key={label}>
+        <div key={label} style={{ whiteSpace: 'nowrap' }}>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {label} <MoneyText value={v} />
           </Typography.Text>

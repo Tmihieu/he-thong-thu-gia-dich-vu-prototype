@@ -1,32 +1,39 @@
-import { Card, Col, Row, Statistic } from 'antd';
-
+import { StatCard, StatGrid } from '../../shared/StatCard';
 import { MoneyText } from '../../shared/MoneyText';
+import type { semantic } from '../../app/theme';
 import type { LedgerRow } from './api';
 
-type Key = 'due' | 'retained' | 'payable' | 'received' | 'remaining';
-const STATS: [string, Key][] = [
-  ['Phải thu', 'due'],
-  ['Công ty cầm lại', 'retained'],
-  ['Phải nộp xã', 'payable'],
-  ['Đã nộp về xã', 'received'],
-  ['Còn phải nộp', 'remaining'],
-];
+type Key = 'due' | 'collected' | 'retained' | 'payable' | 'received' | 'remaining' | 'previousDebt';
+const STATS: Record<Key, [string, keyof typeof semantic]> = {
+  due: ['Phải thu', 'neutral'],
+  collected: ['Công ty đã thu', 'info'],
+  retained: ['Công ty cầm lại', 'neutral'],
+  payable: ['Phải nộp xã', 'info'],
+  received: ['Đã nộp về xã', 'success'],
+  remaining: ['Còn phải nộp', 'warning'],
+  previousDebt: ['Nợ kỳ trước', 'danger'],
+};
+const DEFAULT_KEYS: Key[] = ['retained', 'payable', 'received', 'remaining'];
 
 /** Hàng thẻ tổng của các dòng sổ công ty–kỳ (cộng thẳng số backend trả; công ty chỉ nhận dòng của mình). */
-export function LedgerStats({ rows, loading }: { rows: LedgerRow[]; loading?: boolean }) {
+export function LedgerStats({ rows, show = DEFAULT_KEYS }: { rows: LedgerRow[]; show?: Key[] }) {
   return (
-    <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-      {STATS.map(([title, key]) => (
-        <Col key={key} xs={12} md={8} xl={4} style={{ flexGrow: 1 }}>
-          <Card size="small" loading={loading} className="section-card">
-            <Statistic
-              title={title}
-              value={rows.reduce((t, r) => t + r[key], 0)}
-              formatter={(v) => <MoneyText value={Number(v)} strong={key === 'remaining'} />}
-            />
-          </Card>
-        </Col>
-      ))}
-    </Row>
+    <StatGrid>
+      {show.map((key) => {
+        const total = rows.reduce((t, r) => t + r[key], 0);
+        // QĐ-L12: còn phải nộp âm = nộp thừa.
+        if (key === 'remaining' && total < 0) {
+          return <StatCard key={key} label="Nộp thừa" tone="warning" value={<MoneyText value={-total} />} />;
+        }
+        return (
+          <StatCard
+            key={key}
+            label={STATS[key][0]}
+            tone={key === 'previousDebt' && total === 0 ? 'neutral' : STATS[key][1]}
+            value={<MoneyText value={total} />}
+          />
+        );
+      })}
+    </StatGrid>
   );
 }

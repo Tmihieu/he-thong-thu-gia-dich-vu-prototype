@@ -2,16 +2,12 @@ import { Card, Col, Progress, Row, theme, Typography } from 'antd';
 
 import { MoneyText } from '../../shared/MoneyText';
 import type { LedgerRow } from './api';
-
-/** BR-REM-11: < 25% đỏ, 25–< 50% vàng, 50–< 75% cam, ≥ 75% xanh lá. */
-function useRateColor() {
-  const { token } = theme.useToken();
-  return (rate: number) => (rate < 25 ? token.red : rate < 50 ? token.gold : rate < 75 ? token.orange : token.green);
-}
+import { rateBand } from './rateBand';
 
 /** Vòng tỷ lệ thu (đã thu / phải thu) của từng công ty ở màn Đối soát; số lấy nguyên từ sổ công ty–kỳ. */
 export function RateRings({ rows }: { rows: LedgerRow[] }) {
-  const colorOf = useRateColor();
+  const { token } = theme.useToken();
+  const colorOf = (rate: number) => token[rateBand(rate)];
   if (rows.length === 0) return null;
   return (
     <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>

@@ -1,6 +1,6 @@
 # Backend — rà soát 04/10/2026
 
-Trạng thái: **chưa xong**. Chưa chạy được test nào trong lane này (quyền chạy `mvnw.cmd test` và đổi quyền công ty chưa được duyệt ở cửa sổ Backend). Mọi commit dưới đây ghi "chưa chạy test". Các mục "agent rà" là kết quả ĐỌC source, chưa tái hiện bằng test.
+Trạng thái: **chưa xong**. Lane Backend không chạy Maven (quyền chạy `mvnw.cmd test` chưa được duyệt ở cửa sổ này; leader gộp và chạy `verify`). Mọi commit dưới đây ghi "chưa chạy test"; kết quả test thật do leader gửi lại. Các mục "agent rà" là kết quả ĐỌC source, chưa tái hiện bằng test.
 
 ## Đã rà (đánh dấu từng module)
 - [x] masterdata, billing — đọc source đối chiếu BR-MD/BR-BIL (chưa sửa mục nào ngoài bên dưới)
@@ -18,10 +18,35 @@ Trạng thái: **chưa xong**. Chưa chạy được test nào trong lane này (
 | 5 | `LedgerController` | Mô tả `@Schema` cũ của remaining/retained/remittedRate | — | 93d8331 | — |
 | 6 | `LedgerQueries` | Số khoản "cần thu" loại khoản Miễn giảm và Đã xóa nợ | — | 7ed8269 | LedgerApiIT (ca mới giả định DV01 chỉ 1 tổ — có thể phải chỉnh) |
 
+### Đợt 2 — theo quyết định leader (QĐ-L7…L16), tất cả chưa chạy test
+| # | File | Sạn / việc | Rule | Commit | Test cần chạy |
+|---|---|---|---|---|---|
+| 7 | `CompanyLedgerService` | Nợ kỳ trước chỉ gồm kỳ cũ hơn kỳ đang xem (A4) | BR-REM-03 | 43b6665 | CompanyLedgerServiceTest |
+| 8 | `HouseholdReminderService` | Nhắc nộp chỉ gửi khi insert `household_reminders` thành công (A6) | BR-NTF-03 | 561bf31 | HouseholdReminderIT |
+| 9 | `CompanyReceiptService` | `remainingAfter` = phải nộp xã − lũy kế (A3) | BR-REM-03/04 | 5e1fe2f | CompanyReceiptIT |
+| 10 | `NotificationService.publish` | Cắt body > 2000 ký tự thay vì ném lỗi, đóng/phản hồi khiếu nại không rollback (A5) | BR-CMP-04 | a223bde | NotificationServiceIT |
+| 11 | `UserAdminController` | Mật khẩu > 72 ký tự → 422 `PASSWORD_TOO_LONG` (A8) | BR-PLT-03 | a13069c | UserAdminIT |
+| 12 | 7 message lỗi | "hợp đồng" → "đăng ký thu phí" | BR-GEN-08 | b2adbe7 | — |
+| 13 | `ChargeDto` | Thêm `refunded` (chỉ ở GET /api/billing/charges) | — | 14ffa8b | LeadershipIT |
+| 14 | `ChargeCalculator`/`ChargeRequestService` | Hộ theo ký thiếu định mức → bỏ qua kèm cảnh báo `QUOTA_KG_REQUIRED`; miễn 100% không cần định mức; đơn giá 0 → 422 ngay; `IssueResultDto.skippedByReason` | QĐ-L14, BR-BIL-09 | f58cc86 | ChargeCalculatorTest, ChargeRequestServiceIT |
+| 15 | `Charge` + V33 | Chụp `quota_kg`; bỏ miễn giảm khoản nhóm theo ký tính đ/kg × định mức × tháng (A1) | BR-BIL-03, BR-LD-04 | 45c4817 | ChargeTest, ChargeCalculatorTest, LeadershipIT |
+| 16 | 4 repository | `lockCodePrefix` khi sinh mã thanh toán / bàn giao / nhắc nộp / khiếu nại (A7) | BR-GEN-06 | 15facc5 | không có test song song |
+| 17 | `CollectionService` | `lockRequest(clientRequestId)`: gửi trùng đồng thời trả bản cũ (A9) | BR-COL-05 | 3a90aab | không có test song song |
+| 18 | `SubjectService` | Người đi thu chỉ đọc hộ trong tổ được giao (A2); không đổi `/area-assignments` | BR-GEN-04 | 1c57787 | CollectorSubjectScopeIT, SubjectServiceTest |
+| 19 | `LedgerQueries`/`CompanyLedgerService` | `gap` = đã nộp + điều chỉnh − (đã thu − phần thu gom của số đã thu) | QĐ-L15 | 8007dbb | CompanyLedgerServiceTest, LedgerApiIT |
+| 20 | seed `V34_1` | Hạ phiếu thu mẫu DV01 kỳ 09/2026 về 200.000 đ; DemoSeedIT tính nợ kỳ trước theo payable | QĐ-L16, BR-REM-03 | 9dfbdbc, c01c16b | DemoSeedIT |
+| 21 | `CompanyLedgerService` | Công ty phải thu 0 không gắn cờ thu thấp | BR-REM-10 | eb46968 | CompanyLedgerServiceTest |
+| 22 | `ApprovalService` | Audit duyệt hoàn / xóa nợ có trạng thái + số đã thu ròng của khoản trước/sau | BR-GEN-03 | 0819593 | LeadershipIT |
+| 23 | `HouseholdReminderService.runBy` | Chạy nhắc tay có audit `RUN_HOUSEHOLD_REMINDERS` | BR-GEN-03 | 61c6082 | HouseholdReminderIT |
+| 24 | complaint + bulky (citizen) | Lọc theo HỘ, không theo tài khoản; khiếu nại nhập hộ qua điện thoại vẫn không hiện ở app | QĐ-L10, BR-CIT-02 | 612fd31 | CitizenComplaintIT |
+| 25 | `TariffService.updateDraft` | Bản đã ban hành không sửa được đơn giá/ngày: 422 `TARIFF_NOT_DRAFT` (bỏ `TARIFF_VALIDITY_LOCKED` và action `UPDATE_TARIFF_VERSION`) | BR-MD-11, QĐ-L7 | 97bc2f1 | TariffDraftIT (đã đổi kỳ vọng) |
+
+Ghi chú: audit entity của `CREATE_STREET` là `Street` (id = id đường), `StreetService:83`. Đề nghị hoàn "chờ" không cần trừ: đã chặn một đề nghị chờ / khoản / loại (`APPROVAL_PENDING_EXISTS`), nên không thể có nhiều đề nghị chờ cộng quá số đã thu.
+
 ## Việc giao nhưng chưa làm (bị chặn quyền)
 - **QĐ-L1 / BR-MD-03**: `CompanyService.create` đang chỉ `ADMIN`, `update` cho `COMMUNE_OFFICER` + `ADMIN`; cần cả hai vai trò create + update, sửa `CompanyApiIT` (thêm ca ADMIN tạo được). `CompanyApiIT` đang đỏ vì test dùng `officer` tạo công ty và `admin` PUT → 403.
 - **CORS** chỉ profile demo/dev, origin `http://localhost:*` và `http://127.0.0.1:*`, OPTIONS không cần token, kèm test preflight.
-- Chạy lại IT: LocationApiIT, CompanyApiIT, ComplaintFlowIT, HouseholdReminderIT, LedgerApiIT, CompanyLedgerServiceTest.
+- `CompanyApiIT` đỏ 2 ca cho tới khi làm QĐ-L1 (ADMIN và COMMUNE_OFFICER đều create + update; sửa test thêm ca ADMIN tạo được, vai trò khác 403).
 
 ## Sạn chưa sửa (agent rà, kèm lý do)
 Chắc (nên sửa kèm test khi có Maven):
@@ -67,4 +92,5 @@ Nghi (cần tái hiện hoặc xác nhận trước khi sửa):
 |---|---|---|---|---|
 | 1 | Leader | Duyệt quyền chạy `mvnw.cmd test`, QĐ-L1, CORS ở cửa sổ Backend | Bị classifier chặn; leader không cấp được | Chờ người dùng |
 | 2 | Leader | Xác nhận API "người đi thu" nào có số đếm hộ đã thu/cần thu | Chỉ thấy `area-progress` và sổ công ty có `chargeCount`; đã sửa hai chỗ này | Chờ |
+| 4 | Web (xã) | Màn Biểu giá: bản đã ban hành không còn sửa được (PUT trả 422 TARIFF_NOT_DRAFT); ẩn nút Sửa với bản ACTIVE/ISSUED, nhãn audit `UPDATE_TARIFF_VERSION` chỉ còn cho dòng cũ | QĐ-L7 | Chờ |
 | 3 | Web (xã) | Nếu sửa A3, mô tả `remainingAfter` đổi nghĩa thành "còn phải nộp xã" | Phiếu in | Chờ |

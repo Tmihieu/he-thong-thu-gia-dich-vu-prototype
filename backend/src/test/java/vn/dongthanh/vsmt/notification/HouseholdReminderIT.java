@@ -101,5 +101,8 @@ class HouseholdReminderIT extends IntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sent").value(1));
+        // BR-GEN-03: chạy tay có audit ai chạy và gửi bao nhiêu.
+        assertThat(jdbc.queryForObject("select (after_data->>'sent')::int from audit_logs"
+                + " where action = 'RUN_HOUSEHOLD_REMINDERS'", Integer.class)).isEqualTo(1);
     }
 }

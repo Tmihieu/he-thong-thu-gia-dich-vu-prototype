@@ -1,8 +1,8 @@
-import { Alert, Drawer, Empty, Spin, Timeline, Typography } from 'antd';
+import { Drawer, Timeline, Typography } from 'antd';
 
-import { ApiError } from '../../../api/client';
 import { formatDate, formatMoney } from '../../../shared/format';
 import { PAYMENT_METHOD_LABELS } from '../../../shared/labels';
+import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../shared/StateBlock';
 import { type CollectorCharge, type HistoryEntry, useChargeHistory, type Visit } from '../api';
 import { RESULT_LABELS } from '../workState';
 
@@ -79,11 +79,11 @@ export function HouseholdHistory({ item, onClose }: Props) {
         </Typography.Paragraph>
       )}
       {history.error ? (
-        <Alert type="error" showIcon message={history.error instanceof ApiError ? history.error.message : 'Không tải được lịch sử'} />
+        <ErrorBlock error={history.error} onRetry={() => void history.refetch()} />
       ) : history.isLoading ? (
-        <Spin />
+        <LoadingBlock rows={3} />
       ) : entries.length === 0 ? (
-        <Empty description="Chưa có lần thu hay lượt ghé nào" />
+        <EmptyBlock title="Chưa có lần thu hay lượt ghé nào" />
       ) : (
         <Timeline items={entries.map(entryItem)} />
       )}

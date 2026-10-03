@@ -6,10 +6,10 @@ export const COMPLAINT_STATUS_LABELS: Record<Complaint['status'], string> = {
   RESOLVED: 'Đã giải quyết',
 };
 
-export const COMPLAINT_STATUS_COLORS: Record<Complaint['status'], string> = {
-  NEW: 'orange',
-  PROCESSING: 'blue',
-  RESOLVED: 'green',
+export const COMPLAINT_STATUS_TONES: Record<Complaint['status'], 'warning' | 'info' | 'success'> = {
+  NEW: 'warning',
+  PROCESSING: 'info',
+  RESOLVED: 'success',
 };
 
 export const COMPLAINT_CHANNEL_LABELS: Record<Complaint['channel'], string> = {

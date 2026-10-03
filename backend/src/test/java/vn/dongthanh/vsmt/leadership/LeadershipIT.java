@@ -156,9 +156,18 @@ class LeadershipIT extends IntegrationTest {
                 .andExpect(jsonPath("$.code").value("REFUND_AMOUNT_INVALID"));
         approve(create(refund(charge, 30_000)));
         assertThat(chargeStatus(charge)).isEqualTo("PAID");
+        // BR-GEN-03: audit duyệt hoàn có trạng thái + số đã thu ròng của khoản trước / sau.
+        assertThat(jdbc.queryForObject("select (before_data->'chargeBefore'->>'paid')::bigint from audit_logs"
+                + " where action = 'APPROVE_APPROVAL' order by id desc limit 1", Long.class)).isEqualTo(80_000L);
+        assertThat(jdbc.queryForObject("select (after_data->'chargeAfter'->>'paid')::bigint from audit_logs"
+                + " where action = 'APPROVE_APPROVAL' order by id desc limit 1", Long.class)).isEqualTo(50_000L);
         ledgerOf(fx.october.getId(), "DV01")
                 .andExpect(jsonPath("$[0].collected").value(50_000))
                 .andExpect(jsonPath("$[0].refunded").value(30_000));
+        // Khoản trả thêm field refunded để giao diện tính hạn mức hoàn.
+        mvc.perform(get("/api/billing/charges").param("periodId", fx.october.getId().toString())
+                        .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer)))
+                .andExpect(jsonPath("$.items[?(@.id == %d)].refunded".formatted(charge)).value(org.hamcrest.Matchers.contains(30_000)));
 
         approve(create(refund(charge, 50_000)));
         assertThat(chargeStatus(charge)).isEqualTo("UNPAID");

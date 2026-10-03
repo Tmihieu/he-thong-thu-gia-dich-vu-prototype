@@ -17,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.notification.domain.NotificationKind;
 import vn.dongthanh.vsmt.notification.service.NotificationService.NotificationCommand;
+import vn.dongthanh.vsmt.platform.security.CurrentUser;
+import vn.dongthanh.vsmt.platform.service.AuditService;
 
 /**
  * Nhắc hộ dân nộp phí trong app (góp ý BA 03/10): khi vừa phát hành khoản, trước hạn 3 ngày và sau hạn 1 ngày.
@@ -35,6 +37,7 @@ public class HouseholdReminderService {
     private final JdbcTemplate jdbc;
     private final NotificationService notifications;
     private final Clock clock;
+    private final AuditService audit;
 
     private record Due(long chargeId, long subjectId, long remaining, LocalDate dueDate, String periodCode) {
     }
@@ -42,6 +45,15 @@ public class HouseholdReminderService {
     @Scheduled(cron = "0 0 8 * * *", zone = "Asia/Ho_Chi_Minh")
     public void runDaily() {
         run();
+    }
+
+    /** Xã bấm chạy tay: như {@link #run()} nhưng ghi audit ai chạy và gửi bao nhiêu thông báo. */
+    @Transactional
+    public int runBy(CurrentUser actor) {
+        int sent = run();
+        audit.record(actor, "RUN_HOUSEHOLD_REMINDERS", "HouseholdReminder", LocalDate.now(clock).toString(), null,
+                Map.of("sent", sent));
+        return sent;
     }
 
     /** Chạy cả ba mốc cho hôm nay; trả số thông báo đã gửi. Gọi tay được (xã bấm thử) mà không gửi trùng. */
@@ -72,8 +84,11 @@ public class HouseholdReminderService {
             if (accounts.isEmpty()) {
                 continue;
             }
-            jdbc.update("insert into household_reminders (charge_id, stage) values (?, ?) on conflict do nothing",
-                    d.chargeId(), stage);
+            // Chạy song song (job 08:00 và xã bấm tay) thì chỉ giao dịch chèn được dòng mới gửi.
+            if (jdbc.update("insert into household_reminders (charge_id, stage) values (?, ?) on conflict do nothing",
+                    d.chargeId(), stage) != 1) {
+                continue;
+            }
             String money = NumberFormat.getIntegerInstance(Locale.of("vi", "VN")).format(d.remaining());
             String title = switch (stage) {
                 case "OPEN" -> "Kỳ thu " + d.periodCode() + " đã mở";

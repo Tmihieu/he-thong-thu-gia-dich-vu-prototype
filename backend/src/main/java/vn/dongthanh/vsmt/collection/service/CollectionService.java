@@ -85,6 +85,7 @@ public class CollectionService {
         actor.requireRole(Role.COLLECTOR, Role.COMPANY_MANAGER);
         // Khóa dòng khoản TRƯỚC khi nạp: lần thu song song cùng khoản chờ lần trước commit rồi mới đọc trạng thái,
         // tổng đã thu và clientRequestId, nên không thu vượt và gửi trùng thì trả bản ghi cũ.
+        lockRequest(cmd.clientRequestId());
         charges.lockById(cmd.chargeId());
         Charge charge = loadInScope(cmd.chargeId(), actor);
         Optional<Payment> existing = payments.findByClientRequestId(cmd.clientRequestId());
@@ -130,6 +131,7 @@ public class CollectionService {
      * còn thiếu (công ty vừa thu một phần thì app phải tải lại), trả đủ thì khoản chuyển Đã thu.
      */
     public PaymentOutcome recordCitizenPayment(CitizenPaymentCommand cmd) {
+        lockRequest(cmd.clientRequestId());
         charges.lockById(cmd.chargeId());
         Charge charge = charges.findByIdWithDetails(cmd.chargeId())
                 .filter(c -> c.getSubject().getId().equals(cmd.subjectId()))
@@ -211,6 +213,7 @@ public class CollectionService {
 
     public VisitOutcome recordVisit(VisitCommand cmd, CurrentUser actor) {
         actor.requireRole(Role.COLLECTOR, Role.COMPANY_MANAGER);
+        lockRequest(cmd.clientRequestId());
         Charge charge = loadInScope(cmd.chargeId(), actor);
         Optional<CollectionVisit> existing = visits.findByClientRequestId(cmd.clientRequestId());
         if (existing.isPresent()) {
@@ -306,8 +309,17 @@ public class CollectionService {
         return collector.getId();
     }
 
+    /**
+     * Gửi trùng đồng thời (cùng clientRequestId, kể cả hai khoản khác nhau) phải xếp hàng để lần sau thấy bản ghi của
+     * lần trước và trả bản cũ / REQUEST_ID_REUSED, thay vì đụng ràng buộc duy nhất rồi trả 500 (BR-COL-05).
+     */
+    private void lockRequest(String clientRequestId) {
+        payments.lockCodePrefix("req:" + clientRequestId);
+    }
+
     private String nextCode(Charge charge) {
         String prefix = "TT-" + charge.getPeriod().documentToken() + "-";
+        payments.lockCodePrefix(prefix); // khóa khoản chỉ khóa một khoản; mã thì dùng chung cả kỳ
         return prefix + "%06d".formatted(payments.maxCodeNumber(prefix) + 1);
     }
 

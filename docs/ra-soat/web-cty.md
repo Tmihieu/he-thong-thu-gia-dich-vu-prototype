@@ -37,6 +37,18 @@ Chữ to (tên hộ 22px, số tiền 32px), "Tiền mặt đang giữ" luôn hi
 - Thông báo: biểu tượng theo loại + chấm chưa đọc.
 - **Chưa xem màn thật**: tiện ích Chrome không kết nối được nên không đăng nhập xem màn, không chạy được design-critique / high-end-visual-design trên màn thật. Đợt 2 chỉ kiểm bằng tsc, eslint, vitest.
 
+## Đợt 3 — áp hệ thiết kế chung
+PageHeader cho các màn cấp trang (Tiến độ, Đối soát, Khu vực được giao, Khiếu nại xã + công ty, Rác cồng kềnh, Thông báo, Chợ cộng đồng); StatCard/StatGrid thay thẻ số tự chế (`LedgerStats` dùng chung Tiến độ, Phiếu thu, màn Công ty; thẻ đếm khiếu nại, đồ cồng kềnh, tiền mặt người đi thu); LoadingBlock/EmptyBlock/ErrorBlock thay Spin/Empty/Alert lỗi rời; StatusTag + tone thống nhất (`remittance/tones.ts`, `COMPLAINT_STATUS_TONES`, `BULKY_STATUS_TONES`, `NOTIFICATION_KIND_TONES`, `workState().tone`); lỗi API qua `shared/errorText`. `collector.css` chỉ còn phần riêng (tiền đang giữ, 2 nút thu). Các tab con (Phiếu thu, Sai sót phiếu thu, Phân tổ, Hộ được giao) nằm trong hub nên không có PageHeader riêng. Alert lỗi trong modal/form giữ nguyên (lỗi gửi form).
+
+## Đợt 4 — sửa theo ảnh màn thật (leader chụp)
+- Người đi thu: bộ lọc Kỳ/Đường/Ngày gập sau nút "Lọc", thống kê một dòng, thẻ hộ chỉ còn tên, địa chỉ, số tiền, tag, 2 nút thu + Lịch sử / Báo sai; mã KH, mã khoản, phiếu YCT, nhân viên, nhật ký vào phần "Chi tiết" (`<details>`). "Chưa thu" gồm cả quá hạn, "Quá hạn" là tập con; chip và thống kê dùng chung `matchesChip`.
+- Tổng quan Công ty: 3 vòng + một hàng 4 thẻ (Công ty cầm lại, Phải nộp xã, Còn phải nộp / Nộp thừa, Nợ kỳ trước); trạng thái bàn giao "Đã bàn giao đủ" / "Đang giữ X đ".
+- QĐ-L12/L16: `RemainingText` hiện "Nộp thừa X đ" (tone warning) ở thẻ, bảng Tiến độ, bảng Phiếu thu, thẻ Công ty; tỷ lệ nộp tối đa 100% (`cappedRate`).
+- Tiến độ: cột Công ty cắt có tooltip, dòng phụ không bẻ chữ, bảng cuộn ngang khi hẹp; hàng thẻ còn 4.
+- Đối soát: thêm thẻ Phải nộp xã (hàng 4 thẻ); chú thích Chênh lệch "thu rồi chưa nộp" / "nộp trước", chỉ hiển thị số backend.
+- Tiền mặt người đi thu: thẻ "đang giữ" nổi, hai thẻ phụ cùng hàng.
+- Export cho lane Web xã (Dashboard, QĐ-L13): `web/src/features/remittance/rateBand.ts` → `rateBand(rate): 'red'|'gold'|'orange'|'green'` (BR-REM-11) và `cappedRate(rate)`; dùng `token[rateBand(rate)]`.
+
 ## Sạn chưa sửa
 - Màn Công ty đếm "Số hộ đã thu x/y" tính cả hộ Miễn giảm/Đã xóa nợ ở mẫu số — cần backend cho số đếm riêng, nên để nguyên.
 - `PeriodTrend` còn vài màu cứng (`#eef1f4`, `#fff`); đổi sang token khi lane Web xã đưa token chung.

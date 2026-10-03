@@ -102,13 +102,18 @@ class ChargeCalculatorTest {
     }
 
     @Test
+    void exemptPerKgGroupWithoutQuotaIsZeroNotRejected() {
+        assertThat(calculator.calculate(env, october, contract(TariffGroup.BY_VOLUME, true), null).amount()).isZero();
+    }
+
+    @Test
     void perKgGroupIsRatePerKgTimesQuotaTimesMonths() {
         ServiceContract c = contract(TariffGroup.BY_VOLUME, false);
         c.setQuotaKg(600);
 
         // 633 đ/kg (453 thu gom + 180 vận chuyển) × 600 kg × 1 tháng.
         assertThat(calculator.calculate(env, october, c, null))
-                .isEqualTo(new ChargeAmount(TariffGroup.BY_VOLUME, 633L, 1, 379_800L, false));
+                .isEqualTo(new ChargeAmount(TariffGroup.BY_VOLUME, 633L, 1, 379_800L, false, 600L));
         assertThat(calculator.calculate(env, q4, c, null).amount()).isEqualTo(1_139_400L);
         // Miễn 100% thì 0 đồng, vẫn chụp đơn giá.
         ServiceContract exempt = contract(TariffGroup.BY_VOLUME, true);

@@ -28,7 +28,9 @@ public class ChargeEligibility {
         NO_ACTIVE_CONTRACT(false),
         /** Cảnh báo: cán bộ xã cần phân công khu vực rồi lập lại. */
         AREA_WITHOUT_COMPANY(true),
-        DUPLICATE_CHARGE(false);
+        DUPLICATE_CHARGE(false),
+        /** Cảnh báo: hộ theo ký chưa có định mức kg/tháng, bỏ qua hộ này, các hộ khác vẫn lập (QĐ-L14). */
+        QUOTA_KG_REQUIRED(true);
 
         private final boolean warning;
 
@@ -67,7 +69,7 @@ public class ChargeEligibility {
         Optional<ServiceContract> contract = contracts.stream().filter(c -> c.covers(issueDate)).findFirst();
         if (contract.isEmpty()) {
             return new Skipped(SkipReason.NO_ACTIVE_CONTRACT,
-                    "Không có hợp đồng hiệu lực vào ngày " + VN_DATE.format(issueDate) + ".");
+                    "Không có đăng ký thu phí hiệu lực vào ngày " + VN_DATE.format(issueDate) + ".");
         }
         if (companyIdOnIssue == null) {
             return new Skipped(SkipReason.AREA_WITHOUT_COMPANY,

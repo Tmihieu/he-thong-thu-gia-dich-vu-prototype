@@ -97,6 +97,7 @@ public class ReminderService {
         String content = cmd.content() != null && !cmd.content().isBlank() ? cmd.content().trim()
                 : defaultContent(company, selected, amount, due);
         List<CollectionPeriod> periods = selected.stream().map(PeriodDebt::period).toList();
+        reminders.lockCodePrefix("NN-");
         String code = "NN-%03d".formatted(reminders.maxCodeNumber() + 1);
         PaymentReminder saved = reminders.save(PaymentReminder.create(code, company, today, due, periods, amount,
                 content, actor.id()));

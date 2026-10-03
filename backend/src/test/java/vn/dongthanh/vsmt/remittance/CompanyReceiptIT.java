@@ -68,6 +68,16 @@ class CompanyReceiptIT extends IntegrationTest {
     }
 
     @Test
+    void remainingAfterIsMeasuredAgainstPayableNotDue() throws Exception {
+        // Công ty cầm lại phần thu gom: phải nộp xã 92.000 trên phải thu 320.000; nộp đủ 92.000 thì không còn nợ.
+        jdbc.update("update tariff_rates set collection_fee = 57000, transport_fee = 23000 where tariff_group = 'HH_3_PLUS'");
+
+        issue(fx.bearer(fx.officer), fx.dv01.getId(), 92_000)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.remainingAfter").value(0));
+    }
+
+    @Test
     void receiptsChangeLedgerReceivedAndRemainingWithCumulativeAndWords() throws Exception {
         String officer = fx.bearer(fx.officer);
         issue(officer, fx.dv01.getId(), 200_000)
