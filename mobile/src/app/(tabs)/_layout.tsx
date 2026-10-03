@@ -1,64 +1,50 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
-import { View, type ColorValue } from 'react-native';
+import type { ColorValue } from 'react-native';
 
 import { useUnreadCount } from '../../features/citizen/api';
-import { colors } from '../../shared/theme';
+import { headerOptions } from '../../shared/headerOptions';
+import { colors, spacing, type as t } from '../../shared/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
 function tabIcon(name: IconName, focusedName: IconName) {
-  // Icon trong vòng tròn 30px, tab đang chọn tô nền gr-100 (`.phone-tab-item.active` của prototype).
   return ({ color, focused }: { color: ColorValue; focused: boolean }) => (
-    <View
-      style={{
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: focused ? colors.primarySoft : 'transparent',
-      }}
-    >
-      <Ionicons name={focused ? focusedName : name} size={20} color={color} />
-    </View>
+    <Ionicons name={focused ? focusedName : name} size={26} color={color} />
   );
 }
 
-/** Bốn tab như prototype (`CITIZEN_TABS`): Trang chủ · Chợ đồ cũ · Thông báo · Tài khoản. Badge = số chưa đọc (poll). */
+/** Bốn tab: Trang chủ · Chợ đồ cũ · Thông báo · Tài khoản. Badge = số chưa đọc (poll). Nhãn luôn hiện, chữ 12+ để dễ đọc. */
 export default function TabLayout() {
   const unread = useUnreadCount();
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: colors.chrome },
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontWeight: '700' },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: '#5d6b63',
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
-        tabBarStyle: { borderTopColor: colors.border, backgroundColor: colors.surface, paddingTop: 4 },
+        ...headerOptions,
         sceneStyle: { backgroundColor: colors.background },
+        tabBarActiveTintColor: colors.brand,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '700' },
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.divider,
+          paddingTop: spacing.xs,
+        },
+        tabBarItemStyle: { minHeight: 48 },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Trang chủ', headerShown: false, tabBarIcon: tabIcon('home-outline', 'home') }} />
-      <Tabs.Screen
-        name="market"
-        options={{ title: 'Chợ đồ cũ', tabBarIcon: tabIcon('storefront-outline', 'storefront') }}
-      />
+      <Tabs.Screen name="index" options={{ title: 'Trang chủ', headerTitle: 'Thu giá VSMT', tabBarIcon: tabIcon('home-outline', 'home') }} />
+      <Tabs.Screen name="market" options={{ title: 'Chợ đồ cũ', tabBarIcon: tabIcon('storefront-outline', 'storefront') }} />
       <Tabs.Screen
         name="notifications"
         options={{
           title: 'Thông báo',
           tabBarIcon: tabIcon('notifications-outline', 'notifications'),
           tabBarBadge: unread.data ? unread.data : undefined,
-          tabBarBadgeStyle: { backgroundColor: colors.badge, fontSize: 10 },
+          tabBarBadgeStyle: { backgroundColor: colors.badge, color: colors.onBrand, fontSize: t.tag.fontSize },
         }}
       />
-      <Tabs.Screen
-        name="account"
-        options={{ title: 'Tài khoản', headerShown: false, tabBarIcon: tabIcon('person-outline', 'person') }}
-      />
+      <Tabs.Screen name="account" options={{ title: 'Tài khoản', tabBarIcon: tabIcon('person-outline', 'person') }} />
     </Tabs>
   );
 }

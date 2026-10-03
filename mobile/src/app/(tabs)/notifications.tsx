@@ -1,14 +1,12 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { ApiError } from '../../api/client';
 import { useMarkAllRead, useMarkRead, useNotifications, type CitizenNotification, type NotificationKind } from '../../features/citizen/api';
 import { notificationHref, type NotificationLink } from '../../features/notifications/links';
 import { formatDate } from '../../shared/format';
-import { colors, radius, spacing } from '../../shared/theme';
-import { Card, Empty, ErrorBox, Loading, Muted, Screen } from '../../shared/ui';
+import { colors, radius, spacing, touch, type as t } from '../../shared/theme';
+import { Button, EmptyState, ErrorState, IconCircle, ListGroup, Loading, Muted, Screen, type IconName } from '../../shared/ui';
 
 type Segment = 'ALL' | NotificationKind;
 
@@ -18,8 +16,6 @@ const SEGMENTS: { key: Segment; label: string }[] = [
   { key: 'COMPLAINT', label: 'Phản ánh' },
   { key: 'TRANSACTION', label: 'Giao dịch' },
 ];
-
-type IconName = keyof typeof Ionicons.glyphMap;
 
 const KIND_ICONS: Record<NotificationKind, IconName> = {
   COMPLAINT: 'chatbubble-ellipses-outline',
@@ -34,6 +30,7 @@ export default function NotificationsTab() {
   const list = useNotifications(segment === 'ALL' ? undefined : segment);
   const markRead = useMarkRead();
   const markAllRead = useMarkAllRead();
+  const unreadCount = list.data?.unreadCount ?? 0;
 
   const open = (n: CitizenNotification) => {
     if (!n.readAt) markRead.mutate(n.id);
@@ -42,8 +39,8 @@ export default function NotificationsTab() {
   };
 
   return (
-    <Screen contentStyle={styles.screen} refreshing={list.isFetching && !list.isPending} onRefresh={() => void list.refetch()}>
-      <View style={styles.segments}>
+    <Screen refreshing={list.isFetching && !list.isPending} onRefresh={() => void list.refetch()}>
+      <View accessibilityRole="tablist" style={styles.segments}>
         {SEGMENTS.map((s) => {
           const active = s.key === segment;
           return (
@@ -61,74 +58,75 @@ export default function NotificationsTab() {
       </View>
 
       <View style={styles.head}>
-        <Muted>{list.data ? `${list.data.unreadCount} chưa đọc` : ''}</Muted>
-        <Pressable
-          accessibilityRole="button"
-          disabled={!list.data || list.data.unreadCount === 0 || markAllRead.isPending}
-          onPress={() => markAllRead.mutate()}
-          style={({ pressed }) => pressed && styles.pressed}
-        >
-          <Text style={[styles.readAll, (!list.data || list.data.unreadCount === 0) && styles.readAllOff]}>
-            Đánh dấu tất cả đã đọc
-          </Text>
-        </Pressable>
+        <Muted>{list.data ? (unreadCount > 0 ? `${unreadCount} chưa đọc` : 'Đã đọc hết') : ''}</Muted>
+        {unreadCount > 0 ? (
+          <Button
+            title="Đánh dấu đã đọc hết"
+            variant="quiet"
+            compact
+            fullWidth={false}
+            loading={markAllRead.isPending}
+            onPress={() => markAllRead.mutate()}
+          />
+        ) : null}
       </View>
 
       {list.isPending ? <Loading /> : null}
       {list.error ? (
-        <ErrorBox
-          message={list.error instanceof ApiError ? list.error.message : 'Không tải được thông báo.'}
-          onRetry={() => void list.refetch()}
-        />
+        <ErrorState error={list.error} fallback="Không tải được thông báo." onRetry={() => void list.refetch()} compact={!!list.data} />
       ) : null}
       {list.data?.items.length === 0 ? (
-        <Card>
-          <Empty>Chưa có thông báo trong mục này.</Empty>
-        </Card>
+        <EmptyState icon="notifications-off-outline" title="Chưa có thông báo" message="Thông báo về khoản phí, phản ánh và thu gom sẽ hiện ở đây." />
       ) : null}
-      {list.data?.items.map((n) => {
-        const unread = !n.readAt;
-        return (
-          <Pressable
-            key={n.id}
-            accessibilityRole="button"
-            onPress={() => open(n)}
-            style={({ pressed }) => [styles.row, unread && styles.rowUnread, pressed && styles.pressed]}
-          >
-            <View style={[styles.icon, unread && styles.iconUnread]}>
-              <Ionicons name={KIND_ICONS[n.kind]} size={20} color={unread ? '#fff' : colors.primary} />
-            </View>
-            <View style={styles.body}>
-              <Text style={[styles.title, unread && styles.titleUnread]}>{n.title}</Text>
-              <Text style={styles.text}>{n.body}</Text>
-              <Muted>{formatDate(n.createdAt, true)}</Muted>
-            </View>
-            {unread ? <View style={styles.dot} /> : null}
-          </Pressable>
-        );
-      })}
+      {list.data && list.data.items.length > 0 ? (
+        <ListGroup>
+          {list.data.items.map((n) => {
+            const unread = !n.readAt;
+            return (
+              <Pressable
+                key={n.id}
+                accessibilityRole="button"
+                accessibilityLabel={`${unread ? 'Chưa đọc. ' : ''}${n.title}. ${n.body}`}
+                onPress={() => open(n)}
+                style={({ pressed }) => [styles.item, unread && styles.itemUnread, pressed && styles.pressed]}
+              >
+                <IconCircle name={KIND_ICONS[n.kind]} tone={unread ? 'success' : 'neutral'} />
+                <View style={styles.itemBody}>
+                  <Text style={[styles.itemTitle, unread && styles.itemTitleUnread]}>{n.title}</Text>
+                  <Text style={styles.itemText}>{n.body}</Text>
+                  <Text style={styles.itemTime}>{formatDate(n.createdAt, true)}</Text>
+                </View>
+                {unread ? <View style={styles.dot} /> : null}
+              </Pressable>
+            );
+          })}
+        </ListGroup>
+      ) : null}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { gap: spacing.sm },
-  segments: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, padding: 3 },
-  segment: { flex: 1, paddingVertical: 8, borderRadius: radius.pill, alignItems: 'center' },
-  segmentActive: { backgroundColor: colors.primary },
-  segmentText: { fontSize: 14, color: colors.text, fontWeight: '600' },
-  segmentTextActive: { color: '#fff' },
-  head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.xs },
-  readAll: { color: colors.primary, fontWeight: '700', fontSize: 14 },
-  readAllOff: { color: colors.textMuted },
-  pressed: { opacity: 0.7 },
-  row: { flexDirection: 'row', gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.cardBorder, padding: spacing.md },
-  rowUnread: { borderColor: colors.primary },
-  icon: { width: 38, height: 38, borderRadius: radius.pill, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
-  iconUnread: { backgroundColor: colors.primary },
-  body: { flex: 1, gap: 2 },
-  title: { fontSize: 15, fontWeight: '600', color: colors.text },
-  titleUnread: { fontWeight: '800' },
-  text: { fontSize: 14, color: colors.text, lineHeight: 20 },
-  dot: { width: 10, height: 10, borderRadius: radius.pill, backgroundColor: colors.danger, marginTop: 4 },
+  segments: {
+    flexDirection: 'row',
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.md,
+    padding: spacing.xs,
+  },
+  segment: { flex: 1, minHeight: touch.min, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  segmentActive: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderStrong },
+  segmentText: { ...t.bodyStrong, color: colors.textSecondary },
+  segmentTextActive: { color: colors.brand },
+
+  head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: touch.min },
+
+  item: { flexDirection: 'row', gap: spacing.md, padding: spacing.lg, alignItems: 'flex-start' },
+  itemUnread: { backgroundColor: colors.brandSoft },
+  pressed: { opacity: 0.65 },
+  itemBody: { flex: 1, gap: spacing.xs },
+  itemTitle: { ...t.bodyStrong, color: colors.text, fontWeight: '600' },
+  itemTitleUnread: { fontWeight: '800' },
+  itemText: { ...t.secondary, color: colors.textSecondary },
+  itemTime: { ...t.caption, color: colors.textMuted },
+  dot: { width: 12, height: 12, borderRadius: radius.pill, backgroundColor: colors.badge, marginTop: spacing.xs },
 });

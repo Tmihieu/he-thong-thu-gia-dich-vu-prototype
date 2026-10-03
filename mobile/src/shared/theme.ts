@@ -9,6 +9,8 @@ import type { TextStyle } from 'react-native';
 export const colors = {
   brand: '#0e6b3b',
   brandPressed: '#0a5530',
+  brandDeep: '#0a4a29',
+  onBrandDeepMuted: '#cfe8d9',
   brandSoft: '#e4f2ea',
   onBrand: '#ffffff',
 

@@ -1,12 +1,13 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing } from '../../shared/theme';
-import { Button, Muted } from '../../shared/ui';
+import { colors, radius, spacing, touch, type as t } from '../../shared/theme';
+import { Button, Caption } from '../../shared/ui';
 import { addPhotos, MAX_PHOTOS, type PhotoSender, type UploadedPhoto } from './photos';
 import { StoredPhoto } from './PhotoStrip';
 
-const THUMB_SIZE = { width: 72, height: 72 };
+const THUMB_SIZE = { width: 88, height: 88 };
 
 /**
  * Chọn ảnh từ thư viện, tải lên ngay và giữ danh sách ảnh đã lên. `onBusyChange` (tùy chọn) để form khóa nút gửi
@@ -61,39 +62,38 @@ export function PhotoPickerField({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Xóa ảnh"
-                hitSlop={8}
+                hitSlop={6}
                 onPress={() => onChange(value.filter((x) => x.name !== p.name))}
                 style={styles.remove}
               >
-                <Text style={styles.removeText}>×</Text>
+                <Ionicons name="close" size={20} color={colors.onBrand} />
               </Pressable>
             </View>
           ))}
         </View>
       ) : null}
-      {value.length < max ? <Button title="Thêm ảnh" variant="ghost" onPress={() => void add()} loading={busy} /> : null}
-      <Muted>
-        {value.length}/{max} ảnh · JPEG, PNG hoặc WebP, tối đa 5 MB mỗi ảnh
-      </Muted>
+      {value.length < max ? <Button title="Thêm ảnh" variant="secondary" icon="image-outline" onPress={() => void add()} loading={busy} /> : null}
+      <Caption>
+        {value.length}/{max} ảnh. JPEG, PNG hoặc WebP, tối đa 5 MB mỗi ảnh.
+      </Caption>
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: spacing.sm },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  wrap: { gap: spacing.md },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   remove: {
     position: 'absolute',
-    top: -6,
-    right: -6,
-    width: 22,
-    height: 22,
+    top: -spacing.sm,
+    right: -spacing.sm,
+    width: touch.min - 12,
+    height: touch.min - 12,
     borderRadius: radius.pill,
     backgroundColor: colors.danger,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  removeText: { color: '#fff', fontSize: 15, fontWeight: '700', lineHeight: 17 },
-  error: { color: colors.danger, fontSize: 13 },
+  error: { ...t.caption, color: colors.danger, fontWeight: '600' },
 });
