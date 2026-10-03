@@ -1,6 +1,6 @@
 import { Alert, App, Button, Drawer, Form, Input, Radio, Typography } from 'antd';
 
-import { ApiError } from '../../../api/client';
+import { errorText } from '../../../shared/errorText';
 import { type CollectorCharge, type SubjectReportRequest, useReportSubject } from '../api';
 
 type ReportType = SubjectReportRequest['reportType'];
@@ -72,7 +72,7 @@ export function ReportSubjectForm({ item, onClose }: Props) {
           showIcon
           role="alert"
           style={{ marginBottom: 12 }}
-          message={report.error instanceof ApiError ? report.error.message : 'Không gửi được. Vui lòng thử lại.'}
+          message={errorText(report.error, 'Không gửi được. Vui lòng thử lại.')}
         />
       )}
       <Form<Values> form={form} layout="vertical" preserve={false} onFinish={finish}>
