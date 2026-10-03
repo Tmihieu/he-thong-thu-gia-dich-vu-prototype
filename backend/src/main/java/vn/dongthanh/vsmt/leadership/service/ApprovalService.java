@@ -111,6 +111,7 @@ public class ApprovalService {
         actor.requireRole(Role.LEADER);
         ApprovalRequest r = forDecision(id);
         Map<String, Object> before = snapshot(r);
+        Map<String, Object> afterExtra = new LinkedHashMap<>();
         CollectionPeriod effective = null;
         switch (r.getType()) {
             case EXEMPTION -> {
@@ -124,18 +125,24 @@ public class ApprovalService {
                 Charge charge = lockedCharge(r);
                 requireWriteOffable(charge);
                 effective = ledgerPeriodFor(charge);
+                trackCharge(before, charge, "chargeBefore");
                 charge.writeOff(effective);
+                trackCharge(afterExtra, charge, "chargeAfter");
             }
             case REFUND -> {
                 Charge charge = lockedCharge(r);
                 effective = ledgerPeriodFor(charge);
+                trackCharge(before, charge, "chargeBefore");
                 collection.recordRefund(charge, r.getAmount(), effective, "Hoàn theo đề nghị " + r.getCode(),
                         "refund-" + r.getCode(), actor.id());
+                trackCharge(afterExtra, charge, "chargeAfter");
             }
         }
         r.approve(note, effective, actor.id(), OffsetDateTime.now(clock));
         notifyRequester(r);
-        audit.record(actor, "APPROVE_APPROVAL", ENTITY, r.getCode(), before, snapshot(r));
+        Map<String, Object> after = snapshot(r);
+        after.putAll(afterExtra);
+        audit.record(actor, "APPROVE_APPROVAL", ENTITY, r.getCode(), before, after);
         return r;
     }
 
@@ -212,6 +219,15 @@ public class ApprovalService {
         }
         throw new BusinessRuleException("NO_COLLECTING_PERIOD",
                 "Kỳ " + own.getCode() + " đã khóa và chưa có kỳ đang thu để ghi nhận điều chỉnh.");
+    }
+
+    /** BR-GEN-03: audit hoàn / xóa nợ ghi cả trạng thái và số đã thu ròng của khoản trước và sau, không chỉ đề nghị. */
+    private void trackCharge(Map<String, Object> into, Charge charge, String key) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("charge", charge.getCode());
+        m.put("status", charge.getStatus());
+        m.put("paid", collection.paidOf(charge.getId()));
+        into.put(key, m);
     }
 
     private void requireWriteOffable(Charge charge) {

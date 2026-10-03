@@ -140,17 +140,18 @@ public class ComplaintService {
         return new ComplaintDetail(complaint, List.of(submitted));
     }
 
-    /** Phản ánh của một tài khoản người dân, mới nhất trước. */
+    /** Phản ánh gửi từ app của hộ (mọi tài khoản của hộ thấy chung), mới nhất trước. */
     @Transactional(readOnly = true)
-    public List<Complaint> listOfCitizen(Long citizenAccountId) {
-        return complaints.findByCitizenAccountId(citizenAccountId);
+    public List<Complaint> listOfCitizen(Long subjectId) {
+        return complaints.findAppComplaintsOfSubject(subjectId);
     }
 
-    /** Một phản ánh của tài khoản người dân, chỉ kèm mốc timeline hiển thị cho dân; của tài khoản khác → 404. */
+    /** Một phản ánh gửi từ app của hộ, chỉ kèm mốc timeline hiển thị cho dân; của hộ khác → 404. */
     @Transactional(readOnly = true)
-    public ComplaintDetail getOfCitizen(Long id, Long citizenAccountId) {
+    public ComplaintDetail getOfCitizen(Long id, Long subjectId) {
         Complaint complaint = complaints.findByIdWithDetails(id)
-                .filter(c -> citizenAccountId.equals(c.getCitizenAccountId()))
+                .filter(c -> c.getCitizenAccountId() != null && c.getSubject() != null
+                        && subjectId.equals(c.getSubject().getId()))
                 .orElseThrow(ComplaintService::notFound);
         return new ComplaintDetail(complaint, events.findByComplaintIdOrderByOccurredAtAscIdAsc(id).stream()
                 .filter(ComplaintEvent::isVisibleToCitizen).toList());

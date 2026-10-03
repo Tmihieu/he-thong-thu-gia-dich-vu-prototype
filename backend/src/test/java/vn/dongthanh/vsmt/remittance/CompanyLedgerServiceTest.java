@@ -90,7 +90,7 @@ class CompanyLedgerServiceTest {
         assertThat(r.collectionRate()).isEqualTo(75.0);
         assertThat(r.lowCollectionRate()).isFalse();
         assertThat(rows.get(1).collectionRate()).isZero();
-        assertThat(rows.get(1).lowCollectionRate()).isTrue();
+        assertThat(rows.get(1).lowCollectionRate()).isTrue(); // DV03 phải thu 800.000, chưa thu
         assertThat(r.remittedRate()).isEqualTo(62.5);
         assertThat(r.lowRemittedRate()).isFalse();
         assertThat(rows.get(1).remittedRate()).isZero();
@@ -107,6 +107,12 @@ class CompanyLedgerServiceTest {
         assertThat(r.payable()).isZero();
         assertThat(r.remittedRate()).isZero();
         assertThat(r.lowRemittedRate()).isFalse();
+
+        // Công ty không có khoản nào trong kỳ (phải thu 0): không gắn cờ thu thấp (BR-REM-10).
+        LedgerRow empty = service("2026-10-15").row(3L, 10L);
+        assertThat(empty.due()).isZero();
+        assertThat(empty.lowCollectionRate()).isFalse();
+        assertThat(empty.lowRemittedRate()).isFalse();
     }
 
     @Test
