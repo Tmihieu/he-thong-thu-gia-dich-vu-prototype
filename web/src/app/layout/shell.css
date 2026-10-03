@@ -75,11 +75,12 @@ html, body { background: var(--page); }
 .brand img { width: 44px; height: 44px; flex: 0 0 44px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .35); background: #fff; }
 .brand-copy { min-width: 0; }
 .brand-copy strong { display: block; font-size: 16px; line-height: 1.25; letter-spacing: .01em; }
-.brand-copy small { display: block; margin-top: 3px; color: var(--navy-200); font-size: 12px; }
+.brand-copy small { display: block; margin-top: 3px; color: var(--navy-200); font-size: 13px; }
 .top-actions { display: flex; align-items: center; gap: 10px; }
 .top-actions .ant-btn-icon-only, .top-actions .ant-badge .ant-btn { color: var(--navy-200); background: rgba(255, 255, 255, .08); border: 0; }
 .top-user { display: grid; line-height: 1.25; text-align: right; }
-.top-user strong { font-size: 13px; }
+.top-user strong { font-size: 15px; }
+.top-user small { color: var(--navy-200); font-size: 13px; }
 
 .avatar {
   width: 38px;
@@ -106,22 +107,25 @@ html, body { background: var(--page); }
 }
 .role-nav { flex: 1; padding: 10px; }
 .nav-item {
+  position: relative;
+  transition: background-color .18s ease, color .18s ease;
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
-  min-height: 42px;
+  min-height: 46px;
   margin: 2px 0;
   padding: 7px 9px;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: 8px;
   color: var(--gray-800);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   text-decoration: none;
 }
 .nav-item:hover { color: var(--gray-800); background: var(--gray-50); border-color: var(--gray-200); }
-.nav-item.active { color: var(--green-800); background: var(--green-100); font-weight: 600; }
+.nav-item.active { color: var(--green-800); background: var(--green-100); font-weight: 700; }
+.nav-item.active::before { content: ""; position: absolute; left: -10px; top: 8px; bottom: 8px; width: 4px; border-radius: 0 4px 4px 0; background: var(--green-700); }
 .nav-icon { display: grid; place-items: center; color: inherit; font-size: 16px; }
 
 .main-content { grid-area: main; min-width: 0; padding: 26px 30px 40px; }
@@ -135,7 +139,7 @@ html, body { background: var(--page); }
   border-top: 1px solid var(--gray-200);
   color: var(--gray-600);
   background: #fff;
-  font-size: 11px;
+  font-size: 13px;
 }
 .sidebar-backdrop { display: none; }
 
@@ -164,9 +168,9 @@ html, body { background: var(--page); }
 }
 
 /* ---------- Thành phần AntD theo prototype ---------- */
-.ant-table-thead > tr > th { font-size: 11px; letter-spacing: .03em; text-transform: uppercase; white-space: nowrap; }
+.ant-table-thead > tr > th { font-size: 13px; font-weight: 700; white-space: nowrap; }
 .ant-table-tbody > tr:nth-child(even) > td { background: var(--gray-50); }
-.ant-tag.ant-tag { border-color: transparent; border-radius: 999px; font-weight: 700; }
+.ant-tag.ant-tag { border-color: transparent; border-radius: 999px; font-size: 13px; font-weight: 700; padding-inline: 10px; }
 .ant-card { box-shadow: 0 1px 2px rgba(6, 38, 66, .05); }
 .ant-card-head-title { color: var(--navy-950); }
 .ant-statistic-content { color: var(--navy-950); font-weight: 700; }
@@ -180,7 +184,7 @@ html, body { background: var(--page); }
 .clm-hero .ant-btn { color: var(--gr-900); background: #fff; border: 0; }
 .clm-body { flex: 1; margin-top: -1px; padding: 16px; border-radius: 22px 22px 0 0; background: var(--gr-page); box-shadow: 0 -12px 0 var(--gr-800); }
 .clm-tabbar { position: sticky; bottom: 0; display: flex; padding: 6px 4px 10px; border-top: 1px solid var(--gr-line); background: #fff; }
-.clm-tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px 2px; color: #5d6b63; font-size: 11px; font-weight: 700; text-decoration: none; }
+.clm-tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px 2px; color: #5d6b63; font-size: 12px; font-weight: 700; text-decoration: none; }
 .clm-tab:hover { color: var(--gr-700); }
 .clm-tab-icon { display: grid; place-items: center; font-size: 18px; }
 .clm-tab.active { color: var(--gr-700); }
@@ -199,9 +203,9 @@ html, body { background: var(--page); }
 .clm-stats-toggle { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 12px; border: 0; border-radius: 10px; color: var(--gr-900); background: #fff; font: inherit; font-size: 13px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; cursor: pointer; }
 .clm-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .clm-stats > div { padding: 8px 10px; border-radius: 10px; color: #fff; background: rgba(255, 255, 255, .12); }
-.clm-stats small { display: block; color: #cfe9da; font-size: 11px; font-weight: 600; }
+.clm-stats small { display: block; color: #cfe9da; font-size: 12px; font-weight: 600; }
 .clm-stats strong { display: block; font-size: 15px; font-weight: 800; }
-.clm-stats em { display: block; color: #ffd8a8; font-size: 11px; font-style: normal; font-weight: 700; }
+.clm-stats em { display: block; color: #ffd8a8; font-size: 12px; font-style: normal; font-weight: 700; }
 .clm-filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .clm-filter-row label > span { display: block; margin-bottom: 4px; color: #d9efe2; font-size: 12px; font-weight: 700; }
 .clm-filter-row .ant-select { width: 100% !important; }
@@ -219,7 +223,7 @@ html, body { background: var(--page); }
 .clm-card-head .ant-tag { margin: 0; }
 .clm-card-body { padding: 12px 14px 14px; }
 .clm-card-body p { margin: 0 0 4px; color: var(--gray-800); font-size: 14px; }
-.clm-label, .clm-kv small, .clm-amount small, .clm-previous small { color: var(--gray-600); font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.clm-label, .clm-kv small, .clm-amount small, .clm-previous small { color: var(--gray-600); font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .clm-name { margin: 2px 0 6px; color: var(--gr-900); font-size: 19px; font-weight: 800; }
 .clm-kv { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0 0; font-size: 13px; }
 .clm-kv span { color: var(--gray-950); font-weight: 600; text-align: right; }
@@ -251,3 +255,98 @@ html, body { background: var(--page); }
 .clm-tip strong { color: var(--gr-800); }
 .clm-sheet-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
 .clm-sheet-actions .ant-btn-primary { background: var(--gr-800); }
+
+/* ================= Hệ thiết kế dùng chung (lane Web xã, 04/10) =================
+   Màn mới dùng các lớp dưới đây + component ở `shared/`; không tự đặt màu / cỡ chữ. */
+:root {
+  --success-fg: #0d633b; --success-bg: #e6f4ec;
+  --warning-fg: #8a5300; --warning-bg: #fff4e0;
+  --danger-fg: #b42318; --danger-bg: #fef3f2;
+  --info-fg: #175cd3; --info-bg: #eaf1fe;
+  --neutral-fg: #475467; --neutral-bg: #eef1f4;
+  --space-1: 4px; --space-2: 8px; --space-3: 16px; --space-4: 24px; --space-5: 32px;
+  --radius: 8px; --radius-lg: 12px;
+  --shadow-card: 0 1px 3px rgba(6, 38, 66, .08), 0 1px 2px rgba(6, 38, 66, .04);
+  --content-max: 1480px;
+}
+
+body { font-size: 15px; line-height: 1.5; color: var(--gray-950); -webkit-font-smoothing: antialiased; }
+.main-content > * { max-width: var(--content-max); margin-inline: auto; }
+
+/* Tiêu đề trang */
+.page-header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); padding-bottom: var(--space-3); border-bottom: 1px solid #d5dde5; }
+.page-header-copy { min-width: 0; }
+.page-header .page-title.ant-typography { margin: 0; font-size: 26px; line-height: 1.25; letter-spacing: -.01em; }
+.page-header .page-description.ant-typography { margin: 6px 0 0; max-width: 70ch; font-size: 15px; text-wrap: pretty; }
+.page-header-extra { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+
+/* Thẻ số liệu */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4); }
+.stat-card { display: flex; flex-direction: column; gap: 2px; padding: 14px 18px; border: 1px solid #d9e1e8; border-left: 5px solid var(--neutral-fg); border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-card); }
+.stat-label { color: var(--gray-600); font-size: 13px; font-weight: 600; }
+.stat-value { color: var(--navy-950); font-size: 26px; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.stat-hint { color: var(--gray-600); font-size: 13px; }
+
+/* Trống / lỗi / đang tải */
+.state-block { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: 40px 24px; border: 1px dashed #c3ced8; border-radius: var(--radius-lg); background: var(--gray-50); text-align: center; color: var(--gray-800); }
+.state-block strong { color: var(--navy-950); font-size: 16px; }
+.state-block p { margin: 0; max-width: 52ch; color: var(--gray-600); }
+.state-icon { font-size: 36px; color: var(--gray-500); }
+.state-error { border-style: solid; border-color: #f4c7c3; background: var(--danger-bg); }
+.state-error .state-icon { color: var(--danger-fg); }
+.state-block .ant-skeleton { width: 100%; max-width: 720px; }
+
+/* Bảng: thanh cuộn ngang trên màn hẹp, hàng có dấu hiệu bấm được */
+.ant-table-wrapper .ant-table { border-radius: var(--radius-lg); }
+.ant-table-wrapper .ant-table-container { border-radius: var(--radius-lg); }
+.ant-table-wrapper .ant-table-tbody > tr > td { font-variant-numeric: tabular-nums; }
+.ant-table-wrapper .ant-table-cell .ant-btn-link { height: auto; font-weight: 600; }
+
+/* Form, modal, drawer */
+.ant-modal .ant-modal-header { padding-bottom: 12px; border-bottom: 1px solid var(--gray-200); margin-bottom: 16px; }
+.ant-modal .ant-modal-footer { margin-top: 20px; }
+.ant-drawer .ant-drawer-header { border-bottom: 1px solid var(--gray-200); }
+.ant-drawer .ant-drawer-title { font-size: 18px; font-weight: 700; color: var(--navy-950); }
+.ant-form-item .ant-form-item-explain-error { font-size: 13px; font-weight: 600; }
+.ant-alert { border-radius: var(--radius); }
+
+/* Nút: phản hồi khi rê / bấm */
+.ant-btn { transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .1s ease; }
+.ant-btn:not(:disabled):active { transform: translateY(1px); }
+
+/* Bàn phím: viền focus rõ cho mọi phần tử bấm được */
+:focus-visible { outline: 3px solid #5aa9f2; outline-offset: 2px; border-radius: 4px; }
+.skip-link { position: absolute; left: 12px; top: -60px; z-index: 100; padding: 10px 16px; border-radius: var(--radius); color: #fff; background: var(--navy-900); font-weight: 700; text-decoration: none; transition: top .15s ease; }
+.skip-link:focus { top: 10px; color: #fff; }
+
+/* Chân trang nội dung dài: chừa chỗ để bảng không dính chân */
+.main-content { padding-bottom: 48px; }
+
+@media (max-width: 600px) {
+  .page-header .page-title.ant-typography { font-size: 22px; }
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+  .stat-value { font-size: 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
+/* ---------- Đăng nhập ---------- */
+.login-page { min-height: 100dvh; display: grid; grid-template-columns: minmax(320px, 5fr) 6fr; background: var(--page); }
+.login-brand { display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 48px clamp(32px, 6vw, 88px); color: #fff; background: linear-gradient(160deg, var(--navy-900) 0%, var(--navy-950) 100%); border-right: 6px solid var(--green-600); }
+.login-brand img { border-radius: 50%; border: 2px solid rgba(255, 255, 255, .4); background: #fff; }
+.login-brand h2 { margin: 12px 0 0; color: #fff; font-size: 30px; line-height: 1.25; letter-spacing: -.01em; text-wrap: balance; }
+.login-brand p { margin: 0; color: var(--navy-200); font-size: 16px; }
+.login-brand ul { margin: 24px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; color: #e3eef7; font-size: 16px; }
+.login-brand li::before { content: "✓"; margin-right: 10px; color: #7fd1a4; font-weight: 800; }
+.login-panel { display: grid; place-items: center; padding: 24px 16px; }
+.login-card.ant-card { width: 100%; max-width: 440px; border-radius: 16px; box-shadow: 0 12px 32px rgba(6, 38, 66, .12); }
+.login-card .ant-card-body { padding: 36px 32px; }
+.login-logo { display: none; margin: 0 auto 12px; border-radius: 50%; }
+.login-title.ant-typography { margin: 0 0 4px; }
+@media (max-width: 860px) {
+  .login-page { grid-template-columns: 1fr; }
+  .login-brand { display: none; }
+  .login-logo { display: block; }
+  .login-panel { background: var(--navy-900); border-top: 4px solid var(--green-600); }
+}
