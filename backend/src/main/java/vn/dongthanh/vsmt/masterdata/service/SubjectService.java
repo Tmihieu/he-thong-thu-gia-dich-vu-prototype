@@ -90,12 +90,35 @@ public class SubjectService {
         actor.requireRole(Role.COMMUNE_OFFICER);
         ServiceSubject subject = find(id);
         Map<String, Object> before = snapshot(subject);
+        Integer membersBefore = subject.getMemberCount();
         subject.setSubjectType(cmd.type());
         subject.setName(cmd.name().trim());
         subject.setAddressParts(blankToNull(cmd.houseNo()), cmd.street().trim());
         apply(subject, cmd, area(cmd.areaId()));
         audit.record(actor, "UPDATE_SUBJECT", SUBJECT, subject.getCode(), before, snapshot(subject));
+        syncHouseholdGroup(subject, membersBefore, actor);
         return subject;
+    }
+
+    /**
+     * Số người của hộ đổi thì nhóm giá hộ gia đình (≤2 / ≥3) đổi theo, thay vì bắt cán bộ sửa hợp đồng bằng tay. Chỉ
+     * đổi hợp đồng đang mở; khoản đã phát hành giữ nhóm giá cũ, nhóm mới áp từ khoản phát hành sau.
+     * ponytail: chưa tính theo ngày hiệu lực giữa kỳ; chốt cách tính (từ kỳ sau / theo ngày) với xã rồi mới làm.
+     */
+    private void syncHouseholdGroup(ServiceSubject subject, Integer membersBefore, CurrentUser actor) {
+        Integer now = subject.getMemberCount();
+        if (subject.getSubjectType() != SubjectType.HOUSEHOLD || now == null || now.equals(membersBefore)) {
+            return;
+        }
+        TariffGroup expected = now <= 2 ? TariffGroup.HH_UP_TO_2 : TariffGroup.HH_3_PLUS;
+        for (ServiceContract c : contracts.findBySubjectIdOrderByValidFromDesc(subject.getId())) {
+            boolean householdGroup = c.getTariffGroup() == TariffGroup.HH_UP_TO_2 || c.getTariffGroup() == TariffGroup.HH_3_PLUS;
+            if (c.getValidTo() == null && householdGroup && c.getTariffGroup() != expected) {
+                Map<String, Object> before = snapshot(c);
+                c.change(expected, c.getValidFrom(), c.getValidTo(), c.isExempt(), c.getExemptReason(), c.getExemptDecisionNo());
+                audit.record(actor, "UPDATE_CONTRACT", CONTRACT, c.getContractNo(), before, snapshot(c));
+            }
+        }
     }
 
     /** Ngừng cung cấp dịch vụ từ sau ngày {@code endDate}: đối tượng Đã chấm dứt, hợp đồng đang hiệu lực kết thúc. */

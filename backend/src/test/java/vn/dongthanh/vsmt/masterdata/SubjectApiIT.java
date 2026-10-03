@@ -117,7 +117,28 @@ class SubjectApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$.street").value("đường Mẫu"));
         assertThat(jdbc.queryForList("select action from audit_logs where entity_id in ('DTH-H000001', 'ĐK-DTH-0001')"
                 + " order by id", String.class)).containsExactly("CREATE_SUBJECT", "CREATE_CONTRACT", "UPDATE_SUBJECT",
-                "END_SUBJECT");
+                "UPDATE_CONTRACT", "END_SUBJECT");
+    }
+
+    @Test
+    void changingMemberCountSwitchesHouseholdTariffGroupAndKeepsHistory() throws Exception {
+        long id = body(create(officer, kv07.getId(), """
+                ,"contract":{"tariffGroup":"HH_3_PLUS","validFrom":"2026-01-01"}""")).get("id").asLong();
+
+        // 4 -> 2 người: nhóm giá tự về ≤2; 2 -> 3 người: tự lên ≥3; sửa tên không đổi số người thì không thêm dòng lịch sử.
+        update(id, 2, "Nguyễn Văn Mẫu").andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentContract.tariffGroup").value("HH_UP_TO_2"));
+        update(id, 3, "Nguyễn Văn Mẫu").andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentContract.tariffGroup").value("HH_3_PLUS"));
+        update(id, 3, "Tên khác").andExpect(status().isOk());
+
+        mvc.perform(get("/api/masterdata/subjects/" + id + "/member-history").header(HttpHeaders.AUTHORIZATION, officer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$[0].from").value(2)).andExpect(jsonPath("$[0].to").value(3))
+                .andExpect(jsonPath("$[1].from").value(4)).andExpect(jsonPath("$[1].to").value(2))
+                .andExpect(jsonPath("$[2].from").doesNotExist()).andExpect(jsonPath("$[2].to").value(4))
+                .andExpect(jsonPath("$[0].by").value("canbo_it"));
     }
 
     @Test
@@ -188,6 +209,13 @@ class SubjectApiIT extends IntegrationTest {
         mvc.perform(get("/api/masterdata/areas").header(HttpHeaders.AUTHORIZATION, officer))
                 .andExpect(jsonPath("$[?(@.code == 'KV07')].subjectCount").value(contains(2)))
                 .andExpect(jsonPath("$[?(@.code == 'KV17')].subjectCount").value(contains(0)));
+    }
+
+    private ResultActions update(long id, int members, String name) throws Exception {
+        return mvc.perform(put("/api/masterdata/subjects/" + id).header(HttpHeaders.AUTHORIZATION, officer)
+                .contentType(MediaType.APPLICATION_JSON).content("""
+                {"type":"HOUSEHOLD","name":"%s","houseNo":"Số 12","street":"đường Mẫu","areaId":%d,"memberCount":%d}"""
+                        .formatted(name, kv07.getId(), members)));
     }
 
     private ResultActions create(String token, Long areaId, String extra) throws Exception {
