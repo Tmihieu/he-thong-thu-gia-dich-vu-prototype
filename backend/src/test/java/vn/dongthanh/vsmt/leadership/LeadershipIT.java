@@ -159,6 +159,10 @@ class LeadershipIT extends IntegrationTest {
         ledgerOf(fx.october.getId(), "DV01")
                 .andExpect(jsonPath("$[0].collected").value(50_000))
                 .andExpect(jsonPath("$[0].refunded").value(30_000));
+        // Khoản trả thêm field refunded để giao diện tính hạn mức hoàn.
+        mvc.perform(get("/api/billing/charges").param("periodId", fx.october.getId().toString())
+                        .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer)))
+                .andExpect(jsonPath("$.items[?(@.id == %d)].refunded".formatted(charge)).value(org.hamcrest.Matchers.contains(30_000)));
 
         approve(create(refund(charge, 50_000)));
         assertThat(chargeStatus(charge)).isEqualTo("UNPAID");

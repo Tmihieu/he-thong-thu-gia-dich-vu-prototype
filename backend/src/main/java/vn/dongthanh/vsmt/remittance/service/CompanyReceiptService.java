@@ -55,11 +55,11 @@ public class CompanyReceiptService {
             LocalDate receiptDate, String payerName, String documentRef, String note) {
     }
 
-    /** Phiếu kèm lũy kế đã nộp của công ty cho kỳ tính tới phiếu này (R30) và phải thu của kỳ. */
-    public record ReceiptView(CompanyReceipt receipt, long cumulativePaid, long periodDue) {
+    /** Phiếu kèm lũy kế đã nộp của công ty cho kỳ tính tới phiếu này (R30), phải thu và phải nộp xã của kỳ. */
+    public record ReceiptView(CompanyReceipt receipt, long cumulativePaid, long periodDue, long periodPayable) {
 
         public long remainingAfter() {
-            return periodDue - cumulativePaid;
+            return periodPayable - cumulativePaid;
         }
     }
 
@@ -111,14 +111,13 @@ public class CompanyReceiptService {
         Long scopedCompany = actor.role() == Role.COMPANY_MANAGER ? actor.companyId() : companyId;
         List<CompanyReceipt> all = receipts.search(periodId, scopedCompany);
         Map<String, Long> running = new HashMap<>();
-        Map<String, Long> dueCache = new HashMap<>();
+        Map<String, CompanyLedgerService.LedgerRow> rowCache = new HashMap<>();
         List<ReceiptView> views = new ArrayList<>();
         for (CompanyReceipt r : all) {
             String key = r.getCompany().getId() + ":" + r.getPeriod().getId();
             long cumulative = running.merge(key, r.getAmount(), Long::sum);
-            long due = dueCache.computeIfAbsent(key,
-                    k -> ledger.row(r.getCompany().getId(), r.getPeriod().getId()).due());
-            views.add(new ReceiptView(r, cumulative, due));
+            var row = rowCache.computeIfAbsent(key, k -> ledger.row(r.getCompany().getId(), r.getPeriod().getId()));
+            views.add(new ReceiptView(r, cumulative, row.due(), row.payable()));
         }
         return views;
     }

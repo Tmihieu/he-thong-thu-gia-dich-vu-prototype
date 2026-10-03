@@ -72,8 +72,11 @@ public class HouseholdReminderService {
             if (accounts.isEmpty()) {
                 continue;
             }
-            jdbc.update("insert into household_reminders (charge_id, stage) values (?, ?) on conflict do nothing",
-                    d.chargeId(), stage);
+            // Chạy song song (job 08:00 và xã bấm tay) thì chỉ giao dịch chèn được dòng mới gửi.
+            if (jdbc.update("insert into household_reminders (charge_id, stage) values (?, ?) on conflict do nothing",
+                    d.chargeId(), stage) != 1) {
+                continue;
+            }
             String money = NumberFormat.getIntegerInstance(Locale.of("vi", "VN")).format(d.remaining());
             String title = switch (stage) {
                 case "OPEN" -> "Kỳ thu " + d.periodCode() + " đã mở";

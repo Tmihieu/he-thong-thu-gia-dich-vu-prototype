@@ -82,6 +82,7 @@ public class CashService {
         Company company = companies.findById(actor.companyId())
                 .orElseThrow(() -> new NotFoundException("COMPANY_NOT_FOUND", "Không tìm thấy công ty."));
         String prefix = "BG-%02d%02d-".formatted(handoverDate.getMonthValue(), handoverDate.getYear() % 100);
+        handovers.lockCodePrefix(prefix); // khóa theo người đi thu không đủ: mã dùng chung toàn hệ thống
         String code = prefix + "%02d".formatted(handovers.maxCodeNumber(prefix) + 1);
         CashHandover saved = handovers.save(CashHandover.receive(code, collector, company, handoverDate, amount,
                 note == null || note.isBlank() ? null : note.trim(), actor.id()));

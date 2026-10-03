@@ -66,7 +66,7 @@ public class ApprovalService {
         actor.requireRole(Role.COMMUNE_OFFICER);
         if (cmd.type() == ApprovalType.EXEMPTION) {
             throw new BusinessRuleException("APPROVAL_TYPE_INVALID",
-                    "Miễn giảm lập bằng cách bật \"Miễn 100%\" trên hợp đồng.");
+                    "Miễn giảm lập bằng cách bật \"Miễn 100%\" trên đăng ký thu phí.");
         }
         String reason = requireText(cmd.reason());
         charges.lockById(cmd.chargeId());
@@ -103,7 +103,7 @@ public class ApprovalService {
         OffsetDateTime now = OffsetDateTime.now(clock);
         ApprovalRequest saved = requests.save(ApprovalRequest.forContract(nextCode(now), contract,
                 e.reason(), e.decisionNo(), e.actor().id(), now));
-        notifyLeaders(saved, "Miễn giảm hợp đồng " + contract.getContractNo() + " · " + contract.getSubject().getName());
+        notifyLeaders(saved, "Miễn giảm đăng ký " + contract.getContractNo() + " · " + contract.getSubject().getName());
         audit.record(e.actor(), "CREATE_APPROVAL", ENTITY, saved.getCode(), null, snapshot(saved));
     }
 
@@ -117,7 +117,7 @@ public class ApprovalService {
                 // Chỉ ghi nhận: cờ miễn đã được xã bật. Xã đã tắt thì không còn gì để ghi nhận.
                 if (!r.getContract().isExempt()) {
                     throw new BusinessRuleException("EXEMPTION_ALREADY_REMOVED",
-                            "Xã đã tắt miễn trên hợp đồng " + r.getContract().getContractNo() + "; từ chối để đóng đề nghị.");
+                            "Xã đã tắt miễn trên đăng ký " + r.getContract().getContractNo() + "; từ chối để đóng đề nghị.");
                 }
             }
             case WRITE_OFF -> {
@@ -179,7 +179,7 @@ public class ApprovalService {
         // FOR SHARE để khóa kỳ song song phải chờ (kỳ vừa khóa thì bỏ qua, số kỳ khóa giữ nguyên).
         for (Charge c : charges.findByContractInUnlockedPeriods(contract.getId(), ChargeStatus.EXEMPT, PeriodStatus.LOCKED)) {
             if (!PeriodStatus.LOCKED.name().equals(periods.lockStatusForShare(c.getPeriod().getId()))) {
-                c.revokeExemption();
+                c.revokeExemption(contract.getQuotaKg());
             }
         }
     }

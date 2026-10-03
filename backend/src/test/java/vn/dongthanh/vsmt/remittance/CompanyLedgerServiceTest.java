@@ -229,6 +229,15 @@ class CompanyLedgerServiceTest {
     }
 
     @Test
+    void previousDebtOnlyCountsOlderPeriods() {
+        // Kỳ 10 quá hạn còn nợ không được làm kỳ 09 (cũ hơn, đã nộp đủ) có nợ kỳ trước.
+        due(9L, 1L, 500_000, 5);
+        when(queries.dueByCompanyAndPeriodBefore(any())).thenReturn(List.of(new CompanyPeriodAmount(1L, 10L, 800_000)));
+
+        assertThat(service("2026-11-15").row(1L, 9L).previousDebt()).isZero();
+    }
+
+    @Test
     void reconciliationBranches() {
         due(10L, 1L, 800_000, 10);
         // Đang nộp: trong hạn, đã thu nhưng chưa nộp hết.
