@@ -236,7 +236,9 @@ export function CollectorListPage() {
                         <CheckCircleFilled /> {s.label}
                       </span>
                     )}
-                    <Button size="large" icon={<ClockCircleOutlined />} aria-label="Lịch sử" title="Lịch sử nộp các kỳ" onClick={() => setViewing(w)} />
+                    <Button size="large" icon={<ClockCircleOutlined />} aria-label="Lịch sử" title="Lịch sử nộp các kỳ" onClick={() => setViewing(w)}>
+                      Lịch sử
+                    </Button>
                     <Button
                       size="large"
                       className="clm-warn"
@@ -244,7 +246,9 @@ export function CollectorListPage() {
                       aria-label="Báo sai thông tin"
                       title="Báo sai thông tin về xã"
                       onClick={() => setReporting(w)}
-                    />
+                    >
+                      Báo sai
+                    </Button>
                   </div>
                   <details className="clm-details">
                     <summary>Chi tiết</summary>

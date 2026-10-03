@@ -13,20 +13,27 @@ const STATS: Record<Key, [string, keyof typeof semantic]> = {
   remaining: ['Còn phải nộp', 'warning'],
   previousDebt: ['Nợ kỳ trước', 'danger'],
 };
-const DEFAULT_KEYS: Key[] = ['due', 'retained', 'payable', 'received', 'remaining'];
+const DEFAULT_KEYS: Key[] = ['retained', 'payable', 'received', 'remaining'];
 
 /** Hàng thẻ tổng của các dòng sổ công ty–kỳ (cộng thẳng số backend trả; công ty chỉ nhận dòng của mình). */
 export function LedgerStats({ rows, show = DEFAULT_KEYS }: { rows: LedgerRow[]; show?: Key[] }) {
   return (
     <StatGrid>
-      {show.map((key) => (
-        <StatCard
-          key={key}
-          label={STATS[key][0]}
-          tone={key === 'previousDebt' && rows.every((r) => r.previousDebt === 0) ? 'neutral' : STATS[key][1]}
-          value={<MoneyText value={rows.reduce((t, r) => t + r[key], 0)} />}
-        />
-      ))}
+      {show.map((key) => {
+        const total = rows.reduce((t, r) => t + r[key], 0);
+        // QĐ-L12: còn phải nộp âm = nộp thừa.
+        if (key === 'remaining' && total < 0) {
+          return <StatCard key={key} label="Nộp thừa" tone="warning" value={<MoneyText value={-total} />} />;
+        }
+        return (
+          <StatCard
+            key={key}
+            label={STATS[key][0]}
+            tone={key === 'previousDebt' && total === 0 ? 'neutral' : STATS[key][1]}
+            value={<MoneyText value={total} />}
+          />
+        );
+      })}
     </StatGrid>
   );
 }

@@ -55,7 +55,7 @@ describe('Tiến độ thu', () => {
     expect(await screen.findByText('Nộp một phần')).toBeInTheDocument();
     expect(screen.getByText('Quá hạn nộp')).toBeInTheDocument();
     expect(screen.getByText('1 tổ chưa có công ty thu: KV24')).toBeInTheDocument();
-    expect(screen.getAllByText('150.000 đ', norm)).toHaveLength(2);
+    expect(screen.getAllByText('150.000 đ', norm)).toHaveLength(1);
     await waitFor(() =>
       expect(fetchFn.mock.calls.some(([url]) => String(url) === '/api/remittance/ledger?periodId=10')).toBe(true),
     );

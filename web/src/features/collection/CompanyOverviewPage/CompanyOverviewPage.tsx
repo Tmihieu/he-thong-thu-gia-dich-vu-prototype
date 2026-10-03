@@ -13,6 +13,7 @@ import { useTabParam } from '../../../shared/useTabParam';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { remittanceKeys, useCompanyLedger } from '../../remittance/api';
 import { LedgerStats } from '../../remittance/LedgerStats';
+import { cappedRate } from '../../remittance/rateBand';
 import { PROGRESS_TONES } from '../../remittance/tones';
 import { type CashHeld, collectionKeys, type Handover, useCashHeld, useCollectorAssignments, useCompanyWork, useHandovers } from '../api';
 import { CompanyHouseholdsPage } from '../CompanyHouseholdsPage/CompanyHouseholdsPage';
@@ -152,9 +153,7 @@ export function CompanyOverviewPage() {
             onOpen={showPaidHouseholds}
             value={`${households.paid}/${households.total} hộ`}
             note={
-              <>
-                {households.areas} tổ · phải thu <MoneyText value={row?.due ?? 0} />
-              </>
+`${households.areas} tổ`
             }
           />
         </Col>
@@ -178,7 +177,7 @@ export function CompanyOverviewPage() {
           <RingCard
             loading={ledger.isLoading}
             color={token.colorPrimaryActive}
-            percent={row?.remittedRate ?? 0}
+            percent={cappedRate(row?.remittedRate ?? 0)}
             hasData={!!row}
             label="Số tiền đã nộp về xã"
             onOpen={() => setTab('receipts')}
@@ -186,13 +185,8 @@ export function CompanyOverviewPage() {
             note={
               row ? (
                 <Space size={4} wrap>
-                  <span>{row.receiptCount} phiếu thu · còn phải nộp <MoneyText value={row.remaining} /></span>
+                  <span>{row.receiptCount} phiếu thu</span>
                   <StatusTag tone={PROGRESS_TONES[row.progress]}>{PROGRESS_LABELS[row.progress]}</StatusTag>
-                  {row.previousDebt > 0 && (
-                    <Typography.Text type="danger">
-                      Nợ kỳ trước <MoneyText value={row.previousDebt} />
-                    </Typography.Text>
-                  )}
                 </Space>
               ) : (
                 'Kỳ này công ty chưa có khoản phải thu'
@@ -202,7 +196,7 @@ export function CompanyOverviewPage() {
         </Col>
       </Row>
       <div style={{ marginTop: 16 }}>
-        <LedgerStats rows={ledger.data ?? []} show={['due', 'retained', 'payable', 'received', 'remaining', 'previousDebt']} />
+        <LedgerStats rows={ledger.data ?? []} show={['retained', 'payable', 'remaining', 'previousDebt']} />
       </div>
       <Card size="small" className="section-card" title="Theo tài khoản người đi thu">
         <Table<CollectorRow>
@@ -268,11 +262,11 @@ export function CompanyOverviewPage() {
               title: 'Trạng thái',
               render: (_, c) =>
                 c.held <= 0 ? (
-                  <StatusTag tone="success">Đã nộp đủ</StatusTag>
-                ) : c.handedOver > 0 ? (
-                  <StatusTag tone="warning">Còn giữ tiền mặt</StatusTag>
+                  <StatusTag tone="success">Đã bàn giao đủ</StatusTag>
                 ) : (
-                  <StatusTag tone="danger">Chưa nộp về công ty</StatusTag>
+                  <StatusTag tone="warning">
+                    Đang giữ <MoneyText value={c.held} />
+                  </StatusTag>
                 ),
             },
             {

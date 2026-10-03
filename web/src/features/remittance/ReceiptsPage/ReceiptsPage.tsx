@@ -15,6 +15,7 @@ import { type LedgerRow, type Receipt, useCompanyLedger, useReceipts } from '../
 import { LedgerBreakdown } from '../LedgerBreakdown';
 import { LedgerStats } from '../LedgerStats';
 import { IssueReceiptForm, type IssueReceiptRequest } from './IssueReceiptForm';
+import { RemainingText } from '../RemainingText';
 import { PROGRESS_TONES } from '../tones';
 import { ReceiptPrint } from './ReceiptPrint';
 
@@ -115,7 +116,7 @@ export function ReceiptsPage() {
               </Space>
             ),
           },
-          { title: 'Còn phải nộp', dataIndex: 'remaining', align: 'right', render: (v: number) => <MoneyText value={v} strong /> },
+          { title: 'Còn phải nộp', dataIndex: 'remaining', align: 'right', render: (v: number) => <RemainingText value={v} strong /> },
           {
             title: 'Tiến độ',
             dataIndex: 'progress',
