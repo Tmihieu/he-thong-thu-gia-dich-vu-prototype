@@ -211,8 +211,11 @@ public class CompanyLedgerService {
         remitted.receivedByCompanyAndPeriod()
                 .forEach(r -> receivedByKey.merge(r.companyId() + ":" + r.periodId(), r.amount(), Long::sum));
         Map<Long, Long> debt = new HashMap<>();
+        LocalDate currentStart = period(currentPeriodId).getStartDate();
         for (CompanyPeriodAmount d : queries.dueByCompanyAndPeriodBefore(today)) {
-            if (d.periodId() == currentPeriodId) {
+            // Nợ kỳ trước chỉ gồm kỳ CŨ hơn kỳ đang xem (kỳ mới hơn quá hạn không làm kỳ cũ thành "Lệch").
+            boolean older = periods.findById(d.periodId()).map(p -> p.getStartDate().isBefore(currentStart)).orElse(false);
+            if (!older) {
                 continue;
             }
             long paid = receivedByKey.getOrDefault(d.companyId() + ":" + d.periodId(), 0L);
