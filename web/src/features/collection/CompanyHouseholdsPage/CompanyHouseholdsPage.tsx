@@ -160,8 +160,8 @@ export function CompanyHouseholdsPage({
             title: '',
             render: (_, w) =>
               w.charge.status === 'UNPAID' ? (
-                <Button size="small" disabled={locked} title={locked ? 'Kỳ đã khóa' : undefined} onClick={() => setEditing(w)} aria-label={`Cập nhật ${w.charge.subjectName}`}>
-                  Cập nhật
+                <Button size="small" disabled={locked} title={locked ? 'Kỳ đã khóa' : undefined} onClick={() => setEditing(w)} aria-label={`Ghi thu ${w.charge.subjectName}`}>
+                  Ghi thu
                 </Button>
               ) : null,
           },

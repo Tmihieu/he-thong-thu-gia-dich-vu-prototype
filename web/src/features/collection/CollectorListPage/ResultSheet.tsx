@@ -90,7 +90,7 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
       height="auto"
       open={item !== null}
       onClose={onClose}
-      title={initialMethod ? TILES.find((t) => t.value === initialMethod)!.label : 'Cập nhật kết quả'}
+      title={initialMethod ? TILES.find((t) => t.value === initialMethod)!.label : 'Ghi nhận đã thu'}
       className="clm-sheet"
       destroyOnHidden
       styles={{ body: { paddingBottom: 24 } }}
@@ -147,7 +147,7 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
             Hủy
           </Button>
           <Button size="large" type="primary" htmlType="submit" loading={submit.isPending}>
-            {initialMethod ? `Xác nhận đã thu ${formatMoney(remaining)}` : 'Lưu kết quả'}
+            {initialMethod ? `Xác nhận đã thu ${formatMoney(remaining)}` : 'Xác nhận đã thu'}
           </Button>
         </div>
       </Form>
