@@ -224,13 +224,14 @@ class DemoSeedIT extends IntegrationTest {
         assertThat(ledger.collectedByCompany(period)).containsExactly(new CompanyAmount(dv01, 609_000, 8));
         long received = demoDb.queryForObject(
                 "select sum(amount) from company_receipts where company_id = ? and period_id = ?", Long.class, dv01, period);
-        assertThat(received).isEqualTo(400_000L);
+        // QĐ-L16: V34_1 hạ phiếu mẫu về 200.000 đ để còn phải nộp dương sau phần cầm lại.
+        assertThat(received).isEqualTo(200_000L);
         // Như CompanyLedgerService.overdueDebtsOf (nhắc nộp, R16): kỳ có hạn trước hôm nay, còn nợ = phải thu − đã nộp.
         // Đúng cả lúc làm seed lẫn ngày demo.
         for (LocalDate today : List.of(LocalDate.of(2026, 9, 28), LocalDate.of(2026, 10, 21))) {
             assertThat(ledger.dueByCompanyAndPeriodBefore(today))
                     .map(d -> new CompanyPeriodAmount(d.companyId(), d.periodId(), d.amount() - received))
-                    .containsExactly(new CompanyPeriodAmount(dv01, period, 919_000));
+                    .containsExactly(new CompanyPeriodAmount(dv01, period, 1_119_000));
         }
 
         // Khoản Đã thu đúng khi Σ thanh toán = số tiền, không thu vượt (G4); hộ kịch bản đã đóng kỳ cũ.
