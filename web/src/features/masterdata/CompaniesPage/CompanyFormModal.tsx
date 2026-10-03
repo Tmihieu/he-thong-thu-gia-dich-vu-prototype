@@ -1,4 +1,4 @@
-import { Alert, DatePicker, Form, Input, Modal, Select } from 'antd';
+import { Alert, DatePicker, Form, Input, InputNumber, Modal, Select } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 
 import { COMPANY_TYPE_LABELS } from '../../../shared/labels';
@@ -38,6 +38,7 @@ export function CompanyFormModal({ company, open, submitting, error, onSubmit, o
       communeContractNo: optional(v.communeContractNo),
       bankAccount: optional(v.bankAccount),
       bankName: optional(v.bankName),
+      retainedPercent: v.retainedPercent ?? undefined,
     });
   }
 
@@ -127,6 +128,13 @@ export function CompanyFormModal({ company, open, submitting, error, onSubmit, o
         </Form.Item>
         <Form.Item label="Ngân hàng" name="bankName">
           <Input maxLength={100} />
+        </Form.Item>
+        <Form.Item
+          label="Tỷ lệ công ty giữ lại (%)"
+          name="retainedPercent"
+          extra="Phần công ty giữ lại trên số phải thu (thu gom, vận chuyển); số còn lại phải nộp về xã. Để trống nếu chưa chốt."
+        >
+          <InputNumber<number> aria-label="Tỷ lệ công ty giữ lại" min={0} max={100} step={0.5} precision={2} style={{ width: '100%' }} />
         </Form.Item>
       </Form>
     </Modal>

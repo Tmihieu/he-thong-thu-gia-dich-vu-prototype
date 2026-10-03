@@ -15,7 +15,7 @@ const existing: Subject = {
   representativeName: null, taxCode: null, note: null,
   currentContract: {
     id: 62, contractNo: 'ĐK-DTH-0062', tariffGroup: 'HH_3_PLUS', validFrom: '2026-01-01', validTo: null,
-    exempt: true, exemptReason: 'Hộ nghèo', exemptDecisionNo: null, note: null,
+    exempt: true, exemptReason: 'Hộ nghèo', exemptDecisionNo: null, note: null, quotaKg: null,
   },
   contracts: [],
 };
@@ -92,15 +92,48 @@ describe('SubjectProfileForm', () => {
     expect(onSubmit.mock.calls[0]![0].contract).toBeNull();
   });
 
-  it('nhóm giá không khớp số thành viên thì báo lỗi, không gửi', async () => {
+  it('đổi số thành viên thì nhóm giá tự đổi theo; chọn tay nhóm không khớp thì báo lỗi, không gửi', async () => {
+    const onSubmit = vi.fn();
+    render(<SubjectProfileForm subject={existing} areas={areas} onSubmit={onSubmit} />);
+    await userEvent.clear(screen.getByLabelText('Số thành viên'));
+    await userEvent.type(screen.getByLabelText('Số thành viên'), '2');
+    await waitFor(() => expect(screen.getByTitle('HGĐ ≤ 2 người')).toBeInTheDocument());
+
+    await pickOption(screen.getByRole('combobox', { name: 'Nhóm giá' }), 'HGĐ ≥ 3 người');
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu hồ sơ' }));
+    expect(await screen.findByText('Hộ có 2 thành viên phải chọn nhóm "HGĐ ≤ 2 người"')).toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('đổi số thành viên rồi lưu: gửi nhóm giá đã tự đổi', async () => {
     const onSubmit = vi.fn();
     render(<SubjectProfileForm subject={existing} areas={areas} onSubmit={onSubmit} />);
     await userEvent.clear(screen.getByLabelText('Số thành viên'));
     await userEvent.type(screen.getByLabelText('Số thành viên'), '2');
     await userEvent.click(screen.getByRole('button', { name: 'Lưu hồ sơ' }));
 
-    expect(await screen.findByText('Hộ có 2 thành viên phải chọn nhóm "HGĐ ≤ 2 người"')).toBeInTheDocument();
-    expect(onSubmit).not.toHaveBeenCalled();
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0]![0].contract).toMatchObject({ tariffGroup: 'HH_UP_TO_2' });
+  });
+
+  it('nhóm nguồn thải lớn có ô định mức kg và gửi quotaKg; nhóm khác không gửi', async () => {
+    const onSubmit = vi.fn();
+    const enterprise: Subject = {
+      ...existing, subjectType: 'ENTERPRISE', memberCount: null, representativeName: 'Giám Đốc Mẫu',
+      currentContract: { ...existing.currentContract!, tariffGroup: 'BY_VOLUME', exempt: false, exemptReason: null, quotaKg: 600 },
+    };
+    render(<SubjectProfileForm subject={enterprise} areas={areas} onSubmit={onSubmit} />);
+
+    expect(screen.getByLabelText('Định mức kg/tháng')).toHaveValue('600');
+    fireEvent.change(screen.getByLabelText('Định mức kg/tháng'), { target: { value: '750' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu hồ sơ' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0]![0].contract).toMatchObject({ tariffGroup: 'BY_VOLUME', quotaKg: 750 });
+
+    // Hộ gia đình không có ô định mức.
+    onSubmit.mockClear();
+    render(<SubjectProfileForm subject={existing} areas={areas} onSubmit={onSubmit} />);
+    expect(screen.getAllByLabelText('Định mức kg/tháng')).toHaveLength(1);
   });
 
   it('sửa hồ sơ có hợp đồng miễn: hiển thị miễn, giữ nguyên cờ miễn khi lưu', async () => {

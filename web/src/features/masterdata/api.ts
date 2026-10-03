@@ -115,6 +115,17 @@ export function useActiveAssignments(date: string) {
   });
 }
 
+export type MemberChange = components['schemas']['MemberChangeDto'];
+
+/** Lịch sử đổi số nhân khẩu của một hộ, mới nhất trước. */
+export function useMemberHistory(subjectId: number | null) {
+  return useQuery({
+    queryKey: [...masterdataKeys.subjects, 'member-history', subjectId],
+    queryFn: () => api.get<MemberChange[]>(`/api/masterdata/subjects/${subjectId}/member-history`),
+    enabled: subjectId !== null,
+  });
+}
+
 export function useAreaHistory(areaId: number | null) {
   return useQuery({
     queryKey: [...masterdataKeys.assignments, 'history', areaId],

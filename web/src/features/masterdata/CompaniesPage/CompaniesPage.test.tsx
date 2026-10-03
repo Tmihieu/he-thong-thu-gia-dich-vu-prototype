@@ -10,7 +10,7 @@ const officer = { id: 2, username: 'canbo_xa', fullName: 'Nguyễn Thị Mẫu',
 const company = (over: object) => ({
   id: 1, code: 'DV01', name: 'Công ty MTĐT Đông Thạnh', contactName: 'Trần Hoàng Phúc', contactPhone: '0900000001',
   status: 'ACTIVE', validFrom: '2026-01-01', validTo: null, orgType: null, taxCode: null, address: null, email: null,
-  communeContractNo: null, bankAccount: null, bankName: null, ...over,
+  communeContractNo: null, bankAccount: null, bankName: null, retainedPercent: null, ...over,
 });
 const companies = [company({}), company({ id: 2, code: 'DV02', name: 'HTX Môi trường An Phú', status: 'INACTIVE' })];
 const kv07 = {

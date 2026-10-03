@@ -115,7 +115,23 @@ export function ProgressPage() {
         }}
         columns={[
           { title: 'Công ty', render: (_, r) => `${r.companyCode} · ${r.companyName}` },
-          { title: 'Phải thu', dataIndex: 'due', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          {
+            title: 'Phải thu',
+            dataIndex: 'due',
+            align: 'right',
+            render: (v: number, r) => (
+              <>
+                <MoneyText value={v} />
+                {r.retained > 0 && (
+                  <div>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      phải nộp xã <MoneyText value={r.payable} />
+                    </Typography.Text>
+                  </div>
+                )}
+              </>
+            ),
+          },
           {
             title: 'Đã thu',
             dataIndex: 'collected',

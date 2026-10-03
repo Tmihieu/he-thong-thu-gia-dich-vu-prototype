@@ -17,6 +17,7 @@ import {
   useAreas,
   useCreateSubject,
   useEndSubject,
+  useMemberHistory,
   useSubjects,
   useUpdateContract,
   useUpdateSubject,
@@ -28,6 +29,29 @@ function errorMessage(err: unknown): string {
 }
 
 type Editing = { mode: 'create' } | { mode: 'edit'; subject: Subject } | null;
+
+/** Lịch sử đổi số nhân khẩu của hộ (đọc từ nhật ký thao tác). Chỉ hiện khi từng có thay đổi. */
+function MemberHistory({ subjectId }: { subjectId: number }) {
+  const history = useMemberHistory(subjectId);
+  const rows = history.data ?? [];
+  if (rows.length === 0) return null;
+  return (
+    <div style={{ marginTop: 24 }}>
+      <Typography.Title level={5}>Lịch sử số nhân khẩu</Typography.Title>
+      <Table
+        size="small"
+        rowKey={(r) => `${r.at}-${r.to}`}
+        pagination={false}
+        dataSource={rows}
+        columns={[
+          { title: 'Ngày', dataIndex: 'at', render: (v: string) => new Date(v).toLocaleDateString('vi-VN') },
+          { title: 'Người sửa', dataIndex: 'by' },
+          { title: 'Số người', render: (_, r) => (r.from == null ? `Tạo hồ sơ: ${r.to ?? '—'}` : `${r.from} → ${r.to ?? '—'}`) },
+        ]}
+      />
+    </div>
+  );
+}
 
 /** Hồ sơ hộ của cán bộ xã: lọc theo tổ/loại hộ/trạng thái, tìm theo mã/tên/SĐT, tạo, sửa, ngừng cung cấp dịch vụ. */
 export function SubjectsPage() {
@@ -191,6 +215,7 @@ export function SubjectsPage() {
             onCancel={() => setEditing(null)}
           />
         )}
+        {editing?.mode === 'edit' && <MemberHistory subjectId={editing.subject.id} />}
       </Drawer>
 
       <Modal

@@ -29,7 +29,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Sửa dự thảo biểu giá (quản trị); bản đã ban hành không sửa được */
+        /** Sửa biểu giá (quản trị); bản đã ban hành giữ nguyên ngày hiệu lực */
         put: operations["updateDraft"];
         post?: never;
         delete?: never;
@@ -49,6 +49,23 @@ export interface paths {
         get: operations["get"];
         /** Sửa thông tin đối tượng (cán bộ xã); hợp đồng sửa qua /contracts/{id} */
         put: operations["update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/districts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sửa địa bàn (quản trị) */
+        put: operations["updateDistrict"];
         post?: never;
         delete?: never;
         options?: never;
@@ -84,6 +101,23 @@ export interface paths {
         get: operations["company"];
         /** Sửa thông tin công ty (cán bộ xã, quản trị) */
         put: operations["updateCompany"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/areas/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sửa tên và trạng thái khu vực (quản trị) */
+        put: operations["updateArea"];
         post?: never;
         delete?: never;
         options?: never;
@@ -346,6 +380,23 @@ export interface paths {
         put?: never;
         /** Đánh dấu tất cả đã đọc */
         post: operations["readAll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/household-reminders/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Chạy ngay việc nhắc hộ dân nộp phí hôm nay (job tự chạy 08:00 mỗi ngày); không gửi trùng */
+        post: operations["run"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1181,6 +1232,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/masterdata/subjects/{id}/member-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lịch sử thay đổi số nhân khẩu của hộ, mới nhất trước */
+        get: operations["memberHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/masterdata/periods/{id}": {
         parameters: {
             query?: never;
@@ -1941,6 +2009,11 @@ export interface components {
             exemptReason?: string;
             exemptDecisionNo?: string;
             note?: string;
+            /**
+             * Format: int32
+             * @description Định mức kg/tháng (nhóm tính theo ký)
+             */
+            quotaKg?: number;
         };
         SubjectRequest: {
             /** @enum {string} */
@@ -1976,6 +2049,11 @@ export interface components {
             exemptReason: string | null;
             exemptDecisionNo: string | null;
             note: string | null;
+            /**
+             * Format: int32
+             * @description Định mức kg/tháng
+             */
+            quotaKg: number | null;
         };
         SubjectDto: {
             /** Format: int64 */
@@ -2006,6 +2084,22 @@ export interface components {
             currentContract: components["schemas"]["ContractDto"];
             contracts: components["schemas"]["ContractDto"][];
         };
+        DistrictRequest: {
+            name: string;
+            note?: string;
+            /** Format: int32 */
+            sortOrder?: number;
+        };
+        DistrictDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example DTH */
+            code: string;
+            name: string;
+            note: string | null;
+            /** Format: int32 */
+            sortOrder: number | null;
+        };
         CompanyRequest: {
             name: string;
             contactName: string;
@@ -2028,6 +2122,7 @@ export interface components {
             communeContractNo?: string;
             bankAccount?: string;
             bankName?: string;
+            retainedPercent?: number;
         };
         CompanyDto: {
             /** Format: int64 */
@@ -2051,6 +2146,31 @@ export interface components {
             communeContractNo: string | null;
             bankAccount: string | null;
             bankName: string | null;
+            /** @description % công ty giữ lại trên số phải thu; null = chưa cấu hình */
+            retainedPercent: number | null;
+        };
+        AreaRequest: {
+            name: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+        };
+        AreaDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example KV07 */
+            code: string;
+            name: string;
+            /** Format: int64 */
+            districtId: number;
+            /** @example DTH */
+            districtCode: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+            /**
+             * Format: int64
+             * @description Số đối tượng chưa chấm dứt
+             */
+            subjectCount: number;
         };
         SavedStateDto: {
             saved: boolean;
@@ -2334,6 +2454,10 @@ export interface components {
         UnreadCountDto: {
             /** Format: int64 */
             unreadCount: number;
+        };
+        RunResult: {
+            /** Format: int32 */
+            sent: number;
         };
         CreateTariffRequest: {
             /** @example BG-70-2027 */
@@ -3095,6 +3219,16 @@ export interface components {
             progress: "NO_COMPANY" | "PAID_IN_FULL" | "OVERDUE" | "PARTIAL" | "NOT_PAID";
             /** @enum {string} */
             reconciliation: "MATCHED" | "PENDING" | "MISMATCH";
+            /**
+             * Format: int64
+             * @description Phần công ty giữ lại theo tỷ lệ cấu hình
+             */
+            retained: number;
+            /**
+             * Format: int64
+             * @description Phải nộp xã = phải thu − điều chỉnh − phần giữ lại
+             */
+            payable: number;
         };
         AreaProgressDto: {
             /** Format: int64 */
@@ -3113,6 +3247,11 @@ export interface components {
             chargeCount: number;
             /** Format: int64 */
             paidCount: number;
+            /**
+             * Format: int64
+             * @description Số khoản miễn giảm 100%
+             */
+            exemptCount: number;
             /** Format: int64 */
             subjectCount: number;
             /** Format: double */
@@ -3166,6 +3305,18 @@ export interface components {
             /** Format: int32 */
             size: number;
         };
+        MemberChangeDto: {
+            /** Format: date-time */
+            at: string;
+            by: string;
+            /**
+             * Format: int32
+             * @description Số người trước đó; null khi tạo hồ sơ
+             */
+            from: number | null;
+            /** Format: int32 */
+            to: number | null;
+        };
         FeeTypeDto: {
             /** Format: int64 */
             id: number;
@@ -3177,34 +3328,6 @@ export interface components {
             /** Format: int64 */
             defaultPrice: number | null;
             active: boolean;
-        };
-        DistrictDto: {
-            /** Format: int64 */
-            id: number;
-            /** @example DTH */
-            code: string;
-            name: string;
-            note: string | null;
-            /** Format: int32 */
-            sortOrder: number | null;
-        };
-        AreaDto: {
-            /** Format: int64 */
-            id: number;
-            /** @example KV07 */
-            code: string;
-            name: string;
-            /** Format: int64 */
-            districtId: number;
-            /** @example DTH */
-            districtCode: string;
-            /** @enum {string} */
-            status: "ACTIVE" | "INACTIVE";
-            /**
-             * Format: int64
-             * @description Số đối tượng chưa chấm dứt
-             */
-            subjectCount: number;
         };
         CollectionScheduleDto: {
             /** Format: int64 */
@@ -3656,6 +3779,32 @@ export interface operations {
             };
         };
     };
+    updateDistrict: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DistrictRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DistrictDto"];
+                };
+            };
+        };
+    };
     updateContract: {
         parameters: {
             query?: never;
@@ -3726,6 +3875,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CompanyDto"];
+                };
+            };
+        };
+    };
+    updateArea: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AreaRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AreaDto"];
                 };
             };
         };
@@ -4203,6 +4378,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["UnreadCountDto"];
+                };
+            };
+        };
+    };
+    run: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RunResult"];
                 };
             };
         };
@@ -5648,6 +5843,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["UnreadCountDto"];
+                };
+            };
+        };
+    };
+    memberHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MemberChangeDto"][];
                 };
             };
         };

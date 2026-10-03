@@ -26,6 +26,7 @@ interface FormValues {
   tariffGroup?: TariffGroup;
   validFrom?: Dayjs | null;
   validTo?: Dayjs | null;
+  quotaKg?: number | null;
 }
 
 const DATE_FORMAT = 'DD/MM/YYYY';
@@ -60,6 +61,7 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
   const [form] = Form.useForm<FormValues>();
   const type = Form.useWatch('type', form) ?? subject?.subjectType ?? 'HOUSEHOLD';
   const hasContract = Form.useWatch('hasContract', form);
+  const tariffGroup = Form.useWatch('tariffGroup', form);
   const current = subject?.currentContract ?? null;
   const showContract = current !== null || hasContract;
 
@@ -79,6 +81,7 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
         tariffGroup: current?.tariffGroup,
         validFrom: current ? dayjs(current.validFrom) : undefined,
         validTo: current?.validTo ? dayjs(current.validTo) : undefined,
+        quotaKg: current?.quotaKg,
       }
     : { type: 'HOUSEHOLD', hasContract: true };
 
@@ -105,13 +108,28 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
             exempt: current?.exempt ?? false,
             exemptReason: current?.exemptReason ?? undefined,
             exemptDecisionNo: current?.exemptDecisionNo ?? undefined,
+            quotaKg: v.tariffGroup === 'BY_VOLUME' ? (v.quotaKg ?? undefined) : undefined,
           }
         : null;
     onSubmit({ subject: subjectReq, contract, contractId: current?.id ?? null });
   }
 
   return (
-    <Form<FormValues> form={form} layout="vertical" requiredMark={false} disabled={submitting} initialValues={initialValues} onFinish={finish}>
+    <Form<FormValues>
+      form={form}
+      layout="vertical"
+      requiredMark={false}
+      disabled={submitting}
+      initialValues={initialValues}
+      onFinish={finish}
+      onValuesChange={(changed, all) => {
+        // Đổi số người thì nhóm giá hộ gia đình đổi theo (máy chủ cũng tự đổi), khỏi bắt chọn tay.
+        const group = all.tariffGroup;
+        if ('memberCount' in changed && all.type === 'HOUSEHOLD' && all.memberCount && (group === 'HH_UP_TO_2' || group === 'HH_3_PLUS')) {
+          form.setFieldValue('tariffGroup', all.memberCount <= 2 ? 'HH_UP_TO_2' : 'HH_3_PLUS');
+        }
+      }}
+    >
       {error && <Alert type="error" showIcon message={error} role="alert" style={{ marginBottom: 16 }} />}
       <Typography.Title level={5}>Thông tin hộ</Typography.Title>
       {subject && (
@@ -220,6 +238,17 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
               />
             </Form.Item>
           </Col>
+          {tariffGroup === 'BY_VOLUME' && (
+            <Col xs={24}>
+              <Form.Item
+                label="Định mức (kg/tháng)"
+                name="quotaKg"
+                extra="Cân tháng đầu để lấy định mức; tiền mỗi tháng = đơn giá đ/kg × định mức. Chưa nhập thì chưa lập được khoản."
+              >
+                <InputNumber<number> aria-label="Định mức kg/tháng" min={1} precision={0} addonAfter="kg" style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+          )}
           <Col xs={12} md={8}>
             <Form.Item label="Hiệu lực từ" name="validFrom" rules={[{ required: true, message: 'Vui lòng chọn ngày bắt đầu' }]}>
               <DatePicker format={DATE_FORMAT} placeholder="dd/mm/yyyy" style={{ width: '100%' }} />
