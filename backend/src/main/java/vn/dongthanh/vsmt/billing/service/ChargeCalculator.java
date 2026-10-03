@@ -29,6 +29,7 @@ public class ChargeCalculator {
         long unitPrice;
         int months;
         long quotaKg = 1;
+        Long snapshotKg = null;
         if (feeType.getPricingMode() == PricingMode.TARIFF) {
             group = contract.getTariffGroup();
             TariffGroup g = group;
@@ -43,7 +44,9 @@ public class ChargeCalculator {
                 if (contract.getQuotaKg() == null && !contract.isExempt()) {
                     throw new BusinessRuleException("QUOTA_KG_REQUIRED", "Đăng ký thu phí nhóm tính theo ký chưa có định mức kg/tháng.");
                 }
-                quotaKg = contract.getQuotaKg() == null ? 1 : contract.getQuotaKg(); // chỉ null khi miễn 100% (amount = 0)
+                // quota null chỉ khi miễn 100% (amount = 0)
+                snapshotKg = contract.getQuotaKg() == null ? null : contract.getQuotaKg().longValue();
+                quotaKg = snapshotKg == null ? 1 : snapshotKg;
             }
         } else {
             if (enteredPrice != null && enteredPrice <= 0) {
@@ -54,6 +57,6 @@ public class ChargeCalculator {
         }
         boolean exempt = contract.isExempt();
         long amount = exempt ? 0L : Math.multiplyExact(Math.multiplyExact(unitPrice, quotaKg), (long) months);
-        return new ChargeAmount(group, unitPrice, months, amount, exempt);
+        return new ChargeAmount(group, unitPrice, months, amount, exempt, snapshotKg);
     }
 }

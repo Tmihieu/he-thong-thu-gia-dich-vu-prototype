@@ -21,6 +21,7 @@ import vn.dongthanh.vsmt.masterdata.domain.FeeType;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceContract;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubject;
 import vn.dongthanh.vsmt.masterdata.domain.TariffGroup;
+import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 import vn.dongthanh.vsmt.platform.common.BaseEntity;
 
 /**
@@ -74,6 +75,10 @@ public class Charge extends BaseEntity {
     @Column(nullable = false, updatable = false)
     private int months;
 
+    /** Định mức kg/tháng chụp lúc phát hành (nhóm theo ký); null nếu không áp dụng. Cần để tính lại tiền khi bỏ miễn giảm. */
+    @Column(updatable = false)
+    private Long quotaKg;
+
     /** Chỉ đổi khi lãnh đạo từ chối miễn giảm (khoản Miễn giảm về Chưa thu, O8). */
     @Column(nullable = false)
     private long amount;
@@ -112,6 +117,7 @@ public class Charge extends BaseEntity {
         c.tariffGroup = amount.tariffGroup();
         c.unitPrice = amount.unitPrice();
         c.months = amount.months();
+        c.quotaKg = amount.quotaKg();
         c.amount = amount.amount();
         c.coverageFrom = request.getPeriod().getStartDate();
         c.coverageTo = request.getPeriod().getEndDate();
@@ -148,12 +154,22 @@ public class Charge extends BaseEntity {
     }
 
     /** Lãnh đạo từ chối miễn giảm (O8): khoản Miễn giảm về Chưa thu, số tiền tính lại theo đơn giá đã chụp. */
-    public void revokeExemption() {
+    public void revokeExemption(Number contractQuotaKg) {
         if (status != ChargeStatus.EXEMPT) {
             throw new IllegalStateException("Khoản " + code + " không ở trạng thái miễn giảm");
         }
+        long kg = 1;
+        if (tariffGroup == TariffGroup.BY_VOLUME) {
+            // Nhóm theo ký: đơn giá là đ/kg nên phải nhân định mức (đã chụp, hoặc định mức hiện tại của đăng ký nếu hộ miễn chưa có).
+            Number quota = quotaKg != null ? quotaKg : contractQuotaKg;
+            if (quota == null) {
+                throw new BusinessRuleException("QUOTA_KG_REQUIRED",
+                        "Đăng ký thu phí nhóm tính theo ký chưa có định mức kg/tháng; nhập định mức trước khi từ chối miễn giảm.");
+            }
+            kg = quota.longValue();
+        }
         status = ChargeStatus.UNPAID;
-        amount = Math.multiplyExact(unitPrice, (long) months);
+        amount = Math.multiplyExact(Math.multiplyExact(unitPrice, kg), (long) months);
     }
 
     /** Quá hạn: chưa thu và đã qua hạn đóng (không lưu, tính khi đọc). */

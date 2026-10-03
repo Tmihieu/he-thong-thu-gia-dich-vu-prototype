@@ -179,7 +179,7 @@ public class ApprovalService {
         // FOR SHARE để khóa kỳ song song phải chờ (kỳ vừa khóa thì bỏ qua, số kỳ khóa giữ nguyên).
         for (Charge c : charges.findByContractInUnlockedPeriods(contract.getId(), ChargeStatus.EXEMPT, PeriodStatus.LOCKED)) {
             if (!PeriodStatus.LOCKED.name().equals(periods.lockStatusForShare(c.getPeriod().getId()))) {
-                c.revokeExemption();
+                c.revokeExemption(contract.getQuotaKg());
             }
         }
     }
