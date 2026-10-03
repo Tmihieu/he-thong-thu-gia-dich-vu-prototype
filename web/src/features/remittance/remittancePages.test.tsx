@@ -202,8 +202,8 @@ describe('Phiếu thu công ty', () => {
     );
     expect(await screen.findByText('Bốn trăm nghìn đồng')).toBeInTheDocument();
     expect(screen.getByText('PHIẾU THU')).toBeInTheDocument();
-    expect(screen.getByText('1.400.000 đ', norm)).toBeInTheDocument();
     const print = screen.getByText('PHIẾU THU').closest('.ant-modal-content') as HTMLElement;
+    expect(within(print).getByText('1.400.000 đ', norm)).toBeInTheDocument();
     expect(within(print).getAllByRole('button').map((b) => b.textContent)).toContain('In');
   });
 });

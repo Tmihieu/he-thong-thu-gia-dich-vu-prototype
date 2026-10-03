@@ -11,7 +11,8 @@ import {
 } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
-import { type Receipt, type ReceiptIssue, useReceiptIssues, useReceipts } from '../api';
+import { type Receipt, type ReceiptIssue, useCompanyLedger, useReceiptIssues, useReceipts } from '../api';
+import { LedgerStats } from '../LedgerStats';
 import { ReportIssueModal } from './ReportIssueModal';
 
 /**
@@ -22,9 +23,10 @@ export function CompanyReceiptsPage() {
   const [periodId, setPeriodId] = useState<number>();
   const [reporting, setReporting] = useState<Receipt | null>(null);
   const receipts = useReceipts(periodId);
+  const ledger = useCompanyLedger(periodId);
   const issues = useReceiptIssues();
   const pending = new Set((issues.data ?? []).filter((i) => i.status === 'PENDING').map((i) => i.receiptId));
-  const error = receipts.error ?? issues.error;
+  const error = receipts.error ?? issues.error ?? ledger.error;
 
   return (
     <>
@@ -34,6 +36,7 @@ export function CompanyReceiptsPage() {
       {error && (
         <Alert type="error" showIcon message={error instanceof ApiError ? error.message : 'Không tải được phiếu thu'} />
       )}
+      <LedgerStats rows={ledger.data ?? []} loading={ledger.isLoading} />
       <Table<Receipt>
         rowKey="id"
         loading={receipts.isLoading}

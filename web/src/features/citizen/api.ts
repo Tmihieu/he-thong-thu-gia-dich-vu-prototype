@@ -9,7 +9,7 @@ export type BulkyStatus = BulkyRequest['status'];
 const bulkyKeys = { all: ['bulky-requests'] as const };
 
 export const BULKY_STATUS_LABELS: Record<BulkyStatus, string> = {
-  PENDING: 'Chờ xác nhận',
+  PENDING: 'Chờ công ty báo phí',
   QUOTED: 'Đã báo phí',
   COLLECTED: 'Đã thu gom',
   CANCELLED: 'Đã hủy',
