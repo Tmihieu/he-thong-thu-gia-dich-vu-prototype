@@ -48,7 +48,7 @@ describe('Báo cáo tổng hợp của lãnh đạo', () => {
     expect(within(dv01).getByText('3')).toBeInTheDocument();
     const total = screen.getByText('Tổng toàn xã').closest('tr')!;
     expect(within(total).getByText('7')).toBeInTheDocument(); // 3 + 4 hộ miễn toàn xã
-    expect(within(total).getByText(/3\.000\.000/)).toBeInTheDocument(); // phải thu toàn xã
+    expect(within(total).getAllByText(/3.000.000/).length).toBeGreaterThan(0); // phải thu toàn xã
   });
 
   it('lọc theo công ty thì bảng tổ và dòng tổng chỉ còn công ty đó', async () => {

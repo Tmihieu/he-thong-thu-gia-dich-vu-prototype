@@ -102,7 +102,7 @@ describe('Cấu hình · soạn và ban hành biểu giá', () => {
     rates: groups.map((g) => ({ tariffGroup: g, collectionFee: 30000, transportFee: 10000, monthlyTotal: 40000, unitLabel: 'đ/hộ/tháng' })),
   };
 
-  it('sửa dự thảo gửi đủ các nhóm giá; bản đã ban hành có nút Sửa', async () => {
+  it('sửa dự thảo gửi đủ các nhóm giá; bản đã ban hành không có nút Sửa (QĐ-L7)', async () => {
     const fetchFn = mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, admin),
       'GET /api/masterdata/periods': () => jsonResponse(200, []),
@@ -113,7 +113,7 @@ describe('Cấu hình · soạn và ban hành biểu giá', () => {
 
     await userEvent.click(await screen.findByRole('tab', { name: 'Biểu giá' }));
     expect(await screen.findByText('BG-70-2027')).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Sửa' })).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: 'Sửa' })).toHaveLength(1);
 
     await userEvent.click(screen.getAllByRole('button', { name: 'Sửa' })[0]!);
     const dialog = await screen.findByRole('dialog');
@@ -150,30 +150,15 @@ describe('Cấu hình · soạn và ban hành biểu giá', () => {
     expect(fetchFn.mock.calls.some(([url]) => String(url) === '/api/masterdata/tariffs/2/issue')).toBe(true);
   });
 
-  it('sửa biểu giá đã ban hành giữ hiệu lực và lưu đơn giá mới', async () => {
-    let published = { ...draft, status: 'ACTIVE', issuedDate: '2026-10-01' };
-    const fetchFn = mockApi({
+  it('biểu giá đã ban hành không có nút Sửa đơn giá (QĐ-L7)', async () => {
+    mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, admin),
       'GET /api/masterdata/periods': () => jsonResponse(200, []),
-      'GET /api/masterdata/tariffs': () => jsonResponse(200, [published]),
-      'PUT /api/masterdata/tariffs/2': (_, init) => {
-        published = { ...published, ...JSON.parse(String(init.body)) };
-        return jsonResponse(200, published);
-      },
+      'GET /api/masterdata/tariffs': () => jsonResponse(200, [{ ...draft, status: 'ACTIVE', issuedDate: '2026-10-01' }]),
     });
     renderApp('/admin/config');
     await userEvent.click(await screen.findByRole('tab', { name: 'Biểu giá' }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }));
-    const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByLabelText('Hiệu lực từ')).toBeDisabled();
-    expect(within(dialog).getByLabelText('Hiệu lực đến')).toBeDisabled();
-    expect(screen.queryByRole('button', { name: 'Ban hành' })).not.toBeInTheDocument();
-    fireEvent.change(within(dialog).getByLabelText('Thu gom HGĐ ≤ 2 người'), { target: { value: '45000' } });
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu thay đổi' }));
-    await waitFor(() => expect(fetchFn.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(true));
-    const put = fetchFn.mock.calls.find(([, init]) => init?.method === 'PUT')!;
-    expect(JSON.parse(String(put[1]!.body))).toMatchObject({ validFrom: '2027-01-01', rates: [
-      { tariffGroup: 'HH_UP_TO_2', collectionFee: 45000 }, {}, {}, {}, {}, {},
-    ] });
+    expect(await screen.findByText('BG-70-2027')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Sửa' })).not.toBeInTheDocument();
   });
 });

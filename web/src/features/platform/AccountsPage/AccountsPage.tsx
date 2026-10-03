@@ -1,7 +1,8 @@
-import { App, Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tabs, Tag, Typography } from 'antd';
+import { App, Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tabs, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 
-import { ApiError } from '../../../api/client';
+import { errorTextOrNull } from '../../../shared/errorText';
+import { StatusTag } from '../../../shared/StatusTag';
 import { PageHeader } from '../../../shared/PageHeader';
 import { useAuth } from '../../../app/auth/authContext';
 import type { Role } from '../../../app/auth/authContext';
@@ -19,11 +20,6 @@ import {
 } from '../api';
 import { AccountForm } from './AccountForm';
 import { RolesTab } from './RolesTab';
-
-function errorMessage(err: unknown): string | null {
-  if (!err) return null;
-  return err instanceof ApiError ? err.message : 'Thao tác không thành công. Vui lòng thử lại.';
-}
 
 /** Tài khoản & phân quyền (T51, quản trị): tạo, sửa vai trò/công ty, khóa/mở khóa, đặt lại mật khẩu; ma trận vai trò & phạm vi. */
 export function AccountsPage() {
@@ -94,12 +90,14 @@ export function AccountsPage() {
             <Table<Account>
               rowKey="id"
               loading={accounts.isLoading}
+              scroll={{ x: 'max-content' }}
               dataSource={rows}
               pagination={{ pageSize: 20, hideOnSinglePage: true }}
-              locale={{ emptyText: errorMessage(accounts.error) ?? 'Không có tài khoản phù hợp' }}
+              locale={{ emptyText: errorTextOrNull(accounts.error) ?? 'Không có tài khoản phù hợp' }}
               columns={[
                 {
                   title: 'Người dùng',
+                  className: 'cell-nowrap',
                   render: (_, a) => (
                     <>
                       <div>{a.fullName}</div>
@@ -107,28 +105,30 @@ export function AccountsPage() {
                     </>
                   ),
                 },
-                { title: 'Vai trò', render: (_, a) => <Tag color="blue">{ROLE_LABELS[a.role]}</Tag> },
+                { title: 'Vai trò', className: 'cell-nowrap', render: (_, a) => <StatusTag color="blue">{ROLE_LABELS[a.role]}</StatusTag> },
                 {
                   title: 'Công ty / đơn vị',
                   render: (_, a) => (a.companyId ? companyName.get(a.companyId) : a.organization) ?? '—',
                 },
                 {
                   title: 'Đăng nhập gần nhất',
+                  className: 'cell-nowrap',
                   render: (_, a) => (a.lastLoginAt ? <DateText value={a.lastLoginAt} withTime /> : 'Chưa đăng nhập'),
                 },
                 {
                   title: 'Trạng thái',
-                  render: (_, a) => (a.status === 'ACTIVE' ? <Tag color="green">Hoạt động</Tag> : <Tag>Đã khóa</Tag>),
+                  render: (_, a) => (a.status === 'ACTIVE' ? <StatusTag color="green">Hoạt động</StatusTag> : <StatusTag>Đã khóa</StatusTag>),
                 },
                 {
                   title: '',
                   render: (_, a) => (
                     <Space size="small">
-                      <Button size="small" onClick={() => openForm(a)} aria-label={`Sửa ${a.username}`}>
+                      <Button size="small" type="link" onClick={() => openForm(a)} aria-label={`Sửa ${a.username}`}>
                         Sửa
                       </Button>
                       <Button
                         size="small"
+                        type="link"
                         onClick={() => {
                           reset.reset();
                           setResetting(a);
@@ -147,12 +147,12 @@ export function AccountsPage() {
                               { id: a.id, locked: a.status === 'ACTIVE' },
                               {
                                 onSuccess: (r) => message.success(`${r.status === 'LOCKED' ? 'Đã khóa' : 'Đã mở khóa'} ${r.username}`),
-                                onError: (e) => message.error(errorMessage(e)),
+                                onError: (e) => message.error(errorTextOrNull(e)),
                               },
                             )
                           }
                         >
-                          <Button size="small" danger={a.status === 'ACTIVE'}>
+                          <Button size="small" type="link" danger={a.status === 'ACTIVE'}>
                             {a.status === 'ACTIVE' ? 'Khóa' : 'Mở khóa'}
                           </Button>
                         </Popconfirm>
@@ -174,7 +174,7 @@ export function AccountsPage() {
         isSelf={!!editing && editing.id === me?.id}
         companies={companies.data ?? []}
         submitting={saving.isPending}
-        error={errorMessage(saving.error)}
+        error={errorTextOrNull(saving.error)}
         onCancel={() => setEditing(undefined)}
         onSubmit={({ username, password, ...body }) => {
           const onSuccess = (a: Account) => {
@@ -209,7 +209,7 @@ export function AccountsPage() {
         >
           {reset.error && (
             <Typography.Paragraph type="danger" role="alert">
-              {errorMessage(reset.error)}
+              {errorTextOrNull(reset.error)}
             </Typography.Paragraph>
           )}
           <Form.Item

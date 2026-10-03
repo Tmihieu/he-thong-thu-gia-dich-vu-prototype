@@ -1,13 +1,16 @@
 import { AlertOutlined, AuditOutlined, FallOutlined } from '@ant-design/icons';
-import { Card, Col, Empty, List, Progress, Row, Space, Table, Tag, Typography } from 'antd';
+import { Alert, Card, Col, Empty, List, Progress, Row, Space, Table, theme, Typography } from 'antd';
 import { type ReactNode, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 
 import { formatPercent } from '../../shared/format';
+import { StatusTag } from '../../shared/StatusTag';
 import { PageHeader } from '../../shared/PageHeader';
 import { ErrorBlock, LoadingBlock } from '../../shared/StateBlock';
 import { PROGRESS_COLORS, PROGRESS_LABELS } from '../../shared/labels';
-import { MoneyText } from '../../shared/MoneyText';
+import { MoneyText, RemainingText } from '../../shared/MoneyText';
+import { StatCard, StatGrid } from '../../shared/StatCard';
+import { cappedRate, rateBand } from '../remittance/rateBand';
 import { PeriodSelect } from '../masterdata/PeriodSelect';
 import { type AreaProgress, type LedgerRow, useAreaProgress, useCompanyLedger } from '../remittance/api';
 import { useApprovals } from './api';
@@ -15,25 +18,10 @@ import { useApprovals } from './api';
 const pct = (part: number, whole: number) => (whole > 0 ? Math.round((part * 1000) / whole) / 10 : 0);
 const pctText = formatPercent;
 
-function Kpi({ label, value, note, percent, color }: { label: string; value: number; note: ReactNode; percent?: number; color: string }) {
-  return (
-    <Card size="small" className="section-card" style={{ height: '100%' }}>
-      <Space align="center" size="middle">
-        {percent !== undefined && (
-          <Progress type="circle" size={72} percent={percent} strokeColor={color} format={(p) => pctText(p ?? 0)} />
-        )}
-        <div>
-          <Typography.Text type="secondary">{label}</Typography.Text>
-          <div style={{ fontSize: 20, fontWeight: 700, lineHeight: 1.3 }}>
-            <MoneyText value={value} />
-          </div>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {note}
-          </Typography.Text>
-        </div>
-      </Space>
-    </Card>
-  );
+/** Vòng tỷ lệ, màu theo dải BR-REM-11 (QĐ-L13). */
+function Ring({ percent }: { percent: number }) {
+  const { token } = theme.useToken();
+  return <Progress type="circle" size={64} percent={cappedRate(percent)} strokeColor={token[rateBand(percent)]} format={(p) => pctText(p ?? 0)} />;
 }
 
 /**
@@ -52,12 +40,13 @@ export function LeaderDashboardPage() {
       rows.reduce(
         (t, r) => ({
           due: t.due + r.due,
+          payable: t.payable + r.payable,
           collected: t.collected + r.collected,
           received: t.received + r.received,
-          remaining: t.remaining + Math.max(r.remaining, 0),
+          remaining: t.remaining + r.remaining,
           previousDebt: t.previousDebt + r.previousDebt,
         }),
-        { due: 0, collected: 0, received: 0, remaining: 0, previousDebt: 0 },
+        { due: 0, payable: 0, collected: 0, received: 0, remaining: 0, previousDebt: 0 },
       ),
     [rows],
   );
@@ -67,6 +56,7 @@ export function LeaderDashboardPage() {
     () => (areas.data ?? []).filter((a) => a.chargeCount > 0).sort((a, b) => a.collectionRate - b.collectionRate).slice(0, 8),
     [areas.data],
   );
+  const noAlarm = !ledger.isLoading && late.length === 0 && lowRate.length === 0 && (pending.data?.length ?? 0) === 0;
   const error = ledger.error ?? areas.error ?? pending.error;
   const retry = () => void Promise.all([ledger.refetch(), areas.refetch(), pending.refetch()]);
 
@@ -78,35 +68,42 @@ export function LeaderDashboardPage() {
       </Space>
       {error && <ErrorBlock error={error} onRetry={retry} />}
       {ledger.isLoading ? <LoadingBlock rows={3} /> : (
-      <Row gutter={[16, 16]}>
-        <Col xs={24} md={12} xl={6}>
-          <Kpi label="Phải thu" value={total.due} note={`${rows.length} công ty`} color="#0b3a67" />
-        </Col>
-        <Col xs={24} md={12} xl={6}>
-          <Kpi label="Công ty đã thu" value={total.collected} percent={pct(total.collected, total.due)} color="#16794a" note="trên số phải thu" />
-        </Col>
-        <Col xs={24} md={12} xl={6}>
-          <Kpi label="Đã nộp về xã" value={total.received} percent={pct(total.received, total.due)} color="#175cd3" note="trên số phải thu" />
-        </Col>
-        <Col xs={24} md={12} xl={6}>
-          <Kpi
-            label="Còn phải nộp"
-            value={total.remaining}
-            color="#b42318"
-            note={
-              total.previousDebt > 0 ? (
-                <Typography.Text type="danger">
-                  Nợ kỳ trước <MoneyText value={total.previousDebt} />
-                </Typography.Text>
-              ) : (
-                'Không có nợ kỳ trước'
-              )
-            }
-          />
-        </Col>
-      </Row>
+      <StatGrid>
+        <StatCard label="Phải thu" value={<MoneyText value={total.due} />} hint={`${rows.length} công ty`} tone="info" />
+        <StatCard
+          label="Công ty đã thu"
+          value={<MoneyText value={total.collected} />}
+          hint="trên số phải thu"
+          tone="success"
+          aside={<Ring percent={pct(total.collected, total.due)} />}
+        />
+        <StatCard
+          label="Đã nộp về xã"
+          value={<MoneyText value={total.received} />}
+          hint="trên số phải nộp xã"
+          tone="info"
+          aside={<Ring percent={pct(total.received, total.payable)} />}
+        />
+        <StatCard
+          label="Còn phải nộp"
+          value={<RemainingText value={total.remaining} />}
+          tone="danger"
+          hint={
+            total.previousDebt > 0 ? (
+              <Typography.Text type="danger">
+                Nợ kỳ trước <MoneyText value={total.previousDebt} />
+              </Typography.Text>
+            ) : (
+              'Không có nợ kỳ trước'
+            )
+          }
+        />
+      </StatGrid>
       )}
 
+      {noAlarm ? (
+        <Alert type="success" showIcon style={{ marginTop: 16 }} message="Không có cảnh báo" />
+      ) : (
       <Card size="small" className="section-card" style={{ marginTop: 16 }} title="Cảnh báo">
         <Row gutter={[16, 16]}>
           <Col xs={24} lg={8}>
@@ -115,7 +112,7 @@ export function LeaderDashboardPage() {
                 <List.Item key={r.companyId}>
                   <span>{r.companyCode}</span>
                   <span>
-                    {r.overdue && <>còn <MoneyText value={r.remaining} /></>}
+                    {r.overdue && <>còn <RemainingText value={r.remaining} /></>}
                     {r.previousDebt > 0 && (
                       <Typography.Text type="danger">
                         {r.overdue ? ' · ' : ''}nợ trước <MoneyText value={r.previousDebt} />
@@ -147,6 +144,7 @@ export function LeaderDashboardPage() {
           </Col>
         </Row>
       </Card>
+      )}
 
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col xs={24} xl={14}>
@@ -171,10 +169,10 @@ export function LeaderDashboardPage() {
                 {
                   title: 'Tỷ lệ nộp',
                   width: 150,
-                  render: (_, r) => <Progress size="small" percent={r.remittedRate} status={r.lowCollectionRate ? 'exception' : 'normal'} strokeColor="#175cd3" format={(p) => pctText(p ?? 0)} />,
+                  render: (_, r) => <Progress size="small" percent={Math.min(100, r.remittedRate)} status={r.lowCollectionRate ? 'exception' : 'normal'} strokeColor="#175cd3" format={(p) => pctText(p ?? 0)} />,
                 },
-                { title: 'Còn phải nộp', align: 'right', render: (_, r) => <MoneyText value={r.remaining} /> },
-                { title: 'Tiến độ', render: (_, r) => <Tag color={PROGRESS_COLORS[r.progress]}>{PROGRESS_LABELS[r.progress]}</Tag> },
+                { title: 'Còn phải nộp', align: 'right', render: (_, r) => <RemainingText value={r.remaining} /> },
+                { title: 'Tiến độ', render: (_, r) => <StatusTag color={PROGRESS_COLORS[r.progress]}>{PROGRESS_LABELS[r.progress]}</StatusTag> },
               ]}
             />
           </Card>
@@ -221,7 +219,7 @@ function Alarm({ icon, title, count, tone, children }: { icon: ReactNode; title:
       <Space style={{ marginBottom: 4 }}>
         {icon}
         <Typography.Text strong>{title}</Typography.Text>
-        <Tag color={count > 0 ? tone : 'default'}>{count}</Tag>
+        <StatusTag color={count > 0 ? tone : 'default'}>{count}</StatusTag>
       </Space>
       {count > 0 ? (
         <List size="small" split={false} style={{ maxHeight: 180, overflow: 'auto' }}>

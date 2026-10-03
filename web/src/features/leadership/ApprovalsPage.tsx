@@ -1,7 +1,9 @@
-import { Alert, App, Button, Form, Input, Modal, Segmented, Select, Space, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Form, Input, Modal, Segmented, Select, Space, Table, Typography } from 'antd';
 import { useState } from 'react';
 
-import { ApiError } from '../../api/client';
+import { errorTextOrNull } from '../../shared/errorText';
+import { StatusTag } from '../../shared/StatusTag';
+import { EmptyBlock } from '../../shared/StateBlock';
 import { PageHeader } from '../../shared/PageHeader';
 import { useAuth } from '../../app/auth/authContext';
 import { DateText } from '../../shared/DateText';
@@ -18,10 +20,6 @@ import {
 } from './api';
 
 const periodLabel = (code: string | null) => (code ? code.split('-').reverse().join('/') : '');
-
-function errorText(e: unknown) {
-  return e ? (e instanceof ApiError ? e.message : 'Không thực hiện được. Vui lòng thử lại.') : null;
-}
 
 /** Nội dung đề nghị: miễn giảm theo đăng ký thu phí; hoàn / xóa nợ theo khoản. */
 function Target({ a }: { a: Approval }) {
@@ -62,7 +60,10 @@ export function ApprovalsPage() {
 
   return (
     <>
-      <PageHeader title={leader ? 'Chờ duyệt' : 'Đề nghị miễn giảm / hoàn / xóa nợ'} />
+      <PageHeader
+        title={leader ? 'Chờ duyệt' : 'Đề nghị miễn giảm / hoàn / xóa nợ'}
+        description={leader ? 'Duyệt hoặc từ chối đề nghị miễn giảm, hoàn tiền, xóa nợ do cán bộ xã lập.' : 'Đề nghị đã lập và kết quả duyệt của lãnh đạo.'}
+      />
       <Space wrap style={{ marginBottom: 12 }}>
         <Segmented<ApprovalStatus | 'ALL'>
           value={status}
@@ -84,14 +85,14 @@ export function ApprovalsPage() {
           options={(Object.keys(APPROVAL_TYPE_LABELS) as ApprovalType[]).map((t) => ({ value: t, label: APPROVAL_TYPE_LABELS[t] }))}
         />
       </Space>
-      {approvals.error && <Alert type="error" showIcon message={errorText(approvals.error)} style={{ marginBottom: 12 }} />}
+      {approvals.error && <Alert type="error" showIcon message={errorTextOrNull(approvals.error)} style={{ marginBottom: 12 }} />}
       <Table<Approval>
         size="small"
         rowKey="id"
         loading={approvals.isLoading}
         dataSource={approvals.data ?? []}
         pagination={{ pageSize: 30, hideOnSinglePage: true, showTotal: (t) => `${t} đề nghị` }}
-        locale={{ emptyText: status === 'PENDING' ? 'Không có đề nghị chờ duyệt' : 'Chưa có đề nghị' }}
+        locale={{ emptyText: <EmptyBlock title={status === 'PENDING' ? 'Không có đề nghị chờ duyệt' : 'Chưa có đề nghị'} hint="Đề nghị mới sẽ hiện ở đây khi cán bộ xã lập." /> }}
         columns={[
           {
             title: 'Mã / ngày',
@@ -104,7 +105,7 @@ export function ApprovalsPage() {
               </>
             ),
           },
-          { title: 'Loại', render: (_, a) => <Tag>{APPROVAL_TYPE_LABELS[a.type]}</Tag> },
+          { title: 'Loại', render: (_, a) => <StatusTag>{APPROVAL_TYPE_LABELS[a.type]}</StatusTag> },
           { title: 'Hộ / khoản', render: (_, a) => <Target a={a} /> },
           {
             title: 'Số tiền',
@@ -136,7 +137,7 @@ export function ApprovalsPage() {
             title: 'Kết quả',
             render: (_, a) => (
               <>
-                <Tag color={APPROVAL_STATUS_COLORS[a.status]}>{APPROVAL_STATUS_LABELS[a.status]}</Tag>
+                <StatusTag color={APPROVAL_STATUS_COLORS[a.status]}>{APPROVAL_STATUS_LABELS[a.status]}</StatusTag>
                 {a.decisionNote && (
                   <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
                     {a.decisionNote}
@@ -206,7 +207,7 @@ function DecisionModal({ deciding, onClose }: { deciding: Deciding | null; onClo
       onCancel={close}
       destroyOnHidden
     >
-      {decide.error && <Alert type="error" showIcon role="alert" style={{ marginBottom: 12 }} message={errorText(decide.error)} />}
+      {decide.error && <Alert type="error" showIcon role="alert" style={{ marginBottom: 12 }} message={errorTextOrNull(decide.error)} />}
       {a && (
         <>
           <Target a={a} />

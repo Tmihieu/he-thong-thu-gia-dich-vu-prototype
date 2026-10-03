@@ -1,8 +1,9 @@
-import { App, Button, Descriptions, Drawer, Flex, Input, Segmented, Space, Statistic, Table, Tag, Typography } from 'antd';
+import { App, Button, Descriptions, Drawer, Flex, Input, Segmented, Space, Statistic, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 
-import { ApiError } from '../../../api/client';
+import { errorTextOrNull } from '../../../shared/errorText';
+import { StatusTag } from '../../../shared/StatusTag';
 import { PageHeader } from '../../../shared/PageHeader';
 import { ErrorBlock, LoadingBlock } from '../../../shared/StateBlock';
 import { DateText } from '../../../shared/DateText';
@@ -25,13 +26,8 @@ import { CompanyFormModal } from './CompanyFormModal';
 
 type StatusFilter = 'all' | Company['status'];
 
-function errorMessage(err: unknown): string | null {
-  if (!err) return null;
-  return err instanceof ApiError ? err.message : 'Thao tác không thành công. Vui lòng thử lại.';
-}
-
 const statusTag = (s: Company['status']) =>
-  s === 'ACTIVE' ? <Tag color="green">Đang hợp tác</Tag> : <Tag>Ngừng hợp tác</Tag>;
+  s === 'ACTIVE' ? <StatusTag color="green">Đang hợp tác</StatusTag> : <StatusTag>Ngừng hợp tác</StatusTag>;
 
 /**
  * Công ty môi trường. Cán bộ xã: danh sách, sửa, phân công tổ chưa có công ty, tiến độ nộp theo kỳ.
@@ -101,10 +97,11 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
       </Flex>
       <Table<Company>
         rowKey="id"
+        scroll={{ x: 'max-content' }}
         loading={companies.isLoading}
         dataSource={rows}
         pagination={false}
-        locale={{ emptyText: errorMessage(companies.error) ?? 'Không có công ty phù hợp' }}
+        locale={{ emptyText: errorTextOrNull(companies.error) ?? 'Không có công ty phù hợp' }}
         columns={[
           {
             title: 'Công ty',
@@ -116,6 +113,7 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
           },
           {
             title: 'Đầu mối',
+            className: 'cell-nowrap',
             render: (_, c) => (
               <>
                 <div>{c.contactName}</div>
@@ -125,6 +123,7 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
           },
           {
             title: 'Hiệu lực',
+            className: 'cell-nowrap',
             render: (_, c) => (
               <>
                 <DateText value={c.validFrom} /> – {c.validTo ? <DateText value={c.validTo} /> : 'chưa xác định'}
@@ -134,7 +133,7 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
           { title: 'Khu vực đang phụ trách', align: 'right', render: (_, c) => areaCount.get(c.id) ?? 0 },
           { title: 'Trạng thái', render: (_, c) => statusTag(c.status) },
           { title: 'Thao tác', align: 'right', render: (_, c) => (
-            <Button size="small" onClick={() => openForm(c)} aria-label={`Sửa ${c.name}`}>Sửa</Button>
+            <Button size="small" type="link" onClick={() => openForm(c)} aria-label={`Sửa ${c.name}`}>Sửa</Button>
           ) },
         ]}
       />
@@ -190,7 +189,7 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
                   Tiến độ nộp
                 </Typography.Title>
                 <PeriodSelect value={periodId} onChange={setPeriodId} />
-                {row && <Tag color={PROGRESS_COLORS[row.progress]}>{PROGRESS_LABELS[row.progress]}</Tag>}
+                {row && <StatusTag color={PROGRESS_COLORS[row.progress]}>{PROGRESS_LABELS[row.progress]}</StatusTag>}
               </Space>
               {ledger.isLoading ? (
                 <LoadingBlock rows={2} />
@@ -241,7 +240,7 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
         open={editing !== undefined}
         company={editing ?? null}
         submitting={saving.isPending}
-        error={errorMessage(saving.error)}
+        error={errorTextOrNull(saving.error)}
         onCancel={() => setEditing(undefined)}
         onSubmit={(body) => {
           const onSuccess = (c: Company) => {
@@ -260,7 +259,7 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
           initialAreaIds={[]}
           initialCompanyId={detail.id}
           submitting={assign.isPending}
-          error={errorMessage(assign.error)}
+          error={errorTextOrNull(assign.error)}
           onCancel={() => setAssigning(false)}
           onSubmit={(req) =>
             assign.mutate(req, {

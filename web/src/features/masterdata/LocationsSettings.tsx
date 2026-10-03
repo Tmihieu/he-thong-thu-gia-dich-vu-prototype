@@ -1,7 +1,8 @@
-import { Alert, App, Button, Form, Input, InputNumber, Modal, Select, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Form, Input, InputNumber, Modal, Select, Table, Typography } from 'antd';
 import { useState } from 'react';
 
 import { ApiError } from '../../api/client';
+import { StatusTag } from '../../shared/StatusTag';
 import { errorText } from '../../shared/errorText';
 import { type Area, type District, useAreas, useDistricts, useUpdateArea, useUpdateDistrict } from './api';
 
@@ -27,7 +28,7 @@ export function LocationsSettings() {
         { title: 'Mã địa bàn', dataIndex: 'code' },
         { title: 'Tên địa bàn', dataIndex: 'name' },
         { title: 'Thứ tự', dataIndex: 'sortOrder' },
-        { title: 'Thao tác', align: 'right', render: (_, d) => <Button size="small" aria-label={`Sửa địa bàn ${d.code}`} onClick={() => {
+        { title: 'Thao tác', align: 'right', render: (_, d) => <Button size="small" type="link" aria-label={`Sửa địa bàn ${d.code}`} onClick={() => {
           updateDistrict.reset(); setDistrict(d);
         }}>Sửa</Button> },
       ]}
@@ -42,8 +43,8 @@ export function LocationsSettings() {
         { title: 'Mã khu vực', dataIndex: 'code' },
         { title: 'Tên khu vực', dataIndex: 'name' },
         { title: 'Địa bàn', render: (_, a) => districts.data?.find(d => d.id === a.districtId)?.name ?? a.districtCode },
-        { title: 'Trạng thái', render: (_, a) => a.status === 'ACTIVE' ? <Tag color="green">Hoạt động</Tag> : <Tag>Tạm ngưng</Tag> },
-        { title: 'Thao tác', align: 'right', render: (_, a) => <Button size="small" aria-label={`Sửa khu vực ${a.code}`} onClick={() => {
+        { title: 'Trạng thái', render: (_, a) => a.status === 'ACTIVE' ? <StatusTag color="green">Hoạt động</StatusTag> : <StatusTag>Tạm ngưng</StatusTag> },
+        { title: 'Thao tác', align: 'right', render: (_, a) => <Button size="small" type="link" aria-label={`Sửa khu vực ${a.code}`} onClick={() => {
           updateArea.reset(); setArea(a);
         }}>Sửa</Button> },
       ]}

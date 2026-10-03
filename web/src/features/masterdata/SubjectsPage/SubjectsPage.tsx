@@ -1,9 +1,10 @@
-import { PlusOutlined } from '@ant-design/icons';
-import { Alert, App, Button, DatePicker, Drawer, Form, Input, Modal, Select, Space, Table, Tag, Typography } from 'antd';
+import { ExclamationCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import { Alert, App, Button, Checkbox, DatePicker, Drawer, Form, Input, Modal, Select, Space, Table, Tooltip, Typography } from 'antd';
 import type { Dayjs } from 'dayjs';
 import { useState } from 'react';
 
-import { ApiError } from '../../../api/client';
+import { errorTextOrNull } from '../../../shared/errorText';
+import { StatusTag } from '../../../shared/StatusTag';
 import { DateText } from '../../../shared/DateText';
 import { PageHeader } from '../../../shared/PageHeader';
 import {
@@ -27,10 +28,6 @@ import {
   useUpdateSubject,
 } from '../api';
 import { type ProfileSubmit, SubjectProfileForm } from './SubjectProfileForm';
-
-function errorMessage(err: unknown): string {
-  return err instanceof ApiError ? err.message : 'Thao tác không thành công. Vui lòng thử lại.';
-}
 
 type Editing = { mode: 'create' } | { mode: 'edit'; subject: Subject } | null;
 
@@ -74,7 +71,12 @@ export function SubjectsPage() {
   const { message } = App.useApp();
   const areas = useAreas();
   const [query, setQuery] = useState<SubjectQuery>({ page: 0, size: 20 });
+  const [unnormalizedOnly, setUnnormalizedOnly] = useState(false);
   const subjects = useSubjects(query);
+  const items = subjects.data?.items ?? [];
+  const isUnnormalized = (s: Subject) => s.streetPending || !s.streetId;
+  const unnormalizedCount = items.filter(isUnnormalized).length;
+  const shownItems = unnormalizedOnly ? items.filter(isUnnormalized) : items;
   const create = useCreateSubject();
   const update = useUpdateSubject();
   const addContract = useAddContract();
@@ -110,7 +112,7 @@ export function SubjectsPage() {
       }
       setEditing(null);
     } catch (err) {
-      setSaveError(errorMessage(err));
+      setSaveError(errorTextOrNull(err));
     }
   }
 
@@ -119,7 +121,7 @@ export function SubjectsPage() {
     try {
       openEditor({ mode: 'edit', subject: await getSubject(id) });
     } catch (err) {
-      setSaveError(errorMessage(err));
+      setSaveError(errorTextOrNull(err));
     }
   }
 
@@ -165,6 +167,9 @@ export function SubjectsPage() {
           onChange={(status?: Subject['status']) => setQuery((prev) => ({ ...prev, status, page: 0 }))}
           options={Object.entries(SUBJECT_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
         />
+        <Checkbox checked={unnormalizedOnly} onChange={(e) => setUnnormalizedOnly(e.target.checked)}>
+          Địa chỉ chưa chuẩn hóa ({unnormalizedCount} trên trang)
+        </Checkbox>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => openEditor({ mode: 'create' })}>
           Thêm hộ
         </Button>
@@ -172,8 +177,9 @@ export function SubjectsPage() {
       <Table<Subject>
         rowKey="id"
         loading={subjects.isFetching}
-        dataSource={subjects.data?.items ?? []}
-        locale={{ emptyText: subjects.error ? errorMessage(subjects.error) : 'Không có hồ sơ phù hợp' }}
+        dataSource={shownItems}
+        scroll={{ x: 1280 }}
+        locale={{ emptyText: subjects.error ? errorTextOrNull(subjects.error) : 'Không có hồ sơ phù hợp' }}
         pagination={{
           current: query.page + 1,
           pageSize: query.size,
@@ -186,42 +192,54 @@ export function SubjectsPage() {
           {
             title: 'Mã',
             dataIndex: 'code',
+            className: 'cell-nowrap',
+            width: 150,
+            fixed: 'left',
             render: (code: string, s) => (
               <Button type="link" style={{ padding: 0 }} onClick={() => openEditor({ mode: 'edit', subject: s })}>
                 {code}
               </Button>
             ),
           },
-          { title: 'Tên', dataIndex: 'name' },
-          { title: 'Loại', dataIndex: 'subjectType', render: (t: Subject['subjectType']) => SUBJECT_TYPE_LABELS[t] },
-          { title: 'Tổ/Ấp/Thôn', dataIndex: 'areaCode' },
+          { title: 'Tên', dataIndex: 'name', width: 220, ellipsis: true },
+          { title: 'Loại', dataIndex: 'subjectType', className: 'cell-nowrap', width: 130, render: (t: Subject['subjectType']) => SUBJECT_TYPE_LABELS[t] },
+          { title: 'Tổ/Ấp/Thôn', dataIndex: 'areaCode', className: 'cell-nowrap', width: 120 },
           {
             title: 'Địa chỉ',
             dataIndex: 'address',
+            ellipsis: true,
+            width: 260,
             render: (address: string, s) => (
               <>
-                {address}{' '}
-                {s.streetPending ? <Tag color="orange">Chờ xác minh đường</Tag> : !s.streetId && <Tag>Chưa chuẩn hóa</Tag>}
+                {address}
+                {(s.streetPending || !s.streetId) && (
+                  <Tooltip title={s.streetPending ? 'Đường đang chờ xác minh' : 'Địa chỉ chưa chuẩn hóa theo danh mục đường'}>
+                    <ExclamationCircleOutlined style={{ marginLeft: 8, color: s.streetPending ? '#8a5300' : '#7f8b99' }} aria-label="Địa chỉ cần chuẩn hóa" />
+                  </Tooltip>
+                )}
               </>
             ),
           },
-          { title: 'SĐT', dataIndex: 'phone', render: (p: string | null) => p ?? '—' },
+          { title: 'SĐT', dataIndex: 'phone', className: 'cell-nowrap', width: 130, render: (p: string | null) => p ?? '—' },
           {
             title: 'Nhóm giá',
+            width: 190,
             render: (_, s) =>
               s.currentContract ? (
                 <>
                   {TARIFF_GROUP_LABELS[s.currentContract.tariffGroup]}{' '}
-                  {s.currentContract.exempt && <Tag color="purple">Miễn 100%</Tag>}
+                  {s.currentContract.exempt && <StatusTag color="purple">Miễn 100%</StatusTag>}
                 </>
               ) : (
-                <Tag>Chưa đăng ký thu</Tag>
+                <StatusTag>Chưa đăng ký thu</StatusTag>
               ),
           },
           {
             title: 'Trạng thái',
             dataIndex: 'status',
-            render: (st: Subject['status']) => <Tag color={SUBJECT_STATUS_COLORS[st]}>{SUBJECT_STATUS_LABELS[st]}</Tag>,
+            width: 150,
+            className: 'cell-nowrap',
+            render: (st: Subject['status']) => <StatusTag color={SUBJECT_STATUS_COLORS[st]}>{SUBJECT_STATUS_LABELS[st]}</StatusTag>,
           },
         ]}
       />
@@ -269,7 +287,7 @@ export function SubjectsPage() {
         onOk={() => endForm.submit()}
         destroyOnHidden
       >
-        {endSubject.error && <Alert type="error" showIcon message={errorMessage(endSubject.error)} role="alert" />}
+        {endSubject.error && <Alert type="error" showIcon message={errorTextOrNull(endSubject.error)} role="alert" />}
         <Form
           form={endForm}
           layout="vertical"
