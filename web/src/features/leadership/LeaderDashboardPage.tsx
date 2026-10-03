@@ -4,6 +4,7 @@ import { type ReactNode, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 
 import { ApiError } from '../../api/client';
+import { PageHeader } from '../../shared/PageHeader';
 import { PROGRESS_COLORS, PROGRESS_LABELS } from '../../shared/labels';
 import { MoneyText } from '../../shared/MoneyText';
 import { PeriodSelect } from '../masterdata/PeriodSelect';
@@ -69,9 +70,7 @@ export function LeaderDashboardPage() {
 
   return (
     <>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        Dashboard điều hành
-      </Typography.Title>
+      <PageHeader title="Dashboard điều hành" description="Tình hình thu và nộp tiền theo công ty và tổ trong kỳ." />
       <Space style={{ marginBottom: 16 }}>
         <PeriodSelect value={periodId} onChange={setPeriodId} />
       </Space>

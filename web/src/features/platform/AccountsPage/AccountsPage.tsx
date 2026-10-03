@@ -2,6 +2,7 @@ import { App, Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tabs
 import { useMemo, useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { PageHeader } from '../../../shared/PageHeader';
 import { useAuth } from '../../../app/auth/authContext';
 import type { Role } from '../../../app/auth/authContext';
 import { ROLE_LABELS } from '../../../app/layout/menuConfig';
@@ -62,14 +63,15 @@ export function AccountsPage() {
 
   return (
     <>
-      <Space style={{ width: '100%', justifyContent: 'space-between' }} align="start">
-        <Typography.Title level={3} style={{ marginTop: 0 }}>
-          Tài khoản
-        </Typography.Title>
-        <Button type="primary" onClick={() => openForm(null)}>
-          + Thêm tài khoản
-        </Button>
-      </Space>
+      <PageHeader
+        title="Tài khoản"
+        description="Cấp, khóa tài khoản và phân vai trò cho cán bộ, công ty, người đi thu."
+        extra={
+          <Button type="primary" onClick={() => openForm(null)}>
+            + Thêm tài khoản
+          </Button>
+        }
+      />
       <Tabs
         items={[
           {

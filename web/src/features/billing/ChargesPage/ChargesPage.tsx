@@ -106,7 +106,7 @@ export function ChargesPage() {
             ),
           },
           { title: 'Kỳ', dataIndex: 'periodCode' },
-          { title: 'Nhóm giá', dataIndex: 'tariffGroup', render: (g: Charge['tariffGroup']) => TARIFF_GROUP_LABELS[g] ?? g },
+          { title: 'Nhóm giá', dataIndex: 'tariffGroup', render: (g: Charge['tariffGroup']) => (g ? TARIFF_GROUP_LABELS[g] : '—') },
           { title: 'Số tiền', dataIndex: 'amount', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           { title: 'Công ty phụ trách', dataIndex: 'companyCode' },
           { title: 'Trạng thái', render: (_, c) => <ChargeStatusTag charge={c} /> },

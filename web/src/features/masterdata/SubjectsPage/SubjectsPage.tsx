@@ -4,6 +4,7 @@ import type { Dayjs } from 'dayjs';
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { PageHeader } from '../../../shared/PageHeader';
 import {
   SUBJECT_STATUS_COLORS,
   SUBJECT_STATUS_LABELS,
@@ -128,9 +129,7 @@ export function SubjectsPage() {
 
   return (
     <>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        Hồ sơ hộ
-      </Typography.Title>
+      <PageHeader title="Hồ sơ hộ" description="Tìm, thêm, sửa hồ sơ và đăng ký thu phí của hộ, hộ kinh doanh, doanh nghiệp." />
       <Space wrap style={{ marginBottom: 16 }}>
         <Input.Search
           aria-label="Tìm hồ sơ"

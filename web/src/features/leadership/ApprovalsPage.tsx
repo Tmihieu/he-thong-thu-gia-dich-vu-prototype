@@ -2,6 +2,7 @@ import { Alert, App, Button, Form, Input, Modal, Segmented, Select, Space, Table
 import { useState } from 'react';
 
 import { ApiError } from '../../api/client';
+import { PageHeader } from '../../shared/PageHeader';
 import { useAuth } from '../../app/auth/authContext';
 import { DateText } from '../../shared/DateText';
 import { MoneyText } from '../../shared/MoneyText';
@@ -61,9 +62,7 @@ export function ApprovalsPage() {
 
   return (
     <>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        {leader ? 'Chờ duyệt' : 'Đề nghị miễn giảm / hoàn / xóa nợ'}
-      </Typography.Title>
+      <PageHeader title={leader ? 'Chờ duyệt' : 'Đề nghị miễn giảm / hoàn / xóa nợ'} />
       <Space wrap style={{ marginBottom: 12 }}>
         <Segmented<ApprovalStatus | 'ALL'>
           value={status}

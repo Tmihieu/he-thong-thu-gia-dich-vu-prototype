@@ -1,8 +1,9 @@
-import { App, Button, Checkbox, Select, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Checkbox, Select, Space, Table, Tag } from 'antd';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { PageHeader } from '../../../shared/PageHeader';
 import { DateText } from '../../../shared/DateText';
 import {
   type Area,
@@ -59,13 +60,15 @@ export function AreasPage() {
 
   return (
     <>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        Khu vực
-      </Typography.Title>
-      <Typography.Paragraph type="secondary">
-        Mỗi tổ có một công ty phụ trách trong cùng thời gian hiệu lực. Chỉ phân công được tổ chưa có công ty phụ
+      <PageHeader
+        title="Khu vực"
+        description={
+          <>
+            Mỗi tổ có một công ty phụ trách trong cùng thời gian hiệu lực. Chỉ phân công được tổ chưa có công ty phụ
         trách. {unassignedCount > 0 && <Tag color="orange">{unassignedCount} tổ chưa có công ty</Tag>}
-      </Typography.Paragraph>
+          </>
+        }
+      />
       <Space wrap style={{ marginBottom: 16 }}>
         <Select
           aria-label="Địa bàn"
