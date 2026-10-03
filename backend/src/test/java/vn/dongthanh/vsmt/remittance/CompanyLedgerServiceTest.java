@@ -94,8 +94,19 @@ class CompanyLedgerServiceTest {
         assertThat(r.remittedRate()).isEqualTo(62.5);
         assertThat(r.lowRemittedRate()).isFalse();
         assertThat(rows.get(1).remittedRate()).isZero();
-        // BR-REM-13 (QĐ-L2): không có gì phải nộp xã thì không gắn cờ nộp thấp.
-        assertThat(rows.get(1).lowRemittedRate()).isFalse();
+        assertThat(rows.get(1).lowRemittedRate()).isTrue();
+    }
+
+    @Test
+    void noFlagWhenNothingIsPayableToTheCommune() {
+        // BR-REM-13 (QĐ-L2): công ty cầm lại toàn bộ phải thu thì payable = 0, không gắn cờ nộp thấp.
+        due(10L, 1L, 100_000, 2);
+        when(queries.retainedByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 100_000, 0)));
+        LedgerRow r = service("2026-10-15").row(1L, 10L);
+
+        assertThat(r.payable()).isZero();
+        assertThat(r.remittedRate()).isZero();
+        assertThat(r.lowRemittedRate()).isFalse();
     }
 
     @Test
