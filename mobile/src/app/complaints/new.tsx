@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 
-import { useProfile, useSubmitComplaint } from '../../features/citizen/api';
+import { useProfile, useSubmitComplaint, type SubmitComplaintRequest } from '../../features/citizen/api';
 import { CONTENT_MAX, validateComplaint, type ComplaintErrors } from '../../features/complaints/validate';
 import { errorMessage } from '../../shared/errors';
 import { COMPLAINT_CATEGORY_LABELS, type ComplaintCategory } from '../../shared/labels';
@@ -30,7 +30,8 @@ export default function NewComplaintScreen() {
     setErrors(found);
     if (Object.keys(found).length > 0 || !category) return;
     submit.mutate(
-      { category, content: content.trim(), location: location.trim() || undefined },
+      // Ép kiểu tới khi schema sinh lại có FACILITY / COLLECTION_REQUEST.
+      { category: category as SubmitComplaintRequest['category'], content: content.trim(), location: location.trim() || undefined },
       { onSuccess: (d) => router.replace({ pathname: '/complaints/[id]', params: { id: String(d.complaint.id), fresh: '1' } }) },
     );
   };
