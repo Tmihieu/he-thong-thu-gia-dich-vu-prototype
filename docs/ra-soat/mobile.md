@@ -57,18 +57,30 @@ Chưa làm lại: không có màn nào bỏ sót.
 - Màn "Chọn cách thanh toán" (QR / ví / ngân hàng) chỉ để chọn cho giống thật, không ảnh hưởng thanh toán; giữ nguyên.
 - Thanh mất mạng dựa vào truy vấn lỗi mạng gần nhất, không phải dò mạng thật (không có NetInfo). Thao tác ghi (mutation) lỗi mạng chỉ hiện lỗi tại chỗ, không bật thanh.
 
+## Đợt 2
+
+Đã làm (sau khi merge `feat/ra-soat-tong`):
+
+| # | Việc | Commit |
+|---|---|---|
+| 12 | QĐ-L4: app dân hiển thị "Chưa đóng / Đã đóng" (Miễn giảm, Đã xóa nợ giữ nguyên); đổi luôn các câu liên quan ("N khoản chưa đóng", "Đã đóng tại nhà", "Đã đóng đủ", "kỳ đã đóng", câu giải thích ở màn thanh toán); cập nhật test `chargeStatus` | a62b946 |
+| 13 | Thêm nhãn khiếu nại `FACILITY` "Cơ sở vật chất" và `COLLECTION_REQUEST` "Đề nghị thu gom" (BR-CMP-05, backend 60d6cd9). Khai báo hợp nhất vào kiểu `ComplaintCategory` ở `labels.ts`, ép kiểu một chỗ ở form gửi; tự hết cần khi `gen:api` sinh lại schema. Form gửi phản ánh tự có hai loại mới | a4f21ab |
+| 14 | Phê bình thiết kế (`design:design-critique`) và tự rà lại: kích thước cứng còn sót (ảnh đại diện, logo, chấm, ô tích, ảnh thu nhỏ, cỡ chữ tiêu đề đăng nhập / ô OTP / nhãn tab) gom vào `theme.ts` (`size`, `type.brand`, `type.code`, `type.tabLabel`) | da0ad7f |
+| 15 | Danh sách dài chưa ảo hóa (thông báo tới 100 mục, phản ánh, xác nhận thanh toán, cồng kềnh): chuyển sang `ListScreen` (`FlatList`), tự chọn tải / lỗi / rỗng, kéo làm mới, footer cố định | da0ad7f |
+| 16 | Chợ đồ cũ: đầu trang quá dài (3 hàng lọc đẩy danh sách bài xuống). Gập bộ lọc danh mục + khu vực sau nút "Lọc danh mục, khu vực" (có chữ báo "đang bật") | da0ad7f |
+
+Kết quả đợt 2: `npm run typecheck` xanh; bộ test chạy bằng cấu hình tạm: 15 suite, 88 test xanh. `npm test` chính thức vẫn hỏng vì thiếu `@react-native/jest-preset` (leader xử lý ở thư mục gốc).
+
+Rà lại toàn bộ màn, kết luận: không còn màu / cỡ chữ cứng ngoài theme (chỉ còn token); vùng chạm ≥ 44 (chip, nút, hàng, tab 48, nút xóa ảnh 32 + vùng mở rộng 6 mỗi cạnh); tên dài tự xuống dòng (không cắt) ở tiêu đề hàng, nhãn dòng, ô; chữ chợ cắt 3 dòng có chủ đích ở thẻ bài; mọi màn tải dữ liệu đều có trạng thái tải, lỗi (có Thử lại) và trống.
+
 ## Câu hỏi nghiệp vụ
 
-| # | Tình huống | Code đang làm gì | Tài liệu nói gì | Đề xuất |
-|---|---|---|---|---|
-| 1 | Nhãn khoản thu trên app người dân | Nay "Chưa thu / Đã thu / Miễn giảm / Đã xóa nợ" theo giao việc. Với người dân, "Chưa thu" nghe như góc nhìn người đi thu | BR-BIL-10 chỉ nêu 4 trạng thái, không nói nhãn riêng cho dân | Giữ theo BR-BIL-10 cho thống nhất với web; nếu xã muốn gần gũi hơn thì dùng "Chưa đóng / Đã đóng" riêng cho app |
-| 2 | Màn Thông tin hộ có dòng "Số đăng ký" (`ĐK-...`) | Vẫn hiện | BR-GEN-08: "ẩn số hợp đồng"; BR-MD-07: số đăng ký tự sinh | Đây là số đăng ký, không phải số hợp đồng; đề xuất giữ. Cần leader xác nhận có phải ẩn |
-| 3 | Trạng thái yêu cầu cồng kềnh `PENDING` | Nhãn "Chờ công ty báo phí" | BR-CIT-04: "Chờ xác nhận" | Giữ nhãn hiện tại (rõ việc đang chờ ai); đổi nếu leader muốn đúng chữ rule |
-| 4 | Nhắc nộp cho hộ (`REMINDER`) | Backend gửi không kèm link; app tự mở "Khoản phí của hộ" | BR-NTF-02 chỉ nói "mở đúng màn liên quan" | Tốt hơn nếu backend gửi `link` (xem yêu cầu lane khác #1) |
+Đã chốt: QĐ-L4 (đã làm), QĐ-L5 giữ dòng "Số đăng ký", QĐ-L6 giữ "Chờ công ty báo phí". Không còn câu hỏi mở.
 
 ## Yêu cầu sang lane khác
 
 | # | Gửi lane | Cần gì | Vì sao | Trạng thái |
 |---|---|---|---|---|
-| 1 | Backend | `HouseholdReminderService` gửi nhắc nộp kèm `link {screen: "citizen.charges"}` (hoặc chi tiết khoản) | Hiện `link = null`, app phải đoán đích theo loại thông báo | Chờ |
-| 2 | Leader (cài đặt) | Cài `@react-native/jest-preset` (đúng phiên bản `jest-expo` đòi) để `npm test` chạy lại; cài `react-native-web` nếu muốn `expo start --web` | `npm test` hỏng sẵn; không thể xem giao diện trên web | Chờ |
+| 1 | Backend | `HouseholdReminderService` gửi nhắc nộp kèm `link {screen: "citizen.charges"}` (hoặc chi tiết khoản) | Hiện `link = null`, app phải đoán đích theo loại thông báo | Leader đã chuyển lane Backend |
+| 2 | Leader (cài đặt) | Cài `@react-native/jest-preset` (đúng phiên bản `jest-expo` đòi) để `npm test` chạy lại; cài `react-native-web` nếu muốn `expo start --web` | `npm test` hỏng sẵn; không thể xem giao diện trên web | Leader xử lý ở thư mục gốc |
+| 3 | Leader | Sau khi chạy `gen:api` có hai loại khiếu nại mới, xóa phần khai báo tạm trong `labels.ts` (`| 'FACILITY' | 'COLLECTION_REQUEST'`) và dòng ép kiểu ở `complaints/new.tsx` | Dọn nợ kỹ thuật tạm | Chờ `gen:api` |

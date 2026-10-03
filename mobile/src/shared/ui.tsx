@@ -1,8 +1,9 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useQueryClient } from '@tanstack/react-query';
-import { Children, Fragment, useState, type PropsWithChildren, type ReactNode } from 'react';
+import { Children, Fragment, useState, type PropsWithChildren, type ReactElement, type ReactNode } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -132,6 +133,66 @@ export function Screen({
       {footer ? <View style={[styles.footer, { paddingBottom: spacing.lg + insets.bottom }]}>{footer}</View> : null}
     </KeyboardAvoidingView>
   );
+}
+
+/**
+ * Màn danh sách dài (thông báo, phản ánh, xác nhận thanh toán...): `FlatList` ảo hóa, cùng khung với `Screen`
+ * (thanh mất mạng, kéo làm mới, footer cố định). Tự chọn tải / lỗi / rỗng; có dữ liệu cũ mà làm mới lỗi thì hiện dải lỗi gọn cuối danh sách.
+ */
+export function ListScreen<T>({
+  data,
+  keyOf,
+  render,
+  header,
+  footer,
+  isPending,
+  error,
+  fallbackError,
+  onRetry,
+  refreshing = false,
+  onRefresh,
+  empty,
+}: {
+  data: T[] | undefined;
+  keyOf: (item: T) => string;
+  render: (item: T) => ReactElement;
+  header?: ReactElement;
+  footer?: ReactNode;
+  isPending: boolean;
+  error: unknown;
+  fallbackError: string;
+  onRetry: () => void;
+  refreshing?: boolean;
+  onRefresh?: () => void;
+  empty: ReactElement;
+}) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={styles.flex}>
+      <OfflineBar />
+      <FlatList
+        style={styles.flex}
+        data={data ?? []}
+        keyExtractor={keyOf}
+        renderItem={({ item }) => render(item)}
+        ListHeaderComponent={header}
+        ItemSeparatorComponent={ListGap}
+        contentContainerStyle={[styles.screen, !footer && { paddingBottom: spacing.xxl + insets.bottom }]}
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} colors={[colors.brand]} /> : undefined
+        }
+        ListEmptyComponent={isPending ? <Loading /> : error ? <ErrorState error={error} fallback={fallbackError} onRetry={onRetry} /> : empty}
+        ListFooterComponent={data && error ? <ErrorState compact error={error} fallback={fallbackError} onRetry={onRetry} /> : null}
+      />
+      {footer ? <View style={[styles.footer, { paddingBottom: spacing.lg + insets.bottom }]}>{footer}</View> : null}
+    </View>
+  );
+}
+
+function ListGap() {
+  return <View style={styles.listGap} />;
 }
 
 /** Khối nội dung trắng, viền mảnh. Không lồng thẻ trong thẻ: dùng `ListGroup` hoặc `Divider` bên trong. */
@@ -514,6 +575,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   divider: { height: 1, backgroundColor: colors.divider },
+  listGap: { height: spacing.sm },
   group: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,

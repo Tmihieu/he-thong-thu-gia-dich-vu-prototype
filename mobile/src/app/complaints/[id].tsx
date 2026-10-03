@@ -6,7 +6,7 @@ import { useComplaint } from '../../features/citizen/api';
 import { complaintStatusLabel, complaintTone } from '../../features/complaints/ComplaintCard';
 import { formatDate } from '../../shared/format';
 import { COMPLAINT_CATEGORY_LABELS, COMPLAINT_EVENT_LABELS } from '../../shared/labels';
-import { colors, radius, spacing, type as t } from '../../shared/theme';
+import { colors, radius, size, spacing, type as t } from '../../shared/theme';
 import { Callout, Card, CardTitle, Divider, ErrorState, Line, Loading, Muted, Screen, Tag } from '../../shared/ui';
 
 /** Chi tiết phản ánh với timeline thật từ `complaint_events`, đồng bộ trạng thái với xã / công ty. */
@@ -83,8 +83,8 @@ const styles = StyleSheet.create({
   title: { ...t.heading, color: colors.text, flex: 1 },
   content: { ...t.body, color: colors.text },
   event: { flexDirection: 'row', gap: spacing.md },
-  rail: { width: 24, alignItems: 'center' },
-  dot: { width: 22, height: 22, borderRadius: radius.pill, backgroundColor: colors.surface, borderWidth: 3, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
+  rail: { width: size.railWidth, alignItems: 'center' },
+  dot: { width: size.railDot, height: size.railDot, borderRadius: radius.pill, backgroundColor: colors.surface, borderWidth: 3, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
   dotLast: { backgroundColor: colors.brand, borderColor: colors.brand },
   rule: { flex: 1, width: 2, backgroundColor: colors.border, marginVertical: 2 },
   eventBody: { flex: 1, gap: spacing.xs, paddingBottom: spacing.lg },

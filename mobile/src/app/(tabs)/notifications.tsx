@@ -5,8 +5,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useMarkAllRead, useMarkRead, useNotifications, type CitizenNotification, type NotificationKind } from '../../features/citizen/api';
 import { notificationTarget, type NotificationLink } from '../../features/notifications/links';
 import { formatDate } from '../../shared/format';
-import { colors, radius, spacing, touch, type as t } from '../../shared/theme';
-import { Button, EmptyState, ErrorState, IconCircle, ListGroup, Loading, Muted, Screen, type IconName } from '../../shared/ui';
+import { colors, radius, size, spacing, touch, type as t } from '../../shared/theme';
+import { Button, EmptyState, IconCircle, ListGroup, ListScreen, Muted, type IconName } from '../../shared/ui';
 
 type Segment = 'ALL' | NotificationKind;
 
@@ -38,8 +38,8 @@ export default function NotificationsTab() {
     if (href) router.push(href);
   };
 
-  return (
-    <Screen refreshing={list.isFetching && !list.isPending} onRefresh={() => void list.refetch()}>
+  const header = (
+    <View style={styles.header}>
       <View accessibilityRole="tablist" style={styles.segments}>
         {SEGMENTS.map((s) => {
           const active = s.key === segment;
@@ -56,7 +56,6 @@ export default function NotificationsTab() {
           );
         })}
       </View>
-
       <View style={styles.head}>
         <Muted>{list.data ? (unreadCount > 0 ? `${unreadCount} chưa đọc` : 'Đã đọc hết') : ''}</Muted>
         {unreadCount > 0 ? (
@@ -70,43 +69,48 @@ export default function NotificationsTab() {
           />
         ) : null}
       </View>
+    </View>
+  );
 
-      {list.isPending ? <Loading /> : null}
-      {list.error ? (
-        <ErrorState error={list.error} fallback="Không tải được thông báo." onRetry={() => void list.refetch()} compact={!!list.data} />
-      ) : null}
-      {list.data?.items.length === 0 ? (
-        <EmptyState icon="notifications-off-outline" title="Chưa có thông báo" message="Thông báo về khoản phí, phản ánh và thu gom sẽ hiện ở đây." />
-      ) : null}
-      {list.data && list.data.items.length > 0 ? (
-        <ListGroup>
-          {list.data.items.map((n) => {
-            const unread = !n.readAt;
-            return (
-              <Pressable
-                key={n.id}
-                accessibilityRole="button"
-                accessibilityLabel={`${unread ? 'Chưa đọc. ' : ''}${n.title}. ${n.body}`}
-                onPress={() => open(n)}
-                style={({ pressed }) => [styles.item, unread && styles.itemUnread, pressed && styles.pressed]}
-              >
-                <IconCircle name={KIND_ICONS[n.kind]} tone={unread ? 'success' : 'neutral'} />
-                <View style={styles.itemBody}>
-                  <Text style={[styles.itemTitle, unread && styles.itemTitleUnread]}>{n.title}</Text>
-                  <Text style={styles.itemText}>{n.body}</Text>
-                  <Text style={styles.itemTime}>{formatDate(n.createdAt, true)}</Text>
-                </View>
-                {unread ? <View style={styles.dot} /> : null}
-              </Pressable>
-            );
-          })}
-        </ListGroup>
-      ) : null}
-    </Screen>
+  return (
+    <ListScreen
+      data={list.data?.items}
+      keyOf={(n) => String(n.id)}
+      header={header}
+      render={(n) => {
+        const unread = !n.readAt;
+        return (
+          <ListGroup>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${unread ? 'Chưa đọc. ' : ''}${n.title}. ${n.body}`}
+              onPress={() => open(n)}
+              style={({ pressed }) => [styles.item, unread && styles.itemUnread, pressed && styles.pressed]}
+            >
+              <IconCircle name={KIND_ICONS[n.kind]} tone={unread ? 'success' : 'neutral'} />
+              <View style={styles.itemBody}>
+                <Text style={[styles.itemTitle, unread && styles.itemTitleUnread]}>{n.title}</Text>
+                <Text style={styles.itemText}>{n.body}</Text>
+                <Text style={styles.itemTime}>{formatDate(n.createdAt, true)}</Text>
+              </View>
+              {unread ? <View style={styles.dot} /> : null}
+            </Pressable>
+          </ListGroup>
+        );
+      }}
+      isPending={list.isPending}
+      error={list.error}
+      fallbackError="Không tải được thông báo."
+      onRetry={() => void list.refetch()}
+      refreshing={list.isFetching && !list.isPending}
+      onRefresh={() => void list.refetch()}
+      empty={<EmptyState icon="notifications-off-outline" title="Chưa có thông báo" message="Thông báo về khoản phí, phản ánh và thu gom sẽ hiện ở đây." />}
+    />
   );
 }
 
 const styles = StyleSheet.create({
+  header: { gap: spacing.sm, marginBottom: spacing.sm },
   segments: {
     flexDirection: 'row',
     backgroundColor: colors.surfaceMuted,
@@ -128,5 +132,5 @@ const styles = StyleSheet.create({
   itemTitleUnread: { fontWeight: '800' },
   itemText: { ...t.secondary, color: colors.textSecondary },
   itemTime: { ...t.caption, color: colors.textMuted },
-  dot: { width: 12, height: 12, borderRadius: radius.pill, backgroundColor: colors.badge, marginTop: spacing.xs },
+  dot: { width: size.dot, height: size.dot, borderRadius: radius.pill, backgroundColor: colors.badge, marginTop: spacing.xs },
 });
