@@ -1,9 +1,11 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Alert, App, DatePicker, Form, Input, Modal, Spin, Table } from 'antd';
+import { Alert, App, DatePicker, Form, Input, Modal, Table } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useEffect } from 'react';
 
-import { api, ApiError } from '../../../api/client';
+import { api } from '../../../api/client';
+import { errorText } from '../../../shared/errorText';
+import { LoadingBlock } from '../../../shared/StateBlock';
 import type { components } from '../../../api/schema';
 import { DateText } from '../../../shared/DateText';
 import { MoneyText } from '../../../shared/MoneyText';
@@ -63,10 +65,10 @@ export function ReminderModal({ companyId, onClose }: Props) {
           showIcon
           role="alert"
           style={{ marginBottom: 12 }}
-          message={error instanceof ApiError ? error.message : 'Không thực hiện được. Vui lòng thử lại.'}
+          message={errorText(error)}
         />
       )}
-      {draft.isLoading && <Spin />}
+      {draft.isLoading && <LoadingBlock rows={3} />}
       {draft.data && (
         <>
           <Table<Debt>

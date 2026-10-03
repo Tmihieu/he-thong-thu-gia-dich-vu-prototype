@@ -1,8 +1,10 @@
 import { LockOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, Popconfirm, Tag } from 'antd';
+import { Alert, App, Button, Popconfirm } from 'antd';
 
-import { api, ApiError } from '../../../api/client';
+import { api } from '../../../api/client';
+import { errorText } from '../../../shared/errorText';
+import { StatusTag } from '../../../shared/StatusTag';
 import { masterdataKeys, type Period, usePeriods } from '../../masterdata/api';
 
 /** Khóa kỳ (cán bộ xã, G1): còn công ty chưa nộp đủ thì máy chủ trả lý do kèm danh sách công ty và số nợ. */
@@ -22,9 +24,9 @@ export function LockPeriodButton({ periodId }: { periodId: number }) {
   if (!period) return null;
   if (period.status === 'LOCKED') {
     return (
-      <Tag icon={<LockOutlined />} color="default">
-        Kỳ đã khóa
-      </Tag>
+      <StatusTag tone="neutral">
+        <LockOutlined /> Kỳ đã khóa
+      </StatusTag>
     );
   }
   return (
@@ -46,7 +48,7 @@ export function LockPeriodButton({ periodId }: { periodId: number }) {
           showIcon
           role="alert"
           style={{ marginTop: 8, width: '100%' }}
-          message={lock.error instanceof ApiError ? lock.error.message : 'Không khóa được kỳ. Vui lòng thử lại.'}
+          message={errorText(lock.error, 'Không khóa được kỳ. Vui lòng thử lại.')}
           closable
           onClose={() => lock.reset()}
         />
