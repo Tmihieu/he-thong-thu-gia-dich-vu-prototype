@@ -39,6 +39,7 @@ Trạng thái: **chưa xong**. Lane Backend không chạy Maven (quyền chạy 
 | 22 | `ApprovalService` | Audit duyệt hoàn / xóa nợ có trạng thái + số đã thu ròng của khoản trước/sau | BR-GEN-03 | 0819593 | LeadershipIT |
 | 23 | `HouseholdReminderService.runBy` | Chạy nhắc tay có audit `RUN_HOUSEHOLD_REMINDERS` | BR-GEN-03 | 61c6082 | HouseholdReminderIT |
 | 24 | complaint + bulky (citizen) | Lọc theo HỘ, không theo tài khoản; khiếu nại nhập hộ qua điện thoại vẫn không hiện ở app | QĐ-L10, BR-CIT-02 | 612fd31 | CitizenComplaintIT |
+| 25 | `TariffService.updateDraft` | Bản đã ban hành không sửa được đơn giá/ngày: 422 `TARIFF_NOT_DRAFT` (bỏ `TARIFF_VALIDITY_LOCKED` và action `UPDATE_TARIFF_VERSION`) | BR-MD-11, QĐ-L7 | 97bc2f1 | TariffDraftIT (đã đổi kỳ vọng) |
 
 Ghi chú: audit entity của `CREATE_STREET` là `Street` (id = id đường), `StreetService:83`. Đề nghị hoàn "chờ" không cần trừ: đã chặn một đề nghị chờ / khoản / loại (`APPROVAL_PENDING_EXISTS`), nên không thể có nhiều đề nghị chờ cộng quá số đã thu.
 
@@ -91,4 +92,5 @@ Nghi (cần tái hiện hoặc xác nhận trước khi sửa):
 |---|---|---|---|---|
 | 1 | Leader | Duyệt quyền chạy `mvnw.cmd test`, QĐ-L1, CORS ở cửa sổ Backend | Bị classifier chặn; leader không cấp được | Chờ người dùng |
 | 2 | Leader | Xác nhận API "người đi thu" nào có số đếm hộ đã thu/cần thu | Chỉ thấy `area-progress` và sổ công ty có `chargeCount`; đã sửa hai chỗ này | Chờ |
+| 4 | Web (xã) | Màn Biểu giá: bản đã ban hành không còn sửa được (PUT trả 422 TARIFF_NOT_DRAFT); ẩn nút Sửa với bản ACTIVE/ISSUED, nhãn audit `UPDATE_TARIFF_VERSION` chỉ còn cho dòng cũ | QĐ-L7 | Chờ |
 | 3 | Web (xã) | Nếu sửa A3, mô tả `remainingAfter` đổi nghĩa thành "còn phải nộp xã" | Phiếu in | Chờ |
