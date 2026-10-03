@@ -29,6 +29,6 @@ public class HouseholdReminderController {
     @PostMapping("/run")
     public RunResult run(@AuthenticationPrincipal CurrentUser actor) {
         actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN);
-        return new RunResult(reminders.run());
+        return new RunResult(reminders.runBy(actor));
     }
 }
