@@ -4,7 +4,7 @@ import type { CitizenCharge } from './api';
 
 type Status = Pick<CitizenCharge, 'status' | 'overdue'>;
 
-/** Chưa thu quá hạn hiện "Quá hạn" (BR-BIL-08: tính từ hạn, backend không lưu); các trạng thái khác theo `labels.ts`. */
+/** Chưa đóng quá hạn hiện "Quá hạn" (BR-BIL-08: tính từ hạn, backend không lưu); các trạng thái khác theo `labels.ts`. */
 export function chargeLabel(c: Status): string {
   return c.status === 'UNPAID' && c.overdue ? 'Quá hạn' : CHARGE_STATUS_LABELS[c.status];
 }

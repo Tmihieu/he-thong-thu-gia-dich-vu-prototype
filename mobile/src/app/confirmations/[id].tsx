@@ -5,7 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useConfirmation } from '../../features/citizen/api';
 import { formatDate, formatMoney } from '../../shared/format';
 import { PAYMENT_METHOD_LABELS } from '../../shared/labels';
-import { colors, radius, spacing, type as t } from '../../shared/theme';
+import { colors, radius, size, spacing, type as t } from '../../shared/theme';
 import { Amount, Button, Card, CardTitle, Divider, ErrorState, Line, Loading, Muted, Screen } from '../../shared/ui';
 
 /** "Xác nhận thanh toán" (O1): mã lấy từ Payment, ổn định; không gọi là biên lai. */
@@ -50,7 +50,7 @@ export default function ConfirmationScreen() {
             <Divider />
             <Line label="Khoản" value={`${p.feeTypeName}, ${p.periodLabel}`} />
             <Line label="Mã khoản" value={p.chargeCode} />
-            <Line label="Trạng thái khoản" value={p.chargeStatus === 'PAID' ? 'Đã thu đủ' : 'Còn thiếu'} />
+            <Line label="Trạng thái khoản" value={p.chargeStatus === 'PAID' ? 'Đã đóng đủ' : 'Còn thiếu'} />
           </Card>
 
           <Card>
@@ -78,6 +78,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl,
     paddingHorizontal: spacing.lg,
   },
-  check: { width: 64, height: 64, borderRadius: radius.pill, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
+  check: { width: size.badge, height: size.badge, borderRadius: radius.pill, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
   successTitle: { ...t.title, color: colors.text },
 });

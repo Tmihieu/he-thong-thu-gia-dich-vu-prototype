@@ -68,7 +68,7 @@ export default function HomeScreen() {
           </View>
           <Text style={styles.panelMeta}>
             {summary.unpaid.length > 1
-              ? `${summary.unpaid.length} khoản chưa thu, gần nhất: ${summary.next.periodLabel}`
+              ? `${summary.unpaid.length} khoản chưa đóng, gần nhất: ${summary.next.periodLabel}`
               : `${summary.next.feeTypeName}, ${summary.next.periodLabel}`}
           </Text>
           <Pressable
@@ -87,7 +87,7 @@ export default function HomeScreen() {
         <View style={styles.panel}>
           <Ionicons name="checkmark-circle" size={36} color={colors.onBrand} />
           <Text style={styles.panelDone}>Hộ không có khoản nào cần đóng</Text>
-          <Text style={styles.panelMeta}>Lịch sử các kỳ đã thu xem ở mục Khoản phí của hộ.</Text>
+          <Text style={styles.panelMeta}>Lịch sử các kỳ đã đóng xem ở mục Khoản phí của hộ.</Text>
         </View>
       )}
 

@@ -8,7 +8,7 @@ import { formatDate, formatMoney } from '../shared/format';
 import { colors, spacing, type as t } from '../shared/theme';
 import { Amount, Button, Callout, Card, Divider, EmptyState, ErrorState, Line, ListGroup, ListRow, Loading, Muted, Screen, SectionTitle, Tag } from '../shared/ui';
 
-/** Một khoản chưa thu: số còn phải đóng và hạn đóng nổi nhất, chi tiết bên dưới, nút thanh toán cuối thẻ. */
+/** Một khoản chưa đóng: số còn phải đóng và hạn đóng nổi nhất, chi tiết bên dưới, nút thanh toán cuối thẻ. */
 function UnpaidCard({ c }: { c: CitizenCharge }) {
   const partial = c.paidAmount > 0;
   return (
@@ -27,7 +27,7 @@ function UnpaidCard({ c }: { c: CitizenCharge }) {
       </View>
       <Divider />
       <Line label="Số tiền khoản" value={formatMoney(c.amount)} />
-      {partial ? <Line label="Đã thu tại nhà" value={formatMoney(c.paidAmount)} /> : null}
+      {partial ? <Line label="Đã đóng tại nhà" value={formatMoney(c.paidAmount)} /> : null}
       <Line label="Mã khoản" value={c.code} />
       <Button
         title="Thanh toán (mô phỏng)"
@@ -82,8 +82,8 @@ export default function ChargesScreen() {
               {summary.unpaid.length > 1 ? (
                 <Callout tone={summary.overdueCount > 0 ? 'danger' : 'warning'} title={`Tổng còn phải đóng ${formatMoney(summary.totalRemaining)}`}>
                   {summary.overdueCount > 0
-                    ? `${summary.unpaid.length} khoản chưa thu, trong đó ${summary.overdueCount} khoản quá hạn.`
-                    : `${summary.unpaid.length} khoản chưa thu.`}
+                    ? `${summary.unpaid.length} khoản chưa đóng, trong đó ${summary.overdueCount} khoản quá hạn.`
+                    : `${summary.unpaid.length} khoản chưa đóng.`}
                 </Callout>
               ) : null}
               {summary.unpaid.map((c) => (
@@ -94,7 +94,7 @@ export default function ChargesScreen() {
 
           <SectionTitle>Lịch sử</SectionTitle>
           {summary.history.length === 0 ? (
-            <Muted>Chưa có kỳ nào đã thu.</Muted>
+            <Muted>Chưa có kỳ nào đã đóng.</Muted>
           ) : (
             <ListGroup>
               {summary.history.map((c) => (

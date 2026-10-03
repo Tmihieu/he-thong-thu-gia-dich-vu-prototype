@@ -7,7 +7,7 @@ import { useCharge, usePay } from '../../features/citizen/api';
 import { chargeLabel, chargeTone } from '../../features/citizen/chargeStatus';
 import { errorMessage } from '../../shared/errors';
 import { formatDate, formatMoney } from '../../shared/format';
-import { colors, radius, spacing, touch, type as t } from '../../shared/theme';
+import { colors, radius, size, spacing, touch, type as t } from '../../shared/theme';
 import { Amount, Button, Callout, Caption, Card, Divider, ErrorState, IconCircle, InlineError, Line, ListGroup, Loading, Muted, Screen, SectionTitle, Tag, type IconName } from '../../shared/ui';
 
 /** Các "cổng" chỉ để chọn cho giống thật; tất cả đều mô phỏng, không có giao dịch tiền thật (O1). */
@@ -74,19 +74,19 @@ export default function PayScreen() {
             <Divider />
             <Line label="Hạn đóng" value={formatDate(c.dueDate)} />
             <Line label="Số tiền khoản" value={formatMoney(c.amount)} />
-            {c.paidAmount > 0 ? <Line label="Đã thu tại nhà" value={formatMoney(c.paidAmount)} /> : null}
+            {c.paidAmount > 0 ? <Line label="Đã đóng tại nhà" value={formatMoney(c.paidAmount)} /> : null}
           </Card>
 
           {!payable ? (
             <Callout tone="info" title="Khoản này không cần thanh toán">
               {c.status === 'PAID'
-                ? 'Khoản đã được ghi nhận thu đủ. Xem lại ở mục Xác nhận thanh toán.'
+                ? 'Khoản đã được ghi nhận đã đóng đủ. Xem lại ở mục Xác nhận thanh toán.'
                 : 'Khoản có trạng thái ' + chargeLabel(c).toLowerCase() + ', không còn số tiền phải đóng.'}
             </Callout>
           ) : (
             <>
               <Callout tone="warning" title="Cổng thanh toán mô phỏng">
-                Bản demo không chuyển tiền thật. Khi xác nhận, khoản được ghi là đã thu và công ty, UBND xã thấy ngay. Ứng dụng phát "Xác nhận thanh toán", không phải biên lai pháp lý.
+                Bản demo không chuyển tiền thật. Khi xác nhận, khoản được ghi là đã đóng và công ty, UBND xã thấy ngay. Ứng dụng phát "Xác nhận thanh toán", không phải biên lai pháp lý.
               </Callout>
 
               <SectionTitle>Chọn cách thanh toán</SectionTitle>
@@ -134,8 +134,8 @@ const styles = StyleSheet.create({
   methodTitle: { ...t.bodyStrong, color: colors.text },
   methodSub: { ...t.secondary, color: colors.textSecondary },
   radio: {
-    width: 26,
-    height: 26,
+    width: size.radio,
+    height: size.radio,
     borderRadius: radius.pill,
     borderWidth: 2,
     borderColor: colors.borderStrong,
