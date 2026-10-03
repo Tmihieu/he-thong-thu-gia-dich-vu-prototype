@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, Card, Col, Progress, Row, Space, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Card, Col, Progress, Row, Space, Table, Tag, theme, Typography } from 'antd';
 import { type ReactNode, useMemo, useState } from 'react';
 
 import { api, ApiError } from '../../../api/client';
@@ -9,6 +9,7 @@ import { MoneyText } from '../../../shared/MoneyText';
 import { useTabParam } from '../../../shared/useTabParam';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { remittanceKeys, useCompanyLedger } from '../../remittance/api';
+import { LedgerBreakdown } from '../../remittance/LedgerBreakdown';
 import { type CashHeld, collectionKeys, type Handover, useCashHeld, useCollectorAssignments, useCompanyWork, useHandovers } from '../api';
 import { CompanyHouseholdsPage } from '../CompanyHouseholdsPage/CompanyHouseholdsPage';
 import type { WorkChip } from '../workState';
@@ -31,12 +32,13 @@ interface RingProps {
   label: string;
   value: ReactNode;
   note: ReactNode;
+  extra?: ReactNode;
   /** Bấm thẻ để xem danh sách chi tiết. */
   onOpen: () => void;
 }
 
 /** Thẻ vòng tiến độ như prototype (rsRingCard): vòng % bên trái, nhãn / số / ghi chú bên phải; bấm để xem chi tiết. */
-function RingCard({ loading, color, percent, hasData, label, value, note, onOpen }: RingProps) {
+function RingCard({ loading, color, percent, hasData, label, value, note, extra, onOpen }: RingProps) {
   return (
     <Card
       size="small"
@@ -63,6 +65,7 @@ function RingCard({ loading, color, percent, hasData, label, value, note, onOpen
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {note}
           </Typography.Text>
+          {extra}
         </div>
       </Space>
     </Card>
@@ -79,6 +82,7 @@ function errorText(e: unknown) {
  */
 export function CompanyOverviewPage() {
   const { message } = App.useApp();
+  const { token } = theme.useToken();
   const queryClient = useQueryClient();
   const [periodId, setPeriodId] = useState<number>();
   const [receiving, setReceiving] = useState<CashHeld | null>(null);
@@ -141,7 +145,7 @@ export function CompanyOverviewPage() {
         <Col xs={24} md={8}>
           <RingCard
             loading={work.isLoading}
-            color="#175cd3"
+            color={token.colorPrimary}
             percent={households.total ? (households.paid / households.total) * 100 : 0}
             hasData={households.total > 0}
             label="Số hộ đã thu"
@@ -157,7 +161,7 @@ export function CompanyOverviewPage() {
         <Col xs={24} md={8}>
           <RingCard
             loading={ledger.isLoading}
-            color={row?.lowCollectionRate ? '#b42318' : '#16794a'}
+            color={row?.lowCollectionRate ? token.colorError : token.colorSuccess}
             percent={row?.collectionRate ?? 0}
             hasData={!!row}
             label="Số tiền đã thu"
@@ -173,7 +177,7 @@ export function CompanyOverviewPage() {
         <Col xs={24} md={8}>
           <RingCard
             loading={ledger.isLoading}
-            color="#0b3a67"
+            color={token.colorPrimaryActive}
             percent={row?.remittedRate ?? 0}
             hasData={!!row}
             label="Số tiền đã nộp về xã"
@@ -182,7 +186,7 @@ export function CompanyOverviewPage() {
             note={
               row ? (
                 <Space size={4} wrap>
-                  <span>{row.receiptCount} phiếu thu · còn <MoneyText value={row.remaining} /></span>
+                  <span>{row.receiptCount} phiếu thu · còn phải nộp <MoneyText value={row.remaining} /></span>
                   <Tag color={PROGRESS_COLORS[row.progress]}>{PROGRESS_LABELS[row.progress]}</Tag>
                   {row.previousDebt > 0 && (
                     <Typography.Text type="danger">
@@ -194,6 +198,7 @@ export function CompanyOverviewPage() {
                 'Kỳ này công ty chưa có khoản phải thu'
               )
             }
+            extra={row && <LedgerBreakdown row={row} />}
           />
         </Col>
       </Row>
