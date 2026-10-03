@@ -35,6 +35,11 @@ public interface ServiceSubjectRepository extends JpaRepository<ServiceSubject, 
     Page<ServiceSubject> search(Long districtId, Long areaId, SubjectStatus status, boolean scoped,
             Collection<Long> areaIds, String q, Pageable pageable);
 
+    /** Hồ sơ cùng tổ/ấp và đường chuẩn, mọi trạng thái (kể cả đã ngừng); lọc số nhà ở tầng dịch vụ. */
+    @Query("select s from ServiceSubject s join fetch s.area a join fetch a.district where a.id = :areaId"
+            + " and s.streetRef.id = :streetId and (:excludeId is null or s.id <> :excludeId) order by s.code")
+    List<ServiceSubject> findByAddressSlot(Long areaId, Long streetId, Long excludeId);
+
     @Query("select s from ServiceSubject s join fetch s.area a join fetch a.district order by s.code")
     List<ServiceSubject> findAllWithArea();
 

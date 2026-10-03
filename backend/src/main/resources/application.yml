@@ -54,6 +54,9 @@ vsmt:
   # Thư mục lưu ảnh người dân tải lên (chợ đồ cũ, rác cồng kềnh); đường dẫn tương đối tính từ thư mục chạy
   # backend. Không commit (xem .gitignore).
   upload-dir: ${UPLOAD_DIR:uploads}
+  goong:
+    # Khóa Goong chỉ đọc ở backend (gợi ý đường khi nhập hồ sơ hộ). Để trống thì tắt gợi ý Goong, danh mục nội bộ vẫn dùng được.
+    api-key: ${GOONG_API_KEY:}
 
 ---
 # Profile demo: nạp thêm seed dữ liệu giả (db/seed). Mặc định khi ./mvnw spring-boot:run.

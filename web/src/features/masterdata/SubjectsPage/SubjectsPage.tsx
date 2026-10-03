@@ -13,6 +13,7 @@ import {
 import {
   type Subject,
   type SubjectQuery,
+  getSubject,
   useAddContract,
   useAreas,
   useCreateSubject,
@@ -65,6 +66,15 @@ export function SubjectsPage() {
         message.success(`Đã tạo hồ sơ ${created.code}`);
       }
       setEditing(null);
+    } catch (err) {
+      setSaveError(errorMessage(err));
+    }
+  }
+
+  /** Từ cảnh báo nghi trùng: chuyển sang sửa hồ sơ đã có. */
+  async function openExisting(id: number) {
+    try {
+      openEditor({ mode: 'edit', subject: await getSubject(id) });
     } catch (err) {
       setSaveError(errorMessage(err));
     }
@@ -136,6 +146,16 @@ export function SubjectsPage() {
           { title: 'Tên', dataIndex: 'name' },
           { title: 'Loại', dataIndex: 'subjectType', render: (t: Subject['subjectType']) => SUBJECT_TYPE_LABELS[t] },
           { title: 'Tổ/Ấp/Thôn', dataIndex: 'areaCode' },
+          {
+            title: 'Địa chỉ',
+            dataIndex: 'address',
+            render: (address: string, s) => (
+              <>
+                {address}{' '}
+                {s.streetPending ? <Tag color="orange">Chờ xác minh đường</Tag> : !s.streetId && <Tag>Chưa chuẩn hóa</Tag>}
+              </>
+            ),
+          },
           { title: 'SĐT', dataIndex: 'phone', render: (p: string | null) => p ?? '—' },
           {
             title: 'Nhóm giá',
@@ -179,6 +199,7 @@ export function SubjectsPage() {
             submitting={saving}
             error={saveError}
             onSubmit={save}
+            onOpenExisting={(id) => void openExisting(id)}
             onCancel={() => setEditing(null)}
           />
         )}

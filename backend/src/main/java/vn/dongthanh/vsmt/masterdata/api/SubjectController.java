@@ -26,6 +26,8 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.masterdata.api.SubjectDtos.ContractDto;
 import vn.dongthanh.vsmt.masterdata.api.SubjectDtos.ContractRequest;
+import vn.dongthanh.vsmt.masterdata.api.SubjectDtos.DuplicateCheckRequest;
+import vn.dongthanh.vsmt.masterdata.api.SubjectDtos.DuplicateDto;
 import vn.dongthanh.vsmt.masterdata.api.SubjectDtos.EndSubjectRequest;
 import vn.dongthanh.vsmt.masterdata.api.SubjectDtos.SubjectDto;
 import vn.dongthanh.vsmt.masterdata.api.SubjectDtos.SubjectPageDto;
@@ -63,6 +65,14 @@ public class SubjectController {
     @GetMapping("/subjects/{id}")
     public SubjectDto get(@PathVariable Long id, @AuthenticationPrincipal CurrentUser actor) {
         return toDto(subjects.get(id, actor));
+    }
+
+    @Operation(summary = "Hồ sơ nghi trùng địa chỉ (cùng tổ/ấp + đường + số nhà, kể cả đã ngừng); chỉ cán bộ xã")
+    @PostMapping("/subjects/duplicate-check")
+    public List<DuplicateDto> duplicateCheck(@Valid @RequestBody DuplicateCheckRequest req,
+            @AuthenticationPrincipal CurrentUser actor) {
+        return subjects.findSuspectedDuplicates(req.areaId(), req.streetId(), req.houseNo(), req.unitNo(),
+                req.excludeSubjectId(), actor).stream().map(DuplicateDto::of).toList();
     }
 
     @Operation(summary = "Tạo hồ sơ hộ, kèm hợp đồng đầu tiên nếu có (cán bộ xã)")

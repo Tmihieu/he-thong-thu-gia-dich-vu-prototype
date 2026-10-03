@@ -35,6 +35,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       CITIZEN_DEMO_OTP: ${CITIZEN_DEMO_OTP:-123456}
+      GOONG_API_KEY: ${GOONG_API_KEY:-}
       TZ: Asia/Ho_Chi_Minh
     ports:
       # App mobile (Expo Go) gọi thẳng backend qua IP LAN của laptop.
