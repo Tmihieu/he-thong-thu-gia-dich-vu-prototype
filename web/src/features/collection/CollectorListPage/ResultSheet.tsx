@@ -71,6 +71,8 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId }: P
     onSuccess: (text) => {
       message.success(text);
       void queryClient.invalidateQueries({ queryKey: collectionKeys.all });
+      // Số công ty đã thu ở sổ công ty–kỳ đổi theo (Tiến độ, Đối soát, màn Công ty).
+      void queryClient.invalidateQueries({ queryKey: ['remittance'] });
       onClose();
     },
   });

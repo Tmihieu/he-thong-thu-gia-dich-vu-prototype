@@ -16,9 +16,10 @@ import { useAuth } from '../../../app/auth/authContext';
 import { formatDate } from '../../../shared/format';
 import { MoneyText } from '../../../shared/MoneyText';
 import { normalizeText } from '../../../shared/normalizeText';
+import { usePeriods } from '../../masterdata/api';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type CollectorCharge, useCashHeld, useMyWork, useMyWorkAllPeriods } from '../api';
-import { byChipOrder, countChips, RESULT_LABELS, WORK_CHIPS, type WorkChip, workChip, workState } from '../workState';
+import { byChipOrder, COLLECTOR_CHIPS, countChips, RESULT_LABELS, type WorkChip, workChip, workState } from '../workState';
 import { HouseholdHistory } from './HouseholdHistory';
 import { ReportSubjectForm } from './ReportSubjectForm';
 import { ResultSheet } from './ResultSheet';
@@ -49,6 +50,8 @@ export function CollectorListPage() {
   const work = useMyWork(periodId);
   const all = useMyWorkAllPeriods();
   const cash = useCashHeld();
+  // BR-COL-12: kỳ đã khóa không ghi thu nữa.
+  const locked = usePeriods().data?.find((p) => p.id === periodId)?.status === 'LOCKED';
   const items = useMemo(() => work.data ?? [], [work.data]);
 
   const streets = useMemo(
@@ -81,6 +84,8 @@ export function CollectorListPage() {
   const visible = useMemo(() => scoped.filter((w) => chip === 'ALL' || workChip(w) === chip).sort(byChipOrder), [scoped, chip]);
 
   const paid = counts.PAID ?? 0;
+  // Miễn giảm / đã xóa nợ không phải "chưa thu".
+  const unpaidCount = items.filter((w) => w.charge.status === 'UNPAID').length;
   const held = cash.data?.[0]?.held ?? 0;
   const period = items[0] ? periodLabel(items[0].charge.periodCode) : '';
 
@@ -106,7 +111,7 @@ export function CollectorListPage() {
             </div>
             <div>
               <small>Chưa thu</small>
-              <strong>{items.length - paid}</strong>
+              <strong>{unpaidCount}</strong>
               {(counts.OVERDUE ?? 0) > 0 && <em>{counts.OVERDUE} quá hạn</em>}
             </div>
             <div>
@@ -141,7 +146,7 @@ export function CollectorListPage() {
       </section>
 
       <div className="clm-chips" role="group" aria-label="Lọc theo kết quả">
-        {WORK_CHIPS.map((c) => (
+        {COLLECTOR_CHIPS.map((c) => (
           <button key={c.value} type="button" className={`clm-chip${chip === c.value ? ' active' : ''}`} aria-pressed={chip === c.value} onClick={() => setChip(c.value)}>
             {c.label} <b>{counts[c.value] ?? 0}</b>
           </button>
@@ -229,7 +234,7 @@ export function CollectorListPage() {
                   )}
                   <div className="clm-actions">
                     {unpaid ? (
-                      <Button type="primary" size="large" icon={<EditOutlined />} aria-label="Cập nhật kết quả" onClick={() => setEditing(w)}>
+                      <Button type="primary" size="large" icon={<EditOutlined />} aria-label="Cập nhật kết quả" disabled={locked} title={locked ? 'Kỳ đã khóa' : undefined} onClick={() => setEditing(w)}>
                         Cập nhật kết quả
                       </Button>
                     ) : (
