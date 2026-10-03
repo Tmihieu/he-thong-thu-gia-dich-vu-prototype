@@ -33,3 +33,11 @@ export function notificationHref(link: NotificationLink | null | undefined): Hre
       return null;
   }
 }
+
+/**
+ * Đích khi bấm thông báo: theo `link`, nếu không có thì theo loại. Nhắc nộp phí cho hộ (`REMINDER`, BR-NTF-03)
+ * backend gửi không kèm link, nên mở danh sách khoản phí để người dân thấy khoản cần đóng.
+ */
+export function notificationTarget(n: { kind: string; link?: NotificationLink | null }): Href | null {
+  return notificationHref(n.link) ?? (n.kind === 'REMINDER' ? '/charges' : null);
+}

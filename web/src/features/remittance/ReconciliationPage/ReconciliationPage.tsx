@@ -7,6 +7,8 @@ import { RECONCILIATION_COLORS, RECONCILIATION_LABELS } from '../../../shared/la
 import { MoneyText } from '../../../shared/MoneyText';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type LedgerRow, useCompanyLedger } from '../api';
+import { LedgerBreakdown } from '../LedgerBreakdown';
+import { RateRings } from '../RateRings';
 import { LockPeriodButton } from './LockPeriodButton';
 import { PeriodTrend } from './PeriodTrend';
 
@@ -63,6 +65,7 @@ export function ReconciliationPage() {
           </Col>
         ))}
       </Row>
+      <RateRings rows={rows} />
       <Table<LedgerRow>
         rowKey="companyId"
         loading={ledger.isLoading}
@@ -71,8 +74,34 @@ export function ReconciliationPage() {
         locale={{ emptyText: 'Kỳ này chưa có khoản phải thu' }}
         columns={[
           { title: 'Công ty', render: (_, r) => `${r.companyCode} · ${r.companyName}` },
-          { title: 'Phải thu', dataIndex: 'due', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-          { title: 'Đã thu', dataIndex: 'collected', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          {
+            title: 'Phải thu',
+            dataIndex: 'due',
+            align: 'right',
+            render: (v: number, r) => (
+              <>
+                <MoneyText value={v} />
+                <LedgerBreakdown row={r} />
+              </>
+            ),
+          },
+          {
+            title: 'Đã thu',
+            dataIndex: 'collected',
+            align: 'right',
+            render: (v: number, r) => (
+              <>
+                <MoneyText value={v} />
+                {r.refunded > 0 && (
+                  <div>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      đã trừ hoàn <MoneyText value={r.refunded} />
+                    </Typography.Text>
+                  </div>
+                )}
+              </>
+            ),
+          },
           {
             title: 'Đã nộp về xã',
             align: 'right',

@@ -29,9 +29,10 @@ export default function MyPostsScreen() {
           ))}
         </View>
       }
-      empty="Chưa có bài nào."
+      empty="Chưa có bài nào"
+      emptyIcon="documents-outline"
     />
   );
 }
 
-const styles = StyleSheet.create({ chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm } });
+const styles = StyleSheet.create({ chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.xs } });

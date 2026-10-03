@@ -21,7 +21,7 @@ function entryItem(e: HistoryEntry) {
       color: 'green',
       children: (
         <>
-          <Typography.Text strong>Đã thu {formatMoney(p.amount)}</Typography.Text>
+          <Typography.Text strong>{p.method === 'REFUND' ? `Đã hoàn ${formatMoney(Math.abs(p.amount))}` : `Đã thu ${formatMoney(p.amount)}`}</Typography.Text>
           <Typography.Text type="secondary">
             {' '}
             · {PAYMENT_METHOD_LABELS[p.method]} · {when}

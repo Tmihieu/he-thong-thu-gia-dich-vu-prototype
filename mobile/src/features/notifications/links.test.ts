@@ -1,4 +1,4 @@
-import { notificationHref } from './links';
+import { notificationHref, notificationTarget } from './links';
 
 describe('notificationHref', () => {
   it('phản ánh → chi tiết phản ánh theo complaintId', () => {
@@ -36,5 +36,19 @@ describe('notificationHref', () => {
     expect(notificationHref({ screen: 'commune.complaints', params: { complaintId: 1 } })).toBeNull();
     expect(notificationHref(null)).toBeNull();
     expect(notificationHref(undefined)).toBeNull();
+  });
+});
+
+describe('notificationTarget', () => {
+  it('nhắc nộp không có link → danh sách khoản phí', () => {
+    expect(notificationTarget({ kind: 'REMINDER', link: null })).toBe('/charges');
+  });
+
+  it('có link thì theo link, loại khác không link → null', () => {
+    expect(notificationTarget({ kind: 'REMINDER', link: { screen: 'citizen.bulkyDetail', params: { requestId: 6 } } })).toEqual({
+      pathname: '/bulky/[id]',
+      params: { id: '6' },
+    });
+    expect(notificationTarget({ kind: 'INFO', link: null })).toBeNull();
   });
 });

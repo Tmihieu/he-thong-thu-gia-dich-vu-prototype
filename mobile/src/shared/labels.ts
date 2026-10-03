@@ -34,7 +34,7 @@ export const TARIFF_GROUP_LABELS: Record<TariffGroup, string> = {
 export const CHARGE_STATUS_LABELS: Record<ChargeStatus, string> = {
   UNPAID: 'Chưa đóng',
   PAID: 'Đã đóng',
-  EXEMPT: 'Miễn',
+  EXEMPT: 'Miễn giảm',
   WRITTEN_OFF: 'Đã xóa nợ',
 };
 
@@ -62,7 +62,8 @@ export const WEEKDAY_LABELS: Record<number, string> = {
   7: 'Chủ nhật',
 };
 
-export type ComplaintCategory = Schemas['CitizenComplaintDto']['category'];
+// ponytail: FACILITY / COLLECTION_REQUEST (BR-CMP-05, backend V32) khai báo thêm ở đây tới khi `gen:api` sinh lại schema; sau đó hợp nhất tự dọn.
+export type ComplaintCategory = Schemas['CitizenComplaintDto']['category'] | 'FACILITY' | 'COLLECTION_REQUEST';
 export type ComplaintStatus = Schemas['CitizenComplaintDto']['status'];
 export type ComplaintEventType = Schemas['CitizenComplaintEventDto']['eventType'];
 
@@ -71,6 +72,8 @@ export const COMPLAINT_CATEGORY_LABELS: Record<ComplaintCategory, string> = {
   OVERCHARGE: 'Thu phí cao hơn định mức',
   POLLUTION_POINT: 'Điểm tập kết gây ô nhiễm',
   STAFF_ATTITUDE: 'Thái độ nhân viên thu gom',
+  FACILITY: 'Cơ sở vật chất',
+  COLLECTION_REQUEST: 'Đề nghị thu gom',
   OTHER: 'Vấn đề khác',
 };
 

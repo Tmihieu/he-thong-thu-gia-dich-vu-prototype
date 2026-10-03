@@ -1,4 +1,4 @@
-import { Alert, Descriptions, Divider, Drawer, Spin, Tag } from 'antd';
+import { Alert, Descriptions, Divider, Drawer, Skeleton, Steps, Tag } from 'antd';
 import type { ReactNode } from 'react';
 
 import { ApiError } from '../../api/client';
@@ -6,6 +6,8 @@ import { formatDate } from '../../shared/format';
 import { type ComplaintDetail, useComplaint } from './api';
 import { ComplaintTimeline } from './ComplaintTimeline';
 import { COMPLAINT_CATEGORY_LABELS, COMPLAINT_CHANNEL_LABELS, COMPLAINT_STATUS_COLORS, COMPLAINT_STATUS_LABELS } from './labels';
+
+const STEPS: ComplaintDetail['complaint']['status'][] = ['NEW', 'PROCESSING', 'RESOLVED'];
 
 interface Props {
   id: number | null;
@@ -21,12 +23,18 @@ export function ComplaintDrawer({ id, onClose, actions }: Props) {
 
   return (
     <Drawer open={id !== null} onClose={onClose} width={560} title={c ? `Khiếu nại ${c.code}` : 'Khiếu nại'} destroyOnHidden>
-      {detail.isLoading && <Spin />}
+      {detail.isLoading && <Skeleton active paragraph={{ rows: 8 }} />}
       {detail.error && (
         <Alert type="error" showIcon message={detail.error instanceof ApiError ? detail.error.message : 'Không tải được khiếu nại'} />
       )}
       {c && detail.data && (
         <>
+          <Steps
+            size="small"
+            style={{ marginBottom: 20 }}
+            current={STEPS.indexOf(c.status)}
+            items={STEPS.map((s) => ({ title: COMPLAINT_STATUS_LABELS[s] }))}
+          />
           <Descriptions size="small" column={1} bordered>
             <Descriptions.Item label="Trạng thái">
               <Tag color={COMPLAINT_STATUS_COLORS[c.status]}>{COMPLAINT_STATUS_LABELS[c.status]}</Tag>

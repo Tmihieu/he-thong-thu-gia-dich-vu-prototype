@@ -8,6 +8,7 @@ import { PROGRESS_COLORS, PROGRESS_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type AreaProgress, type LedgerRow, useAreaProgress, useCompanyLedger } from '../api';
+import { LedgerBreakdown } from '../LedgerBreakdown';
 import { ReminderModal } from './ReminderModal';
 
 function Rate({ rate, low }: { rate: number; low: boolean }) {
@@ -19,7 +20,7 @@ function Rate({ rate, low }: { rate: number; low: boolean }) {
   );
 }
 
-function sum(rows: LedgerRow[], key: 'due' | 'collected' | 'received' | 'remaining' | 'previousDebt') {
+function sum(rows: LedgerRow[], key: 'due' | 'collected' | 'received' | 'remaining' | 'previousDebt' | 'retained' | 'payable') {
   return rows.reduce((t, r) => t + r[key], 0);
 }
 
@@ -69,12 +70,14 @@ export function ProgressPage() {
           [
             ['Phải thu', sum(rows, 'due')],
             ['Công ty đã thu', sum(rows, 'collected')],
+            ['Công ty cầm lại', sum(rows, 'retained')],
+            ['Phải nộp xã', sum(rows, 'payable')],
             ['Đã nộp về xã', sum(rows, 'received')],
             ['Còn phải nộp', sum(rows, 'remaining')],
             ['Nợ kỳ trước', sum(rows, 'previousDebt')],
           ] as const
         ).map(([title, value]) => (
-          <Col key={title} xs={12} md={8} lg={4}>
+          <Col key={title} xs={12} md={8} lg={3}>
             <Card size="small">
               <Statistic title={title} value={value} formatter={(v) => <MoneyText value={Number(v)} />} />
             </Card>
@@ -122,13 +125,7 @@ export function ProgressPage() {
             render: (v: number, r) => (
               <>
                 <MoneyText value={v} />
-                {r.retained > 0 && (
-                  <div>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      phải nộp xã <MoneyText value={r.payable} />
-                    </Typography.Text>
-                  </div>
-                )}
+                <LedgerBreakdown row={r} />
               </>
             ),
           },

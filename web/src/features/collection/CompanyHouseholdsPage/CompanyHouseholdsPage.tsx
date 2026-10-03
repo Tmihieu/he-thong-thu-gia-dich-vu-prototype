@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { ApiError } from '../../../api/client';
 import { MoneyText } from '../../../shared/MoneyText';
 import { normalizeText } from '../../../shared/normalizeText';
+import { usePeriods } from '../../masterdata/api';
 import { type CollectorCharge, useCollectorAssignments, useCollectors, useCompanyWork } from '../api';
 import { ResultSheet } from '../CollectorListPage/ResultSheet';
 import { byChipOrder, countChips, WORK_CHIPS, type WorkChip, workChip, workState } from '../workState';
@@ -26,6 +27,8 @@ export function CompanyHouseholdsPage({
   const work = useCompanyWork(periodId);
   const assignments = useCollectorAssignments();
   const collectors = useCollectors();
+  // BR-COL-12: kỳ đã khóa không ghi thu nữa.
+  const locked = usePeriods().data?.find((p) => p.id === periodId)?.status === 'LOCKED';
 
   const collectorOfArea = useMemo(() => {
     const m = new Map<number, { id: number; name: string }>();
@@ -157,8 +160,8 @@ export function CompanyHouseholdsPage({
             title: '',
             render: (_, w) =>
               w.charge.status === 'UNPAID' ? (
-                <Button size="small" onClick={() => setEditing(w)} aria-label={`Cập nhật ${w.charge.subjectName}`}>
-                  Cập nhật
+                <Button size="small" disabled={locked} title={locked ? 'Kỳ đã khóa' : undefined} onClick={() => setEditing(w)} aria-label={`Ghi thu ${w.charge.subjectName}`}>
+                  Ghi thu
                 </Button>
               ) : null,
           },

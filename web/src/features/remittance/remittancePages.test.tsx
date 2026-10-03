@@ -92,7 +92,7 @@ describe('Đối soát', () => {
 
     expect(await screen.findByText('Đang nộp')).toBeInTheDocument();
     expect(screen.getByText('Lệch')).toBeInTheDocument();
-    const dv01Row = screen.getByText('DV01 · Công ty MTĐT Đông Thạnh').closest('tr')!;
+    const dv01Row = screen.getByRole('cell', { name: 'DV01 · Công ty MTĐT Đông Thạnh' }).closest('tr')!;
     expect(within(dv01Row).getByText('thu rồi chưa nộp')).toBeInTheDocument();
     expect(within(dv01Row).getByText('1 phiếu thu')).toBeInTheDocument();
     expect(screen.getAllByText('400.000 đ', norm).length).toBeGreaterThan(0);
@@ -202,8 +202,8 @@ describe('Phiếu thu công ty', () => {
     );
     expect(await screen.findByText('Bốn trăm nghìn đồng')).toBeInTheDocument();
     expect(screen.getByText('PHIẾU THU')).toBeInTheDocument();
-    expect(screen.getByText('1.400.000 đ', norm)).toBeInTheDocument();
     const print = screen.getByText('PHIẾU THU').closest('.ant-modal-content') as HTMLElement;
+    expect(within(print).getByText('1.400.000 đ', norm)).toBeInTheDocument();
     expect(within(print).getAllByRole('button').map((b) => b.textContent)).toContain('In');
   });
 });

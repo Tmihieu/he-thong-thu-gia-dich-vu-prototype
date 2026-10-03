@@ -9,6 +9,8 @@ import { MoneyText } from '../../../shared/MoneyText';
 import { usePeriods } from '../../masterdata/api';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type LedgerRow, type Receipt, useCompanyLedger, useReceipts } from '../api';
+import { LedgerBreakdown } from '../LedgerBreakdown';
+import { LedgerStats } from '../LedgerStats';
 import { IssueReceiptForm, type IssueReceiptRequest } from './IssueReceiptForm';
 import { ReceiptPrint } from './ReceiptPrint';
 
@@ -72,6 +74,7 @@ export function ReceiptsPage() {
         {locked && <Tag>Kỳ đã khóa, không lập thêm phiếu</Tag>}
       </Space>
       {ledger.error && <Alert type="error" showIcon message={errorText(ledger.error)} style={{ marginBottom: 12 }} />}
+      <LedgerStats rows={ledger.data ?? []} loading={ledger.isLoading} />
       <Table<LedgerRow>
         rowKey="companyId"
         loading={ledger.isLoading}
@@ -86,7 +89,17 @@ export function ReceiptsPage() {
         }}
         columns={[
           { title: 'Công ty', render: (_, r) => `${r.companyCode} · ${r.companyName}` },
-          { title: 'Phải thu', dataIndex: 'due', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          {
+            title: 'Phải thu',
+            dataIndex: 'due',
+            align: 'right',
+            render: (v: number, r) => (
+              <>
+                <MoneyText value={v} />
+                <LedgerBreakdown row={r} />
+              </>
+            ),
+          },
           { title: 'Đã thu của hộ', dataIndex: 'collected', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           {
             title: 'Đã nộp về xã',

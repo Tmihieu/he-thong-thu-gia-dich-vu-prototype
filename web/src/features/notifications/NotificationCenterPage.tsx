@@ -1,4 +1,6 @@
-import { Alert, Button, List, Segmented, Space, Switch, Tag, Typography } from 'antd';
+import { BellOutlined, CommentOutlined, FileTextOutlined, InfoCircleOutlined, SwapOutlined } from '@ant-design/icons';
+import { Alert, Avatar, Badge, Button, List, Segmented, Space, Switch, Tag, Typography } from 'antd';
+import type { ReactNode } from 'react';
 import { useState } from 'react';
 
 import { ApiError } from '../../api/client';
@@ -10,6 +12,13 @@ import { notificationPath } from './links';
 import { useOpenNotification } from './useOpenNotification';
 
 const PAGE_SIZE = 20;
+const KIND_ICONS: Record<NotificationKind, ReactNode> = {
+  REMINDER: <BellOutlined />,
+  COMPLAINT: <CommentOutlined />,
+  RECEIPT: <FileTextOutlined />,
+  INFO: <InfoCircleOutlined />,
+  TRANSACTION: <SwapOutlined />,
+};
 
 /** Trung tâm thông báo: lọc theo loại / chưa đọc, đánh dấu đã đọc, bấm để đi tới màn liên quan. */
 export function NotificationCenterPage() {
@@ -54,6 +63,15 @@ export function NotificationCenterPage() {
           Đánh dấu tất cả đã đọc
         </Button>
       </Space>
+      {(markRead.error ?? markAll.error) && (
+        <Alert
+          type="error"
+          showIcon
+          role="alert"
+          style={{ marginBottom: 12 }}
+          message={(markRead.error ?? markAll.error) instanceof ApiError ? (markRead.error ?? markAll.error)!.message : 'Không đánh dấu đã đọc được'}
+        />
+      )}
       {list.error && (
         <Alert type="error" showIcon message={list.error instanceof ApiError ? list.error.message : 'Không tải được thông báo'} />
       )}
@@ -88,6 +106,11 @@ export function NotificationCenterPage() {
               ].filter(Boolean)}
             >
               <List.Item.Meta
+                avatar={
+                  <Badge dot={!n.readAt} offset={[-4, 4]}>
+                    <Avatar shape="square" icon={KIND_ICONS[n.kind]} />
+                  </Badge>
+                }
                 title={
                   <Space size={6} wrap>
                     <Tag color={NOTIFICATION_KIND_COLORS[n.kind]}>{NOTIFICATION_KIND_LABELS[n.kind]}</Tag>

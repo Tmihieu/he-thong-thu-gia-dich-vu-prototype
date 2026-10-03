@@ -105,6 +105,17 @@ class ComplaintFlowIT extends IntegrationTest {
     }
 
     @Test
+    void acceptsFacilityAndCollectionRequestCategories() throws Exception {
+        for (String category : new String[] {"FACILITY", "COLLECTION_REQUEST"}) {
+            call(fx.officer, post("/api/complaints"), """
+                    {"complainantName": "Nguyễn Văn Mẫu", "channel": "PHONE", "category": "%s", "summary": "x",
+                     "content": "y", "areaId": %d}""".formatted(category, fx.kv07.getId()))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.complaint.category").value(category));
+        }
+    }
+
+    @Test
     void invalidInputIs400AndAppChannelIs422() throws Exception {
         call(fx.officer, post("/api/complaints"), """
                 {"complainantName": "", "complainantPhone": "123", "channel": "PHONE", "category": "OTHER",

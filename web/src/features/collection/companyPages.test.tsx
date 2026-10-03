@@ -103,10 +103,10 @@ describe('Công ty: hộ được giao', () => {
     expect(screen.getByText('2 hộ')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('combobox', { name: 'Người đi thu' }).closest('.ant-select')!.querySelector('.ant-select-clear')!);
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Cập nhật Hộ Cường' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Ghi thu Hộ Cường' }));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByTitle('Lê Văn Mẫu · thu09')).toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu kết quả' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Xác nhận đã thu' }));
 
     await waitFor(() =>
       expect(lastPost(fetchFn, '/api/collection/payments')).toMatchObject({ chargeId: 3, amount: 80_000, method: 'CASH',
