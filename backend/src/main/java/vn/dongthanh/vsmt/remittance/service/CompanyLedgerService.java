@@ -189,10 +189,10 @@ public class CompanyLedgerService {
             reconciliation = Reconciliation.MATCHED;
         }
 
-        // Phải thu 0 thì tỷ lệ 0% và vẫn gắn cờ, như prototype.
+        // Phải thu 0 thì tỷ lệ 0% và không gắn cờ (không có gì để thu, BR-REM-10).
         return new LedgerRow(company.getId(), company.getCode(), company.getName(), period.getId(), due, chargeCount,
                 adjustment, refunded, collected, received, receiptCount, remaining, gap, previousDebt, overdue, percent(collected, due),
-                due == 0 || lowRate(collected, due), percent(received, payable), payable > 0 && lowRate(received, payable),
+                due > 0 && lowRate(collected, due), percent(received, payable), payable > 0 && lowRate(received, payable),
                 progress, reconciliation, retained, payable);
     }
 
