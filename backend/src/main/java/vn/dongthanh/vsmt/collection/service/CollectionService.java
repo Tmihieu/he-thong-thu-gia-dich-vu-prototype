@@ -308,6 +308,7 @@ public class CollectionService {
 
     private String nextCode(Charge charge) {
         String prefix = "TT-" + charge.getPeriod().documentToken() + "-";
+        payments.lockCodePrefix(prefix); // khóa khoản chỉ khóa một khoản; mã thì dùng chung cả kỳ
         return prefix + "%06d".formatted(payments.maxCodeNumber(prefix) + 1);
     }
 

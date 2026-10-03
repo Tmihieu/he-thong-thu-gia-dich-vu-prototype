@@ -27,4 +27,8 @@ public interface ComplaintRepository extends JpaRepository<Complaint, Long> {
     @Query(value = "select coalesce(max(cast(substring(code, length(:prefix) + 1) as integer)), 0)"
             + " from complaints where code like :prefix || '%'", nativeQuery = true)
     int maxCodeNumber(String prefix);
+
+    /** Khóa theo tiền tố mã tới hết transaction, để hai lần ghi cùng lúc không lấy trùng số. */
+    @Query(value = "select count(*) from pg_advisory_xact_lock(hashtext(:prefix))", nativeQuery = true)
+    long lockCodePrefix(String prefix);
 }

@@ -90,6 +90,7 @@ public class ComplaintService {
                 .orElseThrow(() -> new NotFoundException("AREA_NOT_FOUND", "Không tìm thấy khu vực."));
 
         String prefix = "KN-" + received.format(CODE_TOKEN) + "-";
+        complaints.lockCodePrefix(prefix);
         Complaint complaint = complaints.save(Complaint.builder()
                 .code(prefix + "%03d".formatted(complaints.maxCodeNumber(prefix) + 1))
                 .receivedDate(received).complainantName(cmd.complainantName().trim())
@@ -123,6 +124,7 @@ public class ComplaintService {
         String content = cmd.content().trim();
         String location = blankToNull(cmd.location());
         String prefix = "KN-" + today.format(CODE_TOKEN) + "-";
+        complaints.lockCodePrefix(prefix);
         Complaint complaint = complaints.save(Complaint.builder()
                 .code(prefix + "%03d".formatted(complaints.maxCodeNumber(prefix) + 1))
                 .receivedDate(today).complainantName(cmd.displayName()).complainantPhone(cmd.phone())
