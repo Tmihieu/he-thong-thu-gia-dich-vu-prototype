@@ -1,8 +1,9 @@
 import { DownloadOutlined } from '@ant-design/icons';
-import { Button, Card, Select, Space, Table, Tag, Typography } from 'antd';
+import { Button, Card, Select, Space, Table, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 
 import { formatPercent } from '../../shared/format';
+import { StatusTag } from '../../shared/StatusTag';
 import { PageHeader } from '../../shared/PageHeader';
 import { ErrorBlock } from '../../shared/StateBlock';
 import { PROGRESS_COLORS, PROGRESS_LABELS, RECONCILIATION_COLORS, RECONCILIATION_LABELS } from '../../shared/labels';
@@ -164,8 +165,8 @@ export function LeaderReportPage() {
             { title: 'Còn phải nộp', align: 'right', render: (_, r) => <MoneyText value={r.remaining} strong /> },
             { title: 'Nợ kỳ trước', align: 'right', render: (_, r) => (r.previousDebt ? <MoneyText value={r.previousDebt} /> : '—') },
             { title: 'Hộ miễn 100%', align: 'right', render: (_, r) => exemptOf(r.companyId) },
-            { title: 'Tiến độ', render: (_, r) => <Tag color={PROGRESS_COLORS[r.progress]}>{PROGRESS_LABELS[r.progress]}</Tag> },
-            { title: 'Đối soát', render: (_, r) => <Tag color={RECONCILIATION_COLORS[r.reconciliation]}>{RECONCILIATION_LABELS[r.reconciliation]}</Tag> },
+            { title: 'Tiến độ', render: (_, r) => <StatusTag color={PROGRESS_COLORS[r.progress]}>{PROGRESS_LABELS[r.progress]}</StatusTag> },
+            { title: 'Đối soát', render: (_, r) => <StatusTag color={RECONCILIATION_COLORS[r.reconciliation]}>{RECONCILIATION_LABELS[r.reconciliation]}</StatusTag> },
           ]}
         />
       </Card>
@@ -189,7 +190,7 @@ export function LeaderReportPage() {
           columns={[
             { title: 'Tổ', render: (_, a) => `${a.areaCode} · ${a.areaName}` },
             { title: 'Địa bàn', dataIndex: 'districtCode' },
-            { title: 'Công ty', render: (_, a) => a.companyCode ?? <Tag color="orange">Chưa có công ty</Tag> },
+            { title: 'Công ty', render: (_, a) => a.companyCode ?? <StatusTag color="orange">Chưa có công ty</StatusTag> },
             { title: 'Hộ đã thu', align: 'right', render: (_, a) => `${a.paidCount}/${a.chargeCount}` },
             { title: 'Hộ miễn 100%', align: 'right', dataIndex: 'exemptCount' },
             { title: 'Phải thu', align: 'right', render: (_, a) => <MoneyText value={a.due} /> },

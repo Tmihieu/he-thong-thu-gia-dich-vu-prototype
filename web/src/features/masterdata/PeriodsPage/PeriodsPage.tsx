@@ -1,8 +1,9 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { App, Button, Modal, Space, Table, Tag } from 'antd';
+import { App, Button, Modal, Space, Table } from 'antd';
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { StatusTag } from '../../../shared/StatusTag';
 import { DateText } from '../../../shared/DateText';
 import { PERIOD_STATUS_LABELS, PERIOD_TYPE_LABELS, STATUS_COLORS } from '../../../shared/labels';
 import { type Period, useOpenPeriod, usePeriods, useTariffs } from '../api';
@@ -56,7 +57,7 @@ export function PeriodsPage() {
           {
             title: 'Trạng thái',
             dataIndex: 'status',
-            render: (s: Period['status']) => <Tag color={STATUS_COLORS[s]}>{PERIOD_STATUS_LABELS[s]}</Tag>,
+            render: (s: Period['status']) => <StatusTag color={STATUS_COLORS[s]}>{PERIOD_STATUS_LABELS[s]}</StatusTag>,
           },
         ]}
       />

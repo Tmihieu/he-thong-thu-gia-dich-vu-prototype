@@ -1,7 +1,8 @@
-import { App, Button, Flex, Popconfirm, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Flex, Popconfirm, Space, Table, Typography } from 'antd';
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { StatusTag } from '../../../shared/StatusTag';
 import { errorText } from '../../../shared/errorText';
 import { DateText } from '../../../shared/DateText';
 import { STATUS_COLORS, TARIFF_GROUP_LABELS, TARIFF_STATUS_LABELS } from '../../../shared/labels';
@@ -110,7 +111,7 @@ export function TariffsPage() {
           {
             title: 'Trạng thái',
             dataIndex: 'status',
-            render: (s: TariffVersion['status']) => <Tag color={STATUS_COLORS[s]}>{TARIFF_STATUS_LABELS[s]}</Tag>,
+            render: (s: TariffVersion['status']) => <StatusTag color={STATUS_COLORS[s]}>{TARIFF_STATUS_LABELS[s]}</StatusTag>,
           },
           {
             title: '',
@@ -118,9 +119,11 @@ export function TariffsPage() {
             render: (_, v) =>
               (
                 <Space>
-                  <Button size="small" onClick={() => openForm(v)}>
-                    Sửa
-                  </Button>
+                  {v.status === 'DRAFT' && (
+                    <Button size="small" onClick={() => openForm(v)}>
+                      Sửa
+                    </Button>
+                  )}
                   {v.status === 'DRAFT' && <Popconfirm
                     title={`Ban hành ${v.code}?`}
                     description={

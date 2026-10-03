@@ -1,4 +1,4 @@
-import { Alert, Button, Checkbox, Col, DatePicker, Divider, Form, Input, InputNumber, List, Row, Select, Space, Tag, Typography } from 'antd';
+import { Alert, Button, Checkbox, Col, DatePicker, Divider, Form, Input, InputNumber, List, Row, Select, Space, Typography } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useState } from 'react';
 
@@ -11,6 +11,7 @@ import {
   type TariffGroup,
 } from '../../../shared/labels';
 import { type Area, type ContractRequest, checkDuplicates, type DuplicateSubject, type Subject, type SubjectRequest } from '../api';
+import { StatusTag } from '../../../shared/StatusTag';
 import { StreetSearch, type StreetValue } from './StreetSearch';
 
 export interface ProfileSubmit {
@@ -309,7 +310,7 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
                   >
                     <Space wrap>
                       <Typography.Text strong>{d.code}</Typography.Text>
-                      <Tag color={SUBJECT_STATUS_COLORS[d.status]}>{SUBJECT_STATUS_LABELS[d.status]}</Tag>
+                      <StatusTag color={SUBJECT_STATUS_COLORS[d.status]}>{SUBJECT_STATUS_LABELS[d.status]}</StatusTag>
                       <span>{d.name}</span>
                       <span>{d.phone ?? 'Chưa có SĐT'}</span>
                       <Typography.Text type="secondary">{d.address}</Typography.Text>
@@ -382,7 +383,7 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
       {current ? (
         current.exempt && (
           <Typography.Paragraph>
-            <Tag color="purple">Miễn 100%{current.exemptReason ? ` · ${current.exemptReason}` : ''}</Tag>
+            <StatusTag color="purple">Miễn 100%{current.exemptReason ? ` · ${current.exemptReason}` : ''}</StatusTag>
           </Typography.Paragraph>
         )
       ) : (

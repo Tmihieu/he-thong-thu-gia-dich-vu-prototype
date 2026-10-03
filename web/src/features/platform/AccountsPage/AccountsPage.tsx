@@ -1,7 +1,8 @@
-import { App, Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tabs, Tag, Typography } from 'antd';
+import { App, Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tabs, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { StatusTag } from '../../../shared/StatusTag';
 import { PageHeader } from '../../../shared/PageHeader';
 import { useAuth } from '../../../app/auth/authContext';
 import type { Role } from '../../../app/auth/authContext';
@@ -107,7 +108,7 @@ export function AccountsPage() {
                     </>
                   ),
                 },
-                { title: 'Vai trò', render: (_, a) => <Tag color="blue">{ROLE_LABELS[a.role]}</Tag> },
+                { title: 'Vai trò', render: (_, a) => <StatusTag color="blue">{ROLE_LABELS[a.role]}</StatusTag> },
                 {
                   title: 'Công ty / đơn vị',
                   render: (_, a) => (a.companyId ? companyName.get(a.companyId) : a.organization) ?? '—',
@@ -118,7 +119,7 @@ export function AccountsPage() {
                 },
                 {
                   title: 'Trạng thái',
-                  render: (_, a) => (a.status === 'ACTIVE' ? <Tag color="green">Hoạt động</Tag> : <Tag>Đã khóa</Tag>),
+                  render: (_, a) => (a.status === 'ACTIVE' ? <StatusTag color="green">Hoạt động</StatusTag> : <StatusTag>Đã khóa</StatusTag>),
                 },
                 {
                   title: '',

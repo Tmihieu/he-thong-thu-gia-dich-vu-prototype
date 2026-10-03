@@ -1,8 +1,9 @@
-import { App, Button, Checkbox, Select, Space, Table, Tag } from 'antd';
+import { App, Button, Checkbox, Select, Space, Table } from 'antd';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { StatusTag } from '../../../shared/StatusTag';
 import { PageHeader } from '../../../shared/PageHeader';
 import { DateText } from '../../../shared/DateText';
 import {
@@ -65,7 +66,7 @@ export function AreasPage() {
         description={
           <>
             Mỗi tổ có một công ty phụ trách trong cùng thời gian hiệu lực. Chỉ phân công được tổ chưa có công ty phụ
-        trách. {unassignedCount > 0 && <Tag color="orange">{unassignedCount} tổ chưa có công ty</Tag>}
+        trách. {unassignedCount > 0 && <StatusTag color="orange">{unassignedCount} tổ chưa có công ty</StatusTag>}
           </>
         }
       />
@@ -111,7 +112,7 @@ export function AreasPage() {
           {
             title: 'Công ty phụ trách',
             render: (_, r) =>
-              r.assignment ? `${r.assignment.companyCode} · ${r.assignment.companyName}` : <Tag color="orange">Chưa có công ty</Tag>,
+              r.assignment ? `${r.assignment.companyCode} · ${r.assignment.companyName}` : <StatusTag color="orange">Chưa có công ty</StatusTag>,
           },
           {
             title: 'Hiệu lực',

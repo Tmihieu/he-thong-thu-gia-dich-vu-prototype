@@ -1,7 +1,8 @@
-import { Alert, App, Button, Form, Input, Modal, Segmented, Select, Space, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Form, Input, Modal, Segmented, Select, Space, Table, Typography } from 'antd';
 import { useState } from 'react';
 
 import { ApiError } from '../../api/client';
+import { StatusTag } from '../../shared/StatusTag';
 import { PageHeader } from '../../shared/PageHeader';
 import { useAuth } from '../../app/auth/authContext';
 import { DateText } from '../../shared/DateText';
@@ -104,7 +105,7 @@ export function ApprovalsPage() {
               </>
             ),
           },
-          { title: 'Loại', render: (_, a) => <Tag>{APPROVAL_TYPE_LABELS[a.type]}</Tag> },
+          { title: 'Loại', render: (_, a) => <StatusTag>{APPROVAL_TYPE_LABELS[a.type]}</StatusTag> },
           { title: 'Hộ / khoản', render: (_, a) => <Target a={a} /> },
           {
             title: 'Số tiền',
@@ -136,7 +137,7 @@ export function ApprovalsPage() {
             title: 'Kết quả',
             render: (_, a) => (
               <>
-                <Tag color={APPROVAL_STATUS_COLORS[a.status]}>{APPROVAL_STATUS_LABELS[a.status]}</Tag>
+                <StatusTag color={APPROVAL_STATUS_COLORS[a.status]}>{APPROVAL_STATUS_LABELS[a.status]}</StatusTag>
                 {a.decisionNote && (
                   <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
                     {a.decisionNote}

@@ -1,6 +1,7 @@
-import { Alert, Button, Card, Descriptions, Space, Table, Tag } from 'antd';
+import { Alert, Button, Card, Descriptions, Space, Table } from 'antd';
 
 import { MoneyText } from '../../../shared/MoneyText';
+import { StatusTag } from '../../../shared/StatusTag';
 import type { IssueResult } from '../api';
 
 type SkippedRow = IssueResult['skipped'][number];
@@ -46,7 +47,7 @@ export function PreviewPanel({ result, publishing = false, error, onPublish, onB
             { title: 'Tổ', dataIndex: 'areaCode' },
             {
               title: 'Lý do',
-              render: (_, s) => (s.warning ? <Tag color="orange">{s.message}</Tag> : s.message),
+              render: (_, s) => (s.warning ? <StatusTag color="orange">{s.message}</StatusTag> : s.message),
             },
           ]}
         />

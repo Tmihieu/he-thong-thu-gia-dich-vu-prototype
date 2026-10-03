@@ -1,9 +1,10 @@
 import { AlertOutlined, AuditOutlined, FallOutlined } from '@ant-design/icons';
-import { Card, Col, Empty, List, Progress, Row, Space, Table, Tag, Typography } from 'antd';
+import { Card, Col, Empty, List, Progress, Row, Space, Table, Typography } from 'antd';
 import { type ReactNode, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 
 import { formatPercent } from '../../shared/format';
+import { StatusTag } from '../../shared/StatusTag';
 import { PageHeader } from '../../shared/PageHeader';
 import { ErrorBlock, LoadingBlock } from '../../shared/StateBlock';
 import { PROGRESS_COLORS, PROGRESS_LABELS } from '../../shared/labels';
@@ -174,7 +175,7 @@ export function LeaderDashboardPage() {
                   render: (_, r) => <Progress size="small" percent={r.remittedRate} status={r.lowCollectionRate ? 'exception' : 'normal'} strokeColor="#175cd3" format={(p) => pctText(p ?? 0)} />,
                 },
                 { title: 'Còn phải nộp', align: 'right', render: (_, r) => <MoneyText value={r.remaining} /> },
-                { title: 'Tiến độ', render: (_, r) => <Tag color={PROGRESS_COLORS[r.progress]}>{PROGRESS_LABELS[r.progress]}</Tag> },
+                { title: 'Tiến độ', render: (_, r) => <StatusTag color={PROGRESS_COLORS[r.progress]}>{PROGRESS_LABELS[r.progress]}</StatusTag> },
               ]}
             />
           </Card>
@@ -221,7 +222,7 @@ function Alarm({ icon, title, count, tone, children }: { icon: ReactNode; title:
       <Space style={{ marginBottom: 4 }}>
         {icon}
         <Typography.Text strong>{title}</Typography.Text>
-        <Tag color={count > 0 ? tone : 'default'}>{count}</Tag>
+        <StatusTag color={count > 0 ? tone : 'default'}>{count}</StatusTag>
       </Space>
       {count > 0 ? (
         <List size="small" split={false} style={{ maxHeight: 180, overflow: 'auto' }}>

@@ -1,7 +1,8 @@
-import { Button, Segmented, Select, Space, Table, Tag } from 'antd';
+import { Button, Segmented, Select, Space, Table } from 'antd';
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { StatusTag } from '../../../shared/StatusTag';
 import { brand } from '../../../app/theme';
 import { CHARGE_STATUS_COLORS, CHARGE_STATUS_LABELS, TARIFF_GROUP_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
@@ -11,8 +12,8 @@ import { type Charge, type ChargeQuery, useCharges } from '../api';
 
 /** Nhãn trạng thái hiển thị: "Quá hạn" tính từ hạn đóng, không lưu. */
 export function ChargeStatusTag({ charge }: { charge: Pick<Charge, 'status' | 'overdue'> }) {
-  if (charge.overdue) return <Tag color="red">Quá hạn</Tag>;
-  return <Tag color={CHARGE_STATUS_COLORS[charge.status]}>{CHARGE_STATUS_LABELS[charge.status]}</Tag>;
+  if (charge.overdue) return <StatusTag color="red">Quá hạn</StatusTag>;
+  return <StatusTag color={CHARGE_STATUS_COLORS[charge.status]}>{CHARGE_STATUS_LABELS[charge.status]}</StatusTag>;
 }
 
 /** Danh sách khoản phải thu: lọc theo kỳ, tổ, công ty, trạng thái (nút bấm); phân trang phía máy chủ. */

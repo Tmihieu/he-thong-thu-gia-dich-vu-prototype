@@ -1,9 +1,10 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { Alert, App, Button, DatePicker, Drawer, Form, Input, Modal, Select, Space, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, DatePicker, Drawer, Form, Input, Modal, Select, Space, Table, Typography } from 'antd';
 import type { Dayjs } from 'dayjs';
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { StatusTag } from '../../../shared/StatusTag';
 import { DateText } from '../../../shared/DateText';
 import { PageHeader } from '../../../shared/PageHeader';
 import {
@@ -201,7 +202,7 @@ export function SubjectsPage() {
             render: (address: string, s) => (
               <>
                 {address}{' '}
-                {s.streetPending ? <Tag color="orange">Chờ xác minh đường</Tag> : !s.streetId && <Tag>Chưa chuẩn hóa</Tag>}
+                {s.streetPending ? <StatusTag color="orange">Chờ xác minh đường</StatusTag> : !s.streetId && <StatusTag>Chưa chuẩn hóa</StatusTag>}
               </>
             ),
           },
@@ -212,16 +213,16 @@ export function SubjectsPage() {
               s.currentContract ? (
                 <>
                   {TARIFF_GROUP_LABELS[s.currentContract.tariffGroup]}{' '}
-                  {s.currentContract.exempt && <Tag color="purple">Miễn 100%</Tag>}
+                  {s.currentContract.exempt && <StatusTag color="purple">Miễn 100%</StatusTag>}
                 </>
               ) : (
-                <Tag>Chưa đăng ký thu</Tag>
+                <StatusTag>Chưa đăng ký thu</StatusTag>
               ),
           },
           {
             title: 'Trạng thái',
             dataIndex: 'status',
-            render: (st: Subject['status']) => <Tag color={SUBJECT_STATUS_COLORS[st]}>{SUBJECT_STATUS_LABELS[st]}</Tag>,
+            render: (st: Subject['status']) => <StatusTag color={SUBJECT_STATUS_COLORS[st]}>{SUBJECT_STATUS_LABELS[st]}</StatusTag>,
           },
         ]}
       />

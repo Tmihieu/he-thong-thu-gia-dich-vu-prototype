@@ -1,8 +1,9 @@
-import { App, Button, Descriptions, Drawer, Flex, Input, Segmented, Space, Statistic, Table, Tag, Typography } from 'antd';
+import { App, Button, Descriptions, Drawer, Flex, Input, Segmented, Space, Statistic, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { StatusTag } from '../../../shared/StatusTag';
 import { PageHeader } from '../../../shared/PageHeader';
 import { ErrorBlock, LoadingBlock } from '../../../shared/StateBlock';
 import { DateText } from '../../../shared/DateText';
@@ -31,7 +32,7 @@ function errorMessage(err: unknown): string | null {
 }
 
 const statusTag = (s: Company['status']) =>
-  s === 'ACTIVE' ? <Tag color="green">Đang hợp tác</Tag> : <Tag>Ngừng hợp tác</Tag>;
+  s === 'ACTIVE' ? <StatusTag color="green">Đang hợp tác</StatusTag> : <StatusTag>Ngừng hợp tác</StatusTag>;
 
 /**
  * Công ty môi trường. Cán bộ xã: danh sách, sửa, phân công tổ chưa có công ty, tiến độ nộp theo kỳ.
@@ -190,7 +191,7 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
                   Tiến độ nộp
                 </Typography.Title>
                 <PeriodSelect value={periodId} onChange={setPeriodId} />
-                {row && <Tag color={PROGRESS_COLORS[row.progress]}>{PROGRESS_LABELS[row.progress]}</Tag>}
+                {row && <StatusTag color={PROGRESS_COLORS[row.progress]}>{PROGRESS_LABELS[row.progress]}</StatusTag>}
               </Space>
               {ledger.isLoading ? (
                 <LoadingBlock rows={2} />
