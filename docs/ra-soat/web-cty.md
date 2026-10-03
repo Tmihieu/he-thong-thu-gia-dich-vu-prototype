@@ -29,6 +29,14 @@
 ## Làm đẹp (người đi thu, người lớn tuổi)
 Chữ to (tên hộ 22px, số tiền 32px), "Tiền mặt đang giữ" luôn hiện trên đầu, 2 nút lớn **Đã thu tiền mặt / Đã thu chuyển khoản** ngay trên thẻ hộ → mở bước xác nhận số tiền (chống bấm nhầm), ô lọc ≥ 44px, danh sách tải dùng skeleton. CSS ở `features/collection/collector.css` (dùng biến màu sẵn của `shell.css`). Commit bdebde4.
 
+## Đợt 2
+- QĐ-L6: đồ cồng kềnh PENDING hiện "Chờ công ty báo phí" (citizen/api.ts).
+- Nhãn 2 loại khiếu nại mới FACILITY / COLLECTION_REQUEST (BR-CMP-05), khai báo trong union nên không vỡ type trước khi gen lại schema.
+- PeriodTrend bỏ màu cứng, dùng token Ant Design.
+- Phiếu thu (xã) và Phiếu thu xã lập (công ty): thêm hàng thẻ tổng `LedgerStats` (phải thu / cầm lại / phải nộp xã / đã nộp / còn phải nộp).
+- Thông báo: biểu tượng theo loại + chấm chưa đọc.
+- **Chưa xem màn thật**: tiện ích Chrome không kết nối được nên không đăng nhập xem màn, không chạy được design-critique / high-end-visual-design trên màn thật. Đợt 2 chỉ kiểm bằng tsc, eslint, vitest.
+
 ## Sạn chưa sửa
 - Màn Công ty đếm "Số hộ đã thu x/y" tính cả hộ Miễn giảm/Đã xóa nợ ở mẫu số — cần backend cho số đếm riêng, nên để nguyên.
 - `PeriodTrend` còn vài màu cứng (`#eef1f4`, `#fff`); đổi sang token khi lane Web xã đưa token chung.
