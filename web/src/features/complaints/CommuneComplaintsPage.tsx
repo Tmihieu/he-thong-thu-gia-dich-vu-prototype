@@ -1,11 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
-import { Alert, App, Button, Divider, Form, Input, Segmented, Select, Space, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Divider, Form, Input, Segmented, Select, Space, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
-import { api, ApiError } from '../../api/client';
+import { api } from '../../api/client';
 import { DateText } from '../../shared/DateText';
+import { errorText as apiErrorText } from '../../shared/errorText';
+import { PageHeader } from '../../shared/PageHeader';
+import { StatCard, StatGrid } from '../../shared/StatCard';
+import { EmptyBlock, ErrorBlock } from '../../shared/StateBlock';
+import { StatusTag } from '../../shared/StatusTag';
 import { normalizeText } from '../../shared/normalizeText';
 import { type SubjectPage, useActiveAssignments, useAreas, useCompanies } from '../masterdata/api';
 import {
@@ -19,13 +24,11 @@ import {
 } from './api';
 import { ComplaintDrawer } from './ComplaintDrawer';
 import { CreateComplaintForm, TextActionForm } from './ComplaintForms';
-import { COMPLAINT_CHANNEL_LABELS, COMPLAINT_STATUS_COLORS, COMPLAINT_STATUS_LABELS } from './labels';
+import { COMPLAINT_CHANNEL_LABELS, COMPLAINT_STATUS_TONES, COMPLAINT_STATUS_LABELS } from './labels';
 
 type Filter = ComplaintStatus | 'ALL' | 'OVERDUE';
 
-function errorText(e: unknown) {
-  return e ? (e instanceof ApiError ? e.message : 'Không thực hiện được. Vui lòng thử lại.') : null;
-}
+const errorText = (e: unknown) => (e ? apiErrorText(e) : null);
 
 /** Thao tác của xã trên một khiếu nại chưa giải quyết: chuyển công ty (một lần), đóng kèm kết quả. */
 function CommuneActions({ detail }: { detail: ComplaintDetail }) {
@@ -128,14 +131,21 @@ export function CommuneComplaintsPage() {
 
   return (
     <>
-      <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }} wrap>
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          Khiếu nại
-        </Typography.Title>
-        <Button type="primary" onClick={() => setCreating(true)}>
-          + Ghi nhận khiếu nại
-        </Button>
-      </Space>
+      <PageHeader
+        title="Khiếu nại"
+        description="Ghi nhận khiếu nại nhận qua điện thoại hoặc trực tiếp, chuyển công ty xử lý và đóng khi đã giải quyết."
+        extra={
+          <Button type="primary" onClick={() => setCreating(true)}>
+            + Ghi nhận khiếu nại
+          </Button>
+        }
+      />
+      <StatGrid>
+        <StatCard label="Mới tiếp nhận" tone="warning" value={count('NEW')} />
+        <StatCard label="Đang xử lý" tone="info" value={count('PROCESSING')} />
+        <StatCard label="Quá hạn" tone={count('OVERDUE') > 0 ? 'danger' : 'neutral'} value={count('OVERDUE')} />
+        <StatCard label="Đã giải quyết" tone="success" value={count('RESOLVED')} />
+      </StatGrid>
       <Space wrap style={{ marginBottom: 12 }}>
         <Segmented<Filter>
           value={filter}
@@ -156,13 +166,13 @@ export function CommuneComplaintsPage() {
         />
         <Input.Search allowClear aria-label="Tìm khiếu nại" placeholder="Mã, tên, nội dung, mã hộ" value={q} onChange={(e) => setQ(e.target.value)} />
       </Space>
-      {complaints.error && <Alert type="error" showIcon message={errorText(complaints.error)} style={{ marginBottom: 12 }} />}
+      {complaints.error && <ErrorBlock error={complaints.error} onRetry={() => void complaints.refetch()} />}
       <Table<Complaint>
         rowKey="id"
         loading={complaints.isLoading}
         dataSource={visible}
         pagination={{ pageSize: 20, hideOnSinglePage: true }}
-        locale={{ emptyText: 'Không có khiếu nại phù hợp' }}
+        locale={{ emptyText: <EmptyBlock title="Không có khiếu nại phù hợp" hint="Thử đổi bộ lọc, hoặc bấm Ghi nhận khiếu nại khi có người phản ánh." /> }}
         onRow={(c) => ({ onClick: () => open(c.id), style: { cursor: 'pointer' } })}
         columns={[
           {
@@ -184,8 +194,8 @@ export function CommuneComplaintsPage() {
             title: 'Trạng thái',
             render: (_, c) => (
               <Space size={4} wrap>
-                <Tag color={COMPLAINT_STATUS_COLORS[c.status]}>{COMPLAINT_STATUS_LABELS[c.status]}</Tag>
-                {c.overdue && <Tag color="red">Quá hạn</Tag>}
+                <StatusTag tone={COMPLAINT_STATUS_TONES[c.status]}>{COMPLAINT_STATUS_LABELS[c.status]}</StatusTag>
+                {c.overdue && <StatusTag tone="danger">Quá hạn</StatusTag>}
               </Space>
             ),
           },

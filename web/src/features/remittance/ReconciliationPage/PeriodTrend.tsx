@@ -1,7 +1,9 @@
-import { Alert, Card, Col, Empty, Flex, Row, Skeleton, Tag, theme, Typography } from 'antd';
+import { Card, Col, Flex, Row, theme, Typography } from 'antd';
 
 import { PERIOD_STATUS_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
+import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../shared/StateBlock';
+import { StatusTag } from '../../../shared/StatusTag';
 import { type Period, usePeriods } from '../../masterdata/api';
 import { type LedgerRow, useCompanyLedgers } from '../api';
 
@@ -31,9 +33,9 @@ function PeriodColumn({ period, rows, max }: { period: Period; rows: LedgerRow[]
         <Typography.Text strong style={{ fontSize: 15 }}>
           {period.label}
         </Typography.Text>
-        <Tag color={period.status === 'LOCKED' ? 'default' : 'green'} style={{ marginInlineEnd: 0 }}>
+        <StatusTag tone={period.status === 'LOCKED' ? 'neutral' : 'success'}>
           {PERIOD_STATUS_LABELS[period.status]}
-        </Tag>
+        </StatusTag>
       </Flex>
       <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.3, marginTop: 8, color: token.colorTextHeading }}>
         <MoneyText value={collected} />
@@ -68,11 +70,11 @@ export function PeriodTrend() {
       style={{ marginBottom: 16 }}
     >
       {failed ? (
-        <Alert type="error" showIcon message="Không tải được số liệu các tháng" />
+        <ErrorBlock error={failed} />
       ) : loading ? (
-        <Skeleton active paragraph={{ rows: 4 }} />
+        <LoadingBlock rows={3} />
       ) : recent.length === 0 ? (
-        <Empty description="Chưa có kỳ thu theo tháng" />
+        <EmptyBlock title="Chưa có kỳ thu theo tháng" hint="Quản trị mở kỳ thu để xem so sánh 3 tháng gần nhất." />
       ) : (
         <Row gutter={[16, 16]}>
           {recent.map((p, i) => (

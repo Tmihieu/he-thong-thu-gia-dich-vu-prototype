@@ -8,14 +8,15 @@ import {
   WalletOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
-import { Alert, Button, DatePicker, Empty, Input, Select, Skeleton, Tag } from 'antd';
+import { Button, DatePicker, Input, Select } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useMemo, useState } from 'react';
 
-import { ApiError } from '../../../api/client';
 import { useAuth } from '../../../app/auth/authContext';
 import { formatDate } from '../../../shared/format';
 import { MoneyText } from '../../../shared/MoneyText';
+import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../shared/StateBlock';
+import { StatusTag } from '../../../shared/StatusTag';
 import { normalizeText } from '../../../shared/normalizeText';
 import { usePeriods } from '../../masterdata/api';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
@@ -158,11 +159,14 @@ export function CollectorListPage() {
         ))}
       </div>
 
-      {work.error && <Alert type="error" showIcon message={work.error instanceof ApiError ? work.error.message : 'Không tải được danh sách thu'} />}
+      {work.error && <ErrorBlock error={work.error} onRetry={() => void work.refetch()} />}
       {work.isLoading ? (
-        <Skeleton active paragraph={{ rows: 6 }} />
+        <LoadingBlock rows={6} />
       ) : visible.length === 0 ? (
-        <Empty description={items.length === 0 ? 'Chưa có hộ nào trong tổ được giao' : 'Không có hộ phù hợp'} />
+        <EmptyBlock
+          title={items.length === 0 ? 'Chưa có hộ nào trong tổ được giao' : 'Không có hộ phù hợp'}
+          hint={items.length === 0 ? 'Công ty chưa phân tổ cho bạn hoặc kỳ này chưa có khoản thu.' : 'Thử bỏ bớt bộ lọc hoặc đổi từ khóa tìm.'}
+        />
       ) : (
         <ul className="clm-cards">
           {visible.map((w) => {
@@ -173,7 +177,7 @@ export function CollectorListPage() {
               <li key={w.charge.id} className="clm-card" aria-label={w.charge.subjectName}>
                 <header className="clm-card-head">
                   <strong>Khoản thu · {w.charge.code}</strong>
-                  <Tag color={s.color}>{s.label}</Tag>
+                  <StatusTag tone={s.tone}>{s.label}</StatusTag>
                 </header>
                 <div className="clm-card-body">
                   <small className="clm-label">Thông tin khách hàng</small>

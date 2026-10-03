@@ -4,7 +4,8 @@ import { Alert, App, Button, Drawer, Form, Radio, Select, Typography } from 'ant
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 
-import { api, ApiError } from '../../../api/client';
+import { api } from '../../../api/client';
+import { errorText } from '../../../shared/errorText';
 import { formatMoney } from '../../../shared/format';
 import { MoneyText } from '../../../shared/MoneyText';
 import { type Collector, type CollectorCharge, collectionKeys, type PaymentResult } from '../api';
@@ -106,7 +107,7 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
           showIcon
           role="alert"
           style={{ marginBottom: 12 }}
-          message={submit.error instanceof ApiError ? submit.error.message : 'Không gửi được. Vui lòng thử lại.'}
+          message={errorText(submit.error, 'Không gửi được. Vui lòng thử lại.')}
         />
       )}
       <Form<Values>

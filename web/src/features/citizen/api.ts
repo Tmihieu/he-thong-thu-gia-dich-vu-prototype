@@ -15,11 +15,11 @@ export const BULKY_STATUS_LABELS: Record<BulkyStatus, string> = {
   CANCELLED: 'Đã hủy',
 };
 
-export const BULKY_STATUS_COLORS: Record<BulkyStatus, string> = {
-  PENDING: 'orange',
-  QUOTED: 'blue',
-  COLLECTED: 'green',
-  CANCELLED: 'default',
+export const BULKY_STATUS_TONES: Record<BulkyStatus, 'warning' | 'info' | 'success' | 'neutral'> = {
+  PENDING: 'warning',
+  QUOTED: 'info',
+  COLLECTED: 'success',
+  CANCELLED: 'neutral',
 };
 
 export const BULKY_ITEM_LABELS: Record<BulkyRequest['itemType'], string> = {

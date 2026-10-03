@@ -37,6 +37,9 @@ Chữ to (tên hộ 22px, số tiền 32px), "Tiền mặt đang giữ" luôn hi
 - Thông báo: biểu tượng theo loại + chấm chưa đọc.
 - **Chưa xem màn thật**: tiện ích Chrome không kết nối được nên không đăng nhập xem màn, không chạy được design-critique / high-end-visual-design trên màn thật. Đợt 2 chỉ kiểm bằng tsc, eslint, vitest.
 
+## Đợt 3 — áp hệ thiết kế chung
+PageHeader cho các màn cấp trang (Tiến độ, Đối soát, Khu vực được giao, Khiếu nại xã + công ty, Rác cồng kềnh, Thông báo, Chợ cộng đồng); StatCard/StatGrid thay thẻ số tự chế (`LedgerStats` dùng chung Tiến độ, Phiếu thu, màn Công ty; thẻ đếm khiếu nại, đồ cồng kềnh, tiền mặt người đi thu); LoadingBlock/EmptyBlock/ErrorBlock thay Spin/Empty/Alert lỗi rời; StatusTag + tone thống nhất (`remittance/tones.ts`, `COMPLAINT_STATUS_TONES`, `BULKY_STATUS_TONES`, `NOTIFICATION_KIND_TONES`, `workState().tone`); lỗi API qua `shared/errorText`. `collector.css` chỉ còn phần riêng (tiền đang giữ, 2 nút thu). Các tab con (Phiếu thu, Sai sót phiếu thu, Phân tổ, Hộ được giao) nằm trong hub nên không có PageHeader riêng. Alert lỗi trong modal/form giữ nguyên (lỗi gửi form).
+
 ## Sạn chưa sửa
 - Màn Công ty đếm "Số hộ đã thu x/y" tính cả hộ Miễn giảm/Đã xóa nợ ở mẫu số — cần backend cho số đếm riêng, nên để nguyên.
 - `PeriodTrend` còn vài màu cứng (`#eef1f4`, `#fff`); đổi sang token khi lane Web xã đưa token chung.
