@@ -10,3 +10,8 @@ Người dùng giao leader tự quyết các câu hỏi nghiệp vụ trong đ�
 | QĐ-L4 | 04/10 | App người dân gọi trạng thái khoản là "Chưa thu / Đã thu" (nhãn nội bộ) hay "Chưa đóng / Đã đóng" | App dân: **Chưa đóng / Đã đóng** (Miễn giảm, Đã xóa nợ giữ nguyên). Web nội bộ giữ Chưa thu / Đã thu | Người dân là bên đóng, "chưa thu" là góc nhìn của bên thu | BR-BIL-10 |
 | QĐ-L5 | 04/10 | Màn Thông tin hộ còn hiện "Số đăng ký" ĐK-… có trái BR-GEN-08 | **Giữ**: đó là số đăng ký thu phí, không phải số hợp đồng | BR-GEN-08 chỉ cấm chữ "hợp đồng" | BR-GEN-08 |
 | QĐ-L6 | 04/10 | Đồ cồng kềnh trạng thái PENDING: "Chờ xác nhận" hay "Chờ công ty báo phí" | **Chờ công ty báo phí** trên app dân và web | Nói rõ đang chờ ai làm gì | BR-CIT-04 |
+| QĐ-L7 | 04/10 | Biểu giá đã ban hành có sửa được đơn giá không (code vẫn cho ghi đè) | **Không.** Chỉ sửa khi còn dự thảo; bản đã ban hành → 422 `TARIFF_NOT_DRAFT`. Nhờ vậy phần cầm lại / phải nộp xã không đổi sau khi phát hành, không cần chụp thêm cột | BR-MD-11 đã chốt 29/09; sửa giá sau ban hành làm lệch sổ công ty–kỳ | BR-MD-11, BR-REM-02 |
+| QĐ-L8 | 04/10 | Xóa nợ khoản từng thu rồi đã hoàn hết | **Cho phép** khi tổng thanh toán ròng = 0; rule ghi rõ "ròng" | Hoàn hết thì khoản về Chưa thu (O9), phải xóa nợ được | BR-LD-06 |
+| QĐ-L9 | 04/10 | Hoàn cho khoản mới thu một phần (chưa Đã thu) | **Cho phép**, 0 < số hoàn ≤ đã thu − đã hoàn | Thu nhầm một phần vẫn cần trả lại | BR-LD-05 |
+| QĐ-L10 | 04/10 | Khiếu nại / đồ cồng kềnh của hộ có nhiều tài khoản app | Lọc **theo hộ**: mọi tài khoản của hộ thấy chung | BR-CIT-02 "dữ liệu của hộ mình" | BR-CIT-02 |
+| QĐ-L11 | 04/10 | Hộ ngừng dịch vụ giữa kỳ; ngưỡng hạn đóng trước ngày phát hành / hạn kỳ xa | **Giữ hiện trạng**, chờ xã | Cần ngưỡng và cách tính do xã chốt | — |
