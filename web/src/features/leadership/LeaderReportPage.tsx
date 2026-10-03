@@ -7,7 +7,7 @@ import { StatusTag } from '../../shared/StatusTag';
 import { PageHeader } from '../../shared/PageHeader';
 import { ErrorBlock } from '../../shared/StateBlock';
 import { PROGRESS_COLORS, PROGRESS_LABELS, RECONCILIATION_COLORS, RECONCILIATION_LABELS } from '../../shared/labels';
-import { MoneyText } from '../../shared/MoneyText';
+import { MoneyText, RemainingText } from '../../shared/MoneyText';
 import { PeriodSelect } from '../masterdata/PeriodSelect';
 import { usePeriods } from '../masterdata/api';
 import { type AreaProgress, type LedgerRow, useAreaProgress, useCompanyLedger } from '../remittance/api';
@@ -129,7 +129,7 @@ export function LeaderReportPage() {
                 <Table.Summary.Cell index={0}>{companyId === undefined ? 'Tổng toàn xã' : 'Tổng (đã lọc)'}</Table.Summary.Cell>
                 {(['due', 'payable', 'adjustment', 'collected', 'refunded', 'received', 'remaining', 'previousDebt'] as const).map((k, i) => (
                   <Table.Summary.Cell key={k} index={i + 1} align="right">
-                    <MoneyText value={rows.reduce((t, r) => t + r[k], 0)} />
+                    k === 'remaining' ? <RemainingText value={rows.reduce((t, r) => t + r[k], 0)} /> : <MoneyText value={rows.reduce((t, r) => t + r[k], 0)} />
                   </Table.Summary.Cell>
                 ))}
                 <Table.Summary.Cell index={9} align="right">
@@ -162,7 +162,7 @@ export function LeaderReportPage() {
             { title: 'Đã thu', align: 'right', render: (_, r) => <MoneyText value={r.collected} /> },
             { title: 'Đã hoàn', align: 'right', render: (_, r) => (r.refunded ? <MoneyText value={r.refunded} /> : '—') },
             { title: 'Đã nộp về xã', align: 'right', render: (_, r) => <MoneyText value={r.received} /> },
-            { title: 'Còn phải nộp', align: 'right', render: (_, r) => <MoneyText value={r.remaining} strong /> },
+            { title: 'Còn phải nộp', align: 'right', render: (_, r) => <RemainingText value={r.remaining} strong /> },
             { title: 'Nợ kỳ trước', align: 'right', render: (_, r) => (r.previousDebt ? <MoneyText value={r.previousDebt} /> : '—') },
             { title: 'Hộ miễn 100%', align: 'right', render: (_, r) => exemptOf(r.companyId) },
             { title: 'Tiến độ', render: (_, r) => <StatusTag color={PROGRESS_COLORS[r.progress]}>{PROGRESS_LABELS[r.progress]}</StatusTag> },

@@ -18,7 +18,7 @@ import {
   usePublishCharges,
 } from '../api';
 import { ChargeRequestForm } from './ChargeRequestForm';
-import { PreviewPanel } from './PreviewPanel';
+import { PreviewPanel, SkippedList } from './PreviewPanel';
 
 const errorMessage = (err: unknown): string | null => (err ? errorText(err, 'Thao tác không thành công. Vui lòng thử lại.') : null);
 
@@ -139,6 +139,11 @@ export function ChargeRequestTab() {
               action={<Button onClick={() => setStep({ kind: 'form' })}>Quay lại</Button>}
             />
           ))}
+        {step.kind === 'done' && (
+          <div style={{ marginTop: 16 }}>
+            <SkippedList skipped={step.result.skipped} />
+          </div>
+        )}
       </Drawer>
     </>
   );

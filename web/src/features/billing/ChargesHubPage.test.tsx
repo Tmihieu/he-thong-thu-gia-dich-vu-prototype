@@ -62,7 +62,7 @@ describe('Khoản thu · phiếu YCT', () => {
 
     expect(await screen.findByText('219')).toBeInTheDocument();
     expect(screen.getByText('17.000.000 đ', { normalizer: (s) => s.replace(/\s+/g, ' ') })).toBeInTheDocument();
-    expect(screen.getByText(/9 hộ ở tổ chưa có công ty/)).toBeInTheDocument();
+    expect(screen.getByText(/Tổ chưa có công ty phụ trách: 1 hộ/)).toBeInTheDocument();
     expect(screen.getByText('Khu vực KV24 chưa có công ty phụ trách.')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Phát hành 219 khoản' }));

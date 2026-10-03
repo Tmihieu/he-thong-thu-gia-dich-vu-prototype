@@ -5,6 +5,8 @@ import { semantic } from '../app/theme';
 type Tone = keyof typeof semantic;
 
 interface StatCardProps {
+  /** Phần phụ bên phải số (vd. vòng tỷ lệ). */
+  aside?: ReactNode;
   label: string;
   value: ReactNode;
   /** Dòng chú thích dưới số (vd. "so với kỳ trước"). */
@@ -14,12 +16,15 @@ interface StatCardProps {
 }
 
 /** Thẻ số liệu: nhãn nhỏ, số lớn dùng chữ số đều nhau, viền trái màu theo `tone`. */
-export function StatCard({ label, value, hint, tone = 'neutral' }: StatCardProps) {
+export function StatCard({ label, value, hint, aside, tone = 'neutral' }: StatCardProps) {
   return (
     <div className="stat-card" style={{ borderLeftColor: semantic[tone].fg }}>
+      <div className="stat-body">
       <span className="stat-label">{label}</span>
       <strong className="stat-value">{value}</strong>
       {hint && <span className="stat-hint">{hint}</span>}
+      </div>
+      {aside}
     </div>
   );
 }
