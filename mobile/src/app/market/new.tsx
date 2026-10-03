@@ -1,6 +1,6 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Switch, Text, View } from 'react-native';
 
 import { ApiError } from '../../api/client';
 import { useProfile } from '../../features/citizen/api';
@@ -8,9 +8,10 @@ import { marketApi, newUuid, useMarketEdit, useMarketMutation, type MarketEdit }
 import { CAPTION_MAX, TAGS_MAX, validateMarketPost, type MarketErrors } from '../../features/market/validate';
 import { PhotoPickerField } from '../../features/photos/PhotoPickerField';
 import type { UploadedPhoto } from '../../features/photos/photos';
+import { errorMessage } from '../../shared/errors';
 import { MARKET_CATEGORY_LABELS, MARKET_TAG_LABELS, type MarketCategory, type MarketTag } from '../../shared/labels';
-import { colors, radius, spacing } from '../../shared/theme';
-import { Button, Card, CardTitle, Chip, ErrorBox, Line, Loading, Muted, Screen } from '../../shared/ui';
+import { colors, spacing, type as t } from '../../shared/theme';
+import { Button, Card, CardTitle, Chip, ChoiceGroup, ErrorState, Field, InlineError, Line, Loading, Muted, Screen } from '../../shared/ui';
 
 const TAGS = Object.keys(MARKET_TAG_LABELS) as MarketTag[];
 const CATEGORIES = Object.keys(MARKET_CATEGORY_LABELS) as MarketCategory[];
@@ -67,6 +68,7 @@ export default function MarketPostFormScreen() {
   });
 
   const onSubmit = () => {
+    if (save.isPending) return;
     const found = validateMarketPost({ caption, tags, sharePhone, contactPhone });
     setErrors(found);
     if (Object.keys(found).length > 0) return;
@@ -82,8 +84,8 @@ export default function MarketPostFormScreen() {
     save.reset();
   };
 
-  const toggleTag = (t: MarketTag) => {
-    setTags((cur) => (cur.includes(t) ? cur.filter((x) => x !== t) : cur.length < TAGS_MAX ? [...cur, t] : cur));
+  const toggleTag = (tag: MarketTag) => {
+    setTags((cur) => (cur.includes(tag) ? cur.filter((x) => x !== tag) : cur.length < TAGS_MAX ? [...cur, tag] : cur));
     setErrors((e) => ({ ...e, tags: undefined }));
   };
 
@@ -92,10 +94,7 @@ export default function MarketPostFormScreen() {
       <Screen>
         <Stack.Screen options={{ title: 'Sửa bài đăng' }} />
         {edit.error ? (
-          <ErrorBox
-            message={edit.error instanceof ApiError ? edit.error.message : 'Không tải được bài.'}
-            onRetry={() => void edit.refetch()}
-          />
+          <ErrorState error={edit.error} fallback="Không tải được bài." onRetry={() => void edit.refetch()} />
         ) : (
           <Loading />
         )}
@@ -107,28 +106,40 @@ export default function MarketPostFormScreen() {
   const area = edit.data?.post.area.name ?? profile.data?.subject.areaName;
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        <>
+          {conflict ? (
+            <>
+              <InlineError message="Bài vừa được thay đổi ở nơi khác. Tải lại bản mới rồi sửa tiếp (nội dung đang nhập sẽ được thay)." />
+              <Button title="Tải lại bài" variant="secondary" onPress={() => void reload()} />
+            </>
+          ) : save.error ? (
+            <InlineError message={errorMessage(save.error, 'Lưu không thành công. Vui lòng thử lại.')} />
+          ) : null}
+          <Button
+            title={uploading ? 'Đang tải ảnh…' : editId === null ? 'Đăng bài' : 'Lưu thay đổi'}
+            onPress={onSubmit}
+            disabled={uploading || conflict}
+            loading={save.isPending}
+          />
+        </>
+      }
+    >
       <Stack.Screen options={{ title: editId === null ? 'Đăng bài mới' : 'Sửa bài đăng' }} />
       <Card>
-        <CardTitle>Nội dung *</CardTitle>
-        <TextInput
-          accessibilityLabel="Nội dung bài đăng"
-          style={[styles.input, styles.textarea]}
+        <Field
+          label="Nội dung *"
+          hint={`${caption.trim().length}/${CAPTION_MAX}. Mô tả món đồ, tình trạng, cách nhận. Không cần ghi địa chỉ nhà.`}
+          error={errors.caption}
           value={caption}
           onChangeText={(v) => {
             setCaption(v);
             setErrors((e) => ({ ...e, caption: undefined }));
           }}
-          placeholder="Mô tả món đồ, tình trạng, cách nhận… Không cần ghi địa chỉ nhà."
-          placeholderTextColor={colors.textMuted}
           multiline
-          textAlignVertical="top"
           maxLength={CAPTION_MAX}
         />
-        <Muted>
-          {caption.trim().length}/{CAPTION_MAX}
-        </Muted>
-        {errors.caption ? <Text style={styles.error}>{errors.caption}</Text> : null}
       </Card>
 
       <Card>
@@ -137,23 +148,17 @@ export default function MarketPostFormScreen() {
       </Card>
 
       <Card>
-        <CardTitle>Nhãn * (chọn 1–{TAGS_MAX})</CardTitle>
-        <View style={styles.chips}>
-          {TAGS.map((t) => (
-            <Chip key={t} label={MARKET_TAG_LABELS[t]} selected={tags.includes(t)} onPress={() => toggleTag(t)} />
+        <ChoiceGroup label={`Loại tin * (chọn 1 đến ${TAGS_MAX})`} error={errors.tags}>
+          {TAGS.map((tag) => (
+            <Chip key={tag} multi label={MARKET_TAG_LABELS[tag]} selected={tags.includes(tag)} onPress={() => toggleTag(tag)} />
           ))}
-        </View>
-        {errors.tags ? <Text style={styles.error}>{errors.tags}</Text> : null}
-      </Card>
-
-      <Card>
-        <CardTitle>Danh mục</CardTitle>
-        <View style={styles.chips}>
+        </ChoiceGroup>
+        <ChoiceGroup label="Danh mục">
           {CATEGORIES.map((c) => (
             <Chip key={c} label={MARKET_CATEGORY_LABELS[c]} selected={category === c} onPress={() => setCategory(c)} />
           ))}
-        </View>
-        {area ? <Line label="Tổ" value={area} /> : null}
+        </ChoiceGroup>
+        {area ? <Line label="Khu vực" value={area} /> : null}
       </Card>
 
       <Card>
@@ -162,6 +167,7 @@ export default function MarketPostFormScreen() {
           <Switch
             accessibilityLabel="Chia sẻ số điện thoại"
             value={sharePhone}
+            trackColor={{ true: colors.brand, false: colors.border }}
             onValueChange={(v) => {
               setSharePhone(v);
               setErrors((e) => ({ ...e, contactPhone: undefined }));
@@ -169,59 +175,26 @@ export default function MarketPostFormScreen() {
           />
         </View>
         {sharePhone ? (
-          <>
-            <TextInput
-              accessibilityLabel="Số điện thoại liên hệ"
-              style={styles.input}
-              value={contactPhone}
-              onChangeText={(v) => {
-                setContactPhone(v);
-                setErrors((e) => ({ ...e, contactPhone: undefined }));
-              }}
-              placeholder="Số liên hệ"
-              placeholderTextColor={colors.textMuted}
-              keyboardType="phone-pad"
-              maxLength={20}
-            />
-            {errors.contactPhone ? <Text style={styles.error}>{errors.contactPhone}</Text> : null}
-          </>
+          <Field
+            label="Số điện thoại liên hệ"
+            error={errors.contactPhone}
+            value={contactPhone}
+            onChangeText={(v) => {
+              setContactPhone(v);
+              setErrors((e) => ({ ...e, contactPhone: undefined }));
+            }}
+            keyboardType="phone-pad"
+            maxLength={20}
+          />
         ) : (
-          <Muted>Tắt: không ai thấy số của bạn; người khác liên hệ qua bình luận.</Muted>
+          <Muted>Đang tắt: không ai thấy số của bạn, người khác liên hệ qua bình luận.</Muted>
         )}
       </Card>
-
-      {conflict ? (
-        <Card>
-          <ErrorBox message="Bài vừa được thay đổi ở nơi khác. Tải lại bản mới rồi sửa tiếp (nội dung đang nhập sẽ được thay)." />
-          <Button title="Tải lại bài" variant="ghost" onPress={() => void reload()} />
-        </Card>
-      ) : save.error ? (
-        <ErrorBox message={save.error instanceof ApiError ? save.error.message : 'Lưu không thành công. Vui lòng thử lại.'} />
-      ) : null}
-      <Button
-        title={uploading ? 'Đang tải ảnh…' : editId === null ? 'Đăng bài' : 'Lưu thay đổi'}
-        onPress={onSubmit}
-        disabled={uploading || save.isPending || conflict}
-        loading={save.isPending}
-      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
-  label: { flex: 1, fontSize: 15, color: colors.text },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm + 2,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: colors.text,
-    backgroundColor: colors.background,
-  },
-  textarea: { minHeight: 140 },
-  error: { color: colors.danger, fontSize: 13 },
+  label: { ...t.bodyStrong, color: colors.text, flex: 1 },
 });

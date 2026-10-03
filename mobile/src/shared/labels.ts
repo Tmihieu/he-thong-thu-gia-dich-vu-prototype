@@ -32,9 +32,9 @@ export const TARIFF_GROUP_LABELS: Record<TariffGroup, string> = {
 };
 
 export const CHARGE_STATUS_LABELS: Record<ChargeStatus, string> = {
-  UNPAID: 'Chưa đóng',
-  PAID: 'Đã đóng',
-  EXEMPT: 'Miễn',
+  UNPAID: 'Chưa thu',
+  PAID: 'Đã thu',
+  EXEMPT: 'Miễn giảm',
   WRITTEN_OFF: 'Đã xóa nợ',
 };
 

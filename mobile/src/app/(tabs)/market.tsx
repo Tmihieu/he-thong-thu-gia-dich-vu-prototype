@@ -1,14 +1,20 @@
 import { router, type Href } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { flattenUnique, useMarketFeed, useMarketMetadata, type FeedFilter } from '../../features/market/api';
 import { PagedList, PostCard } from '../../features/market/PostCard';
 import { MARKET_CATEGORY_LABELS, MARKET_TAG_LABELS, type MarketTag } from '../../shared/labels';
-import { colors, radius, spacing } from '../../shared/theme';
-import { Button, Chip } from '../../shared/ui';
+import { colors, radius, spacing, type as t } from '../../shared/theme';
+import { Button, Chip, Field, IconCircle, ListGroup, ListRow, Muted, SectionTitle, type IconName } from '../../shared/ui';
 
 const TAGS = Object.keys(MARKET_TAG_LABELS) as MarketTag[];
+
+const QUICK: { label: string; icon: IconName; to: Href }[] = [
+  { label: 'Tin của tôi', icon: 'documents-outline', to: '/market/mine' },
+  { label: 'Đã lưu', icon: 'bookmark-outline', to: '/market/saved' },
+  { label: 'Đã chặn', icon: 'ban-outline', to: '/market/blocks' },
+];
 
 /** Chợ đồ cũ (spec §5.1): tìm caption, chips nhiều nhãn (OR), một danh mục, một tổ; tải thêm khi cuộn. */
 export default function MarketTab() {
@@ -17,47 +23,74 @@ export default function MarketTab() {
   const meta = useMarketMetadata();
   const feed = useMarketFeed(filter);
   const set = (patch: Partial<FeedFilter>) => setFilter((f) => ({ ...f, ...patch }));
-  const toggleTag = (t: MarketTag) =>
-    set({ tags: filter.tags.includes(t) ? filter.tags.filter((x) => x !== t) : [...filter.tags, t] });
+  const toggleTag = (tag: MarketTag) =>
+    set({ tags: filter.tags.includes(tag) ? filter.tags.filter((x) => x !== tag) : [...filter.tags, tag] });
 
   const header = (
     <View style={styles.header}>
-      <Button title="Đăng bài" onPress={() => router.push('/market/new')} />
-      <View style={styles.row}>
-        <Link label="Tin của tôi" to="/market/mine" />
-        <Link label="Đã lưu" to="/market/saved" />
-        <Link label="Đã chặn" to="/market/blocks" />
+      <Button title="Đăng bài" icon="add-circle-outline" onPress={() => router.push('/market/new')} />
+      <View style={styles.quick}>
+        {QUICK.map((q) => (
+          <Pressable
+            key={q.label}
+            accessibilityRole="button"
+            accessibilityLabel={q.label}
+            onPress={() => router.push(q.to)}
+            style={({ pressed }) => [styles.quickItem, pressed && styles.quickPressed]}
+          >
+            <IconCircle name={q.icon} size={36} />
+            <Text style={styles.quickLabel}>{q.label}</Text>
+          </Pressable>
+        ))}
       </View>
-      <TextInput
-        accessibilityLabel="Tìm trong chợ"
-        style={styles.input}
+
+      <Field
+        label="Tìm trong chợ"
         value={text}
         onChangeText={setText}
         onSubmitEditing={() => set({ q: text.trim() })}
         onEndEditing={() => set({ q: text.trim() })}
         returnKeyType="search"
-        placeholder="Tìm đồ…"
-        placeholderTextColor={colors.textMuted}
+        placeholder="Tên món đồ, từ khóa"
         maxLength={100}
       />
-      <View style={styles.chips}>
-        {TAGS.map((t) => (
-          <Chip key={t} label={MARKET_TAG_LABELS[t]} selected={filter.tags.includes(t)} onPress={() => toggleTag(t)} />
-        ))}
+
+      <View style={styles.filterBlock}>
+        <Muted>Loại tin (chọn được nhiều)</Muted>
+        <View style={styles.chips}>
+          {TAGS.map((tag) => (
+            <Chip key={tag} multi label={MARKET_TAG_LABELS[tag]} selected={filter.tags.includes(tag)} onPress={() => toggleTag(tag)} />
+          ))}
+        </View>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        <Chip label="Mọi danh mục" selected={!filter.category} onPress={() => set({ category: undefined })} />
-        {(meta.data?.categories ?? []).map((c) => (
-          <Chip key={c} label={MARKET_CATEGORY_LABELS[c]} selected={filter.category === c} onPress={() => set({ category: c })} />
-        ))}
-      </ScrollView>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        <Chip label="Mọi tổ" selected={!filter.areaId} onPress={() => set({ areaId: undefined })} />
-        {(meta.data?.areas ?? []).map((a) => (
-          <Chip key={a.id} label={a.name} selected={filter.areaId === a.id} onPress={() => set({ areaId: a.id })} />
-        ))}
-      </ScrollView>
-      <Link label="Đồ không ai nhận? Đăng ký thu gom cồng kềnh" to="/bulky/new" />
+      <View style={styles.filterBlock}>
+        <Muted>Danh mục</Muted>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+          <Chip label="Tất cả" selected={!filter.category} onPress={() => set({ category: undefined })} />
+          {(meta.data?.categories ?? []).map((c) => (
+            <Chip key={c} label={MARKET_CATEGORY_LABELS[c]} selected={filter.category === c} onPress={() => set({ category: c })} />
+          ))}
+        </ScrollView>
+      </View>
+      <View style={styles.filterBlock}>
+        <Muted>Tổ, ấp, thôn</Muted>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+          <Chip label="Tất cả" selected={!filter.areaId} onPress={() => set({ areaId: undefined })} />
+          {(meta.data?.areas ?? []).map((a) => (
+            <Chip key={a.id} label={a.name} selected={filter.areaId === a.id} onPress={() => set({ areaId: a.id })} />
+          ))}
+        </ScrollView>
+      </View>
+
+      <ListGroup>
+        <ListRow
+          icon="cube-outline"
+          title="Đồ không ai nhận?"
+          subtitle="Đăng ký công ty thu gom đồ cồng kềnh"
+          onPress={() => router.push('/bulky/new')}
+        />
+      </ListGroup>
+      <SectionTitle>Bài mới</SectionTitle>
     </View>
   );
 
@@ -68,32 +101,30 @@ export default function MarketTab() {
       keyOf={(p) => String(p.id)}
       render={(p) => <PostCard p={p} />}
       header={header}
-      empty="Không có bài phù hợp."
+      empty="Không có bài phù hợp"
+      emptyIcon="storefront-outline"
     />
   );
 }
 
-function Link({ label, to }: { label: string; to: Href }) {
-  return (
-    <Text accessibilityRole="link" style={styles.link} onPress={() => router.push(to)}>
-      {label}
-    </Text>
-  );
-}
-
 const styles = StyleSheet.create({
-  header: { gap: spacing.md },
-  row: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  link: { color: colors.primaryDark, fontWeight: '800', fontSize: 15, paddingVertical: spacing.xs },
-  input: {
+  header: { gap: spacing.lg, marginBottom: spacing.xs },
+  quick: { flexDirection: 'row', gap: spacing.sm },
+  quickItem: {
+    flex: 1,
+    minHeight: 84,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm + 2,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: colors.text,
-    backgroundColor: colors.background,
+    borderColor: colors.divider,
+    paddingVertical: spacing.md,
   },
+  quickPressed: { backgroundColor: colors.brandSoft },
+  quickLabel: { ...t.caption, fontWeight: '700', color: colors.text, textAlign: 'center' },
+  filterBlock: { gap: spacing.sm },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chipsRow: { flexDirection: 'row', gap: spacing.sm, paddingRight: spacing.lg },
 });

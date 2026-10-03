@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Linking, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, StyleSheet, Text, View } from 'react-native';
 
 import { ApiError } from '../../api/client';
 import {
@@ -15,17 +15,12 @@ import {
 import { PostTags } from '../../features/market/PostCard';
 import { COMMENT_MAX } from '../../features/market/validate';
 import { PhotoStrip } from '../../features/photos/PhotoStrip';
+import { confirmAction } from '../../shared/confirm';
+import { errorMessage } from '../../shared/errors';
 import { formatDate } from '../../shared/format';
 import { MARKET_CATEGORY_LABELS } from '../../shared/labels';
-import { colors, radius, spacing } from '../../shared/theme';
-import { Button, Card, CardTitle, Empty, ErrorBox, Line, Loading, Muted, Screen } from '../../shared/ui';
-
-const errText = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
-const confirm = (title: string, message: string, ok: string, onPress: () => void) =>
-  Alert.alert(title, message, [
-    { text: 'Để sau', style: 'cancel' },
-    { text: ok, style: 'destructive', onPress },
-  ]);
+import { colors, spacing, type as t } from '../../shared/theme';
+import { Button, Callout, Card, CardTitle, Divider, EmptyState, ErrorState, Field, InlineError, Line, Loading, Muted, Screen } from '../../shared/ui';
 
 /** Chi tiết bài (spec §5.3). 404 (đã ẩn, bị chặn, không tồn tại) → "Bài không còn khả dụng", không nói lý do. */
 export default function MarketPostScreen() {
@@ -35,20 +30,15 @@ export default function MarketPostScreen() {
 
   const gone = detail.error instanceof ApiError && detail.error.status === 404;
   return (
-    // Ô bình luận ở cuối màn: iOS cần đẩy nội dung lên để bàn phím không che (như màn đăng nhập).
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Screen refreshing={detail.isRefetching} onRefresh={() => void detail.refetch()}>
-        {detail.isPending ? <Loading /> : null}
-        {gone ? (
-          <Card>
-            <Empty>Bài không còn khả dụng.</Empty>
-          </Card>
-        ) : detail.error ? (
-          <ErrorBox message={errText(detail.error, 'Không tải được bài đăng.')} onRetry={() => void detail.refetch()} />
-        ) : null}
-        {p && !gone ? <PostBody p={p} /> : null}
-      </Screen>
-    </KeyboardAvoidingView>
+    <Screen refreshing={detail.isRefetching} onRefresh={() => void detail.refetch()}>
+      {detail.isPending ? <Loading /> : null}
+      {gone ? (
+        <EmptyState icon="eye-off-outline" title="Bài không còn khả dụng" />
+      ) : detail.error ? (
+        <ErrorState error={detail.error} fallback="Không tải được bài đăng." onRetry={() => void detail.refetch()} compact={!!p} />
+      ) : null}
+      {p && !gone ? <PostBody p={p} /> : null}
+    </Screen>
   );
 }
 
@@ -66,7 +56,7 @@ function PostBody({ p }: { p: MarketPost }) {
     try {
       phone = (await marketApi.contact(p.id)).phone;
     } catch (e) {
-      setCallError(errText(e, 'Không lấy được số liên hệ.'));
+      setCallError(errorMessage(e, 'Không lấy được số liên hệ.'));
       return;
     }
     // Mở trình quay số, không tự gọi. Máy không hỗ trợ (máy tính bảng, giả lập) thì hiện số để tự gọi.
@@ -74,92 +64,103 @@ function PostBody({ p }: { p: MarketPost }) {
   };
 
   const onBlock = () =>
-    confirm(
-      'Chặn người đăng?',
-      'Hai bên sẽ không thấy bài, bình luận và số liên hệ của nhau trong chợ. Có thể bỏ chặn trong mục Đã chặn.',
-      'Chặn',
-      () => blockM.mutate(undefined, { onSuccess: () => router.back() }),
-    );
+    confirmAction({
+      title: 'Chặn người đăng?',
+      message: 'Hai bên sẽ không thấy bài, bình luận và số liên hệ của nhau trong chợ. Có thể bỏ chặn trong mục Đã chặn.',
+      confirmLabel: 'Chặn',
+      destructive: true,
+      onConfirm: () => blockM.mutate(undefined, { onSuccess: () => router.back() }),
+    });
 
   return (
     <>
       <Card>
         <PhotoStrip urls={p.photoUrls} />
         <PostTags p={p} />
-        <Text style={styles.text} selectable>
+        <Text style={styles.caption} selectable>
           {p.caption}
         </Text>
+        <Divider />
         <Line label="Danh mục" value={MARKET_CATEGORY_LABELS[p.category]} />
-        <Line label="Người đăng" value={`${p.author.displayName}${p.mine ? ' (bạn)' : ''} · ${p.area.name}`} />
+        <Line label="Người đăng" value={`${p.author.displayName}${p.mine ? ' (bạn)' : ''}`} />
+        <Line label="Khu vực" value={p.area.name} />
         <Muted>
-          {p.code} · đăng lúc {formatDate(p.createdAt, true)}
-          {p.editedAt ? ' · Đã chỉnh sửa' : ''}
+          {p.code}, đăng lúc {formatDate(p.createdAt, true)}
+          {p.editedAt ? ', đã chỉnh sửa' : ''}
         </Muted>
-        <View style={styles.actions}>
-          <Button
-            title={p.saved ? 'Bỏ lưu' : 'Lưu'}
-            variant="ghost"
-            onPress={() => saveM.mutate(!p.saved)}
-            loading={saveM.isPending}
-          />
-          {p.canCall ? <Button title="Gọi" onPress={() => void call()} /> : null}
-        </View>
-        {callError ? <ErrorBox message={callError} /> : null}
-        {saveM.error ? <ErrorBox message={errText(saveM.error, 'Không lưu được bài.')} /> : null}
       </Card>
+
+      <View style={styles.actions}>
+        {p.canCall ? <Button title="Gọi người đăng" icon="call-outline" onPress={() => void call()} /> : null}
+        <Button
+          title={p.saved ? 'Bỏ lưu bài' : 'Lưu bài'}
+          icon={p.saved ? 'bookmark' : 'bookmark-outline'}
+          variant="secondary"
+          onPress={() => saveM.mutate(!p.saved)}
+          loading={saveM.isPending}
+        />
+      </View>
+      {callError ? <InlineError message={callError} /> : null}
+      {saveM.error ? <InlineError message={errorMessage(saveM.error, 'Không lưu được bài.')} /> : null}
 
       {p.mine ? (
         <Card>
-          <View style={styles.actions}>
+          <CardTitle>Quản lý bài của bạn</CardTitle>
+          <Button
+            title="Sửa bài"
+            icon="create-outline"
+            variant="secondary"
+            onPress={() => router.push({ pathname: '/market/new', params: { id: String(p.id) } })}
+          />
+          {p.hidden ? (
+            <Button title="Hiện bài" variant="secondary" onPress={() => hideM.mutate(false)} loading={hideM.isPending} />
+          ) : (
             <Button
-              title="Sửa"
-              variant="ghost"
-              onPress={() => router.push({ pathname: '/market/new', params: { id: String(p.id) } })}
+              title="Ẩn bài"
+              variant="secondary"
+              loading={hideM.isPending}
+              onPress={() =>
+                confirmAction({
+                  title: 'Ẩn bài?',
+                  message: 'Người khác sẽ không thấy bài này cho tới khi bạn hiện lại.',
+                  confirmLabel: 'Ẩn',
+                  onConfirm: () => hideM.mutate(true),
+                })
+              }
             />
-            {p.hidden ? (
-              <Button title="Hiện bài" variant="ghost" onPress={() => hideM.mutate(false)} loading={hideM.isPending} />
-            ) : (
-              <Button
-                title="Ẩn bài"
-                variant="ghost"
-                loading={hideM.isPending}
-                onPress={() =>
-                  confirm('Ẩn bài?', 'Người khác sẽ không thấy bài này cho tới khi bạn hiện lại.', 'Ẩn', () =>
-                    hideM.mutate(true),
-                  )
-                }
-              />
-            )}
-            {p.status === 'OPEN' ? (
-              <Button
-                title="Đã xong"
-                variant="danger"
-                loading={statusM.isPending}
-                onPress={() =>
-                  confirm('Đánh dấu đã xong?', 'Bài rời khỏi chợ, không nhận bình luận và cuộc gọi mới. Có thể mở lại sau.', 'Đã xong', () =>
-                    statusM.mutate('CLOSED'),
-                  )
-                }
-              />
-            ) : (
-              <Button title="Mở lại" variant="ghost" onPress={() => statusM.mutate('OPEN')} loading={statusM.isPending} />
-            )}
-          </View>
+          )}
+          {p.status === 'OPEN' ? (
+            <Button
+              title="Đánh dấu đã xong"
+              variant="danger"
+              loading={statusM.isPending}
+              onPress={() =>
+                confirmAction({
+                  title: 'Đánh dấu đã xong?',
+                  message: 'Bài rời khỏi chợ, không nhận bình luận và cuộc gọi mới. Có thể mở lại sau.',
+                  confirmLabel: 'Đã xong',
+                  onConfirm: () => statusM.mutate('CLOSED'),
+                })
+              }
+            />
+          ) : (
+            <Button title="Mở lại bài" variant="secondary" onPress={() => statusM.mutate('OPEN')} loading={statusM.isPending} />
+          )}
           {ownerError ? (
-            <ErrorBox
+            <InlineError
               message={
                 ownerError instanceof ApiError && ownerError.status === 409
                   ? 'Bài vừa được thay đổi ở nơi khác; đã tải lại, vui lòng thử lại.'
-                  : errText(ownerError, 'Thao tác không thành công.')
+                  : errorMessage(ownerError, 'Thao tác không thành công.')
               }
             />
           ) : null}
         </Card>
       ) : (
-        <Card>
-          <Button title="Chặn người đăng" variant="danger" onPress={onBlock} loading={blockM.isPending} />
-          {blockM.error ? <ErrorBox message={errText(blockM.error, 'Chặn không thành công.')} /> : null}
-        </Card>
+        <>
+          <Button title="Chặn người đăng" icon="ban-outline" variant="danger" onPress={onBlock} loading={blockM.isPending} />
+          {blockM.error ? <InlineError message={errorMessage(blockM.error, 'Chặn không thành công.')} /> : null}
+        </>
       )}
 
       <Comments p={p} />
@@ -177,6 +178,7 @@ function Comments({ p }: { p: MarketPost }) {
   const send = useMarketMutation((content: string) => marketApi.comment(p.id, content, requestId.current));
 
   const onSend = () => {
+    if (send.isPending) return;
     if (!text.trim()) {
       setTextError('Nhập nội dung bình luận.');
       return;
@@ -192,64 +194,52 @@ function Comments({ p }: { p: MarketPost }) {
   return (
     <Card>
       <CardTitle>Bình luận ({p.commentCount})</CardTitle>
-      {list.error ? <ErrorBox message={errText(list.error, 'Không tải được bình luận.')} onRetry={() => void list.refetch()} /> : null}
+      {list.error ? <ErrorState compact error={list.error} fallback="Không tải được bình luận." onRetry={() => void list.refetch()} /> : null}
       {!list.isPending && items.length === 0 ? <Muted>Chưa có bình luận.</Muted> : null}
       {items.map((c) => (
         <View key={c.id} style={styles.comment}>
           <Text style={styles.commentAuthor}>
             {c.author.displayName}
-            {c.mine ? ' (bạn)' : ''} <Text style={styles.commentMeta}>· {formatDate(c.createdAt, true)}</Text>
+            {c.mine ? ' (bạn)' : ''}
           </Text>
-          <Text style={styles.text}>{c.content}</Text>
+          <Text style={styles.commentText}>{c.content}</Text>
+          <Text style={styles.commentMeta}>{formatDate(c.createdAt, true)}</Text>
         </View>
       ))}
       {list.isPending || list.isFetchingNextPage ? <Loading /> : null}
       {list.hasNextPage && !list.isFetchingNextPage ? (
-        <Button title="Xem thêm bình luận" variant="ghost" onPress={() => void list.fetchNextPage()} />
+        <Button title="Xem thêm bình luận" variant="secondary" onPress={() => void list.fetchNextPage()} />
       ) : null}
       {p.canComment ? (
         <>
-          <TextInput
-            accessibilityLabel="Viết bình luận"
-            style={styles.input}
+          <Field
+            label="Viết bình luận"
+            error={textError}
             value={text}
             onChangeText={(v) => {
               setText(v);
               setTextError(null);
             }}
-            placeholder="Viết bình luận…"
-            placeholderTextColor={colors.textMuted}
             multiline
+            style={styles.commentInput}
             maxLength={COMMENT_MAX}
           />
-          {textError ? <Text style={styles.error}>{textError}</Text> : null}
-          {send.error ? <ErrorBox message={errText(send.error, 'Gửi bình luận không thành công.')} /> : null}
-          <Button title="Gửi" onPress={onSend} loading={send.isPending} />
+          {send.error ? <InlineError message={errorMessage(send.error, 'Gửi bình luận không thành công.')} /> : null}
+          <Button title="Gửi bình luận" onPress={onSend} loading={send.isPending} />
         </>
       ) : (
-        <Muted>Bài không nhận bình luận mới.</Muted>
+        <Callout tone="neutral">Bài không nhận bình luận mới.</Callout>
       )}
     </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  text: { fontSize: 15, color: colors.text, lineHeight: 22 },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  comment: { gap: 2, paddingVertical: spacing.xs, borderTopWidth: 1, borderTopColor: colors.border },
-  commentAuthor: { fontSize: 14, fontWeight: '700', color: colors.text },
-  commentMeta: { fontWeight: '400', color: colors.textMuted },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm + 2,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: colors.text,
-    backgroundColor: colors.background,
-    minHeight: 60,
-  },
-  error: { color: colors.danger, fontSize: 13 },
+  caption: { ...t.body, color: colors.text },
+  actions: { gap: spacing.sm },
+  comment: { gap: spacing.xs, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.divider },
+  commentAuthor: { ...t.bodyStrong, color: colors.text },
+  commentText: { ...t.body, color: colors.text },
+  commentMeta: { ...t.caption, color: colors.textMuted },
+  commentInput: { minHeight: 96 },
 });
