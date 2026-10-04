@@ -4,7 +4,7 @@ import { errorText } from '../../../shared/errorText';
 import { DateText } from '../../../shared/DateText';
 import { type Area, type AreaAssignment, useAreaHistory } from '../api';
 
-/** Lịch sử phân công của một tổ, mới nhất trước. */
+/** Lịch sử phân công của một ấp, mới nhất trước. */
 export function AssignmentHistoryDrawer({ area, onClose }: { area: Area | null; onClose: () => void }) {
   const history = useAreaHistory(area?.id ?? null);
   return (

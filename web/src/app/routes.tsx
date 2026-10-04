@@ -4,13 +4,13 @@ import { Navigate, type RouteObject } from 'react-router';
 import { ChargesHubPage } from '../features/billing/ChargesHubPage';
 import { CollectorAccountPage } from '../features/collection/CollectorAccountPage';
 import { CollectorCashPage } from '../features/collection/CollectorCashPage';
+import { CollectorAccountsPage } from '../features/collection/CollectorAccountsPage/CollectorAccountsPage';
 import { CollectorListPage } from '../features/collection/CollectorListPage/CollectorListPage';
 import { CompanyHubPage } from '../features/collection/CompanyHubPage';
 import { CommuneComplaintsPage } from '../features/complaints/CommuneComplaintsPage';
 import { CompanyComplaintsPage } from '../features/complaints/CompanyComplaintsPage';
 import { MarketModerationPage, MarketModerationPostPage } from '../features/market/MarketPages';
 import { AreasPage } from '../features/masterdata/AreasPage/AreasPage';
-import { ApprovalsPage } from '../features/leadership/ApprovalsPage';
 import { LeaderDashboardPage } from '../features/leadership/LeaderDashboardPage';
 import { LeaderReportPage } from '../features/leadership/LeaderReportPage';
 import { CompaniesPage } from '../features/masterdata/CompaniesPage/CompaniesPage';
@@ -42,7 +42,6 @@ const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'COMMUNE_OFFICER:progress': <ProgressPage />,
   'COMMUNE_OFFICER:reconciliation': <ReconciliationPage />,
   'COMMUNE_OFFICER:complaints': <CommuneComplaintsPage />,
-  'COMMUNE_OFFICER:approvals': <ApprovalsPage />,
   'COMMUNE_OFFICER:market': <MarketModerationPage />,
   'LEADER:dashboard': <LeaderDashboardPage />,
   'LEADER:report': <LeaderReportPage />,
@@ -50,6 +49,7 @@ const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'LEADER:reconciliation': <ReconciliationPage />,
   'COMPANY_MANAGER:complaints': <CompanyComplaintsPage />,
   'COMPANY_MANAGER:assigned': <CompanyHubPage />,
+  'COMPANY_MANAGER:collectors': <CollectorAccountsPage />,
   'COLLECTOR:list': <CollectorListPage />,
   'COLLECTOR:cash': <CollectorCashPage />,
   'COLLECTOR:account': <CollectorAccountPage />,

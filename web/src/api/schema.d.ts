@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/platform/collector-accounts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sửa họ tên, liên hệ của người đi thu (tên đăng nhập không đổi) */
+        put: operations["update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/masterdata/tariffs/{id}": {
         parameters: {
             query?: never;
@@ -48,7 +65,7 @@ export interface paths {
         /** Chi tiết hồ sơ hộ */
         get: operations["get"];
         /** Sửa thông tin đối tượng (cán bộ xã); hợp đồng sửa qua /contracts/{id} */
-        put: operations["update"];
+        put: operations["update_1"];
         post?: never;
         delete?: never;
         options?: never;
@@ -66,7 +83,7 @@ export interface paths {
         /** Quy tắc tự tạo kỳ thu dự thảo (quản trị) */
         get: operations["get_1"];
         /** Sửa quy tắc tự tạo kỳ thu: bật/tắt, chu kỳ, ngày tạo, số ngày hạn (quản trị) */
-        put: operations["update_1"];
+        put: operations["update_2"];
         post?: never;
         delete?: never;
         options?: never;
@@ -136,6 +153,23 @@ export interface paths {
         get?: never;
         /** Sửa tên và trạng thái khu vực (quản trị) */
         put: operations["updateArea"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/areas/{id}/location": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Đặt vị trí khu vực trên bản đồ (cán bộ xã, quản trị) */
+        put: operations["moveArea"];
         post?: never;
         delete?: never;
         options?: never;
@@ -353,6 +387,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/platform/collector-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Danh sách tài khoản người đi thu của công ty mình (quản lý công ty) */
+        get: operations["list_3"];
+        put?: never;
+        /** Tạo tài khoản người đi thu thuộc công ty của người gọi */
+        post: operations["create_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/collector-accounts/{id}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mở khóa tài khoản người đi thu */
+        post: operations["unlock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/collector-accounts/{id}/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Đặt lại mật khẩu người đi thu */
+        post: operations["resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/collector-accounts/{id}/lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Khóa tài khoản người đi thu */
+        post: operations["lock_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/auth/login": {
         parameters: {
             query?: never;
@@ -484,7 +587,7 @@ export interface paths {
         get: operations["search"];
         put?: never;
         /** Tạo hồ sơ hộ, kèm hợp đồng đầu tiên nếu có (cán bộ xã) */
-        post: operations["create_1"];
+        post: operations["create_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -586,7 +689,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Bổ sung đường vào danh mục (cán bộ xã, có nhật ký) */
-        post: operations["create_2"];
+        post: operations["create_3"];
         delete?: never;
         options?: never;
         head?: never;
@@ -601,7 +704,7 @@ export interface paths {
             cookie?: never;
         };
         /** Danh sách kỳ thu đã mở, mới nhất trước (không gồm kỳ dự thảo); có date thì chỉ các kỳ chứa ngày đó */
-        get: operations["list_3"];
+        get: operations["list_4"];
         put?: never;
         /** Mở kỳ thu tháng/quý (quản trị), vào thẳng Đang thu; gắn biểu giá có hiệu lực tại ngày đầu kỳ */
         post: operations["open"];
@@ -724,10 +827,10 @@ export interface paths {
             cookie?: never;
         };
         /** Đề nghị (xã, lãnh đạo, quản trị); lọc trạng thái / loại; mới nhất trước */
-        get: operations["list_4"];
+        get: operations["list_5"];
         put?: never;
         /** Cán bộ xã lập đề nghị hoàn (khoản đã thu) hoặc xóa nợ (khoản chưa thu); thông báo lãnh đạo */
-        post: operations["create_3"];
+        post: operations["create_4"];
         delete?: never;
         options?: never;
         head?: never;
@@ -776,10 +879,10 @@ export interface paths {
             cookie?: never;
         };
         /** Danh sách khiếu nại, mới nhất trước; công ty chỉ thấy khiếu nại đã chuyển cho mình (G12) */
-        get: operations["list_5"];
+        get: operations["list_6"];
         put?: never;
         /** Cán bộ xã ghi nhận khiếu nại qua điện thoại / trực tiếp */
-        post: operations["create_4"];
+        post: operations["create_5"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1020,7 +1123,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Đăng bài; khớp từ khóa lọc thì chờ cán bộ xã duyệt; retry cùng clientRequestId trả bài cũ */
-        post: operations["create_5"];
+        post: operations["create_6"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1103,7 +1206,7 @@ export interface paths {
             cookie?: never;
         };
         /** Phản ánh của hộ, mới nhất trước */
-        get: operations["list_6"];
+        get: operations["list_7"];
         put?: never;
         /** Gửi phản ánh (kênh APP); vị trí để trống thì lấy địa chỉ hộ */
         post: operations["submit"];
@@ -1343,7 +1446,7 @@ export interface paths {
             cookie?: never;
         };
         /** Thông báo của người đang đăng nhập (theo vai trò, công ty, cá nhân), mới nhất trước */
-        get: operations["list_7"];
+        get: operations["list_8"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1649,7 +1752,7 @@ export interface paths {
             cookie?: never;
         };
         /** Mọi bài (kể cả ẩn, chờ duyệt, bị gỡ); reported=true chỉ bài có báo cáo chưa xử lý */
-        get: operations["list_8"];
+        get: operations["list_9"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1938,7 +2041,7 @@ export interface paths {
             cookie?: never;
         };
         /** Thông báo của tài khoản người dân, mới nhất trước; lọc theo loại (Phản ánh / Giao dịch) */
-        get: operations["list_9"];
+        get: operations["list_10"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2134,6 +2237,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/citizen/charges/{id}/transfer-info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Thông tin chuyển khoản (VietQR) cho một khoản của hộ: tài khoản công ty, số còn thiếu, mã nội dung */
+        get: operations["transferInfo_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/billing/charges": {
         parameters: {
             query?: never;
@@ -2199,6 +2319,12 @@ export interface components {
             status: "ACTIVE" | "LOCKED";
             /** Format: date-time */
             lastLoginAt: string | null;
+        };
+        UpdateCollectorRequest: {
+            fullName: string;
+            phone?: string;
+            /** Format: email */
+            email?: string;
         };
         RateRequest: {
             /** @enum {string} */
@@ -2481,6 +2607,22 @@ export interface components {
              * @description Số đối tượng chưa chấm dứt
              */
             subjectCount: number;
+            /**
+             * Format: double
+             * @description Vĩ độ điểm đại diện
+             */
+            latitude: number | null;
+            /**
+             * Format: double
+             * @description Kinh độ điểm đại diện
+             */
+            longitude: number | null;
+        };
+        AreaLocationRequest: {
+            /** Format: double */
+            latitude: number;
+            /** Format: double */
+            longitude: number;
         };
         SavedStateDto: {
             saved: boolean;
@@ -2720,6 +2862,15 @@ export interface components {
             password: string;
         };
         PasswordRequest: {
+            password: string;
+        };
+        CreateCollectorRequest: {
+            /** @example thu07b */
+            username: string;
+            fullName: string;
+            phone?: string;
+            /** Format: email */
+            email?: string;
             password: string;
         };
         LoginRequest: {
@@ -4218,6 +4369,32 @@ export interface operations {
             };
         };
     };
+    update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCollectorRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UserDto"];
+                };
+            };
+        };
+    };
     updateDraft: {
         parameters: {
             query?: never;
@@ -4266,7 +4443,7 @@ export interface operations {
             };
         };
     };
-    update: {
+    update_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -4312,7 +4489,7 @@ export interface operations {
             };
         };
     };
-    update_1: {
+    update_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -4448,6 +4625,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AreaRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AreaDto"];
+                };
+            };
+        };
+    };
+    moveArea: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AreaLocationRequest"];
             };
         };
         responses: {
@@ -4873,6 +5076,120 @@ export interface operations {
             };
         };
     };
+    list_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UserDto"][];
+                };
+            };
+        };
+    };
+    create_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCollectorRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UserDto"];
+                };
+            };
+        };
+    };
+    unlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UserDto"];
+                };
+            };
+        };
+    };
+    resetPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UserDto"];
+                };
+            };
+        };
+    };
+    lock_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UserDto"];
+                };
+            };
+        };
+    };
     login: {
         parameters: {
             query?: never;
@@ -5081,7 +5398,7 @@ export interface operations {
             };
         };
     };
-    create_1: {
+    create_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -5235,7 +5552,7 @@ export interface operations {
             };
         };
     };
-    create_2: {
+    create_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -5259,7 +5576,7 @@ export interface operations {
             };
         };
     };
-    list_3: {
+    list_4: {
         parameters: {
             query?: {
                 date?: string;
@@ -5511,7 +5828,7 @@ export interface operations {
             };
         };
     };
-    list_4: {
+    list_5: {
         parameters: {
             query?: {
                 status?: "PENDING" | "APPROVED" | "REJECTED";
@@ -5534,7 +5851,7 @@ export interface operations {
             };
         };
     };
-    create_3: {
+    create_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -5610,7 +5927,7 @@ export interface operations {
             };
         };
     };
-    list_5: {
+    list_6: {
         parameters: {
             query?: {
                 status?: "NEW" | "PROCESSING" | "RESOLVED";
@@ -5632,7 +5949,7 @@ export interface operations {
             };
         };
     };
-    create_4: {
+    create_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -6035,7 +6352,7 @@ export interface operations {
             };
         };
     };
-    create_5: {
+    create_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -6162,7 +6479,7 @@ export interface operations {
             };
         };
     };
-    list_6: {
+    list_7: {
         parameters: {
             query?: never;
             header?: never;
@@ -6537,7 +6854,7 @@ export interface operations {
             };
         };
     };
-    list_7: {
+    list_8: {
         parameters: {
             query?: {
                 unreadOnly?: boolean;
@@ -6932,7 +7249,7 @@ export interface operations {
             };
         };
     };
-    list_8: {
+    list_9: {
         parameters: {
             query?: {
                 moderation?: "PUBLISHED" | "PENDING_REVIEW" | "REJECTED";
@@ -7316,7 +7633,7 @@ export interface operations {
             };
         };
     };
-    list_9: {
+    list_10: {
         parameters: {
             query?: {
                 unreadOnly?: boolean;
@@ -7578,6 +7895,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CitizenChargeDto"];
+                };
+            };
+        };
+    };
+    transferInfo_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TransferInfoDto"];
                 };
             };
         };

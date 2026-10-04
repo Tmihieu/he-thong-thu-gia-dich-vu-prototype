@@ -5,6 +5,8 @@ import java.time.LocalTime;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -36,6 +38,11 @@ public final class MasterDataDtos {
             @NotNull ActiveStatus status) {
     }
 
+    public record AreaLocationRequest(
+            @NotNull @DecimalMin("-90") @DecimalMax("90") Double latitude,
+            @NotNull @DecimalMin("-180") @DecimalMax("180") Double longitude) {
+    }
+
     public record DistrictDto(
             @Schema(requiredMode = RequiredMode.REQUIRED) Long id,
             @Schema(requiredMode = RequiredMode.REQUIRED, example = "DTH") String code,
@@ -55,11 +62,15 @@ public final class MasterDataDtos {
             @Schema(requiredMode = RequiredMode.REQUIRED) Long districtId,
             @Schema(requiredMode = RequiredMode.REQUIRED, example = "DTH") String districtCode,
             @Schema(requiredMode = RequiredMode.REQUIRED) ActiveStatus status,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Số đối tượng chưa chấm dứt") long subjectCount) {
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Số đối tượng chưa chấm dứt") long subjectCount,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true, description = "Vĩ độ điểm đại diện")
+            Double latitude,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true, description = "Kinh độ điểm đại diện")
+            Double longitude) {
 
         static AreaDto of(Area a, long subjectCount) {
             return new AreaDto(a.getId(), a.getCode(), a.getName(), a.getDistrict().getId(),
-                    a.getDistrict().getCode(), a.getStatus(), subjectCount);
+                    a.getDistrict().getCode(), a.getStatus(), subjectCount, a.getLatitude(), a.getLongitude());
         }
     }
 

@@ -49,6 +49,20 @@ public class LocationService {
         return area;
     }
 
+    /** Cán bộ xã đặt lại vị trí khu vực trên bản đồ. */
+    public Area moveArea(Long id, double latitude, double longitude, CurrentUser actor) {
+        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN);
+        Area area = areas.findByIdWithDistrict(id)
+                .orElseThrow(() -> new NotFoundException("AREA_NOT_FOUND", "Không tìm thấy khu vực."));
+        Map<String, Object> before = new LinkedHashMap<>();
+        before.put("latitude", area.getLatitude());
+        before.put("longitude", area.getLongitude());
+        area.moveTo(latitude, longitude);
+        audit.record(actor, "MOVE_AREA", "Area", area.getCode(), before,
+                Map.of("latitude", latitude, "longitude", longitude));
+        return area;
+    }
+
     private static Map<String, Object> snapshot(District district) {
         Map<String, Object> values = new LinkedHashMap<>();
         values.put("name", district.getName());

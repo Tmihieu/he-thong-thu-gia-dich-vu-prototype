@@ -144,6 +144,15 @@ export function useUpdateArea() {
   });
 }
 
+export function useMoveArea() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, latitude, longitude }: { id: number; latitude: number; longitude: number }) =>
+      api.put<Area>(`/api/masterdata/areas/${id}/location`, { latitude, longitude }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: masterdataKeys.areas }),
+  });
+}
+
 export function useCompanies() {
   return useQuery({ queryKey: masterdataKeys.companies, queryFn: () => api.get<Company[]>('/api/masterdata/companies') });
 }

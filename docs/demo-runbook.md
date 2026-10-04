@@ -59,12 +59,31 @@ Mọi tên, SĐT, địa chỉ là dữ liệu giả ("Mẫu", đầu số `0902
 | Điều kiện ban đầu | Seed |
 |---|---|
 | Kỳ 10/2026 **chưa mở** (bước 1) | Không có kỳ 10/2026 |
-| KV24 chưa có công ty (bước 2) | `V6_1`: 23 tổ còn lại đã phân công, hiệu lực 01/09–31/12/2026 |
+| KV24 chưa có công ty (bước 2) | `V6_1` + `V40_2`: mọi ấp khác (51) đã phân công, hiệu lực 01/09–31/12/2026; KV24 nay là Ấp 47 |
 | DV01 phụ trách KV07, KV09; người đi thu `thu07`, `thu09` (bước 3) | `V6_1`, `V9_1` |
 | Hộ `DTH-H000128` (KV07, DV01) có tài khoản app (bước 4) | `V18_1` |
 | **Kỳ cũ 09/2026 đã quá hạn, DV01 còn nợ** (bước 5 nhắc nộp) | `V22_1`, xem dưới |
 | Chợ đồ cũ có bài giả; `CDC-035` của hộ kịch bản đang mở, `CDC-033` đã đóng (bước 7) | `V20_1` |
 | Lịch thu gom mọi tổ | `V17_1` |
+| **Kỳ 09/2026 có số liệu của cả 11 công ty** (Tiến độ thu, Đối soát, Tổng quan không chỉ DV01) | `V40_3`, xem dưới |
+
+**Dữ liệu minh họa nhiều công ty** (`V40_3`, toàn bộ là GIẢ): 28 ấp thêm mới có 6 hộ gia đình mỗi ấp (cách 4 ấp có thêm 1 hộ kinh doanh); phiếu `YCT-0926-02` phát hành kỳ 09/2026 cho 10 công ty DV02–DV11 (số liệu DV01 của `V22_1` không đổi; Ấp 47 chưa có công ty nên chưa có khoản). Mỗi công ty một mức thu/nộp để Tiến độ thu có đủ trạng thái, đọc ở kỳ 09/2026:
+
+| Công ty | Hộ đã đóng | Đã nộp về xã (so với phải nộp) | Hiện ở Tiến độ thu |
+|---|---|---|---|
+| DV02, DV11 | 100% | đủ | Đã nộp đủ |
+| DV03, DV07 | ~83%, ~91% | đủ | Đã nộp đủ |
+| DV04 | ~87% | ~60% | Quá hạn nộp |
+| DV09 | ~78% | ~80% | Quá hạn nộp (còn ít) |
+| DV05, DV08 | ~71%, ~44% | 40%, 30% | Quá hạn nộp, nộp dưới 45% (DV08 thu cũng dưới 45%) |
+| DV06 | ~57% | 0 | Quá hạn nộp, chưa nộp |
+| DV10 | ~32% | 0 | Quá hạn nộp, thu dưới 45% |
+| DV01 | 8 lần thu (xem dưới) | 400.000 | Quá hạn nộp |
+
+- **Tài khoản ngân hàng tạm** cho cả 11 công ty (`Vietcombank 9999000001` của DV01, `MBBank 9999000002` … `MSB 9999000011`, không phải tài khoản thật): màn Thu tiền của người đi thu và app người dân hiện mã VietQR, app không còn nút thanh toán mô phỏng. Hộ có app còn nợ kỳ 09 để thử đóng online: `0902000221` (`TTT-H000221`) và `0902000341` (`NB-H000341`), cùng DV07, mỗi hộ 80.000.
+- **Chuyển khoản qua QR** (Cấu hình → công ty → *Chuyển khoản chờ đối chiếu*): phần lớn đã khớp và ghi Đã thu tự động; còn 5 dòng chờ đối chiếu mỗi lý do một dòng — không có mã khoản (DV05, DV07), sai số tiền (DV03), sai tài khoản (DV06), khoản đã đóng rồi (DV09).
+- Tiền mặt đã bàn giao và phiếu thu nộp về xã (`PT-CT-0926-002…`) có đủ ở các công ty; một số người đi thu còn đang giữ tiền mặt chưa bàn giao (màn Tiền mặt của công ty). Mọi thao tác trên có dòng nhật ký.
+- Demo thu qua ngân hàng không cần tài khoản thật: đặt `SEPAY_WEBHOOK_API_KEY=demo-sepay-key` trong `.env` (khởi động lại backend), mở khoản trong app để xem nội dung chuyển khoản (`VSMT` + số khoản 6 chữ số), số tài khoản và số tiền, rồi chạy `scripts/simulate-bank-transfer.sh <nội dung CK> <số tiền> <số tài khoản>` (gọi `POST /api/payments/sepay/webhook`). App chuyển sang **Đã đóng**, công ty thấy **Đã thu**.
 
 **Kỳ cũ 09/2026** (`V22_1`): trạng thái Đang thu, hạn công ty nộp xã **25/09/2026** — đã quá hạn cả ngày làm seed lẫn ngày demo 21/10. Chỉ phát hành cho DV01 (phiếu `YCT-0926-01`, phạm vi công ty):
 
@@ -89,7 +108,7 @@ Web mở ở http://localhost:5173; mỗi vai trò dùng một cửa sổ ẩn d
 2. **`canbo_xa`** → Khu vực → KV24 → **Phân công** (popup) cho **DV01**. Rồi Khoản thu → Phiếu YCT: kỳ 10/2026, phí vệ sinh môi trường, phạm vi toàn xã, hạn hộ đóng không sau hạn kỳ → **Xem trước** → **Phát hành**. Phân công KV24 trước khi phát hành, không thì hộ KV24 bị bỏ qua với cảnh báo "chưa có công ty phụ trách".
 3. **`dv01`** → Khu vực được giao → Phân tổ: phân **KV24** (vừa nhận ở bước 2, chưa có người đi thu) cho `thu07`. Seed đã phân sẵn `thu07` ↔ KV07, `thu09` ↔ KV09. **`thu07`** trên điện thoại (`http://<IP LAN>:5173`) → Danh sách thu (kỳ 10/2026): ghi **2 hộ tiền mặt**, **1 hộ vắng**. **`dv01`** → Tổng quan → **Nhận tiền mặt** của `thu07`; `thu07` → Tiền mặt thấy đang giữ về 0.
    - Lịch sử hộ / báo sai (T53): `thu07` chọn kỳ **09/2026** → hộ `DTH-H000122` → **Lịch sử** (vắng 08/09, thu 10/09); **Báo sai thông tin** một hộ → `canbo_xa` và `dv01` nhận thông báo.
-4. **App `0902000128`** → Khoản phí của hộ → khoản kỳ 10/2026 → thanh toán mô phỏng. **`dv01`** → Hộ được giao: `DTH-H000128` hiện **Đã thu**.
+4. **App `0902000128`** → Khoản phí của hộ → khoản kỳ 10/2026 → hiện mã QR chuyển khoản của DV01. Chạy `scripts/simulate-bank-transfer.sh VSMT<số khoản> <số tiền> 9999000001` (giả lập ngân hàng báo tiền về) → app hiện **Đã đóng**. **`dv01`** → Hộ được giao: `DTH-H000128` hiện **Đã thu**.
 5. Nộp tiền về xã (thứ tự người dùng chốt 28/09/2026, vì nợ kỳ 09 — xem ghi chú ở mục seed):
    1. **`canbo_xa`** → Tiến độ thu (kỳ 10/2026): dòng DV01 **Quá hạn nộp**, "Nợ kỳ trước 919.000" → **Nhắc nộp** → gửi. **`dv01`** thấy thông báo "Nhắc nộp tiền Tháng 09/2026" ở chuông.
    2. DV01 nộp hết kỳ cũ: `canbo_xa` → Khoản thu → Phiếu thu công ty → chọn **kỳ 09/2026** → **Lập phiếu** ở dòng DV01, số tiền **919.000** → kỳ 09 của DV01 Đã nộp đủ.

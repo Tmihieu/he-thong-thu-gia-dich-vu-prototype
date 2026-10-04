@@ -40,6 +40,16 @@ public class Area extends BaseEntity {
     @Setter
     private String note;
 
+    /** Điểm đại diện trên bản đồ (WGS84); null khi chưa đặt. */
+    private Double latitude;
+
+    private Double longitude;
+
+    public void moveTo(double latitude, double longitude) {
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
+
     public static Area create(String code, String name, District district) {
         Area a = new Area();
         a.code = code;

@@ -24,7 +24,7 @@ interface Props {
   onCancel: () => void;
 }
 
-/** Popup phân công một hoặc nhiều tổ chưa có công ty cho một công ty (§10 bước 2). */
+/** Popup phân công một hoặc nhiều ấp chưa có công ty cho một công ty (§10 bước 2). */
 export function AssignAreaModal({ open, areas, companies, initialAreaIds, initialCompanyId, submitting, error, onSubmit, onCancel }: Props) {
   const [form] = Form.useForm<FormValues>();
 
@@ -58,11 +58,11 @@ export function AssignAreaModal({ open, areas, companies, initialAreaIds, initia
         onFinish={finish}
       >
         {error && <Alert type="error" showIcon message={error} role="alert" style={{ marginBottom: 16 }} />}
-        <Form.Item label="Tổ dân phố" name="areaIds" rules={[{ required: true, message: 'Vui lòng chọn ít nhất một tổ' }]}>
+        <Form.Item label="Ấp" name="areaIds" rules={[{ required: true, message: 'Vui lòng chọn ít nhất một ấp' }]}>
           <Select
             mode="multiple"
-            aria-label="Tổ dân phố"
-            placeholder="Chọn tổ"
+            aria-label="Ấp"
+            placeholder="Chọn ấp"
             optionFilterProp="label"
             options={areas.map((a) => ({ value: a.id, label: `${a.code} · ${a.name}` }))}
           />

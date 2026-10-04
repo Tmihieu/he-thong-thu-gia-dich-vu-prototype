@@ -20,7 +20,6 @@ const SCREENS: Record<string, (p: Params) => string> = {
   'commune.periodDrafts': () => '/commune/charges?tab=requests',
   'commune.complaints': (p) => withId('/commune/complaints', 'complaintId', p),
   'company.complaints': (p) => withId('/company/complaints', 'complaintId', p),
-  'commune.approvals': () => '/commune/approvals',
   'commune.market': (p) =>
     typeof p.postId === 'number' && p.postId > 0 ? `/commune/market/${p.postId}` : '/commune/market?tab=reported',
 };
