@@ -8,7 +8,8 @@ import { errorTextOrNull } from '../../../shared/errorText';
 import { DateText } from '../../../shared/DateText';
 import { CHARGE_SCOPE_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
-import { useAreas, useCompanies, usePeriods } from '../../masterdata/api';
+import { type Period, useAreas, useCompanies, useDraftPeriods, usePeriods } from '../../masterdata/api';
+import { OpenDraftPanel } from '../PeriodDraftsPage/OpenDraftPanel';
 import {
   type ChargeRequestSummary,
   type IssueRequest,
@@ -21,11 +22,12 @@ import {
 import { ChargeRequestForm } from './ChargeRequestForm';
 import { PreviewPanel, SkippedList } from './PreviewPanel';
 
-type Step = { kind: 'form' } | { kind: 'preview'; req: IssueRequest; result: IssueResult } | { kind: 'done'; result: IssueResult };
+type Step = { kind: 'form' } | { kind: 'start'; period: Period } | { kind: 'preview'; req: IssueRequest; result: IssueResult } | { kind: 'done'; result: IssueResult };
 
 /** Phiếu YCT: danh sách phiếu đã phát hành; lập phiếu mới trong ngăn kéo theo bước form → xem trước → phát hành. */
 export function ChargeRequestTab() {
   const periods = usePeriods();
+  const drafts = useDraftPeriods();
   const feeTypes = useFeeTypes();
   const areas = useAreas();
   const companies = useCompanies();
@@ -80,12 +82,12 @@ export function ChargeRequestTab() {
         <Steps
           size="small"
           style={{ marginBottom: 24 }}
-          current={step.kind === 'form' ? 0 : step.kind === 'preview' ? 1 : 2}
+          current={step.kind === 'form' ? 0 : step.kind === 'preview' || step.kind === 'start' ? 1 : 2}
           items={[{ title: 'Thông tin phiếu' }, { title: 'Xem trước' }, { title: 'Phát hành' }]}
         />
         {step.kind === 'form' && (
           <ChargeRequestForm
-            periods={periods.data ?? []}
+            periods={[...(periods.data ?? []), ...(drafts.data ?? [])]}
             feeTypes={feeTypes.data ?? []}
             areas={areas.data ?? []}
             companies={companies.data ?? []}
@@ -94,9 +96,23 @@ export function ChargeRequestTab() {
             initial={draft}
             onPreview={(req) => {
               setDraft(req);
+              // Kỳ do quản trị tạo, chưa bắt đầu: cán bộ xã đặt ngày, xem trước và bắt đầu kỳ (kèm phát hành phiếu toàn xã).
+              const toStart = drafts.data?.find((d) => d.id === req.periodId);
+              if (toStart) {
+                setStep({ kind: 'start', period: toStart });
+                return;
+              }
               preview.mutate(req, { onSuccess: (result) => setStep({ kind: 'preview', req, result }) });
             }}
           />
+        )}
+        {step.kind === 'start' && (
+          <>
+            <Button style={{ marginBottom: 16 }} onClick={() => setStep({ kind: 'form' })}>
+              Quay lại
+            </Button>
+            <OpenDraftPanel period={step.period} onClose={() => setOpen(false)} />
+          </>
         )}
         {step.kind === 'preview' && (
           <PreviewPanel

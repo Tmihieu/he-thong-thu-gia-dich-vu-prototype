@@ -73,7 +73,7 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
             aria-label="Kỳ thu"
             style={{ width: 220 }}
             placeholder="Chọn kỳ"
-            options={openPeriods.map((p) => ({ value: p.id, label: `${p.label} (${p.tariffVersionCode})` }))}
+            options={openPeriods.map((p) => ({ value: p.id, label: `${p.label} (${p.tariffVersionCode})${p.status === 'DRAFT' ? ' · chưa bắt đầu' : ''}` }))}
           />
         </Form.Item>
         <Form.Item label="Loại phí" name="feeTypeId" rules={[{ required: true, message: 'Vui lòng chọn loại phí' }]}>
