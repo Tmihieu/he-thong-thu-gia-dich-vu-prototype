@@ -36,6 +36,9 @@ export const type = { caption: 13, body: 15, lead: 16, h3: 20, h2: 24, stat: 26 
 
 export const antdTheme: ThemeConfig = {
   token: {
+    // Máy tắt hiệu ứng động (prefers-reduced-motion): tắt motion bằng token của AntD. Không ép animation-duration bằng CSS
+    // toàn cục: rc-motion kẹt ở bước chuẩn bị, dropdown / popup mở ra nằm ngoài màn hình.
+    motion: !(typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches),
     colorPrimary: brand.primary,
     colorSuccess: semantic.success.fg,
     colorWarning: semantic.warning.fg,
@@ -91,7 +94,7 @@ export const antdTheme: ThemeConfig = {
       rowHoverBg: '#f3faf6',
       rowSelectedBg: brand.primarySoft,
       rowSelectedHoverBg: '#d9eee2',
-      borderColor: '#eaeef2',
+      borderColor: '#d3dae1', // đậm hơn --gray-200 một nấc để dòng kẻ bảng dễ nhìn
       cellPaddingBlock: 12,
       cellPaddingInline: 14,
       cellPaddingBlockSM: 8,

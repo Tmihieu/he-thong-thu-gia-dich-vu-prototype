@@ -182,7 +182,9 @@ public class BillingController {
             @Schema(requiredMode = RequiredMode.REQUIRED) ChargeStatus status,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Chưa thu và đã qua hạn đóng") boolean overdue,
             @Schema(requiredMode = RequiredMode.REQUIRED,
-                    description = "Tổng đã hoàn của khoản (số dương); chỉ điền ở GET /api/billing/charges, nơi khác là 0") long refunded) {
+                    description = "Tổng đã hoàn của khoản (số dương); chỉ điền ở GET /api/billing/charges, nơi khác là 0") long refunded,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true,
+                    description = "Số nhân khẩu hiện tại của hộ; hộ kinh doanh / doanh nghiệp là null") Integer memberCount) {
 
         public static ChargeDto of(Charge c, LocalDate today) {
             return of(c, today, 0);
@@ -193,7 +195,8 @@ public class BillingController {
                     c.getSubject().getCode(), c.getSubject().getName(), c.getSubject().getAddress(), c.getArea().getId(),
                     c.getArea().getCode(), c.getCompany().getId(), c.getCompany().getCode(), c.getPeriod().getId(),
                     c.getPeriod().getCode(), c.getFeeType().getCode(), c.getTariffGroup(), c.getUnitPrice(),
-                    c.getMonths(), c.getAmount(), c.getDueDate(), c.getStatus(), c.isOverdue(today), refunded);
+                    c.getMonths(), c.getAmount(), c.getDueDate(), c.getStatus(), c.isOverdue(today), refunded,
+                    c.getSubject().getMemberCount());
         }
     }
 

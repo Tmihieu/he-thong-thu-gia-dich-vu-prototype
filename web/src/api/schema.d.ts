@@ -117,7 +117,7 @@ export interface paths {
         };
         /** Chi tiết công ty (công ty khác trả 404) */
         get: operations["company"];
-        /** Sửa thông tin công ty (cán bộ xã, quản trị) */
+        /** Sửa thông tin công ty (quản trị) */
         put: operations["updateCompany"];
         post?: never;
         delete?: never;
@@ -3780,6 +3780,11 @@ export interface components {
              * @description Tổng đã hoàn của khoản (số dương); chỉ điền ở GET /api/billing/charges, nơi khác là 0
              */
             refunded: number;
+            /**
+             * Format: int32
+             * @description Số nhân khẩu hiện tại của hộ; hộ kinh doanh / doanh nghiệp là null
+             */
+            memberCount: number | null;
         };
         CollectorChargeDto: {
             charge: components["schemas"]["ChargeDto"];

@@ -45,7 +45,7 @@ function api() {
     'GET /api/billing/charges': (url) =>
       jsonResponse(200, url.includes('areaId=7&')
         ? { items: [{ id: 1, code: 'KT-1026-DTH-H000128', subjectCode: 'DTH-H000128', subjectName: 'Nguyễn Văn Mẫu', subjectAddress: 'Số 1',
-            amount: 80_000, status: 'UNPAID', overdue: true }], total: 1, page: 0, size: 500 }
+            amount: 80_000, status: 'UNPAID', overdue: true, memberCount: 4, tariffGroup: 'HH_3_PLUS' }], total: 1, page: 0, size: 500 }
         : { items: [], total: 0, page: 0, size: 500 }),
   });
 }
@@ -65,11 +65,15 @@ describe('Tiến độ thu', () => {
       expect(fetchFn.mock.calls.some(([url]) => String(url) === '/api/remittance/ledger?periodId=10')).toBe(true),
     );
 
-    // Tổ và hộ chưa thu hiện sẵn, không có nút mở rộng.
-    expect(screen.queryByRole('button', { name: /mở rộng|expand/i })).not.toBeInTheDocument();
-    expect(await screen.findByText('KV07 · Tổ dân phố 07')).toBeInTheDocument();
+    // Bấm "+" ở công ty thấy tổ; bấm "+" ở tổ mới tải và hiện hộ chưa thu kèm số nhân khẩu, nhóm giá.
+    await userEvent.click(screen.getAllByRole('button', { name: /mở rộng|expand/i })[0]!);
+    const area = (await screen.findByText('KV07 · Tổ dân phố 07')).closest('tr')!;
     expect(screen.getByText('8/10')).toBeInTheDocument();
-    expect(await screen.findByText('DTH-H000128 · Nguyễn Văn Mẫu')).toBeInTheDocument();
+    expect(fetchFn.mock.calls.some(([url]) => String(url).startsWith('/api/billing/charges'))).toBe(false);
+    await userEvent.click(within(area).getByRole('button', { name: /mở rộng|expand/i }));
+    const household = (await screen.findByText('DTH-H000128 · Nguyễn Văn Mẫu')).closest('tr')!;
+    expect(within(household).getByText('4')).toBeInTheDocument();
+    expect(within(household).getByText('HGĐ ≥ 3 người')).toBeInTheDocument();
     expect(fetchFn.mock.calls.some(([url]) => String(url).startsWith('/api/billing/charges?periodId=10&areaId=7&companyId=1&status=UNPAID'))).toBe(true);
   });
 
