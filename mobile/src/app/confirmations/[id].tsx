@@ -55,7 +55,8 @@ export default function ConfirmationScreen() {
 
           <Card>
             <CardTitle>Hộ nộp</CardTitle>
-            <Line label="Hộ" value={`${p.subjectName}, ${p.subjectCode}`} />
+            <Line label="Hộ" value={p.subjectName} />
+            <Line label="Mã hộ" value={p.subjectCode} />
             <Line label="Địa chỉ" value={p.subjectAddress} />
             <Line label="Công ty thu gom" value={p.companyName} />
           </Card>

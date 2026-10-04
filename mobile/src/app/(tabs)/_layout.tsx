@@ -4,7 +4,7 @@ import type { ColorValue } from 'react-native';
 
 import { useUnreadCount } from '../../features/citizen/api';
 import { headerOptions } from '../../shared/headerOptions';
-import { colors, spacing, type as t } from '../../shared/theme';
+import { colors, type as t } from '../../shared/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -25,12 +25,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.brand,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: t.tabLabel,
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.divider,
-          paddingTop: spacing.xs,
-        },
-        tabBarItemStyle: { minHeight: 48 },
+        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.divider },
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Trang chủ', headerTitle: 'Thu giá VSMT', tabBarIcon: tabIcon('home-outline', 'home') }} />
