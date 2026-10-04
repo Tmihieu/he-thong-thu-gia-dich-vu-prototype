@@ -3,11 +3,12 @@ import { Tabs } from 'antd';
 import { PageHeader } from '../../shared/PageHeader';
 import { useTabParam } from '../../shared/useTabParam';
 import { CompanyReceiptsPage } from '../remittance/CompanyReceiptsPage/CompanyReceiptsPage';
+import { BankTransfersTab } from './BankTransfersTab';
 import { CollectorAssignPage } from './CollectorAssignPage/CollectorAssignPage';
 import { CompanyOverviewPage } from './CompanyOverviewPage/CompanyOverviewPage';
 
 // Hộ được giao nằm ngay dưới tổng quan; link cũ ?tab=households rơi về tổng quan.
-const TABS = ['overview', 'collectors', 'receipts'] as const;
+const TABS = ['overview', 'collectors', 'receipts', 'transfers'] as const;
 
 /**
  * Màn "Khu vực được giao" của công ty (prototype: assigned): tổng quan + nhận tiền mặt (T29) + hộ được giao,
@@ -25,6 +26,7 @@ export function CompanyHubPage() {
           { key: 'overview', label: 'Tổng quan', children: <CompanyOverviewPage /> },
           { key: 'collectors', label: 'Phân tổ', children: <CollectorAssignPage /> },
           { key: 'receipts', label: 'Phiếu thu xã lập', children: <CompanyReceiptsPage /> },
+          { key: 'transfers', label: 'Chuyển khoản chờ đối chiếu', children: <BankTransfersTab /> },
         ]}
       />
     </>

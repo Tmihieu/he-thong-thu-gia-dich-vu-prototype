@@ -64,6 +64,7 @@ import vn.dongthanh.vsmt.platform.domain.Role;
 public class SecurityConfig {
 
     static final String LOGIN_PATH = "/api/platform/auth/login";
+    static final String SEPAY_WEBHOOK_PATH = "/api/payments/sepay/webhook";
     static final String[] CITIZEN_LOGIN_PATHS = {"/api/citizen/auth/otp/request", "/api/citizen/auth/otp/verify"};
     static final String CITIZEN_PATHS = "/api/citizen/**";
     /** Đọc chợ: người dân và cán bộ xã (người quản lý chợ), chỉ GET (docs/cho-do-cu-spec.md §10). */
@@ -102,6 +103,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_PATHS).permitAll()
                         .requestMatchers(HttpMethod.POST, LOGIN_PATH).permitAll()
+                        // Webhook SePay: không có JWT, controller tự kiểm khóa trong header Authorization.
+                        .requestMatchers(HttpMethod.POST, SEPAY_WEBHOOK_PATH).permitAll()
                         .requestMatchers(HttpMethod.POST, CITIZEN_LOGIN_PATHS).permitAll()
                         .requestMatchers(CITIZEN_PATHS).hasAuthority(CurrentCitizenAuthentication.AUTHORITY)
                         .requestMatchers(HttpMethod.GET, MARKET_READ_PATHS).access((a, ctx) -> new AuthorizationDecision(

@@ -1,6 +1,6 @@
 import { BankOutlined, WalletOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, Drawer, Form, QRCode, Radio, Select, Typography } from 'antd';
+import { Alert, App, Button, Drawer, Form, Radio, Select, Spin, Typography } from 'antd';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 
@@ -9,7 +9,14 @@ import { DEMO_LOGIN_ENABLED } from '../../../app/auth/demoAccounts';
 import { errorText } from '../../../shared/errorText';
 import { formatMoney } from '../../../shared/format';
 import { MoneyText } from '../../../shared/MoneyText';
+import type { components } from '../../../api/schema';
 import { type Collector, type CollectorCharge, collectionKeys, type PaymentResult } from '../api';
+
+type TransferInfo = components['schemas']['TransferInfoDto'];
+
+/** Ảnh VietQR của SePay: quét bằng app ngân hàng bất kỳ là có sẵn tài khoản, số tiền và nội dung. */
+const qrImage = (t: TransferInfo) =>
+  `https://qr.sepay.vn/img?${new URLSearchParams({ acc: t.bankAccount ?? '', bank: t.bankName ?? '', amount: String(t.amount), des: t.code })}`;
 
 export type Method = 'CASH' | 'TRANSFER';
 
@@ -55,11 +62,10 @@ interface Props {
 
 /**
  * Bottom sheet ghi nhận đã thu một hộ: tiền mặt / chuyển khoản, thu đủ số còn thiếu.
- * Người đi thu chọn chuyển khoản (góp ý 04/10): hiện mã QR đúng số tiền, hộ quét và thanh toán trên app người dân,
- * màn này tự hỏi lại máy chủ và tự đóng khi khoản đã được ghi nhận — người đi thu không tự bấm "đã thu".
+ * Người đi thu chọn chuyển khoản (góp ý 04/10): hiện mã VietQR của tài khoản công ty, đúng số tiền và mã khoản trong
+ * nội dung; hộ chuyển khoản bằng app ngân hàng, SePay báo về backend (webhook) ghi nhận, màn này tự hỏi lại máy chủ và
+ * tự đóng khi khoản đã thu — người đi thu không tự bấm "đã thu".
  */
-// ponytail: QR mở trang thanh toán (mô phỏng) của app người dân, chưa phải VietQR ngân hàng; có cổng thanh toán thật thì
-// đổi nội dung QR và để webhook ngân hàng ghi nhận, phần tự hỏi lại ở đây giữ nguyên.
 export function ResultSheet({ item, onClose, collectors, defaultCollectorId, initialMethod }: Props) {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
@@ -96,6 +102,11 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
     refetchInterval: 3000,
     // Người đi thu đưa máy cho hộ xem hoặc chuyển sang app khác: vẫn hỏi lại máy chủ, nếu không màn QR không tự đóng.
     refetchIntervalInBackground: true,
+  });
+  const transfer = useQuery({
+    queryKey: [...collectionKeys.all, 'transfer-info', chargeId],
+    queryFn: () => api.get<TransferInfo>(`/api/collection/charges/${chargeId}/transfer-info`),
+    enabled: qr && item !== null,
   });
   const paidByHousehold = qr && watch.data?.find((w) => w.charge.id === chargeId)?.charge.status === 'PAID';
   useEffect(() => {
@@ -167,16 +178,38 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
         )}
         {qr && item ? (
           <>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <QRCode type="svg" size={220} value={`${window.location.origin}/citizen/pay/${item.charge.id}`} />
-              <Typography.Text strong style={{ fontSize: 20 }}>
-                {formatMoney(remaining)}
-              </Typography.Text>
-              <Typography.Text type="secondary">Nội dung: {item.charge.code}</Typography.Text>
-            </div>
-            <p className="clm-tip" role="status">
-              <strong>Đang chờ hộ thanh toán…</strong> Hộ quét mã và thanh toán đúng số tiền; hệ thống tự xác nhận, không cần bấm gì thêm.
-            </p>
+            {transfer.isLoading && <Spin style={{ display: 'block', margin: '24px auto' }} />}
+            {transfer.error && (
+              <Alert type="error" showIcon style={{ marginBottom: 12 }} message={errorText(transfer.error, 'Không tải được thông tin chuyển khoản.')} />
+            )}
+            {transfer.data && !transfer.data.configured && (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginBottom: 12 }}
+                message="Công ty chưa khai tài khoản ngân hàng"
+                description="Quản trị vào Cấu hình → Công ty & địa bàn, sửa công ty và điền ngân hàng, số tài khoản thì mới hiện được mã QR."
+              />
+            )}
+            {transfer.data?.configured && (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, marginBottom: 12 }}>
+                  <img src={qrImage(transfer.data)} alt="Mã QR chuyển khoản" width={240} height={240} style={{ objectFit: 'contain' }} />
+                  <Typography.Text strong style={{ fontSize: 20 }}>
+                    {formatMoney(transfer.data.amount)}
+                  </Typography.Text>
+                  <Typography.Text>
+                    {transfer.data.bankName} · {transfer.data.bankAccount}
+                  </Typography.Text>
+                  <Typography.Text type="secondary">{transfer.data.accountHolder}</Typography.Text>
+                  <Typography.Text type="secondary">Nội dung: {transfer.data.code}</Typography.Text>
+                </div>
+                <p className="clm-tip" role="status">
+                  <strong>Đang chờ hộ chuyển khoản…</strong> Hộ quét mã bằng app ngân hàng, giữ nguyên số tiền và nội dung; ngân hàng báo
+                  về là hệ thống tự xác nhận, không cần bấm gì thêm.
+                </p>
+              </>
+            )}
             <div className="clm-sheet-actions">
               <Button size="large" onClick={onClose}>
                 Đóng

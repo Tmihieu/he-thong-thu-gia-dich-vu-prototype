@@ -30,6 +30,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   ISSUE_CHARGE_REQUEST: 'Phát hành phiếu yêu cầu thu',
   RECORD_PAYMENT: 'Ghi nhận thanh toán',
   RECORD_CITIZEN_PAYMENT: 'Người dân thanh toán trên app',
+  RECORD_BANK_TRANSFER: 'Ngân hàng báo chuyển khoản (SePay)',
   RECEIVE_CASH_HANDOVER: 'Nhận bàn giao tiền mặt',
   ISSUE_COMPANY_RECEIPT: 'Lập phiếu thu cho công ty',
   REPORT_RECEIPT_ISSUE: 'Báo sai sót phiếu thu',

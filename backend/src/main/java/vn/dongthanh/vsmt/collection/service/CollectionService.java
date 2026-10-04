@@ -176,6 +176,43 @@ public class CollectionService {
     }
 
     /**
+     * Chuyển khoản ngân hàng đã được SePay xác nhận (04/10): số tiền phải bằng đúng số còn thiếu thì mới ghi và khoản
+     * chuyển Đã thu; không gắn người đi thu (tiền vào thẳng tài khoản công ty). {@code requestKey} theo mã giao dịch SePay
+     * nên SePay gửi lại không ghi lần hai.
+     */
+    public Payment recordBankTransfer(Long chargeId, long amount, String bankRef, String requestKey) {
+        lockRequest(requestKey);
+        charges.lockById(chargeId);
+        Optional<Payment> existing = payments.findByClientRequestId(requestKey);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+        Charge charge = charges.findByIdWithDetails(chargeId).orElseThrow(CollectionService::chargeNotFound);
+        requireCollectable(charge);
+        long paidBefore = payments.sumByChargeId(chargeId);
+        long remaining = charge.getAmount() - paidBefore;
+        if (amount != remaining) {
+            throw new BusinessRuleException("TRANSFER_AMOUNT_MISMATCH", "Số tiền chuyển khoản " + Money.format(amount)
+                    + " khác số còn thiếu " + Money.format(remaining) + ".");
+        }
+        String code = nextCode(charge);
+        OffsetDateTime now = OffsetDateTime.now(clock);
+        Map<String, Object> before = state(charge, paidBefore);
+        Payment payment = payments.save(Payment.builder()
+                .code(code).charge(charge).amount(amount).method(PaymentMethod.TRANSFER).paidAt(now)
+                .bankRef(blankToNull(bankRef)).note("Chuyển khoản qua SePay").clientRequestId(requestKey)
+                .build());
+        charge.markPaid(now);
+        Map<String, Object> after = state(charge, charge.getAmount());
+        after.put("payment", code);
+        after.put("paymentAmount", amount);
+        after.put("method", PaymentMethod.TRANSFER);
+        audit.recordSystem("RECORD_BANK_TRANSFER", ENTITY, charge.getCode(), before, after);
+        notifyHousehold(charge, amount, 0);
+        return payment;
+    }
+
+    /**
      * Hoàn tiền đã được lãnh đạo duyệt (T58): ghi dòng thanh toán âm (không gắn người đi thu nên tiền mặt đang giữ
      * không đổi), ghi nhận vào sổ ở {@code ledgerPeriod}. Hoàn một phần giữ Đã thu; hoàn hết thì khoản về Chưa thu (O9).
      */
