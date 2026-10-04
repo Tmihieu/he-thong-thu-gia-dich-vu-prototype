@@ -105,7 +105,7 @@ describe('Đối soát', () => {
     // Kết quả theo dấu chênh lệch backend: âm = thu rồi chưa nộp (không còn nhãn "Lệch" đỏ).
     expect(await screen.findAllByText('Thu rồi chưa nộp')).not.toHaveLength(0);
     expect(screen.queryByText('Lệch')).not.toBeInTheDocument();
-    const dv01Row = (await screen.findByRole('cell', { name: 'DV01 · Công ty MTĐT Đông Thạnh' })).closest('tr')!;
+    const dv01Row = (await screen.findByRole('cell', { name: 'Công ty MTĐT Đông Thạnh' })).closest('tr')!;
     expect(within(dv01Row).getByText('thu rồi chưa nộp')).toBeInTheDocument();
     expect(within(dv01Row).getAllByText('Thu rồi chưa nộp')).toHaveLength(1);
     expect(within(dv01Row).getByText('1 phiếu thu')).toBeInTheDocument();

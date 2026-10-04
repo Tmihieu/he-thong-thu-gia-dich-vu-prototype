@@ -51,7 +51,7 @@ export function ReconciliationPage() {
           </Space>
         }
       />
-      <PeriodTrend />
+      <PeriodTrend selectedId={periodId} onSelect={setPeriodId} />
       {ledger.error && <ErrorBlock error={ledger.error} onRetry={() => void ledger.refetch()} />}
       <StatGrid>
         <StatCard label="Phải nộp xã" tone="info" value={<MoneyText value={rows.reduce((t, r) => t + r.payable, 0)} />} />
@@ -66,7 +66,7 @@ export function ReconciliationPage() {
         pagination={false}
         locale={{ emptyText: 'Kỳ này chưa có khoản phải thu' }}
         columns={[
-          { title: 'Công ty', render: (_, r) => `${r.companyCode} · ${r.companyName}` },
+          { title: 'Công ty', dataIndex: 'companyName' },
           {
             title: 'Phải thu',
             dataIndex: 'due',
