@@ -50,7 +50,7 @@ describe('Khoản thu · kỳ chờ mở', () => {
         });
       },
     });
-    renderApp('/commune/charges?tab=period-drafts');
+    renderApp('/commune/charges?tab=requests');
 
     expect(await screen.findByText('Tháng 11/2026')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /Xem trước & mở kỳ/ }));
@@ -71,16 +71,19 @@ describe('Khoản thu · kỳ chờ mở', () => {
     expect(bodyOf(fetchFn, '/api/billing/periods/9/publish')).toEqual({ householdDueDate: '2026-11-16' });
   });
 
-  it('chưa có kỳ nào chờ mở thì báo trống', async () => {
+  it('chưa có kỳ nào chờ mở thì ẩn mục kỳ chờ mở', async () => {
     mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
       'GET /api/masterdata/periods/drafts': () => jsonResponse(200, []),
       'GET /api/masterdata/periods': () => jsonResponse(200, []),
+      'GET /api/masterdata/fee-types': () => jsonResponse(200, []),
+      'GET /api/billing/charge-requests': () => jsonResponse(200, []),
       'GET /api/billing/charges': () => jsonResponse(200, { items: [], total: 0, page: 0, size: 50 }),
     });
-    renderApp('/commune/charges?tab=period-drafts');
+    renderApp('/commune/charges?tab=requests');
 
-    expect(await screen.findByText('Chưa có kỳ nào chờ mở')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Lập phiếu YCT/ })).toBeInTheDocument();
+    expect(screen.queryByText('Kỳ chờ mở')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Xem trước & mở kỳ/ })).not.toBeInTheDocument();
   });
 
@@ -94,7 +97,7 @@ describe('Khoản thu · kỳ chờ mở', () => {
       'POST /api/billing/periods/9/publish': () =>
         jsonResponse(409, { code: 'PERIOD_NOT_DRAFT', message: 'Kỳ 2026-11 không còn ở dạng dự thảo (Đang thu).' }),
     });
-    renderApp('/commune/charges?tab=period-drafts');
+    renderApp('/commune/charges?tab=requests');
 
     await userEvent.click(await screen.findByRole('button', { name: /Xem trước & mở kỳ/ }));
     const drawer = await screen.findByRole('dialog');

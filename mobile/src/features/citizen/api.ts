@@ -18,8 +18,6 @@ export type SubmitComplaintRequest = S['SubmitComplaintRequest'];
 export type CitizenNotification = S['CitizenNotificationDto'];
 export type CitizenNotificationPage = S['CitizenNotificationPageDto'];
 export type NotificationKind = CitizenNotification['kind'];
-export type BulkyRequest = S['BulkyRequestDto'];
-export type CreateBulkyRequest = S['CreateBulkyRequest'];
 
 export const citizenApi = {
   requestOtp: (phone: string) => api.post<OtpRequestResponse>('/api/citizen/auth/otp/request', { phone }),
@@ -40,10 +38,6 @@ export const citizenApi = {
   unreadCount: () => api.get<{ unreadCount: number }>('/api/citizen/notifications/unread-count'),
   markRead: (id: number) => api.post<CitizenNotification>(`/api/citizen/notifications/${id}/read`),
   markAllRead: () => api.post<{ unreadCount: number }>('/api/citizen/notifications/read-all'),
-  bulkyRequests: () => api.get<BulkyRequest[]>('/api/citizen/bulky-requests'),
-  bulkyRequest: (id: number) => api.get<BulkyRequest>(`/api/citizen/bulky-requests/${id}`),
-  createBulky: (body: CreateBulkyRequest) => api.post<BulkyRequest>('/api/citizen/bulky-requests', body),
-  cancelBulky: (id: number, reason: string) => api.post<BulkyRequest>(`/api/citizen/bulky-requests/${id}/cancel`, { reason }),
 };
 
 export const citizenKeys = {
@@ -57,8 +51,6 @@ export const citizenKeys = {
   complaint: (id: number) => ['citizen', 'complaints', id] as const,
   notifications: (kind?: NotificationKind) => ['citizen', 'notifications', kind ?? 'ALL'] as const,
   unreadCount: ['citizen', 'notifications', 'unread-count'] as const,
-  bulky: ['citizen', 'bulky'] as const,
-  bulkyOne: (id: number) => ['citizen', 'bulky', id] as const,
 };
 
 /** Không có push thật: tab Thông báo và badge poll theo chu kỳ này (SPEC §9.7). */
@@ -115,42 +107,6 @@ export function useSubmitComplaint() {
       void queryClient.invalidateQueries({ queryKey: citizenKeys.complaints });
     },
   });
-}
-
-export function useBulkyRequests() {
-  return useQuery({ queryKey: citizenKeys.bulky, queryFn: citizenApi.bulkyRequests });
-}
-
-/** Chi tiết yêu cầu; poll 30 giây để thấy công ty báo phí / thu gom (không có push thật). */
-export function useBulkyRequest(id: number) {
-  return useQuery({
-    queryKey: citizenKeys.bulkyOne(id),
-    queryFn: () => citizenApi.bulkyRequest(id),
-    enabled: Number.isFinite(id),
-    // Đã thu gom / đã hủy thì không còn gì để chờ.
-    refetchInterval: (q) => (q.state.data?.status === 'PENDING' || q.state.data?.status === 'QUOTED' ? 30_000 : false),
-  });
-}
-
-function useBulkyMutation<V>(fn: (v: V) => Promise<BulkyRequest>) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: fn,
-    onSuccess: (r) => {
-      queryClient.setQueryData(citizenKeys.bulkyOne(r.id), r);
-      void queryClient.invalidateQueries({ queryKey: citizenKeys.bulky, exact: true });
-    },
-    // Lỗi thường do công ty vừa đổi trạng thái: tải lại để thẻ thao tác không còn hiện sai.
-    onError: () => void queryClient.invalidateQueries({ queryKey: citizenKeys.bulky }),
-  });
-}
-
-export function useCreateBulky() {
-  return useBulkyMutation(citizenApi.createBulky);
-}
-
-export function useCancelBulky(id: number) {
-  return useBulkyMutation((reason: string) => citizenApi.cancelBulky(id, reason));
 }
 
 export function useNotifications(kind?: NotificationKind) {

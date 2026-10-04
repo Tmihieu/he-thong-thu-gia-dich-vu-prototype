@@ -95,14 +95,6 @@ export default function MarketTab() {
         </>
       ) : null}
 
-      <ListGroup>
-        <ListRow
-          icon="cube-outline"
-          title="Đồ không ai nhận?"
-          subtitle="Đăng ký công ty thu gom đồ cồng kềnh"
-          onPress={() => router.push('/bulky/new')}
-        />
-      </ListGroup>
       <SectionTitle>Bài mới</SectionTitle>
     </View>
   );

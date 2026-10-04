@@ -23,7 +23,7 @@ import vn.dongthanh.vsmt.support.DatabaseCleaner;
 import vn.dongthanh.vsmt.support.FixedClockConfig;
 import vn.dongthanh.vsmt.support.IntegrationTest;
 
-/** Màn Công ty: cán bộ xã thêm / sửa công ty; công ty tạm ngưng không nhận phân công khu vực. */
+/** Công ty: chỉ quản trị thêm / sửa (BR-MD-03, 04/10); công ty tạm ngưng không nhận phân công khu vực. */
 @Transactional
 @Import({FixedClockConfig.class, CollectionFixture.class, DatabaseCleaner.class})
 class CompanyApiIT extends IntegrationTest {
@@ -38,25 +38,27 @@ class CompanyApiIT extends IntegrationTest {
     @Autowired JdbcTemplate jdbc;
 
     String officer;
+    String admin;
 
     @BeforeEach
     void seed() {
         cleaner.truncateAll();
         fx.build();
         officer = fx.bearer(fx.officer);
+        admin = fx.bearer(fx.admin);
     }
 
     @Test
-    void officerCreatesWithNextCodeThenEdits() throws Exception {
+    void adminCreatesWithNextCodeThenEdits() throws Exception {
         // Fixture có DV01, DV07: mã tiếp theo là DV08.
-        long id = Long.parseLong(send(post("/api/masterdata/companies"), officer, BODY.formatted("null", "null"))
+        long id = Long.parseLong(send(post("/api/masterdata/companies"), admin, BODY.formatted("null", "null"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.code").value("DV08"))
                 .andExpect(jsonPath("$.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.taxCode").isEmpty())
                 .andReturn().getResponse().getContentAsString().replaceAll(".*\"id\":(\\d+).*", "$1"));
 
-        send(put("/api/masterdata/companies/" + id), officer, BODY.formatted("\"2026-12-31\"", "\"INACTIVE\""))
+        send(put("/api/masterdata/companies/" + id), admin, BODY.formatted("\"2026-12-31\"", "\"INACTIVE\""))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("DV08"))
                 .andExpect(jsonPath("$.status").value("INACTIVE"))
@@ -68,33 +70,28 @@ class CompanyApiIT extends IntegrationTest {
 
     @Test
     void rejectsBadInputAndOtherRoles() throws Exception {
-        send(post("/api/masterdata/companies"), officer, BODY.formatted("\"2026-09-30\"", "null"))
+        send(post("/api/masterdata/companies"), admin, BODY.formatted("\"2026-09-30\"", "null"))
                 .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("COMPANY_VALIDITY"));
-        send(post("/api/masterdata/companies"), officer, BODY.formatted("null", "null").replace("0900000099", "09-abc"))
+        send(post("/api/masterdata/companies"), admin, BODY.formatted("null", "null").replace("0900000099", "09-abc"))
                 .andExpect(status().isBadRequest());
         send(post("/api/masterdata/companies"), fx.bearer(fx.dv01Manager), BODY.formatted("null", "null"))
                 .andExpect(status().isForbidden());
         send(put("/api/masterdata/companies/" + fx.dv01.getId()), fx.bearer(fx.dv01Manager), BODY.formatted("null", "null"))
                 .andExpect(status().isForbidden());
-    }
-
-    /** QĐ-L1 / BR-MD-03: quản trị cũng thêm và sửa được công ty (nút thêm nằm ở màn cấu hình của quản trị). */
-    @Test
-    void adminAlsoCreatesAndEdits() throws Exception {
-        String admin = fx.bearer(fx.admin);
-        send(post("/api/masterdata/companies"), admin, BODY.formatted("null", "null"))
-                .andExpect(status().isCreated()).andExpect(jsonPath("$.code").value("DV08"));
-        send(put("/api/masterdata/companies/" + fx.dv01.getId()), admin, BODY.formatted("null", "null"))
-                .andExpect(status().isOk());
+        // Cán bộ xã chỉ xem công ty và phân công khu vực, không thêm / sửa.
+        send(post("/api/masterdata/companies"), officer, BODY.formatted("null", "null"))
+                .andExpect(status().isForbidden());
+        send(put("/api/masterdata/companies/" + fx.dv01.getId()), officer, BODY.formatted("null", "null"))
+                .andExpect(status().isForbidden());
     }
 
     @Test
     void inactiveCompanyCannotTakeAreas() throws Exception {
-        send(put("/api/masterdata/companies/" + fx.dv07.getId()), officer, BODY.formatted("null", "\"INACTIVE\""))
+        send(put("/api/masterdata/companies/" + fx.dv07.getId()), admin, BODY.formatted("null", "\"INACTIVE\""))
                 .andExpect(status().isOk());
 
         // Sửa mà không gửi trạng thái thì giữ Tạm ngưng.
-        send(put("/api/masterdata/companies/" + fx.dv07.getId()), officer, BODY.formatted("null", "null"))
+        send(put("/api/masterdata/companies/" + fx.dv07.getId()), admin, BODY.formatted("null", "null"))
                 .andExpect(jsonPath("$.status").value("INACTIVE"));
 
         send(post("/api/masterdata/area-assignments"), officer,

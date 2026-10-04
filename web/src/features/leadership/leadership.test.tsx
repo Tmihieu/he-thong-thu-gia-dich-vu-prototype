@@ -51,7 +51,7 @@ describe('Lãnh đạo', () => {
     });
   }
 
-  it('vào thẳng dashboard: tổng kỳ và 3 nhóm cảnh báo', async () => {
+  it('vào thẳng dashboard: tổng kỳ và 2 nhóm cảnh báo', async () => {
     api();
     renderApp('/');
 
@@ -60,27 +60,8 @@ describe('Lãnh đạo', () => {
     expect(await within(alerts as HTMLElement).findByText('Nộp chậm / nợ kỳ trước')).toBeInTheDocument();
     expect(await within(alerts as HTMLElement).findByText('DV01')).toBeInTheDocument();
     expect(within(alerts as HTMLElement).getByText('DV07')).toBeInTheDocument();
-    expect(within(alerts as HTMLElement).getByRole('link', { name: 'Mở hàng chờ duyệt' })).toBeInTheDocument();
+    expect(screen.queryByText('Đề nghị chờ duyệt')).not.toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: /Khóa kỳ/ })).not.toBeInTheDocument();
-  });
-
-  it('từ chối bắt buộc ý kiến rồi gửi đúng đề nghị; duyệt không cần ý kiến', async () => {
-    const fetchFn = api();
-    renderApp('/leader/approvals');
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Từ chối DN-1026-001' }));
-    let dialog = await screen.findByRole('dialog');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Từ chối' }));
-    expect(await within(dialog).findByText('Từ chối phải ghi ý kiến')).toBeInTheDocument();
-    expect(lastPost(fetchFn, '/api/leadership/approvals/7/reject')).toBeUndefined();
-    await userEvent.type(within(dialog).getByLabelText('Ý kiến lãnh đạo'), 'Chưa đủ hồ sơ');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Từ chối' }));
-    await waitFor(() => expect(lastPost(fetchFn, '/api/leadership/approvals/7/reject')).toEqual({ note: 'Chưa đủ hồ sơ' }));
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Duyệt DN-1026-001' }));
-    dialog = await screen.findByRole('dialog');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Duyệt' }));
-    await waitFor(() => expect(lastPost(fetchFn, '/api/leadership/approvals/7/approve')).toEqual({}));
   });
 
   it('màn tiến độ và đối soát chỉ đọc: không nhắc nộp, không khóa kỳ', async () => {

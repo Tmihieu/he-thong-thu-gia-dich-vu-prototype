@@ -1,7 +1,6 @@
-import { AlertOutlined, AuditOutlined, FallOutlined } from '@ant-design/icons';
+import { AlertOutlined, FallOutlined } from '@ant-design/icons';
 import { Alert, Card, Col, Empty, List, Progress, Row, Space, Table, theme, Typography } from 'antd';
 import { type ReactNode, useMemo, useState } from 'react';
-import { Link } from 'react-router';
 
 import { formatPercent } from '../../shared/format';
 import { StatusTag } from '../../shared/StatusTag';
@@ -13,7 +12,6 @@ import { StatCard, StatGrid } from '../../shared/StatCard';
 import { cappedRate, rateBand } from '../remittance/rateBand';
 import { PeriodSelect } from '../masterdata/PeriodSelect';
 import { type AreaProgress, type LedgerRow, useAreaProgress, useCompanyLedger } from '../remittance/api';
-import { useApprovals } from './api';
 
 const pct = (part: number, whole: number) => (whole > 0 ? Math.round((part * 1000) / whole) / 10 : 0);
 const pctText = formatPercent;
@@ -26,13 +24,12 @@ function Ring({ percent }: { percent: number }) {
 
 /**
  * Dashboard điều hành của lãnh đạo (T59): tổng thu / nộp / nợ của kỳ lấy nguyên sổ công ty–kỳ, cảnh báo (nộp chậm /
- * nợ kỳ trước, tỷ lệ thu thấp theo cờ sẵn có, đề nghị chờ duyệt), tỷ lệ theo công ty và theo tổ.
+ * nợ kỳ trước, tỷ lệ thu thấp theo cờ sẵn có), tỷ lệ theo công ty và theo tổ.
  */
 export function LeaderDashboardPage() {
   const [periodId, setPeriodId] = useState<number>();
   const ledger = useCompanyLedger(periodId);
   const areas = useAreaProgress(periodId);
-  const pending = useApprovals('PENDING');
   const rows = useMemo(() => ledger.data ?? [], [ledger.data]);
 
   const total = useMemo(
@@ -56,9 +53,9 @@ export function LeaderDashboardPage() {
     () => (areas.data ?? []).filter((a) => a.chargeCount > 0).sort((a, b) => a.collectionRate - b.collectionRate).slice(0, 8),
     [areas.data],
   );
-  const noAlarm = !ledger.isLoading && late.length === 0 && lowRate.length === 0 && (pending.data?.length ?? 0) === 0;
-  const error = ledger.error ?? areas.error ?? pending.error;
-  const retry = () => void Promise.all([ledger.refetch(), areas.refetch(), pending.refetch()]);
+  const noAlarm = !ledger.isLoading && late.length === 0 && lowRate.length === 0;
+  const error = ledger.error ?? areas.error;
+  const retry = () => void Promise.all([ledger.refetch(), areas.refetch()]);
 
   return (
     <>
@@ -106,7 +103,7 @@ export function LeaderDashboardPage() {
       ) : (
       <Card size="small" className="section-card" style={{ marginTop: 16 }} title="Cảnh báo">
         <Row gutter={[16, 16]}>
-          <Col xs={24} lg={8}>
+          <Col xs={24} lg={12}>
             <Alarm icon={<AlertOutlined />} title="Nộp chậm / nợ kỳ trước" count={late.length} tone="red">
               {late.map((r) => (
                 <List.Item key={r.companyId}>
@@ -123,7 +120,7 @@ export function LeaderDashboardPage() {
               ))}
             </Alarm>
           </Col>
-          <Col xs={24} lg={8}>
+          <Col xs={24} lg={12}>
             <Alarm icon={<FallOutlined />} title="Tỷ lệ nộp thấp (dưới 45%)" count={lowRate.length} tone="orange">
               {lowRate.map((r) => (
                 <List.Item key={r.companyId}>
@@ -131,15 +128,6 @@ export function LeaderDashboardPage() {
                   <span>{pctText(r.remittedRate)}</span>
                 </List.Item>
               ))}
-            </Alarm>
-          </Col>
-          <Col xs={24} lg={8}>
-            <Alarm icon={<AuditOutlined />} title="Đề nghị chờ duyệt" count={pending.data?.length ?? 0} tone="gold">
-              {(pending.data ?? []).length > 0 && (
-                <List.Item>
-                  <Link to="/leader/approvals">Mở hàng chờ duyệt</Link>
-                </List.Item>
-              )}
             </Alarm>
           </Col>
         </Row>

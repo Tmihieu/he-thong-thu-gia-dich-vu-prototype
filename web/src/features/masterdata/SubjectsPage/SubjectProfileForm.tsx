@@ -269,22 +269,19 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
         <StreetSearch districtId={districtId} />
       </Form.Item>
       <Row gutter={16}>
-        <Col xs={24} md={8}>
+        <Col xs={24}>
           <Form.Item label="Số nhà" name="houseNo" extra="VD: 12A, 12/5, 12/5B. Bỏ trống nếu nhà chưa có số.">
             <Input maxLength={30} />
           </Form.Item>
         </Col>
-        <Col xs={24} md={6}>
-          <Form.Item label="Phòng / căn" name="unitNo" extra="Khi nhiều hộ chung địa chỉ.">
-            <Input maxLength={30} />
-          </Form.Item>
-        </Col>
-        <Col xs={24} md={10}>
-          <Form.Item label="Vị trí bổ sung" name="locationNote" extra="VD: đối diện chợ, cạnh trường.">
-            <Input maxLength={255} />
-          </Form.Item>
-        </Col>
       </Row>
+      {/* Phòng/căn và vị trí bổ sung không còn nhập trên form; giữ giá trị cũ của hồ sơ khi sửa. */}
+      <Form.Item name="unitNo" hidden>
+        <Input />
+      </Form.Item>
+      <Form.Item name="locationNote" hidden>
+        <Input />
+      </Form.Item>
       {dupes && (
         <Alert
           type="warning"
@@ -373,10 +370,6 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
           <Input maxLength={14} />
         </Form.Item>
       )}
-      <Form.Item label="Ghi chú" name="note">
-        <Input.TextArea rows={2} maxLength={2000} />
-      </Form.Item>
-
       <Divider />
       {/* Góp ý BA 03/10: xã không ký hợp đồng với hộ, nên giao diện gọi là "Đăng ký thu phí" và ẩn số hợp đồng. */}
       <Typography.Title level={5}>Đăng ký thu phí</Typography.Title>
@@ -444,6 +437,9 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
           </Col>
         </Row>
       )}
+      <Form.Item label="Ghi chú" name="note">
+        <Input.TextArea rows={2} maxLength={2000} />
+      </Form.Item>
       <Space>
         <Button type="primary" htmlType="submit" loading={submitting || checking}>
           {subject ? 'Lưu hồ sơ' : 'Tạo hồ sơ'}

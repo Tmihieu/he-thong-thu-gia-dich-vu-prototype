@@ -15,12 +15,8 @@ describe('notificationHref', () => {
     });
   });
 
-  it('rác cồng kềnh → chi tiết yêu cầu theo requestId', () => {
-    expect(notificationHref({ screen: 'citizen.bulkyDetail', params: { requestId: 6 } })).toEqual({
-      pathname: '/bulky/[id]',
-      params: { id: '6' },
-    });
-    expect(notificationHref({ screen: 'citizen.bulkyDetail', params: {} })).toBe('/bulky');
+  it('chợ đồ cũ → chi tiết bài theo postId; rác cồng kềnh đã bỏ nên không còn màn', () => {
+    expect(notificationHref({ screen: 'citizen.bulkyDetail', params: { requestId: 6 } })).toBeNull();
     expect(notificationHref({ screen: 'citizen.marketDetail', params: { postId: 7 } })).toEqual({
       pathname: '/market/[id]',
       params: { id: '7' },
@@ -48,9 +44,9 @@ describe('notificationTarget', () => {
   });
 
   it('có link thì theo link, loại khác không link → null', () => {
-    expect(notificationTarget({ kind: 'REMINDER', link: { screen: 'citizen.bulkyDetail', params: { requestId: 6 } } })).toEqual({
-      pathname: '/bulky/[id]',
-      params: { id: '6' },
+    expect(notificationTarget({ kind: 'INFO', link: { screen: 'citizen.marketDetail', params: { postId: 7 } } })).toEqual({
+      pathname: '/market/[id]',
+      params: { id: '7' },
     });
     expect(notificationTarget({ kind: 'INFO', link: null })).toBeNull();
   });

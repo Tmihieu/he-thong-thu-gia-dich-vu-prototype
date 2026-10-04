@@ -36,7 +36,7 @@ Cột "Kiểm" để các lane điền khi rà: ✔ khớp · ✘ lệch (ghi s�
 |---|---|---|---|---|
 | BR-MD-01 | Mỗi khu vực (tổ/ấp/thôn) tối đa 1 công ty trong cùng khoảng hiệu lực; đổi công ty tạo bản ghi mới, giữ lịch sử, backend tự đóng phân công cũ | SPEC §9.3 | Chốt | |
 | BR-MD-02 | Khu vực đổi công ty → tự kết thúc phân tổ người đi thu của công ty cũ | DD G14 | Chốt | |
-| BR-MD-03 | Công ty mã `DVnn` tự sinh; **quản trị và cán bộ xã đều thêm/sửa được** (nút thêm ở `/admin/config` từ 29/09, màn Công ty của xã từ 28/09); vai trò khác 403; trạng thái **Đang hợp tác / Ngừng hợp tác** | DD T51, 29/09, QĐ-L1 04/10 | Chốt | |
+| BR-MD-03 | Công ty mã `DVnn` tự sinh; **chỉ quản trị thêm/sửa được** (ở `/admin/config`; cán bộ xã chỉ xem và phân công khu vực, từ 04/10 theo góp ý người dùng, thay QĐ-L1); vai trò khác 403; trạng thái **Đang hợp tác / Ngừng hợp tác** | DD T51, 29/09, QĐ-L1 04/10 | Chốt | |
 | BR-MD-04 | Công ty Ngừng hợp tác không nhận phân công khu vực mới (`COMPANY_INACTIVE`) | DD T51 | Chốt | |
 | BR-MD-05 | Công ty Ngừng hợp tác: khu vực đang phụ trách xử lý thế nào | DD T51 | **Chờ xã** (hiện giữ nguyên) | |
 | BR-MD-06 | Đối tượng: hộ gia đình / hộ kinh doanh / doanh nghiệp. Địa chỉ tách số nhà + đường (đường theo danh mục), khu vực. Hộ gia đình bắt buộc số thành viên; nhóm giá HGĐ phải khớp số thành viên (≤2 / ≥3) | 28/09, V23, V31 | Chốt | |

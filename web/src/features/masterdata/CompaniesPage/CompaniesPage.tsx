@@ -30,8 +30,8 @@ const statusTag = (s: Company['status']) =>
   s === 'ACTIVE' ? <StatusTag color="green">Đang hợp tác</StatusTag> : <StatusTag>Ngừng hợp tác</StatusTag>;
 
 /**
- * Công ty môi trường. Cán bộ xã: danh sách, sửa, phân công tổ chưa có công ty, tiến độ nộp theo kỳ.
- * Quản trị ({@code admin}): xem địa bàn công ty đang phụ trách. Cả hai vai trò thêm/sửa công ty (BR-MD-03).
+ * Công ty môi trường. Cán bộ xã: danh sách, phân công tổ chưa có công ty, tiến độ nộp theo kỳ.
+ * Quản trị ({@code admin}): xem địa bàn công ty đang phụ trách, thêm/sửa công ty (BR-MD-03: chỉ quản trị).
  */
 export function CompaniesPage({ admin = false }: { admin?: boolean }) {
   const { message } = App.useApp();
@@ -81,11 +81,6 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
         <PageHeader
           title="Công ty môi trường"
           description="Công ty thu gom, khu vực phụ trách và tiến độ nộp tiền về xã."
-          extra={
-            <Button type="primary" onClick={() => openForm(null)}>
-              + Thêm công ty
-            </Button>
-          }
         />
       )}
       <Flex wrap gap={8} justify="space-between" style={{ marginBottom: 16 }}>
@@ -144,9 +139,11 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
           },
           { title: 'Khu vực đang phụ trách', align: 'right', render: (_, c) => areaCount.get(c.id) ?? 0 },
           { title: 'Trạng thái', render: (_, c) => statusTag(c.status) },
-          { title: 'Thao tác', align: 'right', render: (_, c) => (
-            <Button size="small" type="link" onClick={() => openForm(c)} aria-label={`Sửa ${c.name}`}>Sửa</Button>
-          ) },
+          ...(admin
+            ? [{ title: 'Thao tác', align: 'right' as const, render: (_: unknown, c: Company) => (
+                <Button size="small" type="link" onClick={() => openForm(c)} aria-label={`Sửa ${c.name}`}>Sửa</Button>
+              ) }]
+            : []),
         ]}
       />
 
@@ -158,7 +155,7 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
         extra={
           detail && (
             <Space>
-              <Button onClick={() => openForm(detail)}>Sửa thông tin</Button>
+              {admin && <Button onClick={() => openForm(detail)}>Sửa thông tin</Button>}
               {!admin && (
                 <Button
                   type="primary"

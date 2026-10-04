@@ -93,7 +93,7 @@ public class MasterDataController {
         return CompanyDto.of(companies.create(req.toCommand(), actor));
     }
 
-    @Operation(summary = "Sửa thông tin công ty (cán bộ xã, quản trị)")
+    @Operation(summary = "Sửa thông tin công ty (quản trị)")
     @PutMapping("/companies/{id}")
     public CompanyDto updateCompany(@PathVariable Long id, @Valid @RequestBody CompanyRequest req,
             @AuthenticationPrincipal CurrentUser actor) {

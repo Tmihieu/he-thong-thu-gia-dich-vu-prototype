@@ -54,7 +54,6 @@ export default function AccountScreen() {
       <ListGroup>
         <ListRow icon="receipt-outline" title="Xác nhận thanh toán" subtitle="Các lần đã thanh toán" onPress={() => router.push('/confirmations')} />
         <ListRow icon="chatbubble-ellipses-outline" title="Phản ánh, kiến nghị" subtitle="Thu chậm, sai mức phí, vấn đề khác" onPress={() => router.push('/complaints')} />
-        <ListRow icon="cube-outline" title="Rác cồng kềnh" subtitle="Đăng ký thu gom đồ lớn" onPress={() => router.push('/bulky')} />
       </ListGroup>
 
       <SectionTitle>Ứng dụng</SectionTitle>

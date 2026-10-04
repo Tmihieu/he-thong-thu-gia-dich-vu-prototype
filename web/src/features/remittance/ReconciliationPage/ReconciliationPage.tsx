@@ -10,7 +10,6 @@ import { StatusTag } from '../../../shared/StatusTag';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type LedgerRow, useCompanyLedger } from '../api';
 import { LedgerBreakdown } from '../LedgerBreakdown';
-import { RateRings } from '../RateRings';
 import { LockPeriodButton } from './LockPeriodButton';
 import { PeriodTrend } from './PeriodTrend';
 
@@ -60,7 +59,6 @@ export function ReconciliationPage() {
         <StatCard label="Đã nộp về xã" tone="success" value={<MoneyText value={rows.reduce((t, r) => t + r.received, 0)} />} />
         <StatCard label="Thu rồi chưa nộp" tone={notRemitted > 0 ? 'danger' : 'neutral'} value={<MoneyText value={notRemitted} />} />
       </StatGrid>
-      <RateRings rows={rows} />
       <Table<LedgerRow>
         rowKey="companyId"
         loading={ledger.isLoading}

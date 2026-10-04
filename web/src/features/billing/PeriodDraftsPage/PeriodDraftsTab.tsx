@@ -1,4 +1,4 @@
-import { Alert, Button, Drawer, Empty, Space, Spin, Table, Typography } from 'antd';
+import { Alert, Button, Drawer, Space, Table, Typography } from 'antd';
 import { useState } from 'react';
 
 import { DateText } from '../../../shared/DateText';
@@ -8,21 +8,23 @@ import { OpenDraftPanel } from './OpenDraftPanel';
 
 /**
  * Kỳ chờ mở (cán bộ xã, 04/10): hệ thống tự tạo kỳ kế tiếp ở dạng Dự thảo theo quy tắc của quản trị;
- * cán bộ xã xem trước các khoản rồi bấm "Mở kỳ & phát hành" để hộ nhận khoản thu.
+ * cán bộ xã xem trước các khoản rồi bấm "Mở kỳ & phát hành" để hộ nhận khoản thu. Nằm trên đầu tab Phiếu YCT;
+ * không có kỳ chờ mở thì ẩn hẳn.
  */
 export function PeriodDraftsTab() {
   const drafts = useDraftPeriods();
   const [selected, setSelected] = useState<Period | null>(null);
 
-  if (drafts.isLoading) return <Spin />;
   if (drafts.error) {
     return <Alert type="error" showIcon message="Không tải được danh sách kỳ chờ mở. Vui lòng thử lại." />;
   }
 
   const list = drafts.data ?? [];
+  if (list.length === 0) return null;
 
   return (
-    <>
+    <div style={{ marginBottom: 24 }}>
+      <Typography.Title level={5}>Kỳ chờ mở</Typography.Title>
       <Typography.Paragraph type="secondary">
         Hệ thống tự tạo kỳ thu kế tiếp theo quy tắc của quản trị. Xem trước các khoản rồi mở kỳ để hộ dân nhận khoản thu.
       </Typography.Paragraph>
@@ -30,7 +32,6 @@ export function PeriodDraftsTab() {
         rowKey="id"
         dataSource={list}
         pagination={false}
-        locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Chưa có kỳ nào chờ mở" /> }}
         columns={[
           { title: 'Kỳ', dataIndex: 'label', render: (label: string, p) => <span title={p.code}>{label}</span> },
           { title: 'Loại', dataIndex: 'periodType', render: (t: Period['periodType']) => PERIOD_TYPE_LABELS[t] },
@@ -66,6 +67,6 @@ export function PeriodDraftsTab() {
       >
         {selected && <OpenDraftPanel period={selected} onClose={() => setSelected(null)} />}
       </Drawer>
-    </>
+    </div>
   );
 }

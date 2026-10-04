@@ -98,8 +98,6 @@ describe('SubjectProfileForm', () => {
 
     type('Tên chủ hộ', 'Lê Thị Mẫu');
     type('Số nhà', ' 12/5B ');
-    type('Phòng / căn', 'P101');
-    type('Vị trí bổ sung', 'cạnh trường');
     type('Số điện thoại', '0902999555');
     await userEvent.type(screen.getByLabelText('Số thành viên'), '3');
     await pickOption(screen.getByRole('combobox', { name: 'Tổ/Ấp/Thôn' }), 'KV24 · Tổ dân phố 24');
@@ -111,7 +109,7 @@ describe('SubjectProfileForm', () => {
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
     expect(onSubmit.mock.calls[0]![0]).toEqual({
       subject: {
-        type: 'HOUSEHOLD', name: 'Lê Thị Mẫu', houseNo: '12/5B', unitNo: 'P101', locationNote: 'cạnh trường', streetId: 9, areaId: 24,
+        type: 'HOUSEHOLD', name: 'Lê Thị Mẫu', houseNo: '12/5B', unitNo: undefined, locationNote: undefined, streetId: 9, areaId: 24,
         phone: '0902999555', memberCount: 3, representativeName: undefined, taxCode: undefined, note: undefined,
       },
       contract: {

@@ -3,8 +3,7 @@ import { router, type Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useSession } from '../../features/auth/SessionProvider';
-import { BulkyRow } from '../../features/bulky/BulkyCard';
-import { summarizeCharges, useBulkyRequests, useCharges, useComplaints, useProfile } from '../../features/citizen/api';
+import { summarizeCharges, useCharges, useComplaints, useProfile } from '../../features/citizen/api';
 import { ComplaintRow } from '../../features/complaints/ComplaintCard';
 import { formatDate } from '../../shared/format';
 import { colors, radius, spacing, type as t } from '../../shared/theme';
@@ -14,7 +13,6 @@ const SERVICES: { label: string; icon: IconName; href: Href }[] = [
   { label: 'Khoản phí của hộ', icon: 'wallet-outline', href: '/charges' },
   { label: 'Lịch thu gom', icon: 'calendar-outline', href: '/schedule' },
   { label: 'Phản ánh, kiến nghị', icon: 'chatbubble-ellipses-outline', href: '/complaints' },
-  { label: 'Rác cồng kềnh', icon: 'cube-outline', href: '/bulky' },
   { label: 'Xác nhận thanh toán', icon: 'receipt-outline', href: '/confirmations' },
   { label: 'Chợ đồ cũ', icon: 'storefront-outline', href: '/market' },
 ];
@@ -25,12 +23,10 @@ export default function HomeScreen() {
   const profile = useProfile();
   const charges = useCharges();
   const complaints = useComplaints();
-  const bulky = useBulkyRequests();
   const summary = summarizeCharges(charges.data);
 
   const latestComplaint = complaints.data?.[0] ?? null;
   const openComplaint = latestComplaint && latestComplaint.status !== 'RESOLVED' ? latestComplaint : null;
-  const openBulky = bulky.data?.find((r) => r.status === 'PENDING' || r.status === 'QUOTED') ?? null;
   const subject = profile.data?.subject;
   const company = profile.data?.company;
 
@@ -38,7 +34,6 @@ export default function HomeScreen() {
     void profile.refetch();
     void charges.refetch();
     void complaints.refetch();
-    void bulky.refetch();
   };
 
   const onPrimary = () =>
@@ -91,12 +86,11 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {openComplaint || openBulky ? (
+      {openComplaint ? (
         <>
           <SectionTitle>Đang xử lý</SectionTitle>
           <ListGroup>
-            {openComplaint ? <ComplaintRow c={openComplaint} /> : null}
-            {openBulky ? <BulkyRow r={openBulky} /> : null}
+            <ComplaintRow c={openComplaint} />
           </ListGroup>
         </>
       ) : null}
