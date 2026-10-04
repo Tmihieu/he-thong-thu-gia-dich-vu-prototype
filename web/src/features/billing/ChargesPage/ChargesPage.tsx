@@ -26,7 +26,7 @@ export function ChargesPage() {
 
   return (
     <>
-      <Space wrap style={{ marginBottom: 16 }}>
+      <Space wrap size={16} style={{ marginBottom: 16 }}>
         <Select
           aria-label="Lọc theo kỳ"
           allowClear
@@ -70,8 +70,8 @@ export function ChargesPage() {
       </Space>
       <Table<Charge>
         rowKey="id"
-        size="small"
-        scroll={{ x: 'max-content' }}
+        size="middle"
+        scroll={{ x: 820 }}
         loading={charges.isFetching}
         dataSource={charges.data?.items ?? []}
         locale={{
@@ -88,31 +88,28 @@ export function ChargesPage() {
         columns={[
           {
             title: 'Mã khoản',
+            width: 150,
             className: 'cell-nowrap',
-            render: (_, c) => (
-              <>
-                <strong>{c.code}</strong>
-                <br />
-                <span style={{ color: brand.textMuted, fontSize: 13 }}>{c.requestCode}</span>
-              </>
-            ),
+            render: (_, c) => <strong>{c.code}</strong>,
           },
           {
             title: 'Đối tượng',
             render: (_, c) => (
               <>
                 <strong>{c.subjectName}</strong>
-                <br />
-                <span style={{ color: brand.textMuted, fontSize: 13 }}>
-                  {c.subjectCode}{c.tariffGroup ? ` · ${TARIFF_GROUP_LABELS[c.tariffGroup]}` : ''}
-                </span>
+                {c.tariffGroup && (
+                  <>
+                    <br />
+                    <span style={{ color: brand.textMuted, fontSize: 13 }}>{TARIFF_GROUP_LABELS[c.tariffGroup]}</span>
+                  </>
+                )}
               </>
             ),
           },
-          { title: 'Kỳ', className: 'cell-nowrap', render: (_, c) => periodLabel.get(c.periodId) ?? c.periodCode },
-          { title: 'Số tiền', dataIndex: 'amount', align: 'right', className: 'cell-money', render: (v: number) => <MoneyText value={v} /> },
-          { title: 'Công ty', dataIndex: 'companyCode', className: 'cell-nowrap' },
-          { title: 'Trạng thái', render: (_, c) => <ChargeStatusTag charge={c} /> },
+          { title: 'Kỳ', width: 110, className: 'cell-nowrap', render: (_, c) => (periodLabel.get(c.periodId) ?? c.periodCode).replace(/^Tháng\s*/, '') },
+          { title: 'Số tiền', width: 140, dataIndex: 'amount', align: 'right', className: 'cell-money', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Công ty', width: 110, dataIndex: 'companyCode', className: 'cell-nowrap' },
+          { title: 'Trạng thái', width: 150, render: (_, c) => <ChargeStatusTag charge={c} /> },
         ]}
       />
     </>
