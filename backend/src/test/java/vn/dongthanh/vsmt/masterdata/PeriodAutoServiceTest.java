@@ -133,8 +133,8 @@ class PeriodAutoServiceTest {
         assertThat(p.getStatus()).isEqualTo(PeriodStatus.DRAFT);
         assertThat(p.getStartDate()).isEqualTo(LocalDate.of(2026, 11, 1));
         assertThat(p.getOpenDate()).isEqualTo(LocalDate.of(2026, 11, 1));
-        // Cuối kỳ 30/11 + 10 ngày.
-        assertThat(p.getDueDate()).isEqualTo(LocalDate.of(2026, 12, 10));
+        // Hạn công ty nộp xã gợi ý: ngày 25 của kỳ.
+        assertThat(p.getDueDate()).isEqualTo(LocalDate.of(2026, 11, 25));
         assertThat(p.getTariffVersion()).isSameAs(bg65);
         verify(tariffs).activeVersionOn(LocalDate.of(2026, 11, 1));
         verify(audit).recordSystem(eq("CREATE_DRAFT_PERIOD"), eq("CollectionPeriod"), eq("2026-11"), isNull(), any());
@@ -275,8 +275,8 @@ class PeriodAutoServiceTest {
         assertThat(p.getCode()).isEqualTo("2026-Q4");
         assertThat(p.getStatus()).isEqualTo(PeriodStatus.DRAFT);
         assertThat(p.getOpenDate()).isEqualTo(LocalDate.of(2026, 10, 1));
-        // Cuối quý 31/12 + 10 ngày nộp xã theo quy tắc.
-        assertThat(p.getDueDate()).isEqualTo(LocalDate.of(2027, 1, 10));
+        // Quý: ngày 25 của tháng cuối quý.
+        assertThat(p.getDueDate()).isEqualTo(LocalDate.of(2026, 12, 25));
         verify(audit).record(eq(admin), eq("CREATE_DRAFT_PERIOD"), eq("CollectionPeriod"), eq("2026-Q4"), isNull(), any());
         verify(notifications).publish(any(), isNull());
     }

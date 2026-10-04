@@ -18,7 +18,6 @@ import vn.dongthanh.vsmt.masterdata.domain.FeeType;
 import vn.dongthanh.vsmt.masterdata.domain.FeeTypeRepository;
 import vn.dongthanh.vsmt.masterdata.domain.PeriodStatus;
 import vn.dongthanh.vsmt.masterdata.domain.TariffVersion;
-import vn.dongthanh.vsmt.masterdata.service.PeriodAutoService;
 import vn.dongthanh.vsmt.masterdata.service.TariffService;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 import vn.dongthanh.vsmt.platform.common.NotFoundException;
@@ -42,7 +41,6 @@ public class PeriodPublishService {
     private final CollectionPeriodRepository periods;
     private final FeeTypeRepository feeTypes;
     private final TariffService tariffs;
-    private final PeriodAutoService auto;
     private final ChargeRequestService chargeRequests;
     private final AuditService audit;
     private final Clock clock;
@@ -121,7 +119,10 @@ public class PeriodPublishService {
         return current;
     }
 
-    /** Hạn hộ đóng: người dùng chọn, hoặc ngày mở (hoặc hôm nay nếu muộn hơn) cộng số ngày theo quy tắc, không quá hạn nộp xã. */
+    /**
+     * Hạn hộ đóng: người dùng chọn, hoặc gợi ý ngày 20 của kỳ (kỳ quý: tháng cuối quý). Đã quá ngày 20 khi mở thì lấy
+     * hạn công ty nộp xã. Luôn nằm giữa ngày mở kỳ và hạn công ty nộp xã.
+     */
     private LocalDate dueDate(CollectionPeriod period, LocalDate requested) {
         if (requested != null) {
             if (requested.isBefore(period.getOpenDate()) || requested.isAfter(period.getDueDate())) {
@@ -134,8 +135,8 @@ public class PeriodPublishService {
         if (period.getOpenDate().isAfter(from)) {
             from = period.getOpenDate();
         }
-        LocalDate byRule = from.plusDays(auto.currentRule().getHouseholdDueDays());
-        return byRule.isAfter(period.getDueDate()) ? period.getDueDate() : byRule;
+        LocalDate suggested = period.getEndDate().withDayOfMonth(20);
+        return suggested.isBefore(from) || suggested.isAfter(period.getDueDate()) ? period.getDueDate() : suggested;
     }
 
     private IssueCommand command(CollectionPeriod period, LocalDate due, String note) {

@@ -57,12 +57,11 @@ class PeriodPublishServiceTest {
     final CollectionPeriodRepository periods = mock(CollectionPeriodRepository.class);
     final FeeTypeRepository feeTypes = mock(FeeTypeRepository.class);
     final TariffService tariffs = mock(TariffService.class);
-    final PeriodAutoService auto = mock(PeriodAutoService.class);
     final ChargeRequestService chargeRequests = mock(ChargeRequestService.class);
     final AuditService audit = mock(AuditService.class);
     // 28/10/2026 09:00 giờ Việt Nam.
     final Clock clock = Clock.fixed(Instant.parse("2026-10-28T02:00:00Z"), ZoneId.of("Asia/Ho_Chi_Minh"));
-    final PeriodPublishService service = new PeriodPublishService(periods, feeTypes, tariffs, auto, chargeRequests,
+    final PeriodPublishService service = new PeriodPublishService(periods, feeTypes, tariffs, chargeRequests,
             audit, clock);
 
     final CurrentUser officer = new CurrentUser(2L, "canbo_xa", Role.COMMUNE_OFFICER, null);
@@ -83,9 +82,6 @@ class PeriodPublishServiceTest {
         ReflectionTestUtils.setField(env, "id", 1L);
         draft = CollectionPeriod.draft(PeriodType.MONTH, 2026, 11, LocalDate.of(2026, 12, 10), bg65);
         ReflectionTestUtils.setField(draft, "id", 77L);
-        PeriodAutoRule rule = BeanUtils.instantiateClass(PeriodAutoRule.class);
-        rule.update(true, PeriodType.MONTH, 25, 15, 10, OffsetDateTime.parse("2026-10-01T00:00:00Z"), 1L);
-        when(auto.currentRule()).thenReturn(rule);
         when(periods.findByIdForUpdate(77L)).thenAnswer(inv -> Optional.of(draft));
         when(periods.findByIdWithTariff(77L)).thenAnswer(inv -> Optional.of(draft));
         when(periods.saveAndFlush(any(CollectionPeriod.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -123,18 +119,18 @@ class PeriodPublishServiceTest {
     }
 
     @Test
-    void defaultHouseholdDueIsIssueDatePlusRuleDays() {
-        // Ngày mở 01/11 sau hôm nay 28/10: tính từ ngày mở. 01/11 + 15 ngày = 16/11.
+    void defaultHouseholdDueIsThe20thOfThePeriod() {
+        // Kỳ 11/2026 mở 01/11: gợi ý hạn hộ đóng là 20/11.
         service.publish(77L, null, null, null, null, officer);
 
         ArgumentCaptor<IssueCommand> cmd = ArgumentCaptor.forClass(IssueCommand.class);
         verify(chargeRequests).publish(cmd.capture(), any());
-        assertThat(cmd.getValue().dueDate()).isEqualTo(LocalDate.of(2026, 11, 16));
+        assertThat(cmd.getValue().dueDate()).isEqualTo(LocalDate.of(2026, 11, 20));
     }
 
     @Test
-    void defaultHouseholdDueStartsFromTodayWhenOpenedLate() {
-        // Mở muộn: hôm nay 28/10 là sau ngày mở 20/10 (kỳ tháng 10 dự thảo), tính từ hôm nay.
+    void defaultHouseholdDueFallsBackToCompanyDueWhenOpenedAfterThe20th() {
+        // Mở muộn: hôm nay 28/10 đã quá ngày 20/10 của kỳ tháng 10.
         draft = CollectionPeriod.draft(PeriodType.MONTH, 2026, 10, LocalDate.of(2026, 11, 10), bg65);
         ReflectionTestUtils.setField(draft, "id", 77L);
         when(tariffs.activeVersionOn(LocalDate.of(2026, 10, 1))).thenReturn(bg65);
@@ -143,7 +139,7 @@ class PeriodPublishServiceTest {
 
         ArgumentCaptor<IssueCommand> cmd = ArgumentCaptor.forClass(IssueCommand.class);
         verify(chargeRequests).publish(cmd.capture(), any());
-        // 28/10 + 15 = 12/11, nhưng không được quá hạn công ty nộp xã 10/11.
+        // Lấy hạn công ty nộp xã 10/11.
         assertThat(cmd.getValue().dueDate()).isEqualTo(LocalDate.of(2026, 11, 10));
     }
 
@@ -203,7 +199,7 @@ class PeriodPublishServiceTest {
     void previewUsesTheDraftPathAndReturnsTheDueDateItAssumed() {
         DraftPreview p = service.preview(77L, null, null, null, officer);
 
-        assertThat(p.dueDate()).isEqualTo(LocalDate.of(2026, 11, 16));
+        assertThat(p.dueDate()).isEqualTo(LocalDate.of(2026, 11, 20));
         assertThat(p.result().chargeCount()).isEqualTo(120);
         assertThat(p.result().requestCode()).isNull();
         verify(chargeRequests).previewDraft(any(), eq(officer));

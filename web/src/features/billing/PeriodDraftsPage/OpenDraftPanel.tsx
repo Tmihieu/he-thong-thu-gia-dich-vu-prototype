@@ -98,7 +98,7 @@ export function OpenDraftPanel({ period, onClose }: Props) {
               }}
             />
           </Form.Item>
-          <Form.Item label="Hạn công ty nộp xã" extra="Mặc định theo quy tắc của quản trị.">
+          <Form.Item label="Hạn công ty nộp xã" extra="Gợi ý: ngày 25 của kỳ.">
             <DatePicker
               aria-label="Hạn công ty nộp xã"
               format={DATE_FORMAT}
@@ -114,7 +114,7 @@ export function OpenDraftPanel({ period, onClose }: Props) {
         </Space>
         <Form.Item
           label="Hạn hộ đóng"
-          extra={`Mặc định theo quy tắc của quản trị; chọn từ ${openDate.format(DATE_FORMAT)} đến ${companyDue.format(DATE_FORMAT)}.`}
+          extra={`Gợi ý: ngày 20 của kỳ; chọn từ ${openDate.format(DATE_FORMAT)} đến ${companyDue.format(DATE_FORMAT)}.`}
         >
           <DatePicker
             aria-label="Hạn hộ đóng"

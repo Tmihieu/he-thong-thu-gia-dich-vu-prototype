@@ -157,7 +157,7 @@ public class PeriodAutoService {
     private CollectionPeriod saveDraft(PeriodType type, int year, int number, LocalDate periodEnd, PeriodAutoRule rule,
             TariffVersion tariff, CurrentUser actor) {
         CollectionPeriod draft = periods.save(CollectionPeriod.draft(type, year, number,
-                periodEnd.plusDays(rule.getRemitDueDays()), tariff));
+                periodEnd.withDayOfMonth(25), tariff));
         Map<String, Object> after = new LinkedHashMap<>();
         after.put("code", draft.getCode());
         after.put("type", draft.getPeriodType());
