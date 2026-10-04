@@ -5,10 +5,10 @@ import type { LedgerRow } from './api';
 
 type Key = 'due' | 'collected' | 'retained' | 'payable' | 'received' | 'remaining' | 'previousDebt';
 const STATS: Record<Key, [string, keyof typeof semantic]> = {
-  due: ['Phải thu của hộ', 'neutral'],
+  due: ['Phải thu', 'neutral'],
   collected: ['Công ty đã thu', 'info'],
   retained: ['Công ty cầm lại', 'neutral'],
-  payable: ['Phải nộp về xã', 'info'],
+  payable: ['Phải nộp xã', 'info'],
   received: ['Đã nộp về xã', 'success'],
   remaining: ['Còn phải nộp', 'warning'],
   previousDebt: ['Nợ kỳ trước', 'danger'],
