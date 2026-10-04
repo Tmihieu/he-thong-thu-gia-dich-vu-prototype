@@ -227,7 +227,7 @@ describe('Người đi thu: lịch sử hộ', () => {
     await userEvent.click(within(row).getByRole('button', { name: 'Lịch sử' }));
     const dialog = await screen.findByRole('dialog');
     expect(await within(dialog).findByText('Đã thu 80.000 đ', norm)).toBeInTheDocument();
-    const items = within(dialog).getAllByRole('listitem').map((li) => li.textContent);
+    const items = within(dialog).getAllByRole('listitem').map((li) => li.textContent).filter((t) => t?.includes('TT-'));
     expect(items).toHaveLength(1);
     expect(items[0]).toContain('TT-1026-000007');
     expect(items[0]).toContain('Tiền mặt');
@@ -255,7 +255,7 @@ describe('Người đi thu: báo sai thông tin hộ', () => {
 });
 
 describe('Người đi thu: các kỳ trước', () => {
-  it('thẻ hộ đánh dấu kỳ trước đã nộp / còn nợ (lấy từ danh sách mọi kỳ)', async () => {
+  it('thẻ hộ chỉ giữ kỳ còn nợ, kỳ đã đóng xem ở Lịch sử (lấy từ danh sách mọi kỳ)', async () => {
     const old = (periodCode: string, status: string, id: number) => {
       const w = work(1, 'Hộ Nguyễn Văn An', { status });
       return { ...w, charge: { ...w.charge, id, periodId: id, periodCode } };
@@ -267,10 +267,15 @@ describe('Người đi thu: các kỳ trước', () => {
     renderApp('/collector/list');
 
     const card = await screen.findByRole('listitem', { name: 'Hộ Nguyễn Văn An' });
-    expect(await within(card).findByText('09/2026', { exact: false })).toBeInTheDocument();
+    expect(await within(card).findByText('Kỳ trước còn nợ')).toBeInTheDocument();
     expect(within(card).getByText((_, el) => el?.classList.contains('debt') === true && el.textContent?.includes('08/2026') === true))
       .toHaveTextContent('còn 80.000 đ');
-    expect(within(screen.getByRole('listitem', { name: 'Hộ Trần Thị Bình' })).queryByText('Các kỳ trước')).not.toBeInTheDocument();
+    expect(within(card).queryByText('09/2026', { exact: false })).not.toBeInTheDocument();
+    expect(within(screen.getByRole('listitem', { name: 'Hộ Trần Thị Bình' })).queryByText('Kỳ trước còn nợ')).not.toBeInTheDocument();
+
+    await userEvent.click(within(card).getByRole('button', { name: 'Lịch sử' }));
+    const paidPeriod = await screen.findByText((_, el) => el?.tagName === 'LI' && el.textContent === 'Kỳ 09/2026 · Đã đóng');
+    expect(paidPeriod).toBeInTheDocument();
   });
 });
 

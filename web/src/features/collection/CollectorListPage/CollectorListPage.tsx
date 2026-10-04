@@ -162,7 +162,7 @@ export function CollectorListPage() {
           {visible.map((w) => {
             const s = workState(w);
             const unpaid = w.charge.status === 'UNPAID';
-            const previous = previousOf(w);
+            const previous = previousOf(w).filter((x) => x.charge.status === 'UNPAID');
             return (
               <li key={w.charge.id} className="clm-card" aria-label={w.charge.subjectName}>
                 <header className="clm-card-head">
@@ -182,20 +182,13 @@ export function CollectorListPage() {
                   </div>
                   {previous.length > 0 && (
                     <div className="clm-previous">
-                      <small>Các kỳ trước</small>
+                      <small>Kỳ trước còn nợ</small>
                       <div>
-                        {previous.map((x) =>
-                          x.charge.status === 'UNPAID' ? (
-                            <span key={x.charge.id} className="clm-prev debt">
-                              <ExclamationCircleFilled /> {periodLabel(x.charge.periodCode)} · còn <MoneyText value={x.remainingAmount} />
-                            </span>
-                          ) : (
-                            <span key={x.charge.id} className="clm-prev ok">
-                              <CheckCircleFilled /> {periodLabel(x.charge.periodCode)}
-                              {x.charge.status === 'EXEMPT' ? ' · miễn giảm' : x.charge.status === 'WRITTEN_OFF' ? ' · đã xóa nợ' : ''}
-                            </span>
-                          ),
-                        )}
+                        {previous.map((x) => (
+                          <span key={x.charge.id} className="clm-prev debt">
+                            <ExclamationCircleFilled /> {periodLabel(x.charge.periodCode)} · còn <MoneyText value={x.remainingAmount} />
+                          </span>
+                        ))}
                       </div>
                     </div>
                   )}
@@ -281,7 +274,11 @@ export function CollectorListPage() {
         </ul>
       )}
       <ResultSheet item={editing?.item ?? null} initialMethod={editing?.method} onClose={() => setEditing(null)} />
-      <HouseholdHistory item={viewing} onClose={() => setViewing(null)} />
+      <HouseholdHistory
+        item={viewing}
+        periods={viewing ? (all.data ?? []).filter((x) => x.charge.subjectId === viewing.charge.subjectId) : []}
+        onClose={() => setViewing(null)}
+      />
       <ReportSubjectForm item={reporting} onClose={() => setReporting(null)} />
     </div>
   );
