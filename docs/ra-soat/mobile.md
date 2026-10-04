@@ -83,6 +83,27 @@ Rà lại toàn bộ màn, kết luận: không còn màu / cỡ chữ cứng ng
 
 Kết quả đợt 3: `npm run typecheck` xanh; `npm test -- --runInBand` chính thức: 15 suite, 88 test xanh (đã chép `node_modules` mới từ thư mục gốc bằng `cp -rn`, không `npm install`).
 
+## Đợt 4: xem màn thật (bản web, 390 × 1500, Edge headless qua CDP)
+
+Chạy `expo start --web` ở cổng 8083 (8082 đang do cửa sổ leader dùng) với backend `localhost:8080`, đăng nhập hộ `0902000128`. Ảnh trước/sau nằm ngoài repo (scratchpad), không commit. Lưu ý: chạy Metro với `CI=1` thì không theo dõi file, phải khởi động lại để nhận code mới; Edge cần tắt cache.
+
+**Đã nhìn thật:** đăng nhập, Trang chủ, Chợ đồ cũ (tab), Thông báo (rỗng), Tài khoản, Khoản phí, Thanh toán (khoản quá hạn và khoản mới), Xác nhận thanh toán (chi tiết), Thông tin hộ, Lịch thu gom, Gửi phản ánh, Đăng ký rác cồng kềnh.
+
+**Chỉ chụp, chưa soát kỹ từng ảnh:** danh sách Xác nhận thanh toán, danh sách Phản ánh, danh sách Rác cồng kềnh, Đăng bài, Tin của tôi, Đã lưu, Đã chặn, Kiểm tra kết nối.
+
+**Chưa nhìn được:** chi tiết phản ánh (timeline), chi tiết rác cồng kềnh, chi tiết bài chợ (hộ demo không có dữ liệu), màn Xác nhận vừa thanh toán xong (`fresh=1`, cần thanh toán thật), danh sách thông báo có mục (demo trống). Không có hộ nào còn khoản chưa đóng trong CSDL demo nên màn Trang chủ có khoản phải đóng, Khoản phí và Thanh toán được xem bằng cách giả lập phản hồi `/api/citizen/charges` ngay trong trình duyệt (không đụng dữ liệu).
+
+| # | Thấy trên ảnh | Đã sửa |
+|---|---|---|
+| 20 | `Callout` có nội dung gồm nhiều mảnh (chuỗi + biến) sinh lỗi "Unexpected text node", chữ nằm ngoài `<Text>` (font serif, sai cỡ) ở Gửi phản ánh, Rác cồng kềnh, Kiểm tra kết nối | Có: `Callout` tự bọc `<Text>` khi mọi con là chuỗi / số; ảnh sau hết lỗi |
+| 21 | Thông báo trống vẫn hiện "Đã đọc hết" | Có |
+| 22 | Xác nhận thanh toán: "Hộ: Đỗ Thanh Châu, DTH-\nH000128" bị ngắt giữa mã hộ | Có: tách thành hai dòng "Hộ" và "Mã hộ" |
+| 23 | Nhãn tab bar nhìn như bị cắt ở mép dưới ảnh; đã bỏ `paddingTop` và `minHeight` do mình đặt thêm nhưng ảnh sau vẫn y hệt | **Chưa kết luận:** có thể do chiều cao khung chụp giả lập (1500) chứ không phải lỗi thật. Cần xem trên máy / giả lập thật |
+
+Sạn thấy nhưng chưa sửa: mã khoản dài ngắt giữa chừng ở dòng phụ màn Thanh toán (`KT-0526-` xuống dòng); đăng nhập dư nhiều khoảng trống bên dưới, logo canh trái (chấp nhận được, không ảnh hưởng dùng); dòng đầu hàng "Hộ của tôi" ở Tài khoản chỉ hiện mã hộ, nên hiện tên hộ (chưa quyết, không ảnh hưởng nghiệp vụ).
+
+Kết quả: `npm run typecheck` xanh; `npm test -- --runInBand`: 15 suite, 88 test xanh. Đã tắt dev server cổng 8083 và Edge headless cổng 9555.
+
 ## Câu hỏi nghiệp vụ
 
 Đã chốt: QĐ-L4 (đã làm), QĐ-L5 giữ dòng "Số đăng ký", QĐ-L6 giữ "Chờ công ty báo phí". Không còn câu hỏi mở.

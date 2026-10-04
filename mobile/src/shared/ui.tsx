@@ -315,7 +315,11 @@ export function Callout({
       <Ionicons name={CALLOUT_ICONS[tone]} size={22} color={c.fg} style={styles.calloutIcon} />
       <View style={styles.calloutBody}>
         {title ? <Text style={[styles.calloutTitle, { color: c.fg }]}>{title}</Text> : null}
-        {typeof children === 'string' ? <Text style={styles.calloutText}>{children}</Text> : children}
+        {Children.toArray(children).every((c) => typeof c === 'string' || typeof c === 'number') ? (
+          <Text style={styles.calloutText}>{children}</Text>
+        ) : (
+          children
+        )}
       </View>
     </View>
   );

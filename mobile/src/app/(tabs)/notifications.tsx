@@ -57,7 +57,7 @@ export default function NotificationsTab() {
         })}
       </View>
       <View style={styles.head}>
-        <Muted>{list.data ? (unreadCount > 0 ? `${unreadCount} chưa đọc` : 'Đã đọc hết') : ''}</Muted>
+        <Muted>{list.data && list.data.items.length > 0 ? (unreadCount > 0 ? `${unreadCount} chưa đọc` : 'Đã đọc hết') : ''}</Muted>
         {unreadCount > 0 ? (
           <Button
             title="Đánh dấu đã đọc hết"
