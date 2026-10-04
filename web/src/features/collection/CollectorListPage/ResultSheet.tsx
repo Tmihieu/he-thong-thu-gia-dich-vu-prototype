@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { CheckCircleFilled } from '@ant-design/icons';
 import { Alert, App, Button, Drawer, Form, Select, Spin, Typography } from 'antd';
 import { useEffect } from 'react';
 
 import { api } from '../../../api/client';
+import { DEMO_LOGIN_ENABLED } from '../../../app/auth/demoAccounts';
 import { errorText } from '../../../shared/errorText';
-import { formatMoney } from '../../../shared/format';
+import { formatDate, formatMoney } from '../../../shared/format';
 import { MoneyText } from '../../../shared/MoneyText';
 import type { components } from '../../../api/schema';
 import { type Collector, type CollectorCharge, collectionKeys, type PaymentResult } from '../api';
@@ -96,14 +98,18 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
     queryFn: () => api.get<TransferInfo>(`/api/collection/charges/${chargeId}/transfer-info`),
     enabled: qr && item !== null,
   });
-  const paidByHousehold = qr && watch.data?.find((w) => w.charge.id === chargeId)?.charge.status === 'PAID';
+  const watched = watch.data?.find((w) => w.charge.id === chargeId);
+  const paidByHousehold = qr && watched?.charge.status === 'PAID';
   useEffect(() => {
-    if (!paidByHousehold || !item) return;
-    message.success(`Hộ đã chuyển khoản thành công · ${item.charge.subjectName}`);
+    if (!paidByHousehold) return;
     void queryClient.invalidateQueries({ queryKey: collectionKeys.all });
     void queryClient.invalidateQueries({ queryKey: ['remittance'] });
-    onClose();
-  }, [paidByHousehold, item, message, queryClient, onClose]);
+  }, [paidByHousehold, queryClient]);
+  // Chỉ chạy được ở backend profile demo (ngoài demo máy chủ trả 404); nút cũng chỉ hiện khi bật đăng nhập demo.
+  const simulate = useMutation({
+    mutationFn: () => api.post<void>(`/api/collection/charges/${chargeId}/simulate-transfer`),
+    onSuccess: () => watch.refetch(),
+  });
 
   const remaining = item?.remainingAmount ?? 0;
   return (
@@ -112,7 +118,7 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
       height="auto"
       open={item !== null}
       onClose={onClose}
-      title={qr ? 'Quét mã để chuyển khoản' : 'Đã thu tiền mặt'}
+      title={paidByHousehold ? 'Kết quả giao dịch' : qr ? 'Quét mã để chuyển khoản' : 'Đã thu tiền mặt'}
       className="clm-sheet"
       destroyOnHidden
       styles={{ body: { paddingBottom: 24 } }}
@@ -154,7 +160,27 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
             />
           </Form.Item>
         )}
-        {qr && item ? (
+        {paidByHousehold && item ? (
+          <div role="status" style={{ textAlign: 'center' }}>
+            <CheckCircleFilled style={{ fontSize: 56, color: '#16a34a' }} />
+            <Typography.Title level={4} style={{ margin: '8px 0 0' }}>
+              Giao dịch thành công
+            </Typography.Title>
+            <Typography.Title level={2} style={{ margin: '4px 0' }}>
+              {formatMoney(item.charge.amount)}
+            </Typography.Title>
+            <Typography.Paragraph type="secondary">
+              {item.charge.subjectName} · mã khoản {item.charge.code}
+              <br />
+              Chuyển khoản · {formatDate(watched?.lastPaidAt, true)}
+            </Typography.Paragraph>
+            <div className="clm-sheet-actions">
+              <Button size="large" type="primary" onClick={onClose}>
+                Hoàn tất
+              </Button>
+            </div>
+          </div>
+        ) : qr && item ? (
           <>
             {transfer.isLoading && <Spin style={{ display: 'block', margin: '24px auto' }} />}
             {transfer.error && (
@@ -189,6 +215,11 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
               </>
             )}
             <div className="clm-sheet-actions">
+              {DEMO_LOGIN_ENABLED && transfer.data?.configured && (
+                <Button size="large" loading={simulate.isPending} onClick={() => simulate.mutate()}>
+                  Mô phỏng chuyển khoản
+                </Button>
+              )}
               <Button size="large" onClick={onClose}>
                 Đóng
               </Button>

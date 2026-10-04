@@ -189,12 +189,13 @@ describe('Người đi thu: danh sách thu', () => {
       'src', 'https://qr.sepay.vn/img?acc=0071000888888&bank=Vietcombank&amount=80000&des=VSMT000004');
     expect(within(dialog).getByRole('status')).toHaveTextContent('Đang chờ hộ chuyển khoản');
     expect(within(dialog).queryByRole('button', { name: /^Xác nhận đã thu/ })).not.toBeInTheDocument();
-    expect(within(dialog).queryByRole('button', { name: /mô phỏng/i })).not.toBeInTheDocument();
+    // Nút mô phỏng chỉ có ở chế độ demo (VITE_DEMO_LOGIN), bật mặc định.
+    expect(within(dialog).getByRole('button', { name: 'Mô phỏng chuyển khoản' })).toBeInTheDocument();
     expect(within(dialog).getAllByRole('button').map((b) => b.textContent)).not.toContain('Đã thu chuyển khoản');
     expect(posts(fetchFn, '/api/collection/payments')).toHaveLength(0);
   });
 
-  it('hộ thanh toán xong thì màn QR tự xác nhận và đóng, người đi thu không bấm gì', async () => {
+  it('hộ thanh toán xong thì màn QR chuyển sang "Giao dịch thành công", người đi thu chỉ bấm Hoàn tất', async () => {
     let paid = false;
     const fetchFn = api({
       'GET /api/collection/my-work': () =>
@@ -205,7 +206,8 @@ describe('Người đi thu: danh sách thu', () => {
     await openSheet('Hộ Phạm Thị Dung', 'Chuyển khoản (QR)');
     paid = true;
 
-    expect(await screen.findByText(/Hộ đã chuyển khoản thành công/, undefined, { timeout: 10_000 })).toBeInTheDocument();
+    expect(await screen.findByText('Giao dịch thành công', undefined, { timeout: 10_000 })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Hoàn tất' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(posts(fetchFn, '/api/collection/payments')).toHaveLength(0);
   });
