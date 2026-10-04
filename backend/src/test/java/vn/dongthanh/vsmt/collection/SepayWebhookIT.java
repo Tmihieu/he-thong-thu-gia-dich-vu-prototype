@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +47,12 @@ class SepayWebhookIT extends IntegrationTest {
         chargeId = jdbc.queryForObject("select id from charges where company_id = ? order by id limit 1", Long.class,
                 fx.dv01.getId());
         amount = jdbc.queryForObject("select amount from charges where id = ?", Long.class, chargeId);
+    }
+
+    /** Test này không bọc transaction (webhook tự commit từng bước) nên phải dọn, kẻo IT sau trùng dữ liệu fixture. */
+    @AfterEach
+    void clean() {
+        cleaner.truncateAll();
     }
 
     @Test

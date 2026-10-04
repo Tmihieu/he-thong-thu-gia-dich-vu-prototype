@@ -45,4 +45,9 @@ server {
     location / {
         try_files $uri $uri/ /index.html;
     }
+
+    # App người dân bản web (Flutter, build trong Dockerfile.render): SPA riêng dưới /citizen.
+    location /citizen/ {
+        try_files $uri $uri/ /citizen/index.html =404;
+    }
 }
