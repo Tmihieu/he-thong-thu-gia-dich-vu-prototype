@@ -70,10 +70,10 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
       }
       onValuesChange={(changed) => {
         if ('periodId' in changed) {
-          // Kỳ chưa bắt đầu: gợi ý hạn công ty nộp xã (ngày 25) và hạn hộ đóng (ngày 20) của kỳ; cán bộ xã chọn lại được.
+          // Kỳ chưa bắt đầu: mặc định hạn công ty nộp xã là ngày 25 và hạn hộ đóng là ngày 20 của kỳ; cán bộ xã chọn lại được.
           const p = periods.find((x) => x.id === changed.periodId);
           form.setFieldsValue({
-            companyDueDate: p ? dayjs(p.dueDate) : null,
+            companyDueDate: p ? (p.status === 'DRAFT' ? dayjs(p.endDate).date(25) : dayjs(p.dueDate)) : null,
             ...(p?.status === 'DRAFT' ? { dueDate: dayjs(p.endDate).date(20) } : {}),
           });
         }
