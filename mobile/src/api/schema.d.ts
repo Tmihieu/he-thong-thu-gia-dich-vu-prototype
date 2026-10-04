@@ -29,7 +29,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Sửa biểu giá (quản trị); bản đã ban hành giữ nguyên ngày hiệu lực */
+        /** Sửa dự thảo biểu giá (quản trị); bản đã ban hành không sửa được (422 TARIFF_NOT_DRAFT) */
         put: operations["updateDraft"];
         post?: never;
         delete?: never;
@@ -2385,7 +2385,7 @@ export interface components {
             periodDue: number;
             /**
              * Format: int64
-             * @description Còn phải nộp sau phiếu này
+             * @description Còn phải nộp xã sau phiếu này = phải nộp xã − lũy kế đã nộp
              */
             remainingAfter: number;
         };
@@ -3214,6 +3214,10 @@ export interface components {
             /** Format: int32 */
             warningCount: number;
             skipped: components["schemas"]["SkippedDto"][];
+            /** @description Số hộ bị bỏ qua theo từng lý do (chỉ lý do có hộ) */
+            skippedByReason: {
+                [key: string]: number;
+            };
         };
         SkippedDto: {
             /** Format: int64 */
@@ -3222,7 +3226,7 @@ export interface components {
             subjectName: string;
             areaCode: string;
             /** @enum {string} */
-            reason: "SUBJECT_NOT_ACTIVE" | "NO_ACTIVE_CONTRACT" | "AREA_WITHOUT_COMPANY" | "DUPLICATE_CHARGE";
+            reason: "SUBJECT_NOT_ACTIVE" | "NO_ACTIVE_CONTRACT" | "AREA_WITHOUT_COMPANY" | "DUPLICATE_CHARGE" | "QUOTA_KG_REQUIRED";
             warning: boolean;
             message: string;
         };
@@ -3301,7 +3305,7 @@ export interface components {
             remaining: number;
             /**
              * Format: int64
-             * @description Đã nộp − đã thu; âm là thu rồi chưa nộp
+             * @description Đã nộp về xã (kể cả điều chỉnh kỳ trước) − phần vận chuyển của số tiền đã thu; âm là thu rồi chưa nộp đủ
              */
             gap: number;
             /**
@@ -3537,6 +3541,11 @@ export interface components {
             status: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
             /** @description Chưa thu và đã qua hạn đóng */
             overdue: boolean;
+            /**
+             * Format: int64
+             * @description Tổng đã hoàn của khoản (số dương); chỉ điền ở GET /api/billing/charges, nơi khác là 0
+             */
+            refunded: number;
         };
         CollectorChargeDto: {
             charge: components["schemas"]["ChargeDto"];
