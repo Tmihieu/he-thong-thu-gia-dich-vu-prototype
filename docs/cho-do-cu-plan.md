@@ -11,10 +11,8 @@ Nâng cấp chợ hiện có: caption + tối đa 5 ảnh, nhiều tag, tìm/l�
 ## 2. Tái sử dụng trước khi thêm mới
 
 - Backend Spring Boot: MarketPost/Comment/Service/Repository/Controller, phân trang, PhotoStorage và luồng CitizenAccount.
-- Mobile Expo SDK 57: market list/new/detail, PhotoPickerField, PhotoStrip/StoredPhoto, React Query, shared UI và polling thông báo.
 - Web: layout/menu/React Query hiện tại, một màn chợ đọc dùng lại cho mọi vai trò.
 - Không thêm search engine, Redis, realtime server, AI runtime, thư viện tag hay UI kit. Chỉ thêm dependency khi giải pháp hiện tại không đáp ứng và có lý do cụ thể.
-- Trước khi triển khai API Expo/React Native, làm theo mobile/AGENTS.md và đọc đúng docs SDK 57; viết tài liệu hiện tại không gọi API Expo mới.
 
 ## 3. Thứ tự công việc
 

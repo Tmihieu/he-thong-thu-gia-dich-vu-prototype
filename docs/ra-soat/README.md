@@ -12,9 +12,8 @@ Nhánh tích hợp: `feat/ra-soat-tong` (tách từ `feat/chuan-hoa-dia-chi-goon
 | 2 Backend | `../vsmt-be` | `ra-soat/backend` | `backend/**` — là cửa sổ DUY NHẤT thêm migration (từ `V32__`) và seed |
 | 3 Web xã | `../vsmt-web-xa` | `ra-soat/web-xa` | `web/src/app/**`, `web/src/shared/**`, `web/src/features/{masterdata,billing,platform,leadership}/**`, `web/public/**`, cấu hình web (`package.json`, `vite.config.ts`, eslint…) |
 | 4 Web công ty | `../vsmt-web-cty` | `ra-soat/web-cty` | `web/src/features/{collection,remittance,complaints,notifications,market,citizen}/**` |
-| 5 Mobile | `../vsmt-mobile` | `ra-soat/mobile` | `mobile/**` trừ `mobile/src/api/schema.d.ts` |
 
-Ngoài ra mỗi lane có đúng một file báo cáo riêng: `docs/ra-soat/<lane>.md` (`backend.md`, `web-xa.md`, `web-cty.md`, `mobile.md`).
+Ngoài ra mỗi lane có đúng một file báo cáo riêng: `docs/ra-soat/<lane>.md` (`backend.md`, `web-xa.md`, `web-cty.md`).
 
 **Thấy sạn ở file không phải của mình: KHÔNG sửa.** Ghi vào mục "Yêu cầu sang lane khác" trong file báo cáo của mình, commit, làm việc khác. Leader đọc và chuyển.
 
@@ -25,14 +24,13 @@ Ngoài ra mỗi lane có đúng một file báo cáo riêng: `docs/ra-soat/<lane
 3. Cần lấy thay đổi mới của lane khác: `git merge feat/ra-soat-tong` (chỉ merge, chỉ từ nhánh tích hợp). Không merge thẳng nhánh lane khác.
 4. **Rule nghiệp vụ chưa rõ → không tự quyết.** Lỗi rõ ràng (crash, chữ sai, số hiển thị lệch nguồn, nút sai quyền, thiếu trạng thái trống/lỗi/đang tải, code lệch một rule ĐÃ CHỐT) thì sửa luôn. Chỗ nào đổi hành vi nghiệp vụ, đụng cách tính tiền, hay cần ngưỡng (ngày, số lượng, số tiền, %) mà tài liệu chưa chốt: ghi vào mục "Câu hỏi nghiệp vụ" kèm phương án đề xuất, không sửa. **Từ 04/10 người dùng giao leader tự quyết 100%:** lane nhắn câu hỏi kèm đề xuất cho leader, leader chốt và ghi vào `docs/ra-soat/quyet-dinh-leader.md`; lane làm theo quyết định đó, không tự quyết thay leader.
 5. Nguồn chuẩn theo thứ tự ưu tiên: `docs/business-rules.md` (leader soạn, xem bằng `git show feat/ra-soat-tong:docs/business-rules.md`) → `docs/thay-doi-2026-10-03.md` → `SPEC.md` → `docs/main-business-flows.md` → `docs/data-dictionary.md`. Thấy tài liệu tự mâu thuẫn: ghi vào "Câu hỏi nghiệp vụ".
-6. **Máy yếu (7,3 GB RAM): mỗi lúc chỉ một việc nặng trên toàn máy.** Chỉ leader chạy `mvnw verify`, `docker compose up --build`, `npm ci`, `expo export`. Lane được chạy:
+6. **Máy yếu (7,3 GB RAM): mỗi lúc chỉ một việc nặng trên toàn máy.** Chỉ leader chạy `mvnw verify`, `docker compose up --build`, `npm ci`. Lane được chạy:
    - Backend: `.\mvnw.cmd test -Dtest=<TenLop>` từng lớp một (là lane duy nhất chạy Maven). Không chạy `verify`.
    - Web: `npx vitest run <đường dẫn file test của mình>`, `npm run lint`, `npx tsc --noEmit -p .`. Không chạy `npm test` toàn bộ, không `npm run build`.
-   - Mobile: `npm run typecheck`, `npm test -- --runInBand`. Không chạy `expo lint`, không tự cài gói.
 7. Không thêm thư viện mới. Thật sự cần thì ghi "Yêu cầu sang lane khác" gửi leader.
 8. Không sửa tay `schema.d.ts`. Cần API/field mới: ghi yêu cầu cho lane Backend; leader gộp backend rồi chạy `gen:api`, lane kia `git merge feat/ra-soat-tong` để nhận.
-9. Xem giao diện thật: leader chạy backend + CSDL demo ở cổng 8080 (một bản duy nhất, dùng chung). Web xã `npm run dev -- --port 5174`, Web công ty `npm run dev -- --port 5175`, Mobile `npx expo start --web --port 8082`. Tài khoản ở `docs/demo-accounts.md`. Dữ liệu demo dùng chung nên **không khóa kỳ, không xóa/nạp lại dữ liệu ở màn Quản trị dữ liệu, không đổi mật khẩu tài khoản demo**; cần thì nhờ leader.
-10. Có `.codegraph/` thì dùng CodeGraph trước; không có thì bỏ qua. Lane Mobile đọc `mobile/AGENTS.md` trước khi sửa.
+9. Xem giao diện thật: leader chạy backend + CSDL demo ở cổng 8080 (một bản duy nhất, dùng chung). Web xã `npm run dev -- --port 5174`, Web công ty `npm run dev -- --port 5175`. Tài khoản ở `docs/demo-accounts.md`. Dữ liệu demo dùng chung nên **không khóa kỳ, không xóa/nạp lại dữ liệu ở màn Quản trị dữ liệu, không đổi mật khẩu tài khoản demo**; cần thì nhờ leader.
+10. Có `.codegraph/` thì dùng CodeGraph trước; không có thì bỏ qua.
 11. Giao diện: tiếng Việt có dấu, người dùng lớn tuổi (người đi thu) → chữ to, ít nút, nhãn theo `labels.ts`. Không viết "hợp đồng" cho hộ dân (gọi "Đăng ký thu phí").
 
 ## 3. File báo cáo của lane — `docs/ra-soat/<lane>.md`
@@ -78,7 +76,3 @@ Ngoài ra mỗi lane có đúng một file báo cáo riêng: `docs/ra-soat/<lane
 - Trọng tâm: **số tiền trên các màn phải khớp nhau** (tiến độ = đối soát = màn công ty = báo cáo lãnh đạo), TM/CK, cầm lại phần thu gom, hoàn, xóa nợ, điều chỉnh kỳ trước.
 - Làm đẹp bằng token/`shared` do lane Web xã đưa ra (merge `feat/ra-soat-tong` khi leader báo đã có); không tự đặt màu, cỡ chữ cứng. Cần component dùng chung mới → yêu cầu lane Web xã.
 
-### Cửa sổ 5 — Mobile (app người dân)
-- Làm lại giao diện toàn app: `shared/theme.ts`, `shared/ui.tsx`, bố cục từng màn, điều hướng tab, trạng thái trống / lỗi / đang tải / mất mạng. Dùng skill `design-taste-frontend`.
-- Giữ nguyên: Expo, route hiện có, API, các hàm đã có test (`validate`, `api`, `format`, `links`, `requestId`, `photos`). Test cũ phải còn xanh.
-- Song song rà sạn nghiệp vụ từng luồng: đăng nhập, hộ của tôi, khoản thu + thanh toán, xác nhận đã thu, lịch thu gom, thông báo + nhắc nộp, khiếu nại, đồ cồng kềnh, chợ đồ cũ.

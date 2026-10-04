@@ -9,7 +9,7 @@ Màn đăng nhập điền sẵn tài khoản demo để người trình diễn 
 
 - Web: điền sẵn `admin`, kèm nút đăng nhập nhanh theo vai trò. Tắt bằng `VITE_DEMO_LOGIN=false` lúc build.
 - Jmix (`/jmix`, mục *Quản trị dữ liệu*): điền sẵn `admin`. Tắt bằng `JMIX_DEMO_USERNAME=` (để trống).
-- App người dân: điền sẵn SĐT `0902000128` và OTP `123456`. Tắt bằng `EXPO_PUBLIC_DEMO_LOGIN=false`.
+- App người dân: điền sẵn SĐT `0902000128`; OTP demo là `123456`.
 
 | Tên đăng nhập | Vai trò | Họ tên (giả) | Công ty | Seed ở |
 |---|---|---|---|---|

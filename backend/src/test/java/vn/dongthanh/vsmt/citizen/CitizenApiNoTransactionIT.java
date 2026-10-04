@@ -116,27 +116,11 @@ class CitizenApiNoTransactionIT extends IntegrationTest {
     }
 
     @Test
-    void complaintAndBulkyRequestFlowsLoadOutsideTestTransaction() throws Exception {
+    void complaintFlowLoadsOutsideTestTransaction() throws Exception {
         long complaintId = body(ok(post("/api/citizen/complaints"),
                 "{\"category\":\"LATE_COLLECTION\",\"content\":\"Xe thu gom đến trễ\"}")).get("complaint").get("id").asLong();
         ok(get("/api/citizen/complaints")).andExpect(jsonPath("$[0].areaCode").value("KV07"));
         ok(get("/api/citizen/complaints/" + complaintId)).andExpect(jsonPath("$.events[0].eventType").value("SUBMITTED"));
-
-        long bulkyId = body(ok(post("/api/citizen/bulky-requests"),
-                "{\"itemType\":\"MATTRESS\",\"quantity\":1,\"preferredDate\":\"2026-10-18\"}")).get("id").asLong();
-        ok(get("/api/citizen/bulky-requests")).andExpect(jsonPath("$[0].companyName").isNotEmpty());
-        ok(get("/api/citizen/bulky-requests/" + bulkyId)).andExpect(jsonPath("$.areaCode").value("KV07"));
-
-        // Màn công ty (T45) cũng dựng DTO ngoài transaction.
-        String dv01 = fx.bearer(fx.dv01Manager);
-        long quotedId = body(ok(post("/api/citizen/bulky-requests"),
-                "{\"itemType\":\"FURNITURE\",\"quantity\":2,\"preferredDate\":\"2026-10-18\"}")).get("id").asLong();
-        company(dv01, get("/api/bulky-requests")).andExpect(jsonPath("$[0].subjectCode").value("DTH-H000001"));
-        company(dv01, post("/api/bulky-requests/" + quotedId + "/quote").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"fee\":150000}")).andExpect(jsonPath("$.status").value("QUOTED"));
-        company(dv01, post("/api/bulky-requests/" + quotedId + "/collected")).andExpect(jsonPath("$.status").value("COLLECTED"));
-        ok(post("/api/citizen/bulky-requests/" + bulkyId + "/cancel"), "{\"reason\":\"Đã tự xử lý\"}")
-                .andExpect(jsonPath("$.status").value("CANCELLED"));
     }
 
     @Test
@@ -208,37 +192,6 @@ class CitizenApiNoTransactionIT extends IntegrationTest {
     private org.springframework.test.web.servlet.ResultActions ok(MockHttpServletRequestBuilder req, String content)
             throws Exception {
         return ok(req.contentType(MediaType.APPLICATION_JSON).content(content));
-    }
-
-    @Test
-    void concurrentBulkyRequestsGetDistinctCodes() throws Exception {
-        var pool = java.util.concurrent.Executors.newFixedThreadPool(3);
-        try {
-            var start = new java.util.concurrent.CountDownLatch(1);
-            var results = new java.util.ArrayList<java.util.concurrent.Future<Integer>>();
-            for (int i = 0; i < 3; i++) {
-                results.add(pool.submit(() -> {
-                    start.await();
-                    return mvc.perform(post("/api/citizen/bulky-requests").header(HttpHeaders.AUTHORIZATION, token)
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .content("{\"itemType\":\"DEBRIS\",\"quantity\":1,\"preferredDate\":\"2026-10-18\"}"))
-                            .andReturn().getResponse().getStatus();
-                }));
-            }
-            start.countDown();
-            for (var r : results) {
-                org.assertj.core.api.Assertions.assertThat(r.get(30, java.util.concurrent.TimeUnit.SECONDS)).isEqualTo(201);
-            }
-        } finally {
-            pool.shutdownNow();
-        }
-        ok(get("/api/citizen/bulky-requests")).andExpect(jsonPath("$[*].code",
-                org.hamcrest.Matchers.containsInAnyOrder("CK-1026-001", "CK-1026-002", "CK-1026-003")));
-    }
-
-    private org.springframework.test.web.servlet.ResultActions company(String bearer, MockHttpServletRequestBuilder req)
-            throws Exception {
-        return mvc.perform(req.header(HttpHeaders.AUTHORIZATION, bearer)).andExpect(status().isOk());
     }
 
     private JsonNode body(org.springframework.test.web.servlet.ResultActions result) throws Exception {

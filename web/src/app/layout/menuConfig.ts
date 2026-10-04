@@ -67,7 +67,6 @@ export const MENU: Record<Role, MenuEntry[]> = {
     { path: 'list', label: 'Danh sách thu', icon: UnorderedListOutlined },
     { path: 'cash', label: 'Tiền mặt', icon: WalletOutlined },
     { path: 'account', label: 'Tài khoản', icon: UserOutlined },
-    { path: 'market', label: 'Chợ cộng đồng', icon: ShopOutlined },
   ],
   ADMIN: [
     { path: 'accounts', label: 'Tài khoản', icon: TeamOutlined },
@@ -81,7 +80,6 @@ export const MENU: Record<Role, MenuEntry[]> = {
     { path: 'report', label: 'Báo cáo tổng hợp', icon: BarChartOutlined },
     { path: 'progress', label: 'Tiến độ thu', icon: FundOutlined },
     { path: 'reconciliation', label: 'Đối soát', icon: AuditOutlined },
-    { path: 'market', label: 'Chợ cộng đồng', icon: ShopOutlined },
   ],
 };
 

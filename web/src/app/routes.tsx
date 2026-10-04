@@ -8,7 +8,7 @@ import { CollectorListPage } from '../features/collection/CollectorListPage/Coll
 import { CompanyHubPage } from '../features/collection/CompanyHubPage';
 import { CommuneComplaintsPage } from '../features/complaints/CommuneComplaintsPage';
 import { CompanyComplaintsPage } from '../features/complaints/CompanyComplaintsPage';
-import { MarketListPage, MarketPostPage } from '../features/market/MarketPages';
+import { MarketModerationPage, MarketModerationPostPage } from '../features/market/MarketPages';
 import { AreasPage } from '../features/masterdata/AreasPage/AreasPage';
 import { ApprovalsPage } from '../features/leadership/ApprovalsPage';
 import { LeaderDashboardPage } from '../features/leadership/LeaderDashboardPage';
@@ -43,6 +43,7 @@ const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'COMMUNE_OFFICER:reconciliation': <ReconciliationPage />,
   'COMMUNE_OFFICER:complaints': <CommuneComplaintsPage />,
   'COMMUNE_OFFICER:approvals': <ApprovalsPage />,
+  'COMMUNE_OFFICER:market': <MarketModerationPage />,
   'LEADER:dashboard': <LeaderDashboardPage />,
   'LEADER:report': <LeaderReportPage />,
   'LEADER:progress': <ProgressPage />,
@@ -69,10 +70,10 @@ export const routes: RouteObject[] = [
       { index: true, element: <Navigate to={homePath(role)} replace /> },
       ...MENU[role].map((entry) => ({
         path: entry.path,
-        // Chợ cộng đồng chỉ đọc: một màn cho cả 5 vai trò.
-        element: entry.path === 'market' ? <MarketListPage /> : (PAGES[`${role}:${entry.path}`] ?? <NotFoundPage />),
+        element: PAGES[`${role}:${entry.path}`] ?? <NotFoundPage />,
       })),
-      { path: 'market/:id', element: <MarketPostPage /> },
+      // Chợ cộng đồng: chỉ cán bộ xã quản lý (người dân dùng app), chi tiết bài là deep link từ thông báo.
+      ...(role === 'COMMUNE_OFFICER' ? [{ path: 'market/:id', element: <MarketModerationPostPage /> }] : []),
       { path: 'notifications', element: <NotificationCenterPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],

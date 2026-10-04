@@ -34,8 +34,8 @@ và sinh `JWT_SECRET`. Không đưa `.env` của máy cá nhân lên GitHub.
 - Mở `/healthz` trên URL web: phải trả HTTP 200 và JSON OpenAPI của backend.
 - Thử tải lại một đường dẫn con trên web để kiểm tra React Router.
 - Ảnh upload lưu trên disk `/app/uploads`, không mất khi redeploy.
-- Nếu dùng app mobile, đặt `EXPO_PUBLIC_API_URL` bằng URL HTTPS của web
-  (theo quy ước URL hiện có của mobile), vì `/api/` được proxy đến backend.
+- Nếu dùng app mobile (Flutter), build với `--dart-define=API_URL=<URL HTTPS của web>`,
+  vì `/api/` được proxy đến backend.
 
 Đây là môi trường dữ liệu giả với tài khoản demo công khai. Không nhập dữ liệu thật.
 Nếu backend báo hết bộ nhớ, kiểm tra Render Metrics trước khi nâng gói (sẽ tăng chi phí).

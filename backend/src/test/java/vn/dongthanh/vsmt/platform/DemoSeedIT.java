@@ -190,7 +190,10 @@ class DemoSeedIT extends IntegrationTest {
     void demoProfileSeedsMarketPostsAndComments() {
         // Seed gắn người đăng theo SĐT: SĐT lệch thì dòng bị bỏ im lặng, nên đếm đủ bài và bình luận.
         assertThat(demoDb.queryForList("select code || ':' || status from market_posts order by code", String.class))
-                .containsExactly("CDC-033:CLOSED", "CDC-035:OPEN", "CDC-039:OPEN", "CDC-041:OPEN");
+                .containsExactly("CDC-033:CLOSED", "CDC-035:OPEN", "CDC-039:OPEN", "CDC-041:OPEN",
+                        // V37_1: thêm bài cho feed và màn kiểm duyệt (CDC-048, CDC-049 chờ duyệt).
+                        "CDC-042:OPEN", "CDC-043:OPEN", "CDC-044:OPEN", "CDC-045:OPEN", "CDC-046:OPEN",
+                        "CDC-047:OPEN", "CDC-048:OPEN", "CDC-049:OPEN");
         // CDC-035 của hộ kịch bản demo để thử đóng bài (D9).
         assertThat(demoDb.queryForObject("""
                 select s.code from market_posts p join citizen_accounts a on a.id = p.author_id
@@ -205,6 +208,7 @@ class DemoSeedIT extends IntegrationTest {
                     || ':' || (position(coalesce(p.pickup_location, '#') in p.caption) = 0)
                 from market_posts p join market_post_tags t on t.post_id = p.id
                 join citizen_accounts a on a.id = p.author_id join service_subjects s on s.id = a.subject_id
+                where p.title is not null
                 group by p.id, s.area_id order by p.code""", String.class))
                 .containsExactly("CDC-033:GIVE:OTHER:false:true:true:true", "CDC-035:GIVE:OTHER:false:true:true:true",
                         "CDC-039:EXCHANGE:OTHER:false:true:true:true", "CDC-041:GIVE:OTHER:false:true:true:true");

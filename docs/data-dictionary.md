@@ -1108,7 +1108,7 @@ Người duyệt trả lời trực tiếp trong mục 5.1–5.3; ba chỗ trả
 | G7 | Báo sai thông tin hộ chỉ phát thông báo `INFO`, không có entity | T53 |
 | G8 | Người dân chỉ ở `CitizenAccount`; bỏ `CITIZEN` khỏi enum `Role` | `User.role`, `CitizenAccount` |
 | G9 | Biểu giá gồm **thu gom + vận chuyển** (không có VAT; trước 01/10/2026 gọi thành phần này là "xử lý"). **Hỏi lại:** dùng số tạm, thay khi có QĐ | `TariffRate` |
-| G10 | Duyệt dependency: Lombok, JaCoCo, `spring-boot-starter-oauth2-resource-server`, `@ant-design/icons`, `fetch` tự bọc (không axios), `expo-secure-store`, `expo-image-picker` | T03, T04, T06, T22, T47 |
+| G10 | Duyệt dependency: Lombok, JaCoCo, `spring-boot-starter-oauth2-resource-server`, `@ant-design/icons`, `fetch` tự bọc (không axios) | T03, T04, T06, T22, T47 |
 | G11 | Kỳ quý dùng `Q{quý}{YY}` thay MMYY, vd. `YCT-Q426-01` | các cột `code` |
 | G12 | Công ty chỉ thấy khiếu nại đã được chuyển cho mình | `Complaint` |
 | G13 | Bỏ `BULKY` khỏi `FeeType`; rác cồng kềnh không vào phiếu YCT | `FeeType` seed |
@@ -1207,7 +1207,7 @@ Prototype có 3 bộ số lệch nhau: nhóm 80.000đ là 57k/23k/0 (màn quản
 - **Trả lời:** \_giá hiện tại gồm tiền xử lý và tiền thu gom\_\_\_
 
 **G10 — Dependency ngoài SPEC §3** · Phần A · T03, T04, T06, T22, T47
-Cần duyệt từng mục: Lombok · JaCoCo (đo coverage 80%) · thư viện JWT (`spring-boot-starter-oauth2-resource-server` dùng Nimbus, hoặc `jjwt`) · `@ant-design/icons` · HTTP client web (`fetch` tự bọc hoặc `axios`) · `expo-secure-store` · `expo-image-picker`
+Cần duyệt từng mục: Lombok · JaCoCo (đo coverage 80%) · thư viện JWT (`spring-boot-starter-oauth2-resource-server` dùng Nimbus, hoặc `jjwt`) · `@ant-design/icons` · HTTP client web (`fetch` tự bọc hoặc `axios`)
 
 - a) Duyệt tất cả; JWT dùng `spring-boot-starter-oauth2-resource-server`; web dùng `fetch` tự bọc (không thêm axios) (đề xuất)
 - b) Duyệt từng mục (ghi danh sách)

@@ -84,7 +84,7 @@ Theo [spec v1.0](cho-do-cu-spec.md) và [plan](cho-do-cu-plan.md), ngày 29/09/2
 - [ ] Sinh OpenAPI/schema web + mobile, typecheck sạch; schema chợ không có price/title cũ.
 - [ ] Backend: focused IT cho quyền/filter/migration/concurrency/notification trước; `backend/mvnw.cmd verify` cuối đợt đạt.
 - [ ] Web: `npm run lint`, `npm test`, `npm run build` đạt sau đổi menu/màn.
-- [ ] Mobile: `npm run typecheck`, `npm test -- --runInBand`, lint theo mobile/AGENTS.md; lưu kết quả thực tế, không tick test chưa chạy.
+- [ ] Mobile (Flutter): `flutter analyze`, `flutter test`; lưu kết quả thực tế, không tick test chưa chạy.
 - [ ] Diễn tập nâng cấp bản sao DB/uploads cũ, kiểm counts và nội dung trước/sau; ghi phương án restore và giới hạn dữ liệu phát sinh.
 - [ ] Smoke luồng phí/hộ/bulky không hồi quy; demo đăng/tìm/comment/gọi/ẩn/chặn/mở lại trọn vẹn.
 - [ ] Cập nhật SPEC/data dictionary/tasks bằng quyết định thay thế sau khi triển khai; ghi bằng chứng test, hạn chế và mục chưa nghiệm thu.

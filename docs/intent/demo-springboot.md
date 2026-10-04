@@ -4,7 +4,7 @@
 
 | Mục | Nội dung |
 |---|---|
-| Kết quả | Kế hoạch chuyển prototype HTML/JS hiện tại thành ứng dụng demo **Spring Boot + React (web) + React Native/Expo (người dân)** trong **1 monorepo**. Cán bộ xã duyệt demo xong thì nâng lên triển khai thật tại xã Đông Thạnh. |
+| Kết quả | Kế hoạch chuyển prototype HTML/JS hiện tại thành ứng dụng demo **Spring Boot + React (web) + Flutter (người dân)** trong **1 monorepo**. Cán bộ xã duyệt demo xong thì nâng lên triển khai thật tại xã Đông Thạnh. |
 | Người dùng | Cán bộ xã (gộp chức năng kế toán: đối soát, khóa sổ); Công ty môi trường (phân tổ/khu vực cho người đi thu, nộp về xã, xử lý khiếu nại); Người đi thu (web app giao diện mobile); Quản trị; Người dân (app cài qua store). |
 | Vì sao bây giờ | Demo cho xã trong khoảng 4 tuần; một người làm, phần lớn nhờ Claude code. |
 | Thứ tự | (1) Data dictionary — trường từng entity, kiểu, bắt buộc, nguồn (xã/công ty) → dùng để xin dữ liệu và sinh entity; (2) dựng monorepo; (3) luồng tiền chính: xã lập khoản thu theo kỳ tháng/quý → công ty phân tổ → người đi thu ghi nhận → công ty nộp **toàn bộ** về xã → xã lập phiếu thu, đối soát; (4) khiếu nại liên thông + thông báo + app người dân. |

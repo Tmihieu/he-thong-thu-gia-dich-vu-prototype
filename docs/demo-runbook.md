@@ -5,8 +5,8 @@ Chạy kịch bản SPEC §10 trên laptop bằng dữ liệu seed giả (profil
 ## Yêu cầu
 
 - Docker Desktop đang chạy; ổ chứa dữ liệu Docker còn trống vài GB cho lần build đầu (image JDK, Node, thư viện Maven và npm).
-- Node.js trên laptop (chạy `npx expo start`; app người dân không nằm trong docker).
-- Điện thoại cài **Expo Go** bản hỗ trợ SDK 57, cùng mạng Wi-Fi với laptop.
+- Flutter SDK trên laptop (app người dân ở `mobile-flutter/`, không nằm trong docker).
+- Điện thoại Android cùng mạng Wi-Fi với laptop.
 
 ## Chạy db + backend + web
 
@@ -33,24 +33,20 @@ Chạy kịch bản SPEC §10 trên laptop bằng dữ liệu seed giả (profil
 - Web gọi API qua nginx (`/api/` chuyển sang backend, nhận body tới 50 MB như backend). Ảnh người dân tải lên nằm trong volume `vsmt-uploads`, còn nguyên khi container backend bị tạo lại.
 - Người đi thu dùng web giao diện mobile trên điện thoại: mở `http://<IP LAN>:5173` (lấy IP như mục dưới).
 
-## Chạy app người dân (Expo Go) với backend trong docker
+## Chạy app người dân (Flutter) với backend trong docker
 
-App chạy trên laptop bằng Expo, gọi **thẳng cổng backend** của docker (không qua nginx).
+App Flutter ở `mobile-flutter/`, gọi **thẳng cổng backend** của docker (không qua nginx). Địa chỉ backend gắn lúc build bằng `--dart-define=API_URL=...`.
 
 1. Lấy IP LAN của laptop: `ipconfig` → dòng **IPv4 Address** của card Wi-Fi (ví dụ `192.168.1.66`).
-2. Tạo `mobile/.env.local` (git bỏ qua) từ `mobile/.env.example`, sửa IP, cổng là `BACKEND_PORT` (mặc định 8080):
-   ```
-   EXPO_PUBLIC_API_URL=http://192.168.1.66:8080
-   ```
-3. Chạy:
+2. Cắm điện thoại Android (đã bật gỡ lỗi USB) rồi chạy, cổng là `BACKEND_PORT` (mặc định 8080):
    ```sh
-   cd mobile
-   npm install
-   npx expo start
+   cd mobile-flutter
+   flutter run --dart-define=API_URL=http://192.168.1.66:8080
    ```
-   Quét mã QR (Android: trong Expo Go; iPhone: bằng app Camera). Trên màn **Đăng nhập** bấm "Kiểm tra kết nối máy chủ" để chắc điện thoại gọi được backend. Đổi Wi-Fi thì IP đổi: sửa `.env.local` rồi chạy `npx expo start --clear`.
+   Hoặc build APK để cài: `flutter build apk --release --target-platform android-arm64 --dart-define=API_URL=http://192.168.1.66:8080`.
+3. Trên màn **Đăng nhập** bấm "Kiểm tra kết nối máy chủ" để chắc điện thoại gọi được backend. Đổi Wi-Fi thì IP đổi: build lại với `API_URL` mới.
 
-Không kết nối được: thử mở `http://<IP LAN>:8080/v3/api-docs` bằng trình duyệt điện thoại; không mở được thì do tường lửa Windows (cho Docker Desktop qua mạng đang dùng) hoặc Wi-Fi chặn các máy nói chuyện với nhau (dùng điểm phát Wi-Fi từ điện thoại). Không tải được bundle thì `npx expo start --tunnel`. Chi tiết ở `mobile/README.md`.
+Không kết nối được: thử mở `http://<IP LAN>:8080/v3/api-docs` bằng trình duyệt điện thoại; không mở được thì do tường lửa Windows (cho Docker Desktop qua mạng đang dùng) hoặc Wi-Fi chặn các máy nói chuyện với nhau (dùng điểm phát Wi-Fi từ điện thoại).
 
 ## Tài khoản
 
@@ -103,7 +99,7 @@ Web mở ở http://localhost:5173; mỗi vai trò dùng một cửa sổ ẩn d
 7. **App** → Rác cồng kềnh → Đăng ký: mô tả, **chọn ảnh** (tối đa 5 ảnh, mỗi ảnh ≤ 5 MB, JPEG/PNG/WebP) → gửi. **`dv01`** → Rác cồng kềnh → mở yêu cầu (có ảnh hộ gửi) → **Báo phí**; app thấy phí công ty báo (phí này không sinh khoản thu, O5).
    **App** → tab Chợ đồ cũ → đăng một bài (ảnh không bắt buộc) → bình luận ở bài khác; người đăng **đóng bài** được (không mở lại, bài đóng không nhận bình luận mới).
 8. **`canbo_xa`** → Đối soát → **Khóa kỳ** 10/2026 khi còn công ty chưa nộp đủ → bị chặn, thông báo nêu công ty còn nợ.
-9. Cả kịch bản chạy trên `docker compose up` + `npx expo start`: mở DevTools (F12) của trình duyệt và log Expo, không có lỗi đỏ.
+9. Cả kịch bản chạy trên `docker compose up` + app Flutter: mở DevTools (F12) của trình duyệt và log `flutter run`, không có lỗi đỏ.
 
 Xem thêm: **`admin`** → Nhật ký: lọc theo người/hành động, thấy dòng lập phiếu thu kèm trước/sau (và các dòng seed của kỳ 09).
 

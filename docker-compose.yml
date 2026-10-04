@@ -38,7 +38,7 @@ services:
       GOONG_API_KEY: ${GOONG_API_KEY:-}
       TZ: Asia/Ho_Chi_Minh
     ports:
-      # App mobile (Expo Go) gọi thẳng backend qua IP LAN của laptop.
+      # App người dân (Flutter) gọi thẳng backend qua IP LAN của laptop.
       - "${BACKEND_PORT:-8080}:8080"
     volumes:
       # Ảnh người dân tải lên (T47: vsmt.upload-dir mặc định uploads/, tính từ WORKDIR /app); giữ lại khi container

@@ -30,6 +30,11 @@ Không suy luận D01/D02 là miễn nghĩa vụ pháp lý. Việc phân loại 
 - Thay quy định SPEC §9.9 và data dictionary MarketPost: title/description/postType được thay bằng caption/tags/category; giữ mã CDC và ID.
 - Thay D9/T47 quyết định 27/09: bài đóng được mở lại. O6 không kiểm duyệt tiếp tục áp dụng trong phiên bản này.
 - Mở rộng quyền đọc bằng endpoint chợ riêng; không mở toàn bộ `/api/citizen/**` cho tài khoản nội bộ.
+- **Chốt 04/10/2026, thay D05/O6 và D06** (các mục bên dưới còn ghi theo quyết định cũ thì theo dòng này):
+  - Có kiểm duyệt bởi cán bộ xã: bài khớp từ khóa trong bộ lọc phải chờ duyệt mới lên feed; người dân báo cáo bài vi phạm, bài có từ 3 báo cáo đang mở thì tạm gỡ chờ cán bộ xã xem lại (giữ hoặc gỡ). Cán bộ xã quản lý danh sách từ khóa lọc.
+  - Quyền đọc chợ thu hẹp: chỉ người dân và cán bộ xã. Quản trị, công ty, người đi thu, lãnh đạo không còn mục Chợ cộng đồng.
+  - Bỏ hẳn chức năng đăng ký thu gom rác cồng kềnh (xóa bảng `bulky_waste_requests`).
+  - App người dân chỉ còn bản Flutter (`mobile-flutter/`); bản Expo đã xóa.
 - Các thay thế chỉ được đánh dấu đã triển khai trong SPEC gốc/data dictionary khi code và migration tương ứng hoàn tất; không sửa trạng thái task T47/T48 cũ trong giai đoạn viết tài liệu.
 
 ## 3. Vai trò, hiển thị và quyền riêng tư

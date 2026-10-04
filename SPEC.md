@@ -1,4 +1,4 @@
-# Spec: Demo hệ thống thu giá dịch vụ vệ sinh môi trường — Spring Boot + React + Expo
+# Spec: Demo hệ thống thu giá dịch vụ vệ sinh môi trường — Spring Boot + React + Flutter
 
 **Phiên bản:** 1.0 (bản nháp chờ duyệt) · **Ngày:** 23/09/2026
 **Intent đã xác nhận:** `docs/intent/demo-springboot.md`
@@ -18,7 +18,7 @@ Dựng lại prototype HTML/JS v3.1 thành ứng dụng demo có backend và cơ
 | Người đi thu | Web giao diện mobile | Danh sách hộ của tổ được giao, cập nhật kết quả thu (tiền mặt / chuyển khoản / vắng / hẹn / từ chối), tiền mặt đang giữ, báo sai thông tin hộ |
 | Lãnh đạo (thêm 29/09/2026, §9.10) | Web desktop | Dashboard điều hành (thu / nợ / tỷ lệ nộp theo công ty và địa bàn, cảnh báo), xem + xuất báo cáo tổng hợp, duyệt / từ chối miễn giảm – hoàn – xóa nợ. Chỉ giám sát: không chốt kỳ, không cấu hình, không phân quyền |
 | Quản trị | Web desktop | Tài khoản & vai trò, địa bàn, biểu giá, mở kỳ thu (ai mở kỳ: xem G1), nhật ký. **Khóa kỳ do cán bộ xã** (quyết định 23/09) |
-| Người dân | App Expo (cài qua store) | Thông tin hộ, khoản phải đóng, thanh toán **mô phỏng**, biên lai, lịch thu gom, khiếu nại, chợ đồ cũ, rác cồng kềnh, thông báo |
+| Người dân | App Flutter (cài qua store) | Thông tin hộ, khoản phải đóng, thanh toán **mô phỏng**, biên lai, lịch thu gom, khiếu nại, chợ đồ cũ, thông báo |
 
 **Luồng tiền đã chốt (tạm):** hộ → công ty (người đi thu hoặc app dân) → công ty nộp **toàn bộ** tiền đã thu về xã → xã lập phiếu thu cho công ty → xã đối soát `phải thu / công ty đã thu / đã nộp về xã` → xã khóa kỳ.
 
@@ -38,7 +38,7 @@ Dựng lại prototype HTML/JS v3.1 thành ứng dụng demo có backend và cơ
 | `remittance` | Phiếu thu xã lập khi công ty nộp, báo sai sót phiếu thu, nhắc nộp, báo cáo tiến độ, đối soát, khóa kỳ | collection |
 | `notifications` | Thông báo theo vai trò / công ty / người dùng / người dân; đã đọc | platform |
 | `complaints` | Khiếu nại liên thông: dân/xã ghi nhận → xã xử lý hoặc chuyển công ty → công ty phản hồi → xã đóng; timeline | master-data, notifications |
-| `citizen-app` | App Expo + API cho người dân; chợ đồ cũ; đăng ký rác cồng kềnh | billing, collection, complaints, notifications |
+| `citizen-app` | App Flutter + API cho người dân; chợ đồ cũ | billing, collection, complaints, notifications |
 
 **Thứ tự làm:** `data-dictionary` → `platform` → `master-data` → `billing` → `collection` → `remittance` → `notifications` → `complaints` → `citizen-app`.
 `notifications` + `complaints` có thể làm song song với luồng tiền sau khi xong `master-data`.
@@ -54,9 +54,9 @@ Mỗi module là một package riêng trong backend và một thư mục `featur
 | Backend | Java 21, Spring Boot 3.x, Maven wrapper, Spring Web, Spring Data JPA (Hibernate), Spring Security + JWT (access token), Bean Validation, springdoc-openapi, Flyway |
 | CSDL | PostgreSQL 16 (docker-compose) |
 | Web | React 18, TypeScript (strict), Vite, React Router, TanStack Query, Ant Design 5 (locale `vi_VN`), dayjs |
-| Mobile | Expo SDK (React Native) + TypeScript, Expo Router, TanStack Query |
-| Kiểu API dùng chung | Sinh type TS từ OpenAPI của backend (`openapi-typescript`) cho `web` và `mobile` |
-| Kiểm thử | JUnit 5, Spring Boot Test, Testcontainers (PostgreSQL); Vitest + Testing Library (web); Jest (mobile, mức tối thiểu) |
+| Mobile | Flutter (Dart), go_router, http |
+| Kiểu API dùng chung | Sinh type TS từ OpenAPI của backend (`openapi-typescript`) cho `web` |
+| Kiểm thử | JUnit 5, Spring Boot Test, Testcontainers (PostgreSQL); Vitest + Testing Library (web); `flutter test` (mobile, mức tối thiểu) |
 
 Tiền: số nguyên VND (`long` / `bigint`), không dùng số thực. Ngày: `LocalDate` / ISO `yyyy-MM-dd` trong API, hiển thị `dd/MM/yyyy`. Múi giờ `Asia/Ho_Chi_Minh`.
 
@@ -82,11 +82,11 @@ npm run lint
 npm run test
 npm run build
 
-# Mobile (thư mục mobile/)
-npm install
-npx expo start                         # mở bằng Expo Go
-npm run gen:api
-npm test
+# Mobile (thư mục mobile-flutter/)
+flutter pub get
+flutter run --dart-define=API_URL=http://<IP LAN>:8080
+flutter analyze
+flutter test
 
 # Toàn bộ (tùy chọn)
 docker compose up --build              # db + backend + web
@@ -127,9 +127,8 @@ docker compose up --build              # db + backend + web
 │       ├── app/                # router, layout theo vai trò, auth
 │       ├── features/<module>/  # màn hình theo module
 │       └── shared/             # component dùng chung (MoneyText, PeriodSelect, StatusTag…)
-└── mobile/
-    └── app/                    # Expo Router
-    └── src/{api,features,shared}
+└── mobile-flutter/
+    └── lib/{api,features,shared}   # app.dart: route (go_router)
 ```
 
 ---
@@ -316,7 +315,7 @@ Mục tiêu: service layer của `billing`, `collection`, `remittance` có cover
 6. Người dân gửi khiếu nại → xã chuyển DV01 → DV01 phản hồi → xã đóng → dân thấy timeline và thông báo.
 7. Người dân đăng ký rác cồng kềnh → DV01 báo phí; đăng một bài chợ đồ cũ.
 8. Xã thử khóa kỳ khi còn nợ → bị chặn với lý do rõ ràng.
-9. Toàn bộ chạy bằng `docker compose up` + `npx expo start` trên dữ liệu seed, không lỗi console, không dữ liệu thật.
+9. Toàn bộ chạy bằng `docker compose up` + app Flutter trên dữ liệu seed, không lỗi console, không dữ liệu thật.
 
 ---
 
