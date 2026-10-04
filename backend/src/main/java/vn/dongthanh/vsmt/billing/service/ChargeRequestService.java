@@ -261,12 +261,11 @@ public class ChargeRequestService {
 
     @Transactional(readOnly = true)
     public Page<Charge> searchCharges(Long periodId, Long areaId, ChargeStatus status, Long subjectId, Long companyId,
-            Pageable page,
-            CurrentUser actor) {
+            String q, Pageable page, CurrentUser actor) {
         // Người đi thu chỉ xem khoản trong tổ được giao, qua /api/collection/my-charges.
         actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER, Role.LEADER);
         Long scope = actor.role().belongsToCompany() ? actor.companyId() : companyId;
-        return charges.search(periodId, areaId, status, subjectId, scope, page);
+        return charges.search(periodId, areaId, status, subjectId, scope, q == null ? "" : q.trim(), page);
     }
 
     /** Mọi khoản của một đối tượng, kỳ mới trước (app người dân; phạm vi hộ kiểm ở module citizen). */

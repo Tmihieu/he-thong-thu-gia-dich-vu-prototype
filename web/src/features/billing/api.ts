@@ -19,6 +19,8 @@ export interface ChargeQuery {
   areaId?: number;
   status?: Charge['status'];
   companyId?: number;
+  /** Tìm theo tên hoặc mã hộ. */
+  q?: string;
   page: number;
   size: number;
 }

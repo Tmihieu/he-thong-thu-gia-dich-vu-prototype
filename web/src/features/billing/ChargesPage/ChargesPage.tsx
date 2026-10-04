@@ -1,10 +1,11 @@
-import { Segmented, Select, Space, Table } from 'antd';
+import { Input, Segmented, Select, Space, Table } from 'antd';
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
 import { StatusTag } from '../../../shared/StatusTag';
 import { brand } from '../../../app/theme';
-import { CHARGE_STATUS_COLORS, CHARGE_STATUS_LABELS, TARIFF_GROUP_LABELS } from '../../../shared/labels';
+import { DateText } from '../../../shared/DateText';
+import { CHARGE_STATUS_COLORS, CHARGE_STATUS_LABELS, PAYMENT_METHOD_LABELS, TARIFF_GROUP_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
 import { useAreas, useCompanies, usePeriods } from '../../masterdata/api';
 import { type Charge, type ChargeQuery, useCharges } from '../api';
@@ -27,6 +28,13 @@ export function ChargesPage() {
   return (
     <>
       <Space wrap size={16} style={{ marginBottom: 16 }}>
+        <Input.Search
+          allowClear
+          aria-label="Tìm hộ"
+          placeholder="Tìm theo tên hoặc mã hộ"
+          style={{ width: 240 }}
+          onSearch={(q) => setQuery((cur) => ({ ...cur, q: q.trim() || undefined, page: 0 }))}
+        />
         <Select
           aria-label="Lọc theo kỳ"
           allowClear
@@ -71,7 +79,7 @@ export function ChargesPage() {
       <Table<Charge>
         rowKey="id"
         size="middle"
-        scroll={{ x: 820 }}
+        tableLayout="fixed"
         loading={charges.isFetching}
         dataSource={charges.data?.items ?? []}
         locale={{
@@ -88,7 +96,7 @@ export function ChargesPage() {
         columns={[
           {
             title: 'Mã khoản',
-            width: 150,
+            width: '15%',
             className: 'cell-nowrap',
             render: (_, c) => <strong>{c.code}</strong>,
           },
@@ -106,10 +114,13 @@ export function ChargesPage() {
               </>
             ),
           },
-          { title: 'Kỳ', width: 110, className: 'cell-nowrap', render: (_, c) => (periodLabel.get(c.periodId) ?? c.periodCode).replace(/^Tháng\s*/, '') },
-          { title: 'Số tiền', width: 140, dataIndex: 'amount', align: 'right', className: 'cell-money', render: (v: number) => <MoneyText value={v} /> },
-          { title: 'Công ty', width: 110, dataIndex: 'companyCode', className: 'cell-nowrap' },
-          { title: 'Trạng thái', width: 150, render: (_, c) => <ChargeStatusTag charge={c} /> },
+          { title: 'Kỳ', width: '8%', className: 'cell-nowrap', render: (_, c) => (periodLabel.get(c.periodId) ?? c.periodCode).replace(/^Tháng\s*/, '') },
+          { title: 'Số tiền', width: '11%', dataIndex: 'amount', align: 'right', className: 'cell-money', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Hạn đóng', width: '10%', className: 'cell-nowrap', render: (_, c) => <DateText value={c.dueDate} /> },
+          { title: 'Ngày đóng', width: '11%', className: 'cell-nowrap', render: (_, c) => (c.paidAt ? <DateText value={c.paidAt} /> : '—') },
+          { title: 'Hình thức', width: '11%', className: 'cell-nowrap', render: (_, c) => (c.paymentMethod ? PAYMENT_METHOD_LABELS[c.paymentMethod] : '—') },
+          { title: 'Công ty', width: '8%', dataIndex: 'companyCode', className: 'cell-nowrap' },
+          { title: 'Trạng thái', width: '11%', render: (_, c) => <ChargeStatusTag charge={c} /> },
         ]}
       />
     </>

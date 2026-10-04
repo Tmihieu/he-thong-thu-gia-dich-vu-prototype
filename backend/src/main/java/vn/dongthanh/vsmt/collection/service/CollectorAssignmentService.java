@@ -192,7 +192,7 @@ public class CollectorAssignmentService {
     @Transactional(readOnly = true)
     public Page<Charge> companyCharges(Long periodId, Long areaId, ChargeStatus status, Pageable page, CurrentUser actor) {
         actor.requireRole(Role.COMPANY_MANAGER);
-        return charges.search(periodId, areaId, status, null, actor.companyId(), page);
+        return charges.search(periodId, areaId, status, null, actor.companyId(), "", page);
     }
 
     /** Khoản trong phạm vi người đi thu (tổ đang được giao, của công ty mình); ngoài phạm vi → 404. */

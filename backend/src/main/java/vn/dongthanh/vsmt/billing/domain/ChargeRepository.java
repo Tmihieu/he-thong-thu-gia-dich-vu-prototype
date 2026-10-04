@@ -23,11 +23,15 @@ public interface ChargeRepository extends JpaRepository<Charge, Long> {
             + " join fetch c.period p join fetch c.feeType f join fetch c.chargeRequest r"
             + " where (:periodId is null or p.id = :periodId) and (:areaId is null or a.id = :areaId)"
             + " and (:status is null or c.status = :status) and (:subjectId is null or s.id = :subjectId)"
-            + " and (:companyId is null or co.id = :companyId)",
+            + " and (:companyId is null or co.id = :companyId)"
+            + " and (:q = '' or lower(s.name) like lower(concat('%', :q, '%')) or lower(s.code) like lower(concat('%', :q, '%')))",
             countQuery = "select count(c) from Charge c where (:periodId is null or c.period.id = :periodId)"
             + " and (:areaId is null or c.area.id = :areaId) and (:status is null or c.status = :status)"
-            + " and (:subjectId is null or c.subject.id = :subjectId) and (:companyId is null or c.company.id = :companyId)")
-    Page<Charge> search(Long periodId, Long areaId, ChargeStatus status, Long subjectId, Long companyId, Pageable page);
+            + " and (:subjectId is null or c.subject.id = :subjectId) and (:companyId is null or c.company.id = :companyId)"
+            + " and (:q = '' or lower(c.subject.name) like lower(concat('%', :q, '%'))"
+            + " or lower(c.subject.code) like lower(concat('%', :q, '%')))")
+    Page<Charge> search(Long periodId, Long areaId, ChargeStatus status, Long subjectId, Long companyId, String q,
+            Pageable page);
 
     /** Khoản của công ty trong các tổ {@code areaIds} (phạm vi người đi thu). */
     @Query(value = "select c from Charge c join fetch c.subject s join fetch c.area a join fetch c.company co"

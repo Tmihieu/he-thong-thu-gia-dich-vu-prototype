@@ -1,6 +1,7 @@
 package vn.dongthanh.vsmt.billing.api;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
+import vn.dongthanh.vsmt.collection.domain.PaymentMethod;
 import vn.dongthanh.vsmt.billing.domain.Charge;
 import vn.dongthanh.vsmt.billing.domain.ChargeScope;
 import vn.dongthanh.vsmt.billing.domain.ChargeStatus;
@@ -77,16 +79,24 @@ public class BillingController {
     public ChargePageDto charges(@RequestParam(required = false) Long periodId,
             @RequestParam(required = false) Long areaId, @RequestParam(required = false) ChargeStatus status,
             @RequestParam(required = false) Long subjectId, @RequestParam(required = false) Long companyId,
+            @RequestParam(required = false) @Schema(description = "Tìm theo tên hoặc mã hộ") String q,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "50") @Min(1) @Max(500) int size, @AuthenticationPrincipal CurrentUser actor) {
-        Page<Charge> result = service.searchCharges(periodId, areaId, status, subjectId, companyId,
+        Page<Charge> result = service.searchCharges(periodId, areaId, status, subjectId, companyId, q,
                 PageRequest.of(page, size, Sort.by("code")), actor);
         LocalDate today = service.today();
         Map<Long, Long> refunded = new HashMap<>();
         payments.refundedByChargeIds(result.getContent().stream().map(Charge::getId).toList())
                 .forEach(r -> refunded.put((Long) r[0], (Long) r[1]));
-        return new ChargePageDto(result.getContent().stream()
-                .map(c -> ChargeDto.of(c, today, refunded.getOrDefault(c.getId(), 0L))).toList(),
+        // Lần thu cuối (không tính hoàn) của mỗi khoản: ngày đóng và hình thức.
+        Map<Long, Object[]> lastPayment = new HashMap<>();
+        payments.paymentsByChargeIds(result.getContent().stream().map(Charge::getId).toList())
+                .forEach(r -> lastPayment.put((Long) r[0], r));
+        return new ChargePageDto(result.getContent().stream().map(c -> {
+            Object[] p = lastPayment.get(c.getId());
+            return ChargeDto.of(c, today, refunded.getOrDefault(c.getId(), 0L),
+                    p == null ? null : (OffsetDateTime) p[1], p == null ? null : (PaymentMethod) p[2]);
+        }).toList(),
                 result.getTotalElements(), page, size);
     }
 
@@ -184,19 +194,30 @@ public class BillingController {
             @Schema(requiredMode = RequiredMode.REQUIRED,
                     description = "Tổng đã hoàn của khoản (số dương); chỉ điền ở GET /api/billing/charges, nơi khác là 0") long refunded,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true,
-                    description = "Số nhân khẩu hiện tại của hộ; hộ kinh doanh / doanh nghiệp là null") Integer memberCount) {
+                    description = "Số nhân khẩu hiện tại của hộ; hộ kinh doanh / doanh nghiệp là null") Integer memberCount,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true,
+                    description = "Ngày giờ đóng (lần thu cuối); chỉ điền ở GET /api/billing/charges, khoản chưa thu là null")
+            OffsetDateTime paidAt,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true,
+                    description = "Hình thức đóng (tiền mặt / chuyển khoản); chỉ điền ở GET /api/billing/charges")
+            PaymentMethod paymentMethod) {
 
         public static ChargeDto of(Charge c, LocalDate today) {
             return of(c, today, 0);
         }
 
         public static ChargeDto of(Charge c, LocalDate today, long refunded) {
+            return of(c, today, refunded, null, null);
+        }
+
+        public static ChargeDto of(Charge c, LocalDate today, long refunded, OffsetDateTime paidAt,
+                PaymentMethod paymentMethod) {
             return new ChargeDto(c.getId(), c.getCode(), c.getChargeRequest().getCode(), c.getSubject().getId(),
                     c.getSubject().getCode(), c.getSubject().getName(), c.getSubject().getAddress(), c.getArea().getId(),
                     c.getArea().getCode(), c.getCompany().getId(), c.getCompany().getCode(), c.getPeriod().getId(),
                     c.getPeriod().getCode(), c.getFeeType().getCode(), c.getTariffGroup(), c.getUnitPrice(),
                     c.getMonths(), c.getAmount(), c.getDueDate(), c.getStatus(), c.isOverdue(today), refunded,
-                    c.getSubject().getMemberCount());
+                    c.getSubject().getMemberCount(), paidAt, paymentMethod);
         }
     }
 
