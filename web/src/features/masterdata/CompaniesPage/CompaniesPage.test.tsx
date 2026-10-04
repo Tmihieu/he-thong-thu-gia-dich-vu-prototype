@@ -71,9 +71,24 @@ describe('Công ty (cán bộ xã)', () => {
     expect(within(drawer).getByText('919.000 đ')).toBeInTheDocument();
   });
 
-  it('thêm công ty gửi đúng dữ liệu, hạn đến trước hạn từ thì chặn', async () => {
-    const fetchFn = baseApi({ 'POST /api/masterdata/companies': () => jsonResponse(201, company({ id: 3, code: 'DV03', name: 'HTX Mới' })) });
+  it('cán bộ xã không có nút thêm / sửa công ty', async () => {
+    baseApi();
     renderApp('/commune/companies');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'DV01 · Công ty MTĐT Đông Thạnh' }));
+    await screen.findByRole('dialog');
+    expect(screen.queryByRole('button', { name: '+ Thêm công ty' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Sửa/ })).not.toBeInTheDocument();
+  });
+
+  it('quản trị thêm công ty gửi đúng dữ liệu, hạn đến trước hạn từ thì chặn', async () => {
+    const fetchFn = baseApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, { ...officer, id: 1, username: 'admin', role: 'ADMIN' }),
+      'GET /api/masterdata/tariffs': () => jsonResponse(200, []),
+      'POST /api/masterdata/companies': () => jsonResponse(201, company({ id: 3, code: 'DV03', name: 'HTX Mới' })),
+    });
+    renderApp('/admin/config');
+    await userEvent.click(await screen.findByRole('tab', { name: 'Công ty & địa bàn' }));
 
     await userEvent.click(await screen.findByRole('button', { name: '+ Thêm công ty' }));
     const dialog = await screen.findByRole('dialog');

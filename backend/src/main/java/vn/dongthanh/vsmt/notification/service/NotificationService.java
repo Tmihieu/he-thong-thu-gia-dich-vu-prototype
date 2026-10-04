@@ -69,11 +69,13 @@ public class NotificationService {
         if (cmd.title() == null || cmd.title().isBlank() || cmd.title().length() > 200) {
             throw new IllegalArgumentException("Tiêu đề thông báo phải có và tối đa 200 ký tự");
         }
-        if (cmd.body() == null || cmd.body().length() > 2000) {
-            throw new IllegalArgumentException("Nội dung thông báo phải có và tối đa 2000 ký tự");
+        if (cmd.body() == null || cmd.body().isBlank()) {
+            throw new IllegalArgumentException("Nội dung thông báo phải có");
         }
+        // Nội dung do người dùng nhập (ý kiến đóng, phản hồi khiếu nại) có thể sát 2000 ký tự: cắt thay vì làm hỏng thao tác gốc.
+        String body = cmd.body().length() > 2000 ? cmd.body().substring(0, 1999) + "…" : cmd.body();
         return notifications.save(Notification.create(cmd.type(), cmd.role(), cmd.companyId(), cmd.userId(),
-                cmd.citizenId(), cmd.kind(), cmd.title(), cmd.body(), toJson(cmd.link()), OffsetDateTime.now(clock),
+                cmd.citizenId(), cmd.kind(), cmd.title(), body, toJson(cmd.link()), OffsetDateTime.now(clock),
                 createdBy));
     }
 

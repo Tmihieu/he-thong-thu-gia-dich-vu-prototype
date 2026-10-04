@@ -123,4 +123,39 @@ describe('Hồ sơ hộ (cán bộ xã)', () => {
       expect(JSON.parse(String((call![1] as RequestInit).body))).toEqual({ endDate: '2026-09-30' });
     });
   });
+  it('nhập từ Excel: xem trước báo dòng lỗi và khóa nút nhập; file hợp lệ thì gửi xác nhận', async () => {
+    const bad = { valid: 1, invalid: 1, rows: [
+      { rowNo: 2, type: 'Hộ gia đình', name: 'A', houseNo: '1', street: 'Hẻm 1', areaCode: 'KV07', phone: '', memberCount: 3, errors: [] },
+      { rowNo: 3, type: 'Hộ gia đình', name: 'B', houseNo: null, street: 'Hẻm 1', areaCode: 'KV99', phone: '', memberCount: 3,
+        errors: ["Mã khu vực 'KV99' không có trong hệ thống"] },
+    ] };
+    const good = { valid: 1, invalid: 0, rows: bad.rows.slice(0, 1) };
+    let preview: { valid: number; invalid: number; rows: unknown[] } = bad;
+    const fetchFn = mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
+      'GET /api/masterdata/areas': () => jsonResponse(200, areas),
+      'GET /api/masterdata/subjects': () => jsonResponse(200, { items: [subject], total: 1, page: 0, size: 20 }),
+      'POST /api/masterdata/subjects/import/preview': () => jsonResponse(200, preview),
+      'POST /api/masterdata/subjects/import': () => jsonResponse(201, { created: 1 }),
+    });
+    renderApp('/commune/subjects');
+
+    await userEvent.click(await screen.findByRole('button', { name: /Nhập từ Excel/ }));
+    const input = await screen.findByTestId('import-file');
+    const xlsx = (name: string) => new File(['x'], name, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    await userEvent.upload(input, xlsx('loi.xlsx'));
+
+    expect(await screen.findByText('1 dòng hợp lệ, 1 dòng lỗi')).toBeInTheDocument();
+    expect(screen.getByText("Mã khu vực 'KV99' không có trong hệ thống")).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Nhập 1 hồ sơ/ })).toBeDisabled();
+
+    preview = good;
+    await userEvent.upload(input, xlsx('tot.xlsx'));
+    const ok = await screen.findByText('1 dòng hợp lệ, 0 dòng lỗi');
+    expect(ok).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Nhập 1 hồ sơ/ }));
+    await waitFor(() =>
+      expect(fetchFn.mock.calls.some(([url, init]) => String(url) === '/api/masterdata/subjects/import' && (init as RequestInit).method === 'POST')).toBe(true),
+    );
+  });
 });

@@ -1,6 +1,9 @@
-import { useSavedPosts, marketApi, useMarketMutation } from '../../features/market/api';
+import { router } from 'expo-router';
+
+import { marketApi, useMarketMutation, useSavedPosts } from '../../features/market/api';
 import { PagedList, PostCard } from '../../features/market/PostCard';
-import { Button, Card, Muted } from '../../shared/ui';
+import { Button, Card, InlineError, Muted } from '../../shared/ui';
+import { errorMessage } from '../../shared/errors';
 
 /** Đã lưu (spec §5.5): bài bị ẩn/chặn (`post = null`) chỉ hiện "Bài không còn khả dụng" + Bỏ lưu. */
 export default function SavedScreen() {
@@ -13,17 +16,20 @@ export default function SavedScreen() {
       q={q}
       items={items}
       keyOf={(s) => String(s.postId)}
+      header={unsave.error ? <InlineError message={errorMessage(unsave.error, 'Bỏ lưu không thành công.')} /> : undefined}
       render={(s) =>
         s.post ? (
           <PostCard p={s.post} />
         ) : (
           <Card>
             <Muted>Bài không còn khả dụng.</Muted>
-            <Button title="Bỏ lưu" variant="ghost" onPress={() => unsave.mutate(s.postId)} />
+            <Button title="Bỏ lưu" variant="secondary" onPress={() => unsave.mutate(s.postId)} />
           </Card>
         )
       }
-      empty="Chưa lưu bài nào."
+      empty="Chưa lưu bài nào"
+      emptyIcon="bookmark-outline"
+      emptyAction={<Button title="Xem chợ đồ cũ" variant="secondary" fullWidth={false} onPress={() => router.push('/market')} />}
     />
   );
 }

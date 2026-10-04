@@ -1,10 +1,12 @@
-import { ApiError } from '../api/client';
+import { StyleSheet, Text, View } from 'react-native';
+
 import { useProfile } from '../features/citizen/api';
 import { formatDate } from '../shared/format';
 import { SUBJECT_STATUS_LABELS, SUBJECT_TYPE_LABELS, TARIFF_GROUP_LABELS } from '../shared/labels';
-import { Card, CardTitle, ErrorBox, Line, Loading, Muted, Screen, Tag } from '../shared/ui';
+import { colors, spacing, type as t } from '../shared/theme';
+import { Callout, Card, CardTitle, ErrorState, Line, Loading, Muted, Screen, Tag } from '../shared/ui';
 
-/** Thông tin hộ như prototype `citizenHousehold`, dữ liệu thật từ `/api/citizen/me`. */
+/** Thông tin hộ như prototype `citizenHousehold`, dữ liệu thật từ `/api/citizen/me`. Hộ không có "hợp đồng": gọi "Đăng ký thu phí" (BR-GEN-08). */
 export default function HouseholdScreen() {
   const profile = useProfile();
   const p = profile.data;
@@ -13,30 +15,33 @@ export default function HouseholdScreen() {
     <Screen refreshing={profile.isFetching && !profile.isPending} onRefresh={() => void profile.refetch()}>
       {profile.isPending ? <Loading /> : null}
       {profile.error ? (
-        <ErrorBox
-          message={profile.error instanceof ApiError ? profile.error.message : 'Không tải được thông tin hộ.'}
-          onRetry={() => void profile.refetch()}
-        />
+        <ErrorState error={profile.error} fallback="Không tải được thông tin hộ." onRetry={() => void profile.refetch()} compact={!!p} />
       ) : null}
       {p ? (
         <>
+          <View style={styles.head}>
+            <Text accessibilityRole="header" style={styles.name}>
+              {p.subject.name}
+            </Text>
+            <View style={styles.headMeta}>
+              <Muted>{p.subject.code}</Muted>
+              <Tag tone={p.subject.status === 'ACTIVE' ? 'success' : p.subject.status === 'PENDING' ? 'warning' : 'neutral'}>
+                {SUBJECT_STATUS_LABELS[p.subject.status]}
+              </Tag>
+            </View>
+          </View>
+
           <Card>
-            <CardTitle>Hộ</CardTitle>
-            <Line label="Mã hộ" value={p.subject.code} />
-            <Line label="Tên hộ" value={p.subject.name} />
+            <CardTitle>Thông tin hộ</CardTitle>
             <Line label="Loại" value={SUBJECT_TYPE_LABELS[p.subject.subjectType]} />
             <Line label="Địa chỉ" value={p.subject.address} />
-            <Line label="Tổ/Ấp/Thôn" value={`${p.subject.areaName} (${p.subject.areaCode}) · ${p.subject.districtName}`} />
+            <Line label="Tổ, ấp, thôn" value={`${p.subject.areaName} (${p.subject.areaCode}), ${p.subject.districtName}`} />
             {p.subject.memberCount != null ? <Line label="Số nhân khẩu" value={String(p.subject.memberCount)} /> : null}
-            <Line label="SĐT của hộ" value={p.subject.phone ?? '—'} />
-            <Line
-              label="Tình trạng"
-              value={<Tag tone={p.subject.status === 'ACTIVE' ? 'success' : p.subject.status === 'PENDING' ? 'warning' : 'default'}>{SUBJECT_STATUS_LABELS[p.subject.status]}</Tag>}
-            />
+            <Line label="Điện thoại của hộ" value={p.subject.phone ?? '—'} />
           </Card>
 
           <Card>
-            <CardTitle>Đăng ký dịch vụ</CardTitle>
+            <CardTitle>Đăng ký thu phí</CardTitle>
             {p.contract ? (
               <>
                 <Line label="Số đăng ký" value={p.contract.contractNo} />
@@ -44,11 +49,11 @@ export default function HouseholdScreen() {
                 <Line label="Hiệu lực từ" value={formatDate(p.contract.validFrom)} />
                 {p.contract.validTo ? <Line label="Đến" value={formatDate(p.contract.validTo)} /> : null}
                 {p.contract.exempt ? (
-                  <Line label="Miễn 100%" value={<Tag tone="info">{p.contract.exemptReason ?? 'Được miễn'}</Tag>} />
+                  <Line label="Miễn giảm 100%" value={<Tag tone="info">{p.contract.exemptReason ?? 'Được miễn'}</Tag>} />
                 ) : null}
               </>
             ) : (
-              <Muted>Hộ chưa có đăng ký dịch vụ đang hiệu lực. Liên hệ UBND xã để được hướng dẫn.</Muted>
+              <Muted>Hộ chưa có đăng ký thu phí đang hiệu lực. Liên hệ UBND xã để được hướng dẫn.</Muted>
             )}
           </Card>
 
@@ -69,10 +74,17 @@ export default function HouseholdScreen() {
             <CardTitle>Tài khoản ứng dụng</CardTitle>
             <Line label="Tên hiển thị" value={p.displayName} />
             <Line label="Số điện thoại đăng nhập" value={p.phone} />
-            <Muted>Thông tin chưa đúng? Liên hệ UBND xã; cán bộ xã xác minh trước khi thay đổi.</Muted>
           </Card>
+
+          <Callout tone="info">Thông tin chưa đúng? Liên hệ UBND xã, cán bộ xã sẽ xác minh trước khi thay đổi.</Callout>
         </>
       ) : null}
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  head: { gap: spacing.sm },
+  headMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  name: { ...t.title, color: colors.text },
+});

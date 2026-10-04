@@ -15,6 +15,7 @@ const period = {
 const feeTypes = [{ id: 1, code: 'ENV', name: 'Phí vệ sinh môi trường (CTRSH)', pricingMode: 'TARIFF', defaultPrice: null, active: true }];
 const previewResult = {
   requestCode: null, chargeCount: 219, exemptCount: 6, totalAmount: 17_000_000, warningCount: 9,
+  skippedByReason: { AREA_WITHOUT_COMPANY: 1 },
   skipped: [{ subjectId: 300, subjectCode: 'NB-H000461', subjectName: 'Hộ Mẫu', areaCode: 'KV24', reason: 'AREA_WITHOUT_COMPANY',
     warning: true, message: 'Khu vực KV24 chưa có công ty phụ trách.' }],
 };
@@ -46,6 +47,8 @@ function baseApi(publish: () => Response) {
 }
 
 async function fillAndPreview() {
+  await userEvent.click(await screen.findByRole('tab', { name: 'Phiếu YCT' }));
+  await userEvent.click(await screen.findByRole('button', { name: /Lập phiếu YCT/ }));
   await pickOption(await screen.findByRole('combobox', { name: 'Kỳ thu' }), 'Tháng 10/2026 (BG-65-2026)');
   pickDate(screen.getByLabelText('Hạn hộ đóng'), '25/10/2026');
   await userEvent.click(screen.getByRole('button', { name: 'Xem trước' }));
@@ -60,7 +63,7 @@ describe('Khoản thu · phiếu YCT', () => {
 
     expect(await screen.findByText('219')).toBeInTheDocument();
     expect(screen.getByText('17.000.000 đ', { normalizer: (s) => s.replace(/\s+/g, ' ') })).toBeInTheDocument();
-    expect(screen.getByText(/9 hộ ở tổ chưa có công ty/)).toBeInTheDocument();
+    expect(screen.getByText(/Tổ chưa có công ty phụ trách: 1 hộ/)).toBeInTheDocument();
     expect(screen.getByText('Khu vực KV24 chưa có công ty phụ trách.')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Phát hành 219 khoản' }));
@@ -85,6 +88,6 @@ describe('Khoản thu · phiếu YCT', () => {
     await userEvent.click(await screen.findByRole('tab', { name: 'Khoản thu' }));
     expect(await screen.findByText('KT-1026-DTH-H000128')).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText('Quá hạn')).toBeInTheDocument());
-    expect(screen.getByText('HGĐ ≥ 3 người')).toBeInTheDocument();
+    expect(screen.getByText(/HGĐ ≥ 3 người/)).toBeInTheDocument();
   });
 });

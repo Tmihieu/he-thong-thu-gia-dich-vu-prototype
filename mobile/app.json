@@ -28,14 +28,15 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Ứng dụng cần truy cập thư viện ảnh để bạn đính kèm ảnh vật dụng vào bài đăng chợ đồ cũ và yêu cầu thu gom rác cồng kềnh.",
+          "photosPermission": "Ứng dụng cần truy cập thư viện ảnh để bạn đính kèm ảnh vật dụng vào bài đăng chợ đồ cũ.",
           "cameraPermission": false,
           "microphonePermission": false
         }
       ]
     ],
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "baseUrl": "/citizen"
     }
   }
 }

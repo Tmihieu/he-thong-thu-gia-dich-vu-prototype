@@ -76,8 +76,24 @@ class LedgerApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$[0].retained").value(228_000))
                 .andExpect(jsonPath("$[0].payable").value(92_000))
                 .andExpect(jsonPath("$[0].remaining").value(92_000))
+                // QĐ-L15: đã thu 80.000 (thu gom 57.000, vận chuyển 23.000), chưa nộp: thiếu 23.000, không phải 80.000 + giữ lại.
+                .andExpect(jsonPath("$[0].gap").value(-23_000))
                 .andExpect(jsonPath("$[1].retained").value(114_000))
                 .andExpect(jsonPath("$[1].payable").value(46_000));
+    }
+
+    @Test
+    void exemptChargesAreOutOfTheHouseholdCountDenominator() throws Exception {
+        // DV01 có 4 khoản; một khoản miễn giảm thì chỉ còn 3 khoản cần thu, vẫn đếm 1 hộ miễn.
+        jdbc.update("update charges set status = 'EXEMPT', amount = 0 where id = (select min(id) from charges"
+                + " where company_id = ? and id <> ?)", fx.dv01.getId(), fx.chargeId("DTH-H000001"));
+
+        ledger(fx.officer).andExpect(jsonPath("$[0].chargeCount").value(3));
+        mvc.perform(get("/api/remittance/area-progress").param("periodId", fx.october.getId().toString())
+                .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer)))
+                // DV01 có thể trải nhiều tổ: kiểm tổng trên mọi dòng thay vì giả định một dòng.
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].exemptCount",
+                        org.hamcrest.Matchers.hasItem(1)));
     }
 
     @Test

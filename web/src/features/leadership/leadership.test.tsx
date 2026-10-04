@@ -51,7 +51,7 @@ describe('Lãnh đạo', () => {
     });
   }
 
-  it('vào thẳng dashboard: tổng kỳ và 3 nhóm cảnh báo', async () => {
+  it('vào thẳng dashboard: tổng kỳ và 2 nhóm cảnh báo', async () => {
     api();
     renderApp('/');
 
@@ -60,27 +60,8 @@ describe('Lãnh đạo', () => {
     expect(await within(alerts as HTMLElement).findByText('Nộp chậm / nợ kỳ trước')).toBeInTheDocument();
     expect(await within(alerts as HTMLElement).findByText('DV01')).toBeInTheDocument();
     expect(within(alerts as HTMLElement).getByText('DV07')).toBeInTheDocument();
-    expect(within(alerts as HTMLElement).getByRole('link', { name: 'Mở hàng chờ duyệt' })).toBeInTheDocument();
+    expect(screen.queryByText('Đề nghị chờ duyệt')).not.toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: /Khóa kỳ/ })).not.toBeInTheDocument();
-  });
-
-  it('từ chối bắt buộc ý kiến rồi gửi đúng đề nghị; duyệt không cần ý kiến', async () => {
-    const fetchFn = api();
-    renderApp('/leader/approvals');
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Từ chối DN-1026-001' }));
-    let dialog = await screen.findByRole('dialog');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Từ chối' }));
-    expect(await within(dialog).findByText('Từ chối phải ghi ý kiến')).toBeInTheDocument();
-    expect(lastPost(fetchFn, '/api/leadership/approvals/7/reject')).toBeUndefined();
-    await userEvent.type(within(dialog).getByLabelText('Ý kiến lãnh đạo'), 'Chưa đủ hồ sơ');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Từ chối' }));
-    await waitFor(() => expect(lastPost(fetchFn, '/api/leadership/approvals/7/reject')).toEqual({ note: 'Chưa đủ hồ sơ' }));
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Duyệt DN-1026-001' }));
-    dialog = await screen.findByRole('dialog');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Duyệt' }));
-    await waitFor(() => expect(lastPost(fetchFn, '/api/leadership/approvals/7/approve')).toEqual({}));
   });
 
   it('màn tiến độ và đối soát chỉ đọc: không nhắc nộp, không khóa kỳ', async () => {
@@ -99,7 +80,7 @@ describe('Cán bộ xã lập đề nghị xóa nợ', () => {
       id: 5, code: 'KT-1026-DTH-H000128', requestCode: 'YCT-1026-001', subjectId: 1, subjectCode: 'DTH-H000128',
       subjectName: 'Hộ Nguyễn Văn An', subjectAddress: '1 Đường Mẫu', areaId: 7, areaCode: 'KV07', companyId: 1,
       companyCode: 'DV01', periodId: 10, periodCode: '2026-10', feeTypeCode: 'ENV', tariffGroup: 'HH_3_PLUS',
-      unitPrice: 80_000, months: 1, amount: 80_000, dueDate: '2026-10-25', status: 'UNPAID', overdue: false,
+      unitPrice: 80_000, months: 1, amount: 80_000, dueDate: '2026-10-25', status: 'UNPAID', overdue: false, refunded: 0,
     };
     const fetchFn = mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
@@ -119,5 +100,28 @@ describe('Cán bộ xã lập đề nghị xóa nợ', () => {
     await waitFor(() =>
       expect(lastPost(fetchFn, '/api/leadership/approvals')).toEqual({ type: 'WRITE_OFF', chargeId: 5, reason: 'Hộ chuyển đi' }),
     );
+  });
+
+  it('đề nghị hoàn: hạn mức = số tiền khoản trừ phần đã hoàn, hiện số đã hoàn', async () => {
+    const charge = {
+      id: 6, code: 'KT-1026-DTH-H000129', requestCode: 'YCT-1026-001', subjectId: 2, subjectCode: 'DTH-H000129',
+      subjectName: 'Hộ Lê Thị Bình', subjectAddress: '2 Đường Mẫu', areaId: 7, areaCode: 'KV07', companyId: 1,
+      companyCode: 'DV01', periodId: 10, periodCode: '2026-10', feeTypeCode: 'ENV', tariffGroup: 'HH_3_PLUS',
+      unitPrice: 80_000, months: 1, amount: 80_000, dueDate: '2026-10-25', status: 'PAID', overdue: false, refunded: 30_000,
+    };
+    mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
+      'GET /api/masterdata/periods': () => jsonResponse(200, periods),
+      'GET /api/masterdata/areas': () => jsonResponse(200, []),
+      'GET /api/masterdata/companies': () => jsonResponse(200, []),
+      'GET /api/billing/charge-requests': () => jsonResponse(200, []),
+      'GET /api/billing/charges': () => jsonResponse(200, { items: [charge], total: 1, page: 0, size: 50 }),
+    });
+    renderApp('/commune/charges?tab=charges');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Đề nghị hoàn KT-1026-DTH-H000129' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/đã hoàn 30.000/)).toBeInTheDocument();
+    expect(within(dialog).getByRole('spinbutton')).toHaveValue('50.000');
   });
 });

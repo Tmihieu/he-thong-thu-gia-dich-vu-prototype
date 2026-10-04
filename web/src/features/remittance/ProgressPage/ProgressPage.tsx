@@ -1,26 +1,54 @@
 import { BellOutlined } from '@ant-design/icons';
-import { Alert, Button, Card, Col, Popover, Progress, Row, Space, Statistic, Table, Tag, Typography } from 'antd';
+import { Alert, Button, Popover, Progress, Space, Table, Typography } from 'antd';
 import { useState } from 'react';
 
-import { ApiError } from '../../../api/client';
 import { useAuth } from '../../../app/auth/authContext';
-import { PROGRESS_COLORS, PROGRESS_LABELS } from '../../../shared/labels';
+import { PROGRESS_LABELS } from '../../../shared/labels';
+import { ErrorBlock } from '../../../shared/StateBlock';
+import { PageHeader } from '../../../shared/PageHeader';
+import { StatusTag } from '../../../shared/StatusTag';
 import { MoneyText } from '../../../shared/MoneyText';
+import { type Charge, useCharges } from '../../billing/api';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type AreaProgress, type LedgerRow, useAreaProgress, useCompanyLedger } from '../api';
+import { LedgerStats } from '../LedgerStats';
+import { cappedRate } from '../rateBand';
+import { RemainingText } from '../RemainingText';
+import { PROGRESS_TONES } from '../tones';
 import { ReminderModal } from './ReminderModal';
 
 function Rate({ rate, low }: { rate: number; low: boolean }) {
   return (
-    <Space size={4} style={{ minWidth: 150 }}>
-      <Progress percent={rate} size="small" showInfo={false} status={low ? 'exception' : 'normal'} style={{ width: 80 }} />
-      <span style={{ fontVariantNumeric: 'tabular-nums' }}>{rate.toLocaleString('vi-VN')}%</span>
+    <Space size={4} style={{ minWidth: 120 }}>
+      <Progress percent={cappedRate(rate)} size="small" showInfo={false} status={low ? 'exception' : 'normal'} style={{ width: 56 }} />
+      <span style={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{cappedRate(rate).toLocaleString('vi-VN')}%</span>
     </Space>
   );
 }
 
-function sum(rows: LedgerRow[], key: 'due' | 'collected' | 'received' | 'remaining' | 'previousDebt') {
-  return rows.reduce((t, r) => t + r[key], 0);
+/** Hộ còn phải thu của một tổ trong kỳ: hiện sẵn dưới dòng tổ, không phải bấm mở (góp ý 04/10). */
+// ponytail: mỗi tổ một lần gọi, tối đa 500 khoản (giới hạn API); tổ quá 500 hộ chưa thu thì thêm phân trang phía máy chủ.
+function UnpaidHouseholds({ periodId, areaId, companyId }: { periodId: number; areaId: number; companyId: number }) {
+  const charges = useCharges({ periodId, areaId, companyId, status: 'UNPAID', page: 0, size: 500 });
+  if (charges.error) return <ErrorBlock error={charges.error} onRetry={() => void charges.refetch()} />;
+  return (
+    <Table<Charge>
+      size="small"
+      rowKey="id"
+      loading={charges.isLoading}
+      title={() => `Hộ chưa thu (${charges.data?.total ?? 0})`}
+      showHeader={false}
+      dataSource={charges.data?.items ?? []}
+      pagination={{ pageSize: 10, hideOnSinglePage: true, showSizeChanger: false }}
+      locale={{ emptyText: 'Tổ này đã thu hết' }}
+      columns={[
+        { title: 'Hộ', render: (_, c) => `${c.subjectCode} · ${c.subjectName}` },
+        { title: 'Địa chỉ', dataIndex: 'subjectAddress' },
+        { title: 'Số tiền', dataIndex: 'amount', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+        { title: '', width: 90, render: (_, c) => c.overdue && <StatusTag color="red">Quá hạn</StatusTag> },
+      ]}
+    />
+  );
 }
 
 /**
@@ -40,47 +68,34 @@ export function ProgressPage() {
 
   return (
     <>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        Tiến độ thu
-      </Typography.Title>
-      <Space style={{ marginBottom: 16 }}>
-        <PeriodSelect value={periodId} onChange={setPeriodId} />
-        {overdue.length > 0 && !readOnly && (
-          <Popover
-            trigger="click"
-            title={`${overdue.length} công ty quá hạn nộp`}
-            content={
-              <Space direction="vertical">
-                {overdue.map((r) => (
-                  <Button key={r.companyId} size="small" danger block onClick={() => setReminding(r.companyId)}>
-                    {`Nhắc nộp ${r.companyCode} · ${r.companyName}`}
-                  </Button>
-                ))}
-              </Space>
-            }
-          >
-            <Button danger icon={<BellOutlined />}>{`Nhắc công ty nộp (${overdue.length})`}</Button>
-          </Popover>
-        )}
-      </Space>
-      {ledger.error && <Alert type="error" showIcon message={ledger.error instanceof ApiError ? ledger.error.message : 'Không tải được số liệu'} />}
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-        {(
-          [
-            ['Phải thu', sum(rows, 'due')],
-            ['Công ty đã thu', sum(rows, 'collected')],
-            ['Đã nộp về xã', sum(rows, 'received')],
-            ['Còn phải nộp', sum(rows, 'remaining')],
-            ['Nợ kỳ trước', sum(rows, 'previousDebt')],
-          ] as const
-        ).map(([title, value]) => (
-          <Col key={title} xs={12} md={8} lg={4}>
-            <Card size="small">
-              <Statistic title={title} value={value} formatter={(v) => <MoneyText value={Number(v)} />} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <PageHeader
+        title="Tiến độ thu"
+        description="Công ty đã nộp về xã bao nhiêu, còn thiếu bao nhiêu và tổ nào thu chậm."
+        extra={
+          <Space wrap>
+            <PeriodSelect value={periodId} onChange={setPeriodId} />
+            {overdue.length > 0 && !readOnly && (
+              <Popover
+                trigger="click"
+                title={`${overdue.length} công ty quá hạn nộp`}
+                content={
+                  <Space direction="vertical">
+                    {overdue.map((r) => (
+                      <Button key={r.companyId} size="small" danger block onClick={() => setReminding(r.companyId)}>
+                        {`Nhắc nộp ${r.companyCode} · ${r.companyName}`}
+                      </Button>
+                    ))}
+                  </Space>
+                }
+              >
+                <Button danger icon={<BellOutlined />}>{`Nhắc công ty nộp (${overdue.length})`}</Button>
+              </Popover>
+            )}
+          </Space>
+        }
+      />
+      {ledger.error && <ErrorBlock error={ledger.error} onRetry={() => void ledger.refetch()} />}
+      <LedgerStats rows={rows} show={['due', 'payable', 'received', 'remaining']} />
       {unassigned.length > 0 && (
         <Alert
           type="warning"
@@ -90,18 +105,28 @@ export function ProgressPage() {
         />
       )}
       <Table<LedgerRow>
+        size="small"
         rowKey="companyId"
         loading={ledger.isLoading}
         dataSource={rows}
         pagination={false}
+        scroll={{ x: 900 }}
         locale={{ emptyText: 'Kỳ này chưa có khoản phải thu' }}
+        // Tổ và hộ chưa thu hiện sẵn dưới từng công ty, không có nút "+" (góp ý 04/10).
         expandable={{
+          showExpandColumn: false,
+          expandedRowKeys: rows.map((r) => r.companyId),
           expandedRowRender: (r) => (
             <Table<AreaProgress>
               size="small"
               rowKey={(a) => `${a.areaId}-${a.companyId}`}
               pagination={false}
               dataSource={(areas.data ?? []).filter((a) => a.companyId === r.companyId)}
+              expandable={{
+                showExpandColumn: false,
+                expandedRowKeys: (areas.data ?? []).filter((a) => a.paidCount < a.chargeCount).map((a) => `${a.areaId}-${a.companyId}`),
+                expandedRowRender: (a) => <UnpaidHouseholds periodId={r.periodId} areaId={a.areaId} companyId={r.companyId} />,
+              }}
               columns={[
                 { title: 'Tổ', render: (_, a) => `${a.areaCode} · ${a.areaName}` },
                 { title: 'Số hộ', dataIndex: 'subjectCount', align: 'right' },
@@ -114,21 +139,20 @@ export function ProgressPage() {
           ),
         }}
         columns={[
-          { title: 'Công ty', render: (_, r) => `${r.companyCode} · ${r.companyName}` },
+          {
+            title: 'Công ty',
+            width: 180,
+            render: (_, r) => (
+              <Typography.Text ellipsis={{ tooltip: true }} style={{ maxWidth: 160 }}>{`${r.companyCode} · ${r.companyName}`}</Typography.Text>
+            ),
+          },
           {
             title: 'Phải thu',
             dataIndex: 'due',
             align: 'right',
-            render: (v: number, r) => (
+            render: (v: number) => (
               <>
                 <MoneyText value={v} />
-                {r.retained > 0 && (
-                  <div>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      phải nộp xã <MoneyText value={r.payable} />
-                    </Typography.Text>
-                  </div>
-                )}
               </>
             ),
           },
@@ -140,14 +164,14 @@ export function ProgressPage() {
               <>
                 <MoneyText value={v} />
                 <div>
-                  <Typography.Text type="secondary">{`${r.collectionRate.toLocaleString('vi-VN')}% đã thu`}</Typography.Text>
+                  <Typography.Text type="secondary" style={{ whiteSpace: 'nowrap' }}>{`${cappedRate(r.collectionRate).toLocaleString('vi-VN')}% đã thu`}</Typography.Text>
                 </div>
               </>
             ),
           },
           { title: 'Đã nộp về xã', dataIndex: 'received', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           { title: 'Tỷ lệ nộp', render: (_, r) => <Rate rate={r.remittedRate} low={r.lowRemittedRate} /> },
-          { title: 'Còn phải nộp', dataIndex: 'remaining', align: 'right', render: (v: number) => <MoneyText value={v} strong /> },
+          { title: 'Còn phải nộp', dataIndex: 'remaining', align: 'right', render: (v: number) => <RemainingText value={v} strong /> },
           {
             title: 'Nợ kỳ trước',
             dataIndex: 'previousDebt',
@@ -159,7 +183,7 @@ export function ProgressPage() {
             dataIndex: 'progress',
             render: (p: LedgerRow['progress'], r) => (
               <Space size={4} wrap>
-                <Tag color={PROGRESS_COLORS[p]}>{PROGRESS_LABELS[p]}</Tag>
+                <StatusTag tone={PROGRESS_TONES[p]}>{PROGRESS_LABELS[p]}</StatusTag>
                 {p === 'OVERDUE' && !readOnly && (
                   <Button size="small" danger onClick={() => setReminding(r.companyId)} aria-label={`Nhắc nộp ${r.companyCode}`}>
                     Nhắc nộp

@@ -1,7 +1,9 @@
-import { App, Button, Flex, Popconfirm, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Flex, Popconfirm, Space, Table, Typography } from 'antd';
 import { useState } from 'react';
 
-import { ApiError } from '../../../api/client';
+import { errorTextOrNull } from '../../../shared/errorText';
+import { StatusTag } from '../../../shared/StatusTag';
+
 import { DateText } from '../../../shared/DateText';
 import { STATUS_COLORS, TARIFF_GROUP_LABELS, TARIFF_STATUS_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
@@ -14,11 +16,6 @@ import {
   useUpdateTariffDraft,
 } from '../api';
 import { TariffFormModal } from './TariffFormModal';
-
-function errorMessage(err: unknown): string | null {
-  if (!err) return null;
-  return err instanceof ApiError ? err.message : 'Thao tác không thành công. Vui lòng thử lại.';
-}
 
 const GROUP_ORDER = Object.keys(TARIFF_GROUP_LABELS);
 
@@ -83,7 +80,7 @@ export function TariffsPage() {
         dataSource={tariffs.data ?? []}
         pagination={false}
         locale={{
-          emptyText: tariffs.error instanceof ApiError ? tariffs.error.message : 'Chưa có biểu giá',
+          emptyText: tariffs.error ? errorTextOrNull(tariffs.error) : 'Chưa có biểu giá',
         }}
         expandable={{ expandedRowRender: (v) => <RatesTable rates={v.rates} />, rowExpandable: (v) => v.rates.length > 0 }}
         columns={[
@@ -109,7 +106,7 @@ export function TariffsPage() {
           {
             title: 'Trạng thái',
             dataIndex: 'status',
-            render: (s: TariffVersion['status']) => <Tag color={STATUS_COLORS[s]}>{TARIFF_STATUS_LABELS[s]}</Tag>,
+            render: (s: TariffVersion['status']) => <StatusTag color={STATUS_COLORS[s]}>{TARIFF_STATUS_LABELS[s]}</StatusTag>,
           },
           {
             title: '',
@@ -117,9 +114,11 @@ export function TariffsPage() {
             render: (_, v) =>
               (
                 <Space>
-                  <Button size="small" onClick={() => openForm(v)}>
-                    Sửa
-                  </Button>
+                  {v.status === 'DRAFT' && (
+                    <Button size="small" type="link" onClick={() => openForm(v)}>
+                      Sửa
+                    </Button>
+                  )}
                   {v.status === 'DRAFT' && <Popconfirm
                     title={`Ban hành ${v.code}?`}
                     description={
@@ -132,7 +131,7 @@ export function TariffsPage() {
                     onConfirm={() =>
                       issue.mutateAsync(v.id).then(
                         () => message.success(`Đã ban hành ${v.code}`),
-                        (err: unknown) => message.error(errorMessage(err)),
+                        (err: unknown) => message.error(errorTextOrNull(err)),
                       )
                     }
                   >
@@ -150,7 +149,7 @@ export function TariffsPage() {
         draft={editing ?? null}
         template={current}
         submitting={create.isPending || update.isPending}
-        error={errorMessage(create.error ?? update.error)}
+        error={errorTextOrNull(create.error ?? update.error)}
         onCreate={(req) => create.mutate(req, { onSuccess: saved })}
         onUpdate={(body) => editing && update.mutate({ id: editing.id, body }, { onSuccess: saved })}
         onCancel={() => setEditing(undefined)}

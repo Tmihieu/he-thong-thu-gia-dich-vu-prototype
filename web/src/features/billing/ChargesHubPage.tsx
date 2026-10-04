@@ -1,27 +1,36 @@
-import { Tabs, Typography } from 'antd';
+import { Tabs } from 'antd';
 
 import { useTabParam } from '../../shared/useTabParam';
+import { PageHeader } from '../../shared/PageHeader';
 import { ReceiptIssuesPage } from '../remittance/ReceiptIssuesPage/ReceiptIssuesPage';
 import { ReceiptsPage } from '../remittance/ReceiptsPage/ReceiptsPage';
 import { ChargeRequestTab } from './ChargeRequestPage/ChargeRequestTab';
 import { ChargesPage } from './ChargesPage/ChargesPage';
+import { PeriodDraftsTab } from './PeriodDraftsPage/PeriodDraftsTab';
 
 const TABS = ['charges', 'requests', 'receipts', 'receipt-issues'] as const;
 
-/** Màn "Khoản thu" của cán bộ xã: danh sách khoản, phiếu YCT, phiếu thu công ty (T30), sai sót phiếu thu công ty báo (T35). */
+/** Màn "Khoản thu" của cán bộ xã: danh sách khoản, phiếu YCT (kèm kỳ chờ mở hệ thống tự tạo), phiếu thu công ty (T30), sai sót phiếu thu công ty báo (T35). */
 export function ChargesHubPage() {
   const [tab, setTab] = useTabParam(TABS, 'charges');
   return (
     <>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        Khoản thu
-      </Typography.Title>
+      <PageHeader title="Khoản thu" description="Khoản thu từng hộ, phiếu yêu cầu thu và phiếu thu tiền công ty nộp về xã." />
       <Tabs
         activeKey={tab}
         onChange={setTab}
         items={[
           { key: 'charges', label: 'Khoản thu', children: <ChargesPage /> },
-          { key: 'requests', label: 'Phiếu YCT', children: <ChargeRequestTab /> },
+          {
+            key: 'requests',
+            label: 'Phiếu YCT',
+            children: (
+              <>
+                <PeriodDraftsTab />
+                <ChargeRequestTab />
+              </>
+            ),
+          },
           { key: 'receipts', label: 'Phiếu thu công ty', children: <ReceiptsPage /> },
           { key: 'receipt-issues', label: 'Sai sót phiếu thu', children: <ReceiptIssuesPage /> },
         ]}

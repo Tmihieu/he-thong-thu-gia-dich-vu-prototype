@@ -1,17 +1,19 @@
-import { Alert, Button, Space, Table, Tag, Typography } from 'antd';
+import { Button, Space, Table, Typography } from 'antd';
 import { useState } from 'react';
 
-import { ApiError } from '../../../api/client';
 import { DateText } from '../../../shared/DateText';
 import {
-  RECEIPT_ISSUE_STATUS_COLORS,
   RECEIPT_ISSUE_STATUS_LABELS,
   RECEIPT_ISSUE_TYPE_LABELS,
   RECEIPT_METHOD_LABELS,
 } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
+import { EmptyBlock, ErrorBlock } from '../../../shared/StateBlock';
+import { StatusTag } from '../../../shared/StatusTag';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
-import { type Receipt, type ReceiptIssue, useReceiptIssues, useReceipts } from '../api';
+import { type Receipt, type ReceiptIssue, useCompanyLedger, useReceiptIssues, useReceipts } from '../api';
+import { LedgerStats } from '../LedgerStats';
+import { ISSUE_TONES } from '../tones';
 import { ReportIssueModal } from './ReportIssueModal';
 
 /**
@@ -22,24 +24,24 @@ export function CompanyReceiptsPage() {
   const [periodId, setPeriodId] = useState<number>();
   const [reporting, setReporting] = useState<Receipt | null>(null);
   const receipts = useReceipts(periodId);
+  const ledger = useCompanyLedger(periodId);
   const issues = useReceiptIssues();
   const pending = new Set((issues.data ?? []).filter((i) => i.status === 'PENDING').map((i) => i.receiptId));
-  const error = receipts.error ?? issues.error;
+  const error = receipts.error ?? issues.error ?? ledger.error;
 
   return (
     <>
       <Space style={{ marginBottom: 16 }}>
         <PeriodSelect value={periodId} onChange={setPeriodId} />
       </Space>
-      {error && (
-        <Alert type="error" showIcon message={error instanceof ApiError ? error.message : 'Không tải được phiếu thu'} />
-      )}
+      {error && <ErrorBlock error={error} onRetry={() => void receipts.refetch()} />}
+      <LedgerStats rows={ledger.data ?? []} />
       <Table<Receipt>
         rowKey="id"
         loading={receipts.isLoading}
         dataSource={receipts.data ?? []}
         pagination={false}
-        locale={{ emptyText: 'Kỳ này xã chưa lập phiếu thu nào cho công ty' }}
+        locale={{ emptyText: <EmptyBlock title="Kỳ này chưa có phiếu thu" hint="Khi công ty nộp tiền, xã lập phiếu và phiếu hiện ở đây." /> }}
         columns={[
           { title: 'Số phiếu', dataIndex: 'code' },
           { title: 'Ngày nộp', dataIndex: 'receiptDate', render: (d: string) => <DateText value={d} /> },
@@ -51,7 +53,11 @@ export function CompanyReceiptsPage() {
           {
             title: 'Trạng thái',
             render: (_, r) =>
-              pending.has(r.id) ? <Tag color="orange">Đã báo sai sót · chờ xã kiểm tra</Tag> : <Tag color="green">Xã đã ghi nhận</Tag>,
+              pending.has(r.id) ? (
+                <StatusTag tone="warning">Đã báo sai sót · chờ xã kiểm tra</StatusTag>
+              ) : (
+                <StatusTag tone="success">Xã đã ghi nhận</StatusTag>
+              ),
           },
           {
             title: '',
@@ -72,7 +78,7 @@ export function CompanyReceiptsPage() {
         loading={issues.isLoading}
         dataSource={issues.data ?? []}
         pagination={false}
-        locale={{ emptyText: 'Chưa báo sai sót nào' }}
+        locale={{ emptyText: <EmptyBlock title="Chưa báo sai sót nào" hint="Thấy phiếu ghi sai số tiền hay sai kỳ thì bấm Báo sai sót trên phiếu đó." /> }}
         columns={[
           { title: 'Phiếu', dataIndex: 'receiptCode' },
           { title: 'Loại', dataIndex: 'issueType', render: (t: ReceiptIssue['issueType']) => RECEIPT_ISSUE_TYPE_LABELS[t] },
@@ -81,7 +87,7 @@ export function CompanyReceiptsPage() {
           {
             title: 'Trạng thái',
             dataIndex: 'status',
-            render: (s: ReceiptIssue['status']) => <Tag color={RECEIPT_ISSUE_STATUS_COLORS[s]}>{RECEIPT_ISSUE_STATUS_LABELS[s]}</Tag>,
+            render: (s: ReceiptIssue['status']) => <StatusTag tone={ISSUE_TONES[s]}>{RECEIPT_ISSUE_STATUS_LABELS[s]}</StatusTag>,
           },
           { title: 'Kết quả xử lý', dataIndex: 'resolutionNote', render: (v: string | null) => v ?? '—' },
         ]}

@@ -79,6 +79,7 @@ export function OpenPeriodForm({ tariffs, submitting = false, error, onSubmit, o
             aria-label={type === 'MONTH' ? 'Tháng' : 'Quý'}
             options={type === 'MONTH' ? MONTHS : QUARTERS}
             style={{ width: 160 }}
+            virtual={false}
             placeholder="Chọn"
           />
         </Form.Item>

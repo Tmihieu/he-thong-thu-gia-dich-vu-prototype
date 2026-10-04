@@ -15,7 +15,7 @@ export function PeriodSelect({ value, onChange }: Props) {
 
   useEffect(() => {
     if (value === undefined && periods.data && periods.data.length > 0) {
-      const open = periods.data.find((p) => p.status !== 'LOCKED');
+      const open = periods.data.find((p) => p.status === 'COLLECTING');
       onChange((open ?? periods.data[0])!.id);
     }
   }, [value, periods.data, onChange]);

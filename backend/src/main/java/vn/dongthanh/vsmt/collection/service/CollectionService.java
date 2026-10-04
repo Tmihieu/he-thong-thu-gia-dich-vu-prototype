@@ -23,7 +23,11 @@ import vn.dongthanh.vsmt.collection.domain.Payment;
 import vn.dongthanh.vsmt.collection.domain.PaymentMethod;
 import vn.dongthanh.vsmt.collection.domain.PaymentRepository;
 import vn.dongthanh.vsmt.collection.domain.VisitResult;
+import vn.dongthanh.vsmt.citizen.domain.CitizenAccountRepository;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
+import vn.dongthanh.vsmt.notification.domain.NotificationKind;
+import vn.dongthanh.vsmt.notification.service.NotificationService;
+import vn.dongthanh.vsmt.notification.service.NotificationService.NotificationCommand;
 import vn.dongthanh.vsmt.masterdata.service.PeriodGuard;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 import vn.dongthanh.vsmt.platform.common.ConflictException;
@@ -55,6 +59,8 @@ public class CollectionService {
     private final CollectorAssignmentService scope;
     private final UserRepository users;
     private final PeriodGuard periodGuard;
+    private final CitizenAccountRepository citizenAccounts;
+    private final NotificationService notifications;
     private final AuditService audit;
     private final Clock clock;
 
@@ -85,6 +91,7 @@ public class CollectionService {
         actor.requireRole(Role.COLLECTOR, Role.COMPANY_MANAGER);
         // Khóa dòng khoản TRƯỚC khi nạp: lần thu song song cùng khoản chờ lần trước commit rồi mới đọc trạng thái,
         // tổng đã thu và clientRequestId, nên không thu vượt và gửi trùng thì trả bản ghi cũ.
+        lockRequest(cmd.clientRequestId());
         charges.lockById(cmd.chargeId());
         Charge charge = loadInScope(cmd.chargeId(), actor);
         Optional<Payment> existing = payments.findByClientRequestId(cmd.clientRequestId());
@@ -122,6 +129,7 @@ public class CollectionService {
         after.put("paymentAmount", cmd.amount());
         after.put("method", cmd.method());
         audit.record(actor, "RECORD_PAYMENT", ENTITY, charge.getCode(), before, after);
+        notifyHousehold(charge, cmd.amount(), charge.getAmount() - paidAfter);
         return new PaymentOutcome(payment, charge, paidAfter, charge.getAmount() - paidAfter, false);
     }
 
@@ -130,6 +138,7 @@ public class CollectionService {
      * còn thiếu (công ty vừa thu một phần thì app phải tải lại), trả đủ thì khoản chuyển Đã thu.
      */
     public PaymentOutcome recordCitizenPayment(CitizenPaymentCommand cmd) {
+        lockRequest(cmd.clientRequestId());
         charges.lockById(cmd.chargeId());
         Charge charge = charges.findByIdWithDetails(cmd.chargeId())
                 .filter(c -> c.getSubject().getId().equals(cmd.subjectId()))
@@ -211,6 +220,7 @@ public class CollectionService {
 
     public VisitOutcome recordVisit(VisitCommand cmd, CurrentUser actor) {
         actor.requireRole(Role.COLLECTOR, Role.COMPANY_MANAGER);
+        lockRequest(cmd.clientRequestId());
         Charge charge = loadInScope(cmd.chargeId(), actor);
         Optional<CollectionVisit> existing = visits.findByClientRequestId(cmd.clientRequestId());
         if (existing.isPresent()) {
@@ -292,6 +302,16 @@ public class CollectionService {
         }
     }
 
+    /** Báo hộ khi người thu ghi tiền: hộ thấy ngay số tiền đã ghi nhận và còn thiếu bao nhiêu. */
+    private void notifyHousehold(Charge charge, long amount, long remaining) {
+        String body = "Đã ghi nhận " + Money.format(amount) + " cho khoản " + charge.getCode()
+                + (remaining > 0 ? ", còn thiếu " + Money.format(remaining) + "." : ", khoản đã thu đủ.");
+        for (Long citizenId : citizenAccounts.findActiveIdsBySubject(charge.getSubject().getId())) {
+            notifications.publish(NotificationCommand.toCitizen(citizenId, NotificationKind.RECEIPT,
+                    "Đã ghi nhận thu phí " + charge.getPeriod().getCode(), body, null), null);
+        }
+    }
+
     private Long collectorFor(PaymentCommand cmd, CurrentUser actor) {
         if (actor.role() == Role.COLLECTOR) {
             return actor.id();
@@ -306,8 +326,17 @@ public class CollectionService {
         return collector.getId();
     }
 
+    /**
+     * Gửi trùng đồng thời (cùng clientRequestId, kể cả hai khoản khác nhau) phải xếp hàng để lần sau thấy bản ghi của
+     * lần trước và trả bản cũ / REQUEST_ID_REUSED, thay vì đụng ràng buộc duy nhất rồi trả 500 (BR-COL-05).
+     */
+    private void lockRequest(String clientRequestId) {
+        payments.lockCodePrefix("req:" + clientRequestId);
+    }
+
     private String nextCode(Charge charge) {
         String prefix = "TT-" + charge.getPeriod().documentToken() + "-";
+        payments.lockCodePrefix(prefix); // khóa khoản chỉ khóa một khoản; mã thì dùng chung cả kỳ
         return prefix + "%06d".formatted(payments.maxCodeNumber(prefix) + 1);
     }
 

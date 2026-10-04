@@ -1,8 +1,10 @@
-import { App, Button, Checkbox, Select, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Checkbox, Select, Space, Table } from 'antd';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 
-import { ApiError } from '../../../api/client';
+import { errorTextOrNull } from '../../../shared/errorText';
+import { StatusTag } from '../../../shared/StatusTag';
+import { PageHeader } from '../../../shared/PageHeader';
 import { DateText } from '../../../shared/DateText';
 import {
   type Area,
@@ -20,12 +22,23 @@ interface Row extends Area {
   assignment?: AreaAssignment;
 }
 
-function errorMessage(err: unknown): string | null {
-  if (!err) return null;
-  return err instanceof ApiError ? err.message : 'Thao tác không thành công. Vui lòng thử lại.';
+/** Bản đồ địa bàn đang lọc (hoặc cả xã). */
+// ponytail: nhúng Google Maps theo tên địa bàn vì hệ thống chưa có ranh giới / tọa độ từng tổ; có dữ liệu ranh tổ từ xã
+// thì đổi sang lớp bản đồ vẽ từng tổ.
+function AreaMap({ district }: { district?: string }) {
+  const q = `${district ? `${district}, ` : 'Xã Đông Thạnh, '}Hóc Môn, Thành phố Hồ Chí Minh`;
+  return (
+    <iframe
+      title="Bản đồ khu vực"
+      src={`https://www.google.com/maps?q=${encodeURIComponent(q)}&z=14&output=embed`}
+      loading="lazy"
+      referrerPolicy="no-referrer-when-downgrade"
+      style={{ width: '100%', height: 320, border: 0, borderRadius: 8, marginBottom: 16 }}
+    />
+  );
 }
 
-/** Khu vực của cán bộ xã: 24 tổ, công ty đang phụ trách, lọc chưa có công ty, phân công tổ chưa có công ty, lịch sử. */
+/** Khu vực của cán bộ xã: bản đồ địa bàn, 24 tổ, công ty đang phụ trách, lọc chưa có công ty, phân công tổ chưa có công ty, lịch sử. */
 export function AreasPage() {
   const { message } = App.useApp();
   const today = dayjs().format('YYYY-MM-DD');
@@ -59,13 +72,15 @@ export function AreasPage() {
 
   return (
     <>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        Khu vực
-      </Typography.Title>
-      <Typography.Paragraph type="secondary">
-        Mỗi tổ có một công ty phụ trách trong cùng thời gian hiệu lực. Chỉ phân công được tổ chưa có công ty phụ
-        trách. {unassignedCount > 0 && <Tag color="orange">{unassignedCount} tổ chưa có công ty</Tag>}
-      </Typography.Paragraph>
+      <PageHeader
+        title="Khu vực"
+        description={
+          <>
+            Mỗi tổ có một công ty phụ trách trong cùng thời gian hiệu lực. Chỉ phân công được tổ chưa có công ty phụ
+        trách. {unassignedCount > 0 && <StatusTag color="orange">{unassignedCount} tổ chưa có công ty</StatusTag>}
+          </>
+        }
+      />
       <Space wrap style={{ marginBottom: 16 }}>
         <Select
           aria-label="Địa bàn"
@@ -79,10 +94,8 @@ export function AreasPage() {
         <Checkbox checked={unassignedOnly} onChange={(e) => setUnassignedOnly(e.target.checked)}>
           Chỉ tổ chưa có công ty
         </Checkbox>
-        <Button type="primary" disabled={selected.length === 0} onClick={() => openModal(selected)}>
-          Phân công {selected.length > 0 ? `(${selected.length} tổ)` : ''}
-        </Button>
       </Space>
+      <AreaMap district={districts.data?.find((d) => d.id === districtId)?.name} />
       <Table<Row>
         rowKey="id"
         loading={areas.isLoading || active.isLoading}
@@ -93,7 +106,7 @@ export function AreasPage() {
           onChange: (keys) => setSelected(keys as number[]),
           getCheckboxProps: (r) => ({ disabled: !!r.assignment }),
         }}
-        locale={{ emptyText: errorMessage(areas.error ?? active.error) ?? 'Không có khu vực phù hợp' }}
+        locale={{ emptyText: errorTextOrNull(areas.error ?? active.error) ?? 'Không có khu vực phù hợp' }}
         columns={[
           {
             title: 'Khu vực',
@@ -108,7 +121,7 @@ export function AreasPage() {
           {
             title: 'Công ty phụ trách',
             render: (_, r) =>
-              r.assignment ? `${r.assignment.companyCode} · ${r.assignment.companyName}` : <Tag color="orange">Chưa có công ty</Tag>,
+              r.assignment ? `${r.assignment.companyCode} · ${r.assignment.companyName}` : <StatusTag color="orange">Chưa có công ty</StatusTag>,
           },
           {
             title: 'Hiệu lực',
@@ -126,7 +139,7 @@ export function AreasPage() {
             title: '',
             render: (_, r) =>
               !r.assignment && (
-                <Button size="small" onClick={() => openModal([r.id])} aria-label={`Phân công ${r.code}`}>
+                <Button size="small" type="link" onClick={() => openModal([r.id])} aria-label={`Phân công ${r.code}`}>
                   Phân công
                 </Button>
               ),
@@ -136,10 +149,10 @@ export function AreasPage() {
       <AssignAreaModal
         open={modalAreas !== null}
         areas={unassigned}
-        companies={companies.data ?? []}
+        companies={(companies.data ?? []).filter((c) => c.status === 'ACTIVE')}
         initialAreaIds={modalAreas ?? []}
         submitting={assign.isPending}
-        error={errorMessage(assign.error)}
+        error={errorTextOrNull(assign.error)}
         onCancel={() => setModalAreas(null)}
         onSubmit={(req) =>
           assign.mutate(req, {

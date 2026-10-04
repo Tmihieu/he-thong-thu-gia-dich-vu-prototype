@@ -66,7 +66,7 @@ public class ApprovalService {
         actor.requireRole(Role.COMMUNE_OFFICER);
         if (cmd.type() == ApprovalType.EXEMPTION) {
             throw new BusinessRuleException("APPROVAL_TYPE_INVALID",
-                    "Miễn giảm lập bằng cách bật \"Miễn 100%\" trên hợp đồng.");
+                    "Miễn giảm lập bằng cách bật \"Miễn 100%\" trên đăng ký thu phí.");
         }
         String reason = requireText(cmd.reason());
         charges.lockById(cmd.chargeId());
@@ -103,7 +103,7 @@ public class ApprovalService {
         OffsetDateTime now = OffsetDateTime.now(clock);
         ApprovalRequest saved = requests.save(ApprovalRequest.forContract(nextCode(now), contract,
                 e.reason(), e.decisionNo(), e.actor().id(), now));
-        notifyLeaders(saved, "Miễn giảm hợp đồng " + contract.getContractNo() + " · " + contract.getSubject().getName());
+        notifyLeaders(saved, "Miễn giảm đăng ký " + contract.getContractNo() + " · " + contract.getSubject().getName());
         audit.record(e.actor(), "CREATE_APPROVAL", ENTITY, saved.getCode(), null, snapshot(saved));
     }
 
@@ -111,31 +111,38 @@ public class ApprovalService {
         actor.requireRole(Role.LEADER);
         ApprovalRequest r = forDecision(id);
         Map<String, Object> before = snapshot(r);
+        Map<String, Object> afterExtra = new LinkedHashMap<>();
         CollectionPeriod effective = null;
         switch (r.getType()) {
             case EXEMPTION -> {
                 // Chỉ ghi nhận: cờ miễn đã được xã bật. Xã đã tắt thì không còn gì để ghi nhận.
                 if (!r.getContract().isExempt()) {
                     throw new BusinessRuleException("EXEMPTION_ALREADY_REMOVED",
-                            "Xã đã tắt miễn trên hợp đồng " + r.getContract().getContractNo() + "; từ chối để đóng đề nghị.");
+                            "Xã đã tắt miễn trên đăng ký " + r.getContract().getContractNo() + "; từ chối để đóng đề nghị.");
                 }
             }
             case WRITE_OFF -> {
                 Charge charge = lockedCharge(r);
                 requireWriteOffable(charge);
                 effective = ledgerPeriodFor(charge);
+                trackCharge(before, charge, "chargeBefore");
                 charge.writeOff(effective);
+                trackCharge(afterExtra, charge, "chargeAfter");
             }
             case REFUND -> {
                 Charge charge = lockedCharge(r);
                 effective = ledgerPeriodFor(charge);
+                trackCharge(before, charge, "chargeBefore");
                 collection.recordRefund(charge, r.getAmount(), effective, "Hoàn theo đề nghị " + r.getCode(),
                         "refund-" + r.getCode(), actor.id());
+                trackCharge(afterExtra, charge, "chargeAfter");
             }
         }
         r.approve(note, effective, actor.id(), OffsetDateTime.now(clock));
         notifyRequester(r);
-        audit.record(actor, "APPROVE_APPROVAL", ENTITY, r.getCode(), before, snapshot(r));
+        Map<String, Object> after = snapshot(r);
+        after.putAll(afterExtra);
+        audit.record(actor, "APPROVE_APPROVAL", ENTITY, r.getCode(), before, after);
         return r;
     }
 
@@ -179,7 +186,7 @@ public class ApprovalService {
         // FOR SHARE để khóa kỳ song song phải chờ (kỳ vừa khóa thì bỏ qua, số kỳ khóa giữ nguyên).
         for (Charge c : charges.findByContractInUnlockedPeriods(contract.getId(), ChargeStatus.EXEMPT, PeriodStatus.LOCKED)) {
             if (!PeriodStatus.LOCKED.name().equals(periods.lockStatusForShare(c.getPeriod().getId()))) {
-                c.revokeExemption();
+                c.revokeExemption(contract.getQuotaKg());
             }
         }
     }
@@ -212,6 +219,15 @@ public class ApprovalService {
         }
         throw new BusinessRuleException("NO_COLLECTING_PERIOD",
                 "Kỳ " + own.getCode() + " đã khóa và chưa có kỳ đang thu để ghi nhận điều chỉnh.");
+    }
+
+    /** BR-GEN-03: audit hoàn / xóa nợ ghi cả trạng thái và số đã thu ròng của khoản trước và sau, không chỉ đề nghị. */
+    private void trackCharge(Map<String, Object> into, Charge charge, String key) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("charge", charge.getCode());
+        m.put("status", charge.getStatus());
+        m.put("paid", collection.paidOf(charge.getId()));
+        into.put(key, m);
     }
 
     private void requireWriteOffable(Charge charge) {

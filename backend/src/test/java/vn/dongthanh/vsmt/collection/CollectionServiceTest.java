@@ -62,6 +62,8 @@ import vn.dongthanh.vsmt.masterdata.domain.TariffGroup;
 import vn.dongthanh.vsmt.masterdata.domain.TariffStatus;
 import vn.dongthanh.vsmt.masterdata.domain.TariffVersion;
 import vn.dongthanh.vsmt.masterdata.service.PeriodGuard;
+import vn.dongthanh.vsmt.citizen.domain.CitizenAccountRepository;
+import vn.dongthanh.vsmt.notification.service.NotificationService;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 import vn.dongthanh.vsmt.platform.common.NotFoundException;
 import vn.dongthanh.vsmt.platform.domain.Role;
@@ -79,10 +81,12 @@ class CollectionServiceTest {
     final CollectorAssignmentService scope = mock(CollectorAssignmentService.class);
     final UserRepository users = mock(UserRepository.class);
     final CollectionPeriodRepository periods = mock(CollectionPeriodRepository.class);
+    final CitizenAccountRepository citizenAccounts = mock(CitizenAccountRepository.class);
+    final NotificationService notifications = mock(NotificationService.class);
     final AuditService audit = mock(AuditService.class);
     final Clock clock = Clock.fixed(Instant.parse("2026-10-12T10:40:00Z"), ZoneId.of("Asia/Ho_Chi_Minh"));
     final CollectionService service = new CollectionService(payments, visits, charges, scope, users,
-            new PeriodGuard(periods), audit, clock);
+            new PeriodGuard(periods), citizenAccounts, notifications, audit, clock);
 
     final Company dv01 = withId(Company.create("DV01", "Công ty Một", "A", "0900000001", LocalDate.of(2026, 1, 1)), 1L);
     final CurrentUser collector = new CurrentUser(21L, "thu07", Role.COLLECTOR, 1L);
@@ -181,6 +185,15 @@ class CollectionServiceTest {
         PaymentOutcome second = service.recordPayment(cash(50_000, "req-2"), collector);
         assertThat(charge.getStatus()).isEqualTo(ChargeStatus.PAID);
         assertThat(second.paidAmount()).isEqualTo(80_000);
+    }
+
+    @Test
+    void householdIsNotifiedWhenAPaymentIsRecorded() {
+        when(citizenAccounts.findActiveIdsBySubject(any())).thenReturn(List.of(7L));
+
+        service.recordPayment(cash(30_000, "req-1"), collector);
+
+        verify(notifications).publish(any(), any());
     }
 
     @Test

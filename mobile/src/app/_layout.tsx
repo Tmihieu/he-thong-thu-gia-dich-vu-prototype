@@ -1,48 +1,43 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
 import { SessionProvider, useSession } from '../features/auth/SessionProvider';
+import { watchConnection } from '../shared/connectionState';
+import { headerOptions } from '../shared/headerOptions';
 import { colors } from '../shared/theme';
 
 export default function RootLayout() {
   const [queryClient] = useState(
     () => new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30_000 } } }),
   );
+  useEffect(() => watchConnection(queryClient), [queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <RootNavigator />
       </SessionProvider>
     </QueryClientProvider>
   );
 }
 
-/** Chưa đăng nhập chỉ vào được `login` (và kiểm tra kết nối); đã đăng nhập thì `login` bị ẩn. */
+/** Chưa đăng nhập chỉ vào được `login` (và kiểm tra kết nối); đã đăng nhập thì `login` bị ẩn. Hết phiên (401) → về đăng nhập. */
 function RootNavigator() {
   const { isLoading, account } = useSession();
   if (isLoading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator size="large" color={colors.brand} />
       </View>
     );
   }
   const signedIn = account !== null;
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.chrome },
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontWeight: '700' },
-        headerBackButtonDisplayMode: 'minimal',
-        contentStyle: { backgroundColor: colors.background },
-      }}
-    >
+    <Stack screenOptions={headerOptions}>
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="charges" options={{ title: 'Khoản phí của hộ' }} />
@@ -54,9 +49,6 @@ function RootNavigator() {
         <Stack.Screen name="complaints/index" options={{ title: 'Phản ánh, kiến nghị' }} />
         <Stack.Screen name="complaints/new" options={{ title: 'Gửi phản ánh' }} />
         <Stack.Screen name="complaints/[id]" options={{ title: 'Chi tiết phản ánh' }} />
-        <Stack.Screen name="bulky/index" options={{ title: 'Rác cồng kềnh' }} />
-        <Stack.Screen name="bulky/new" options={{ title: 'Đăng ký rác cồng kềnh' }} />
-        <Stack.Screen name="bulky/[id]" options={{ title: 'Yêu cầu thu gom cồng kềnh' }} />
         <Stack.Screen name="market/new" options={{ title: 'Đăng bài mới' }} />
         <Stack.Screen name="market/mine" options={{ title: 'Tin của tôi' }} />
         <Stack.Screen name="market/saved" options={{ title: 'Đã lưu' }} />

@@ -1,15 +1,26 @@
-import { Alert, Button, List, Segmented, Space, Switch, Tag, Typography } from 'antd';
+import { BellOutlined, CommentOutlined, FileTextOutlined, InfoCircleOutlined, SwapOutlined } from '@ant-design/icons';
+import { Avatar, Badge, Button, List, Segmented, Space, Switch, Typography } from 'antd';
+import type { ReactNode } from 'react';
 import { useState } from 'react';
 
-import { ApiError } from '../../api/client';
 import { useAuth } from '../../app/auth/authContext';
 import { formatDate } from '../../shared/format';
+import { PageHeader } from '../../shared/PageHeader';
+import { EmptyBlock, ErrorBlock } from '../../shared/StateBlock';
+import { StatusTag } from '../../shared/StatusTag';
 import { type Notification, type NotificationKind, useMarkAllRead, useMarkRead, useNotifications } from './api';
-import { NOTIFICATION_KIND_COLORS, NOTIFICATION_KIND_LABELS } from './labels';
+import { NOTIFICATION_KIND_TONES, NOTIFICATION_KIND_LABELS } from './labels';
 import { notificationPath } from './links';
 import { useOpenNotification } from './useOpenNotification';
 
 const PAGE_SIZE = 20;
+const KIND_ICONS: Record<NotificationKind, ReactNode> = {
+  REMINDER: <BellOutlined />,
+  COMPLAINT: <CommentOutlined />,
+  RECEIPT: <FileTextOutlined />,
+  INFO: <InfoCircleOutlined />,
+  TRANSACTION: <SwapOutlined />,
+};
 
 /** Trung tâm thông báo: lọc theo loại / chưa đọc, đánh dấu đã đọc, bấm để đi tới màn liên quan. */
 export function NotificationCenterPage() {
@@ -24,9 +35,15 @@ export function NotificationCenterPage() {
 
   return (
     <>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        Thông báo
-      </Typography.Title>
+      <PageHeader
+        title="Thông báo"
+        description="Nhắc nộp, khiếu nại, phiếu thu và giao dịch liên quan đến bạn; bấm Mở để đi tới màn xử lý."
+        extra={
+          <Button onClick={() => markAll.mutate()} loading={markAll.isPending} disabled={(list.data?.unreadCount ?? 0) === 0}>
+            Đánh dấu tất cả đã đọc
+          </Button>
+        }
+      />
       <Space wrap style={{ marginBottom: 16 }}>
         <Segmented<NotificationKind | 'ALL'>
           value={kind}
@@ -50,18 +67,14 @@ export function NotificationCenterPage() {
           />
           Chỉ chưa đọc
         </Space>
-        <Button onClick={() => markAll.mutate()} loading={markAll.isPending} disabled={(list.data?.unreadCount ?? 0) === 0}>
-          Đánh dấu tất cả đã đọc
-        </Button>
       </Space>
-      {list.error && (
-        <Alert type="error" showIcon message={list.error instanceof ApiError ? list.error.message : 'Không tải được thông báo'} />
-      )}
+      {(markRead.error ?? markAll.error) && <ErrorBlock error={markRead.error ?? markAll.error} />}
+      {list.error && <ErrorBlock error={list.error} onRetry={() => void list.refetch()} />}
       <List<Notification>
         loading={list.isLoading}
         dataSource={list.data?.items ?? []}
         rowKey="id"
-        locale={{ emptyText: 'Không có thông báo' }}
+        locale={{ emptyText: <EmptyBlock title="Không có thông báo" hint="Thông báo mới sẽ hiện ở đây và trên chuông góc trên." /> }}
         pagination={{
           current: page + 1,
           pageSize: PAGE_SIZE,
@@ -88,9 +101,14 @@ export function NotificationCenterPage() {
               ].filter(Boolean)}
             >
               <List.Item.Meta
+                avatar={
+                  <Badge dot={!n.readAt} offset={[-4, 4]}>
+                    <Avatar shape="square" icon={KIND_ICONS[n.kind]} />
+                  </Badge>
+                }
                 title={
                   <Space size={6} wrap>
-                    <Tag color={NOTIFICATION_KIND_COLORS[n.kind]}>{NOTIFICATION_KIND_LABELS[n.kind]}</Tag>
+                    <StatusTag tone={NOTIFICATION_KIND_TONES[n.kind]}>{NOTIFICATION_KIND_LABELS[n.kind]}</StatusTag>
                     <Typography.Text strong={!n.readAt}>{n.title}</Typography.Text>
                   </Space>
                 }

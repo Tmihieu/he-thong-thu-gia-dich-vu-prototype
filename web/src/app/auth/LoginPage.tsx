@@ -1,4 +1,4 @@
-import { LockOutlined, UserOutlined } from '@ant-design/icons';
+import { LockOutlined, MobileOutlined, UserOutlined } from '@ant-design/icons';
 import { Alert, Button, Card, Divider, Flex, Form, Input, Typography } from 'antd';
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
@@ -6,7 +6,6 @@ import { Navigate, useLocation, useNavigate } from 'react-router';
 import { ApiError } from '../../api/client';
 import { homePath, ROLE_BASE } from '../layout/menuConfig';
 import { FullPageSpin } from '../pages/StatusPages';
-import { brand } from '../theme';
 import { type Role, useAuth } from './authContext';
 import { DEMO_ACCOUNTS, DEMO_LOGIN_ENABLED, DEMO_PASSWORD } from './demoAccounts';
 
@@ -46,56 +45,74 @@ export function LoginPage() {
   }
 
   return (
-    <div style={{ display: 'grid', placeItems: 'center', minHeight: '100vh', padding: 16, background: brand.chrome, borderTop: '4px solid #218a58' }}>
-      <Card style={{ width: '100%', maxWidth: 400 }}>
-        <img src="/logo-dong-thanh.jpg" alt="Logo xã Đông Thạnh" width={88} height={88} style={{ display: 'block', margin: '0 auto 12px', borderRadius: '50%' }} />
-        <Typography.Title level={4} style={{ marginTop: 0, textAlign: 'center' }}>
-          Quản lý thu giá dịch vụ vệ sinh môi trường
-        </Typography.Title>
-        <Typography.Paragraph type="secondary" style={{ textAlign: 'center' }}>UBND xã Đông Thạnh · Thành phố Hồ Chí Minh</Typography.Paragraph>
-        {error && <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} role="alert" />}
-        <Form<LoginForm>
-          layout="vertical"
-          onFinish={onFinish}
-          requiredMark={false}
-          disabled={submitting}
-          initialValues={DEMO_LOGIN_ENABLED ? { username: DEMO_ACCOUNTS[0]!.username, password: DEMO_PASSWORD } : undefined}
-        >
-          <Form.Item
-            label="Tên đăng nhập"
-            name="username"
-            rules={[{ required: true, whitespace: true, message: 'Vui lòng nhập tên đăng nhập' }]}
-          >
-            <Input prefix={<UserOutlined />} autoComplete="username" autoFocus />
-          </Form.Item>
-          <Form.Item label="Mật khẩu" name="password" rules={[{ required: true, message: 'Vui lòng nhập mật khẩu' }]}>
-            <Input.Password prefix={<LockOutlined />} autoComplete="current-password" />
-          </Form.Item>
-          <Button type="primary" htmlType="submit" block loading={submitting}>
+    <div className="login-page">
+      <aside className="login-brand" aria-hidden="true">
+        <img src="/logo-dong-thanh.jpg" alt="" width={96} height={96} />
+        <h2>Quản lý thu giá dịch vụ vệ sinh môi trường</h2>
+        <p>UBND xã Đông Thạnh · Thành phố Hồ Chí Minh</p>
+        <ul>
+          <li>Theo dõi khoản thu theo từng hộ, từng tổ</li>
+          <li>Đối soát tiền công ty nộp về xã</li>
+          <li>Báo cáo rõ ràng cho lãnh đạo</li>
+        </ul>
+      </aside>
+      <main className="login-panel">
+        <Card className="login-card" variant="borderless">
+          <img className="login-logo" src="/logo-dong-thanh.jpg" alt="Logo xã Đông Thạnh" width={64} height={64} />
+          <Typography.Title level={2} className="login-title">
             Đăng nhập
+          </Typography.Title>
+          <Typography.Paragraph type="secondary">Hệ thống quản lý thu giá dịch vụ vệ sinh môi trường</Typography.Paragraph>
+          {error && <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} role="alert" />}
+          <Form<LoginForm>
+            layout="vertical"
+            onFinish={onFinish}
+            requiredMark={false}
+            disabled={submitting}
+            initialValues={DEMO_LOGIN_ENABLED ? { username: DEMO_ACCOUNTS[0]!.username, password: DEMO_PASSWORD } : undefined}
+          >
+            <Form.Item
+              label="Tên đăng nhập"
+              name="username"
+              rules={[{ required: true, whitespace: true, message: 'Vui lòng nhập tên đăng nhập' }]}
+            >
+              <Input size="large" prefix={<UserOutlined />} autoComplete="username" autoFocus />
+            </Form.Item>
+            <Form.Item label="Mật khẩu" name="password" rules={[{ required: true, message: 'Vui lòng nhập mật khẩu' }]}>
+              <Input.Password size="large" prefix={<LockOutlined />} autoComplete="current-password" />
+            </Form.Item>
+            <Button type="primary" size="large" htmlType="submit" block loading={submitting}>
+              Đăng nhập
+            </Button>
+          </Form>
+          {DEMO_LOGIN_ENABLED && (
+            <>
+              <Divider plain style={{ fontSize: 13 }}>
+                Đăng nhập nhanh tài khoản demo
+              </Divider>
+              <Flex wrap gap={8} justify="center">
+                {DEMO_ACCOUNTS.map((a) => (
+                  <Button
+                    key={a.username}
+                    disabled={submitting}
+                    title={a.username}
+                    onClick={() => void onFinish({ username: a.username, password: DEMO_PASSWORD })}
+                  >
+                    {a.label}
+                  </Button>
+                ))}
+              </Flex>
+            </>
+          )}
+          <Divider plain style={{ fontSize: 13 }}>
+            Dành cho hộ dân
+          </Divider>
+          {/* App người dân (Expo) bản web, phục vụ cùng origin ở /citizen. */}
+          <Button block icon={<MobileOutlined />} href="/citizen/" target="_blank" rel="noreferrer">
+            Mở ứng dụng người dân
           </Button>
-        </Form>
-        {DEMO_LOGIN_ENABLED && (
-          <>
-            <Divider plain style={{ fontSize: 13 }}>
-              Đăng nhập nhanh tài khoản demo
-            </Divider>
-            <Flex wrap gap={8} justify="center">
-              {DEMO_ACCOUNTS.map((a) => (
-                <Button
-                  key={a.username}
-                  size="small"
-                  disabled={submitting}
-                  title={a.username}
-                  onClick={() => void onFinish({ username: a.username, password: DEMO_PASSWORD })}
-                >
-                  {a.label}
-                </Button>
-              ))}
-            </Flex>
-          </>
-        )}
-      </Card>
+        </Card>
+      </main>
     </div>
   );
 }

@@ -17,3 +17,9 @@ export function formatDate(value: string | null | undefined, withTime = false): 
   if (!d.isValid()) return EMPTY;
   return d.format(withTime ? 'DD/MM/YYYY HH:mm' : 'DD/MM/YYYY');
 }
+
+/** Tỷ lệ phần trăm: 45.5 → "45,5%" (dấu phẩy thập phân kiểu Việt Nam). */
+export function formatPercent(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return EMPTY;
+  return `${value.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}%`;
+}

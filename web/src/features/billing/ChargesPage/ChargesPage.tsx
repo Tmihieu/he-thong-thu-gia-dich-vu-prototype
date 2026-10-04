@@ -1,9 +1,10 @@
-import { Button, Segmented, Select, Space, Table, Tag } from 'antd';
+import { Button, Segmented, Select, Space, Table } from 'antd';
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { StatusTag } from '../../../shared/StatusTag';
 import { brand } from '../../../app/theme';
-import { CHARGE_STATUS_COLORS, CHARGE_STATUS_LABELS } from '../../../shared/labels';
+import { CHARGE_STATUS_COLORS, CHARGE_STATUS_LABELS, TARIFF_GROUP_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
 import { CreateApprovalModal } from '../../leadership/CreateApprovalModal';
 import { useAreas, useCompanies, usePeriods } from '../../masterdata/api';
@@ -11,8 +12,8 @@ import { type Charge, type ChargeQuery, useCharges } from '../api';
 
 /** Nhãn trạng thái hiển thị: "Quá hạn" tính từ hạn đóng, không lưu. */
 export function ChargeStatusTag({ charge }: { charge: Pick<Charge, 'status' | 'overdue'> }) {
-  if (charge.overdue) return <Tag color="red">Quá hạn</Tag>;
-  return <Tag color={CHARGE_STATUS_COLORS[charge.status]}>{CHARGE_STATUS_LABELS[charge.status]}</Tag>;
+  if (charge.overdue) return <StatusTag color="red">Quá hạn</StatusTag>;
+  return <StatusTag color={CHARGE_STATUS_COLORS[charge.status]}>{CHARGE_STATUS_LABELS[charge.status]}</StatusTag>;
 }
 
 /** Danh sách khoản phải thu: lọc theo kỳ, tổ, công ty, trạng thái (nút bấm); phân trang phía máy chủ. */
@@ -23,6 +24,7 @@ export function ChargesPage() {
   const [query, setQuery] = useState<ChargeQuery>({ page: 0, size: 50 });
   const charges = useCharges(query);
   const [proposing, setProposing] = useState<{ charge: Charge; type: 'REFUND' | 'WRITE_OFF' } | null>(null);
+  const periodLabel = new Map((periods.data ?? []).map((p) => [p.id, p.label]));
 
   return (
     <>
@@ -71,6 +73,7 @@ export function ChargesPage() {
       <Table<Charge>
         rowKey="id"
         size="small"
+        scroll={{ x: 'max-content' }}
         loading={charges.isFetching}
         dataSource={charges.data?.items ?? []}
         locale={{
@@ -86,12 +89,13 @@ export function ChargesPage() {
         }}
         columns={[
           {
-            title: 'Mã khoản / phiếu YC',
+            title: 'Mã khoản',
+            className: 'cell-nowrap',
             render: (_, c) => (
               <>
-                {c.code}
+                <strong>{c.code}</strong>
                 <br />
-                <span style={{ color: brand.textMuted }}>{c.requestCode}</span>
+                <span style={{ color: brand.textMuted, fontSize: 13 }}>{c.requestCode}</span>
               </>
             ),
           },
@@ -99,25 +103,28 @@ export function ChargesPage() {
             title: 'Đối tượng',
             render: (_, c) => (
               <>
-                {c.subjectCode}
+                <strong>{c.subjectName}</strong>
                 <br />
-                <span style={{ color: brand.textMuted }}>{c.subjectName}</span>
+                <span style={{ color: brand.textMuted, fontSize: 13 }}>
+                  {c.subjectCode}{c.tariffGroup ? ` · ${TARIFF_GROUP_LABELS[c.tariffGroup]}` : ''}
+                </span>
               </>
             ),
           },
-          { title: 'Kỳ', dataIndex: 'periodCode' },
-          { title: 'Số tiền', dataIndex: 'amount', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-          { title: 'Công ty phụ trách', dataIndex: 'companyCode' },
+          { title: 'Kỳ', className: 'cell-nowrap', render: (_, c) => periodLabel.get(c.periodId) ?? c.periodCode },
+          { title: 'Số tiền', dataIndex: 'amount', align: 'right', className: 'cell-money', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Công ty', dataIndex: 'companyCode', className: 'cell-nowrap' },
           { title: 'Trạng thái', render: (_, c) => <ChargeStatusTag charge={c} /> },
           {
             title: '',
+            className: 'row-actions cell-nowrap',
             render: (_, c) =>
               c.status === 'UNPAID' ? (
-                <Button size="small" onClick={() => setProposing({ charge: c, type: 'WRITE_OFF' })} aria-label={`Đề nghị xóa nợ ${c.code}`}>
+                <Button size="small" type="link" onClick={() => setProposing({ charge: c, type: 'WRITE_OFF' })} aria-label={`Đề nghị xóa nợ ${c.code}`}>
                   Đề nghị xóa nợ
                 </Button>
               ) : c.status === 'PAID' ? (
-                <Button size="small" onClick={() => setProposing({ charge: c, type: 'REFUND' })} aria-label={`Đề nghị hoàn ${c.code}`}>
+                <Button size="small" type="link" onClick={() => setProposing({ charge: c, type: 'REFUND' })} aria-label={`Đề nghị hoàn ${c.code}`}>
                   Đề nghị hoàn
                 </Button>
               ) : null,

@@ -10,6 +10,9 @@ export type TariffDraftRequest = components['schemas']['TariffDraftRequest'];
 export type CreateTariffRequest = components['schemas']['CreateTariffRequest'];
 export type Period = components['schemas']['PeriodDto'];
 export type OpenPeriodRequest = components['schemas']['OpenPeriodRequest'];
+export type PeriodRule = components['schemas']['PeriodRuleDto'];
+export type PeriodRuleRequest = components['schemas']['PeriodRuleRequest'];
+export type DraftRun = components['schemas']['DraftRunDto'];
 export type District = components['schemas']['DistrictDto'];
 export type Area = components['schemas']['AreaDto'];
 export type Company = components['schemas']['CompanyDto'];
@@ -21,6 +24,9 @@ export type SubjectPage = components['schemas']['SubjectPageDto'];
 export type SubjectRequest = components['schemas']['SubjectRequest'];
 export type Contract = components['schemas']['ContractDto'];
 export type ContractRequest = components['schemas']['ContractRequest'];
+export type Street = components['schemas']['StreetDto'];
+export type StreetSuggestions = components['schemas']['SuggestDto'];
+export type DuplicateSubject = components['schemas']['DuplicateDto'];
 
 export interface SubjectQuery {
   areaId?: number;
@@ -34,6 +40,8 @@ export interface SubjectQuery {
 export const masterdataKeys = {
   tariffs: ['masterdata', 'tariffs'] as const,
   periods: ['masterdata', 'periods'] as const,
+  periodDrafts: ['masterdata', 'periods', 'drafts'] as const,
+  periodRule: ['masterdata', 'period-rule'] as const,
   districts: ['masterdata', 'districts'] as const,
   areas: ['masterdata', 'areas'] as const,
   companies: ['masterdata', 'companies'] as const,
@@ -71,6 +79,39 @@ export function usePeriods() {
   return useQuery({
     queryKey: masterdataKeys.periods,
     queryFn: () => api.get<Period[]>('/api/masterdata/periods'),
+  });
+}
+
+/** Kỳ dự thảo hệ thống đã tự tạo, đang chờ cán bộ xã mở (không nằm trong danh sách kỳ thu). */
+export function useDraftPeriods() {
+  return useQuery({
+    queryKey: masterdataKeys.periodDrafts,
+    queryFn: () => api.get<Period[]>('/api/masterdata/periods/drafts'),
+  });
+}
+
+/** Quy tắc tự tạo kỳ (quản trị): chu kỳ, ngày tạo, số ngày hạn. */
+export function usePeriodRule() {
+  return useQuery({
+    queryKey: masterdataKeys.periodRule,
+    queryFn: () => api.get<PeriodRule>('/api/masterdata/period-rule'),
+  });
+}
+
+export function useUpdatePeriodRule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: PeriodRuleRequest) => api.put<PeriodRule>('/api/masterdata/period-rule', body),
+    onSuccess: (rule) => qc.setQueryData(masterdataKeys.periodRule, rule),
+  });
+}
+
+/** Chạy quy tắc ngay (quản trị) để thử: tạo kỳ dự thảo nếu đã tới ngày, không thì trả lý do. */
+export function useRunPeriodRule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<DraftRun>('/api/masterdata/period-rule/run'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: masterdataKeys.periodDrafts }),
   });
 }
 
@@ -136,7 +177,13 @@ export function useAreaHistory(areaId: number | null) {
 
 function useCompanyMutation<V>(fn: (v: V) => Promise<Company>) {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: fn, onSuccess: () => qc.invalidateQueries({ queryKey: masterdataKeys.companies }) });
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: masterdataKeys.companies });
+      await qc.invalidateQueries({ queryKey: masterdataKeys.assignments });
+    },
+  });
 }
 
 export function useCreateCompany() {
@@ -165,6 +212,20 @@ export function useSubjects(query: SubjectQuery) {
   });
 }
 
+/** Gợi ý đường: danh mục nội bộ trước, Goong chỉ bổ sung tham khảo. {@code signal} để bỏ yêu cầu cũ khi đổi từ khóa. */
+export function suggestStreets(q: string, districtId: number | undefined, signal?: AbortSignal) {
+  return api.get<StreetSuggestions>('/api/masterdata/streets/suggest', { params: { q, districtId }, signal });
+}
+
+/** Hồ sơ nghi trùng địa chỉ (cùng tổ/ấp + đường + số nhà, kể cả đã ngừng). */
+export function checkDuplicates(body: components['schemas']['DuplicateCheckRequest']) {
+  return api.post<DuplicateSubject[]>('/api/masterdata/subjects/duplicate-check', body);
+}
+
+export function getSubject(id: number) {
+  return api.get<Subject>(`/api/masterdata/subjects/${id}`);
+}
+
 function useSubjectMutation<V, R>(fn: (v: V) => Promise<R>) {
   const qc = useQueryClient();
   return useMutation({
@@ -189,6 +250,43 @@ export function useUpdateSubject() {
 export function useEndSubject() {
   return useSubjectMutation(({ id, endDate, reason }: { id: number; endDate: string; reason?: string }) =>
     api.post<Subject>(`/api/masterdata/subjects/${id}/end`, { endDate, reason }),
+  );
+}
+
+/** Khớp ImportPreviewDto của backend (chưa có trong schema.d.ts cho tới lần `npm run gen:api` kế tiếp). */
+export interface ImportRow {
+  rowNo: number;
+  type: string;
+  name: string;
+  houseNo: string | null;
+  street: string;
+  areaCode: string;
+  phone: string;
+  memberCount: number | null;
+  errors: string[];
+}
+
+export interface ImportPreview {
+  rows: ImportRow[];
+  valid: number;
+  invalid: number;
+}
+
+function fileForm(file: File): FormData {
+  const form = new FormData();
+  form.append('file', file);
+  return form;
+}
+
+export function usePreviewSubjectImport() {
+  return useMutation({
+    mutationFn: (file: File) => api.post<ImportPreview>('/api/masterdata/subjects/import/preview', fileForm(file)),
+  });
+}
+
+export function useImportSubjects() {
+  return useSubjectMutation((file: File) =>
+    api.post<{ created: number }>('/api/masterdata/subjects/import', fileForm(file)),
   );
 }
 

@@ -8,7 +8,6 @@ import {
   DatabaseOutlined,
   BankOutlined,
   CommentOutlined,
-  DeleteOutlined,
   EnvironmentOutlined,
   FileSearchOutlined,
   FundOutlined,
@@ -63,8 +62,6 @@ export const MENU: Record<Role, MenuEntry[]> = {
   COMPANY_MANAGER: [
     { path: 'assigned', label: 'Khu vực được giao', icon: ApartmentOutlined },
     { path: 'complaints', label: 'Khiếu nại', icon: CommentOutlined },
-    { path: 'bulky', label: 'Rác cồng kềnh', icon: DeleteOutlined },
-    { path: 'market', label: 'Chợ cộng đồng', icon: ShopOutlined },
   ],
   COLLECTOR: [
     { path: 'list', label: 'Danh sách thu', icon: UnorderedListOutlined },
@@ -81,7 +78,6 @@ export const MENU: Record<Role, MenuEntry[]> = {
   // Lãnh đạo chỉ xem + duyệt (SPEC §9.10): tiến độ, đối soát dùng lại màn của xã ở chế độ chỉ đọc.
   LEADER: [
     { path: 'dashboard', label: 'Dashboard', icon: DashboardOutlined },
-    { path: 'approvals', label: 'Chờ duyệt', icon: CheckSquareOutlined },
     { path: 'report', label: 'Báo cáo tổng hợp', icon: BarChartOutlined },
     { path: 'progress', label: 'Tiến độ thu', icon: FundOutlined },
     { path: 'reconciliation', label: 'Đối soát', icon: AuditOutlined },

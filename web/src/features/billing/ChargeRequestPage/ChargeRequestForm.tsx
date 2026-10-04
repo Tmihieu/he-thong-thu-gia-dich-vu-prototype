@@ -1,6 +1,7 @@
 import { Alert, Button, DatePicker, Form, Input, InputNumber, Radio, Select, Space } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 
+import { formatDate, formatMoney } from '../../../shared/format';
 import { CHARGE_SCOPE_LABELS, type ChargeScope } from '../../../shared/labels';
 import type { Area, Company, Period } from '../../masterdata/api';
 import type { FeeType, IssueRequest } from '../api';
@@ -23,11 +24,13 @@ interface Props {
   companies: Company[];
   loading?: boolean;
   error?: string | null;
+  /** Giá trị đã nhập lần trước (bấm "Sửa lại" ở bước xem trước) để không phải nhập lại. */
+  initial?: IssueRequest | null;
   onPreview: (req: IssueRequest) => void;
 }
 
 /** Form phiếu yêu cầu thu (§10 bước 2): kỳ, loại phí, phạm vi, hạn hộ đóng; bước tiếp theo là Xem trước. */
-export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading = false, error, onPreview }: Props) {
+export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading = false, error, initial, onPreview }: Props) {
   const [form] = Form.useForm<FormValues>();
   const scope = Form.useWatch('scopeType', form) ?? 'ALL';
   const periodId = Form.useWatch('periodId', form);
@@ -55,7 +58,11 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
       layout="vertical"
       requiredMark={false}
       disabled={loading}
-      initialValues={{ scopeType: 'ALL', feeTypeId: feeTypes.find((f) => f.code === 'ENV')?.id }}
+      initialValues={
+        initial
+          ? { ...initial, dueDate: dayjs(initial.dueDate) }
+          : { scopeType: 'ALL', feeTypeId: feeTypes.find((f) => f.code === 'ENV')?.id }
+      }
       onFinish={finish}
       style={{ maxWidth: 720 }}
     >
@@ -114,7 +121,7 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
           label="Hạn hộ đóng"
           name="dueDate"
           dependencies={['periodId']}
-          extra={period ? `Từ ngày mở kỳ ${dayjs(period.openDate).format('DD/MM/YYYY')} đến hạn công ty nộp xã ${dayjs(period.dueDate).format('DD/MM/YYYY')}` : undefined}
+          extra={period ? `Từ ngày mở kỳ ${formatDate(period.openDate)} đến hạn công ty nộp xã ${formatDate(period.dueDate)}` : undefined}
           rules={[
             { required: true, message: 'Vui lòng chọn hạn đóng' },
             {
@@ -137,7 +144,7 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
           <Form.Item
             label="Đơn giá (đ)"
             name="unitPrice"
-            extra={`Để trống thì dùng giá mặc định ${feeType.defaultPrice?.toLocaleString('vi-VN') ?? ''} đ`}
+            extra={`Để trống thì dùng giá mặc định ${formatMoney(feeType.defaultPrice)}`}
             rules={[{ type: 'number', min: 1, message: 'Đơn giá phải lớn hơn 0' }]}
           >
             <InputNumber<number>

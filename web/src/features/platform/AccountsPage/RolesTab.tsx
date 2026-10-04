@@ -1,11 +1,12 @@
-import { Alert, Button, Checkbox, Form, Modal, Select, Table, Tag } from 'antd';
+import { Alert, Button, Checkbox, Form, Modal, Select, Table } from 'antd';
 import { useState } from 'react';
 
 import type { Role } from '../../../app/auth/authContext';
+import { StatusTag } from '../../../shared/StatusTag';
 import { MENU, ROLE_LABELS } from '../../../app/layout/menuConfig';
 
-const SCOPES = ['Toàn xã', 'Đúng một công ty', 'Tổ công ty giao', 'Hệ thống'] as const;
-const RIGHTS = ['Xem', 'Tạo/cập nhật', 'Xuất dữ liệu', 'Duyệt/khóa sổ'] as const;
+const SCOPES = ['Toàn xã', 'Toàn xã (chỉ xem)', 'Đúng một công ty', 'Tổ công ty giao', 'Hệ thống'] as const;
+const RIGHTS = ['Xem', 'Tạo/cập nhật', 'Xuất dữ liệu', 'Duyệt/khóa sổ', 'Duyệt miễn giảm / hoàn / xóa nợ'] as const;
 
 interface RoleRow {
   role: Role;
@@ -40,10 +41,10 @@ export function RolesTab() {
         pagination={false}
         dataSource={rows}
         columns={[
-          { title: 'Vai trò', render: (_, r) => <Tag color="blue">{ROLE_LABELS[r.role]}</Tag> },
+          { title: 'Vai trò', render: (_, r) => <StatusTag color="blue">{ROLE_LABELS[r.role]}</StatusTag> },
           { title: 'Phạm vi', dataIndex: 'scope', render: (s: string) => <strong>{s}</strong> },
           { title: 'Chức năng', render: (_, r) => r.functions.join(', ') },
-          { title: 'Quyền', render: (_, r) => r.rights.map((x) => <Tag key={x}>{x}</Tag>) },
+          { title: 'Quyền', render: (_, r) => r.rights.map((x) => <StatusTag key={x}>{x}</StatusTag>) },
           {
             title: '',
             render: (_, r) => (

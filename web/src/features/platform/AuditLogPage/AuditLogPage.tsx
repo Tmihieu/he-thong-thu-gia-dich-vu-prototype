@@ -1,12 +1,14 @@
-import { Col, DatePicker, Input, Row, Select, Space, Table, Typography } from 'antd';
+import { DatePicker, Input, Select, Space, Table, Typography } from 'antd';
 import { useState } from 'react';
 
-import { ApiError } from '../../../api/client';
+import { errorText } from '../../../shared/errorText';
+import { PageHeader } from '../../../shared/PageHeader';
 import type { Role } from '../../../app/auth/authContext';
 import { ROLE_LABELS } from '../../../app/layout/menuConfig';
 import { DateText } from '../../../shared/DateText';
 import { type AuditLog, type AuditLogQuery, useAuditLogs } from '../api';
 import { AUDIT_ACTION_LABELS, AUDIT_ENTITY_LABELS } from '../labels';
+import { type AuditDiffRow, auditDiff } from './auditFormat';
 
 /** Vai trò chỉ có trong nhật ký, không phải vai trò đăng nhập web. */
 const EXTRA_ROLE_LABELS: Record<string, string> = { SYSTEM: 'Hệ thống', CITIZEN: 'Người dân' };
@@ -15,30 +17,28 @@ function roleLabel(role: string): string {
   return EXTRA_ROLE_LABELS[role] ?? ROLE_LABELS[role as Role] ?? role;
 }
 
-/** JSON trình bày thụt dòng; chuỗi không phải JSON thì giữ nguyên. */
-function prettyJson(data: string | null): string {
-  if (data === null) return '—';
-  try {
-    return JSON.stringify(JSON.parse(data), null, 2);
-  } catch {
-    return data;
-  }
-}
-
-const PRE_STYLE = { margin: 0, whiteSpace: 'pre-wrap' } as const;
-
 function BeforeAfter({ log }: { log: AuditLog }) {
+  const rows = auditDiff(log.beforeData, log.afterData);
+  if (rows === null) {
+    return (
+      <Typography.Paragraph type="secondary" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+        {[log.beforeData, log.afterData].filter(Boolean).join(' / ')}
+      </Typography.Paragraph>
+    );
+  }
+  if (rows.length === 0) return <Typography.Text type="secondary">Không có trường nào thay đổi.</Typography.Text>;
   return (
-    <Row gutter={16}>
-      <Col span={12}>
-        <Typography.Text strong>Trước</Typography.Text>
-        <pre style={PRE_STYLE}>{prettyJson(log.beforeData)}</pre>
-      </Col>
-      <Col span={12}>
-        <Typography.Text strong>Sau</Typography.Text>
-        <pre style={PRE_STYLE}>{prettyJson(log.afterData)}</pre>
-      </Col>
-    </Row>
+    <Table<AuditDiffRow>
+      size="small"
+      rowKey="key"
+      pagination={false}
+      dataSource={rows}
+      columns={[
+        { title: 'Trường', dataIndex: 'label', width: 220 },
+        { title: 'Trước', dataIndex: 'before' },
+        { title: 'Sau', dataIndex: 'after' },
+      ]}
+    />
   );
 }
 
@@ -49,9 +49,7 @@ export function AuditLogPage() {
 
   return (
     <>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        Nhật ký
-      </Typography.Title>
+      <PageHeader title="Nhật ký" description="Lịch sử thao tác của người dùng trong hệ thống." />
       <Space wrap style={{ marginBottom: 16 }}>
         <DatePicker.RangePicker
           format="DD/MM/YYYY"
@@ -87,7 +85,7 @@ export function AuditLogPage() {
         rowKey="id"
         loading={logs.isFetching}
         dataSource={logs.data?.items ?? []}
-        locale={{ emptyText: logs.error instanceof ApiError ? logs.error.message : 'Không có dòng nhật ký phù hợp' }}
+        locale={{ emptyText: logs.error ? errorText(logs.error) : 'Không có dòng nhật ký phù hợp' }}
         expandable={{ expandedRowRender: (log) => <BeforeAfter log={log} /> }}
         pagination={{
           current: query.page + 1,
@@ -98,13 +96,13 @@ export function AuditLogPage() {
           onChange: (page) => setQuery((prev) => ({ ...prev, page: page - 1 })),
         }}
         columns={[
-          { title: 'Thời gian', dataIndex: 'occurredAt', render: (v: string) => <DateText value={v} withTime /> },
+          { title: 'Thời gian', dataIndex: 'occurredAt', className: 'cell-nowrap', render: (v: string) => <DateText value={v} withTime /> },
           { title: 'Người thao tác', dataIndex: 'actorUsername' },
           { title: 'Vai trò', dataIndex: 'actorRole', render: roleLabel },
           {
             title: 'Hành động',
             dataIndex: 'action',
-            render: (a: string) => <span title={a}>{AUDIT_ACTION_LABELS[a] ?? a}</span>,
+            render: (a: string) => <span>{AUDIT_ACTION_LABELS[a] ?? a}</span>,
           },
           {
             title: 'Đối tượng',

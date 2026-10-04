@@ -7,7 +7,6 @@ import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository;
 import vn.dongthanh.vsmt.masterdata.domain.FeeType;
 import vn.dongthanh.vsmt.masterdata.domain.FeeTypeRepository;
+import vn.dongthanh.vsmt.masterdata.domain.PeriodStatus;
 import vn.dongthanh.vsmt.masterdata.domain.TariffGroup;
 import vn.dongthanh.vsmt.masterdata.domain.TariffRate;
 import vn.dongthanh.vsmt.masterdata.domain.TariffStatus;
@@ -99,18 +99,12 @@ public class TariffService {
     @Transactional
     public TariffVersion updateDraft(Long id, DraftCommand cmd, CurrentUser actor) {
         actor.requireRole(Role.ADMIN);
-        TariffVersion v = versions.findById(id)
-                .orElseThrow(() -> new NotFoundException("TARIFF_NOT_FOUND", "Không tìm thấy biểu giá."));
-        boolean issued = v.getStatus() != TariffStatus.DRAFT;
-        if (issued && (!Objects.equals(v.getValidFrom(), cmd.validFrom())
-                || !Objects.equals(v.getValidTo(), cmd.validTo()))) {
-            throw new BusinessRuleException("TARIFF_VALIDITY_LOCKED",
-                    "Biểu giá đã ban hành giữ nguyên ngày hiệu lực. Hãy tạo phiên bản mới để đổi thời gian áp dụng.");
-        }
+        // QĐ-L7 / BR-MD-11: chỉ sửa dự thảo; bản đã ban hành không sửa (kể cả đơn giá) vì khoản phát hành sau sẽ lệch giá
+        // với khoản trước cùng kỳ (422 TARIFF_NOT_DRAFT).
+        TariffVersion v = draft(id);
         Map<String, Object> before = snapshot(v);
         apply(v, cmd);
-        audit.record(actor, issued ? "UPDATE_TARIFF_VERSION" : "UPDATE_TARIFF_DRAFT", ENTITY,
-                v.getCode(), before, snapshot(v));
+        audit.record(actor, "UPDATE_TARIFF_DRAFT", ENTITY, v.getCode(), before, snapshot(v));
         return v;
     }
 
@@ -123,7 +117,7 @@ public class TariffService {
         actor.requireRole(Role.ADMIN);
         TariffVersion v = draft(id);
         LocalDate from = v.getValidFrom();
-        periods.findFirstByStartDateGreaterThanEqualOrderByStartDateAsc(from).ifPresent(p -> {
+        periods.findFirstByStartDateGreaterThanEqualAndStatusNotOrderByStartDateAsc(from, PeriodStatus.DRAFT).ifPresent(p -> {
             throw new BusinessRuleException("TARIFF_PERIOD_ALREADY_OPEN", "Đã mở " + p.getLabel()
                     + " theo biểu giá cũ; ngày hiệu lực của biểu giá mới phải sau ngày đầu kỳ đó.");
         });

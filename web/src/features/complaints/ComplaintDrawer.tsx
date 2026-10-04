@@ -1,11 +1,14 @@
-import { Alert, Descriptions, Divider, Drawer, Spin, Tag } from 'antd';
+import { Descriptions, Divider, Drawer, Steps } from 'antd';
 import type { ReactNode } from 'react';
 
-import { ApiError } from '../../api/client';
 import { formatDate } from '../../shared/format';
+import { ErrorBlock, LoadingBlock } from '../../shared/StateBlock';
+import { StatusTag } from '../../shared/StatusTag';
 import { type ComplaintDetail, useComplaint } from './api';
 import { ComplaintTimeline } from './ComplaintTimeline';
-import { COMPLAINT_CATEGORY_LABELS, COMPLAINT_CHANNEL_LABELS, COMPLAINT_STATUS_COLORS, COMPLAINT_STATUS_LABELS } from './labels';
+import { COMPLAINT_CATEGORY_LABELS, COMPLAINT_CHANNEL_LABELS, COMPLAINT_STATUS_TONES, COMPLAINT_STATUS_LABELS } from './labels';
+
+const STEPS: ComplaintDetail['complaint']['status'][] = ['NEW', 'PROCESSING', 'RESOLVED'];
 
 interface Props {
   id: number | null;
@@ -21,16 +24,20 @@ export function ComplaintDrawer({ id, onClose, actions }: Props) {
 
   return (
     <Drawer open={id !== null} onClose={onClose} width={560} title={c ? `Khiếu nại ${c.code}` : 'Khiếu nại'} destroyOnHidden>
-      {detail.isLoading && <Spin />}
-      {detail.error && (
-        <Alert type="error" showIcon message={detail.error instanceof ApiError ? detail.error.message : 'Không tải được khiếu nại'} />
-      )}
+      {detail.isLoading && <LoadingBlock rows={8} />}
+      {detail.error && <ErrorBlock error={detail.error} onRetry={() => void detail.refetch()} />}
       {c && detail.data && (
         <>
+          <Steps
+            size="small"
+            style={{ marginBottom: 20 }}
+            current={STEPS.indexOf(c.status)}
+            items={STEPS.map((s) => ({ title: COMPLAINT_STATUS_LABELS[s] }))}
+          />
           <Descriptions size="small" column={1} bordered>
             <Descriptions.Item label="Trạng thái">
-              <Tag color={COMPLAINT_STATUS_COLORS[c.status]}>{COMPLAINT_STATUS_LABELS[c.status]}</Tag>
-              {c.overdue && <Tag color="red">Quá hạn xử lý</Tag>}
+              <StatusTag tone={COMPLAINT_STATUS_TONES[c.status]}>{COMPLAINT_STATUS_LABELS[c.status]}</StatusTag>
+              {c.overdue && <StatusTag tone="danger">Quá hạn xử lý</StatusTag>}
             </Descriptions.Item>
             <Descriptions.Item label="Người khiếu nại">
               {c.complainantName}

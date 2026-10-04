@@ -25,16 +25,16 @@ export const SUBJECT_STATUS_LABELS: Record<SubjectStatus, string> = {
 export const TARIFF_GROUP_LABELS: Record<TariffGroup, string> = {
   HH_UP_TO_2: 'Hộ gia đình ≤ 2 người',
   HH_3_PLUS: 'Hộ gia đình ≥ 3 người',
-  SMALL_UP_TO_126: 'Chủ nguồn thải nhỏ ≤ 126 kg/tháng',
-  SMALL_126_TO_250: 'Chủ nguồn thải nhỏ 126–250 kg/tháng',
-  SMALL_250_TO_500: 'Chủ nguồn thải nhỏ 250–500 kg/tháng',
-  BY_VOLUME: 'Chủ nguồn thải lớn 500–9.000 kg/tháng',
+  SMALL_UP_TO_126: '≤ 126 kg/tháng (nguồn thải nhỏ)',
+  SMALL_126_TO_250: '126–250 kg/tháng (nguồn thải nhỏ)',
+  SMALL_250_TO_500: '250–500 kg/tháng (nguồn thải nhỏ)',
+  BY_VOLUME: '500–9.000 kg/tháng (nguồn thải lớn)',
 };
 
 export const CHARGE_STATUS_LABELS: Record<ChargeStatus, string> = {
   UNPAID: 'Chưa đóng',
   PAID: 'Đã đóng',
-  EXEMPT: 'Miễn',
+  EXEMPT: 'Miễn giảm',
   WRITTEN_OFF: 'Đã xóa nợ',
 };
 
@@ -71,6 +71,9 @@ export const COMPLAINT_CATEGORY_LABELS: Record<ComplaintCategory, string> = {
   OVERCHARGE: 'Thu phí cao hơn định mức',
   POLLUTION_POINT: 'Điểm tập kết gây ô nhiễm',
   STAFF_ATTITUDE: 'Thái độ nhân viên thu gom',
+  FACILITY: 'Cơ sở vật chất',
+  COLLECTION_REQUEST: 'Đề nghị thu gom',
+  PAID_NOT_RECORDED: 'Đã đóng nhưng chưa được ghi nhận',
   OTHER: 'Vấn đề khác',
 };
 
@@ -86,29 +89,6 @@ export const COMPLAINT_EVENT_LABELS: Record<ComplaintEventType, string> = {
   FORWARDED: 'Xã chuyển công ty xử lý',
   COMPANY_REPLIED: 'Công ty phản hồi',
   CLOSED: 'Xã đóng phản ánh',
-};
-
-export type BulkyItemType = Schemas['BulkyRequestDto']['itemType'];
-export type BulkyStatus = Schemas['BulkyRequestDto']['status'];
-export type DaySlot = NonNullable<Schemas['BulkyRequestDto']['preferredSlot']>;
-
-export const BULKY_ITEM_LABELS: Record<BulkyItemType, string> = {
-  MATTRESS: 'Nệm, chăn ga khối lớn',
-  FURNITURE: 'Tủ, bàn, ghế, sofa',
-  LARGE_APPLIANCE: 'Thiết bị điện lớn (tủ lạnh, máy giặt)',
-  DEBRIS: 'Xà bần, cành cây lớn',
-};
-
-export const BULKY_STATUS_LABELS: Record<BulkyStatus, string> = {
-  PENDING: 'Chờ công ty báo phí',
-  QUOTED: 'Đã báo phí',
-  COLLECTED: 'Đã thu gom',
-  CANCELLED: 'Đã hủy',
-};
-
-export const DAY_SLOT_LABELS: Record<DaySlot, string> = {
-  MORNING: 'Buổi sáng',
-  AFTERNOON: 'Buổi chiều',
 };
 
 export type MarketTag = Schemas['MarketPostDto']['tags'][number];

@@ -49,7 +49,7 @@ public class CompanyService {
     }
 
     public Company update(Long id, CompanyCommand cmd, CurrentUser actor) {
-        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN);
+        actor.requireRole(Role.ADMIN);
         Company company = companies.findById(id)
                 .orElseThrow(() -> new NotFoundException("COMPANY_NOT_FOUND", "Không tìm thấy công ty."));
         Map<String, Object> before = snapshot(company);

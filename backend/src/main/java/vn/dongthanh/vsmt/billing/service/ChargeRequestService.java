@@ -39,6 +39,7 @@ import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.masterdata.domain.CompanyRepository;
 import vn.dongthanh.vsmt.masterdata.domain.FeeType;
 import vn.dongthanh.vsmt.masterdata.domain.FeeTypeRepository;
+import vn.dongthanh.vsmt.masterdata.domain.PeriodStatus;
 import vn.dongthanh.vsmt.masterdata.domain.PricingMode;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceContract;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceContractRepository;
@@ -105,11 +106,23 @@ public class ChargeRequestService {
 
     @Transactional(readOnly = true)
     public IssueResult preview(IssueCommand cmd, CurrentUser actor) {
-        return plan(cmd, actor).result(null);
+        return plan(cmd, actor, false).result(null);
+    }
+
+    /**
+     * Xem trước cho kỳ dự thảo (chưa mở): cùng kế hoạch như phát hành nên số khoản và tổng tiền khớp với lúc mở kỳ.
+     * Kỳ đã mở thì dùng {@link #preview}.
+     */
+    @Transactional(readOnly = true)
+    public IssueResult previewDraft(IssueCommand cmd, CurrentUser actor) {
+        return plan(cmd, actor, true).result(null);
     }
 
     public IssueResult publish(IssueCommand cmd, CurrentUser actor) {
-        Plan plan = plan(cmd, actor);
+        // Phát hành song song cùng kỳ xếp hàng: lượt sau lập kế hoạch lại sau khi lượt trước commit nên thấy khoản trùng
+        // và bỏ qua đúng cách (BR-BIL-06), thay vì đụng ràng buộc ex_charges_overlap / mã phiếu rồi báo 409 chung chung.
+        requests.lockKey("charge-request:" + cmd.periodId());
+        Plan plan = plan(cmd, actor, false);
         if (plan.charges().isEmpty()) {
             return plan.result(null);
         }
@@ -143,11 +156,17 @@ public class ChargeRequestService {
         return result;
     }
 
-    private Plan plan(IssueCommand cmd, CurrentUser actor) {
+    private Plan plan(IssueCommand cmd, CurrentUser actor, boolean draftPreview) {
         actor.requireRole(Role.COMMUNE_OFFICER);
         CollectionPeriod period = periods.findByIdWithTariff(cmd.periodId())
                 .orElseThrow(() -> new NotFoundException("PERIOD_NOT_FOUND", "Không tìm thấy kỳ thu."));
-        ChargeEligibility.requireBillable(period);
+        if (draftPreview) {
+            if (period.getStatus() != PeriodStatus.DRAFT) {
+                throw new BusinessRuleException("PERIOD_NOT_DRAFT", "Kỳ " + period.getCode() + " không phải kỳ dự thảo.");
+            }
+        } else {
+            ChargeEligibility.requireBillable(period);
+        }
         FeeType feeType = feeTypes.findById(cmd.feeTypeId())
                 .filter(FeeType::isActive)
                 .orElseThrow(() -> new NotFoundException("FEE_TYPE_NOT_FOUND", "Không tìm thấy loại phí đang dùng."));
@@ -161,6 +180,10 @@ public class ChargeRequestService {
         }
         LocalDate issueDate = LocalDate.now(clock);
         Long unitPrice = feeType.getPricingMode() == PricingMode.FIXED ? cmd.unitPrice() : null;
+        if (unitPrice != null && unitPrice <= 0) {
+            // BR-BIL-09: báo ngay, kể cả khi phạm vi chưa có hộ nào đủ điều kiện.
+            throw new BusinessRuleException("CHARGE_PRICE_INVALID", "Đơn giá phải lớn hơn 0.");
+        }
 
         Set<Area> scopeAreas = new LinkedHashSet<>();
         Company scopeCompany = null;
@@ -220,6 +243,13 @@ public class ChargeRequestService {
                 } catch (ArithmeticException overflow) {
                     // Chặn ở kế hoạch nên xem trước cũng báo, và phát hành không ghi gì.
                     throw new BusinessRuleException("CHARGE_AMOUNT_TOO_LARGE", "Tổng tiền vượt giới hạn tính toán.");
+                } catch (BusinessRuleException missingQuota) {
+                    if (!"QUOTA_KG_REQUIRED".equals(missingQuota.getCode())) {
+                        throw missingQuota;
+                    }
+                    // Một hộ thiếu định mức chỉ bị bỏ qua kèm cảnh báo, không làm hỏng cả lượt phát hành.
+                    skipped.add(new SkippedLine(s.getId(), s.getCode(), s.getName(), s.getArea().getCode(),
+                            SkipReason.QUOTA_KG_REQUIRED, missingQuota.getMessage()));
                 }
             } else if (d instanceof Skipped k) {
                 skipped.add(new SkippedLine(s.getId(), s.getCode(), s.getName(), s.getArea().getCode(), k.reason(),

@@ -3,6 +3,7 @@ package vn.dongthanh.vsmt.platform.security;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -10,9 +11,11 @@ import java.util.stream.Collectors;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -38,6 +41,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
@@ -71,8 +76,17 @@ public class SecurityConfig {
     private static final AntPathMatcher PATHS = new AntPathMatcher();
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper json, JwtDecoder jwtDecoder)
-            throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper json, JwtDecoder jwtDecoder,
+            @Value("${vsmt.cors.allowed-origin-patterns:}") List<String> corsOrigins) throws Exception {
+        // CORS chỉ bật khi có cấu hình (profile demo: localhost, để chạy bản web của app người dân);
+        // mặc định danh sách rỗng nên không origin nào được phép.
+        CorsConfigurationSource cors = req -> {
+            CorsConfiguration c = new CorsConfiguration();
+            c.setAllowedOriginPatterns(corsOrigins);
+            c.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE"));
+            c.setAllowedHeaders(List.of(HttpHeaders.AUTHORIZATION, HttpHeaders.CONTENT_TYPE));
+            return c;
+        };
         AuthenticationEntryPoint unauthorized = (req, res, e) -> write(res, json, HttpStatus.UNAUTHORIZED,
                 new ApiError(GlobalExceptionHandler.UNAUTHORIZED,
                         "Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại."));
@@ -80,6 +94,7 @@ public class SecurityConfig {
                 new ApiError(GlobalExceptionHandler.FORBIDDEN, "Bạn không có quyền thực hiện thao tác này."));
 
         return http
+                .cors(c -> c.configurationSource(cors))
                 .csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)

@@ -46,6 +46,26 @@ public class ServiceSubject extends BaseEntity {
     @Column(nullable = false, length = 200)
     private String street;
 
+    /** Đường chuẩn trong danh mục; null với địa chỉ cũ chưa chuẩn hóa hoặc đường chờ xác minh. */
+    @Setter(AccessLevel.NONE)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "street_id")
+    private Street streetRef;
+
+    @Setter(AccessLevel.NONE)
+    @Column(nullable = false)
+    private boolean streetPending;
+
+    /** Phòng/căn, để phân biệt nhiều đối tượng thu chung một địa chỉ. */
+    @Setter(AccessLevel.NONE)
+    @Column(length = 30)
+    private String unitNo;
+
+    /** Mô tả vị trí khi nhà chưa có số (đối diện, cạnh...). */
+    @Setter(AccessLevel.NONE)
+    @Column(length = 255)
+    private String locationNote;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "area_id", nullable = false)
     private Area area;
@@ -79,10 +99,26 @@ public class ServiceSubject extends BaseEntity {
         return s;
     }
 
-    /** Số nhà không bắt buộc (nhà chưa có số); đường/hẻm/ấp bắt buộc. */
+    /** Số nhà không bắt buộc (nhà chưa có số); đường/hẻm/ấp bắt buộc. Giữ liên kết đường hiện có. */
     public void setAddressParts(String houseNo, String street) {
         this.houseNo = houseNo;
         this.street = street;
         this.address = houseNo == null ? street : houseNo + " " + street;
+    }
+
+    /**
+     * Địa chỉ chuẩn hóa: {@code streetRef} null thì {@code street} là văn bản cán bộ nhập (đường chờ xác minh hoặc
+     * địa chỉ cũ). Có đường chuẩn thì tên hiển thị lấy từ danh mục.
+     */
+    public void setStructuredAddress(String houseNo, String unitNo, String locationNote, Street streetRef,
+            String streetText, boolean streetPending) {
+        this.streetRef = streetRef;
+        this.streetPending = streetRef == null && streetPending;
+        this.unitNo = unitNo;
+        this.locationNote = locationNote;
+        setAddressParts(houseNo, streetRef != null ? streetRef.getName() : streetText);
+        if (unitNo != null) {
+            this.address = this.address + ", " + unitNo;
+        }
     }
 }

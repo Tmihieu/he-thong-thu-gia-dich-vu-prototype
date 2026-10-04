@@ -1,19 +1,21 @@
 import { BellOutlined } from '@ant-design/icons';
-import { Badge, Button, Empty, List, Popover, Spin, Typography } from 'antd';
+import { Badge, Button, List, Popover, theme, Typography } from 'antd';
 import { useState } from 'react';
 import { Link } from 'react-router';
 
 import type { Role } from '../../app/auth/authContext';
 import { ROLE_BASE } from '../../app/layout/menuConfig';
 import { formatDate } from '../../shared/format';
+import { EmptyBlock, LoadingBlock } from '../../shared/StateBlock';
 import { type Notification, useNotifications, useUnreadCount } from './api';
 import { useOpenNotification } from './useOpenNotification';
 
 function Item({ n, onOpen }: { n: Notification; onOpen: (n: Notification) => void }) {
+  const { token } = theme.useToken();
   return (
     <List.Item
       onClick={() => onOpen(n)}
-      style={{ cursor: 'pointer', paddingInline: 8, background: n.readAt ? undefined : 'rgba(22, 119, 255, 0.06)' }}
+      style={{ cursor: 'pointer', paddingInline: 8, background: n.readAt ? undefined : token.colorPrimaryBg }}
     >
       <List.Item.Meta
         title={<Typography.Text strong={!n.readAt}>{n.title}</Typography.Text>}
@@ -43,9 +45,9 @@ export function NotificationBell({ role }: { role: Role }) {
   const content = (
     <div style={{ width: 340, maxWidth: 'calc(100vw - 32px)' }}>
       {latest.isLoading ? (
-        <Spin />
+        <LoadingBlock rows={3} />
       ) : (latest.data?.items.length ?? 0) === 0 ? (
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Chưa có thông báo" />
+        <EmptyBlock title="Chưa có thông báo" />
       ) : (
         <List<Notification>
           size="small"

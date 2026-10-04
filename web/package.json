@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:citizen": "cd ../mobile && npx expo export -p web --output-dir ../web/public/citizen",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",

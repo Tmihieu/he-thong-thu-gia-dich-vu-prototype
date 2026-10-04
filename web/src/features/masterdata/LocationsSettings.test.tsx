@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, vi } from 'vitest';
 
@@ -34,13 +34,13 @@ it('sửa địa bàn và khu vực từ Cấu hình, cập nhật bảng sau kh
   let dialog = await screen.findByRole('dialog');
   fireEvent.change(within(dialog).getByLabelText('Tên địa bàn'), { target: { value: 'Đông Thạnh mới' } });
   await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu thay đổi' }));
-  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  expect(await screen.findByText('Đã lưu địa bàn')).toBeInTheDocument();
   expect(await screen.findAllByText('Đông Thạnh mới')).not.toHaveLength(0);
   await userEvent.click(screen.getByRole('button', { name: 'Sửa khu vực KV01' }));
-  dialog = await screen.findByRole('dialog');
+  dialog = (await screen.findAllByRole('dialog')).at(-1)!;
   fireEvent.change(within(dialog).getByLabelText('Tên khu vực'), { target: { value: 'Tổ dân phố 1' } });
   await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu thay đổi' }));
-  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  expect(await screen.findByText('Đã lưu khu vực')).toBeInTheDocument();
   expect(await screen.findByText('Tổ dân phố 1')).toBeInTheDocument();
   expect(fetchFn.mock.calls.filter(([, init]) => init?.method === 'PUT')).toHaveLength(2);
 });

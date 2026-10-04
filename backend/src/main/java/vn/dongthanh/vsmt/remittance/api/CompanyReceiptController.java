@@ -92,7 +92,7 @@ public class CompanyReceiptController {
             @Schema(requiredMode = RequiredMode.REQUIRED) ReceiptStatus status,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Lũy kế đã nộp tới phiếu này (R30)") long cumulativePaid,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phải thu của công ty trong kỳ") long periodDue,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Còn phải nộp sau phiếu này") long remainingAfter) {
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Còn phải nộp xã sau phiếu này = phải nộp xã − lũy kế đã nộp") long remainingAfter) {
 
         static ReceiptDto of(ReceiptView v) {
             CompanyReceipt r = v.receipt();

@@ -28,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
 import vn.dongthanh.vsmt.masterdata.domain.PeriodStatus;
 import vn.dongthanh.vsmt.masterdata.domain.PeriodType;
+import vn.dongthanh.vsmt.masterdata.service.PeriodAutoService;
 import vn.dongthanh.vsmt.masterdata.service.PeriodService;
 import vn.dongthanh.vsmt.masterdata.service.PeriodService.OpenPeriodCommand;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
@@ -39,12 +40,19 @@ import vn.dongthanh.vsmt.platform.security.CurrentUser;
 public class PeriodController {
 
     private final PeriodService periods;
+    private final PeriodAutoService auto;
 
-    @Operation(summary = "Danh sách kỳ thu, mới nhất trước; có date thì chỉ các kỳ chứa ngày đó")
+    @Operation(summary = "Danh sách kỳ thu đã mở, mới nhất trước (không gồm kỳ dự thảo); có date thì chỉ các kỳ chứa ngày đó")
     @GetMapping
     public List<PeriodDto> list(@RequestParam(required = false) LocalDate date) {
         List<CollectionPeriod> result = date == null ? periods.list() : periods.covering(date);
         return result.stream().map(PeriodDto::of).toList();
+    }
+
+    @Operation(summary = "Kỳ dự thảo hệ thống tự tạo, chờ cán bộ xã mở (cán bộ xã, quản trị)")
+    @GetMapping("/drafts")
+    public List<PeriodDto> drafts(@AuthenticationPrincipal CurrentUser actor) {
+        return auto.drafts(actor).stream().map(PeriodDto::of).toList();
     }
 
     @Operation(summary = "Chi tiết kỳ thu")

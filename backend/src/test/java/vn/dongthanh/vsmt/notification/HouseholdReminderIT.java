@@ -62,6 +62,9 @@ class HouseholdReminderIT extends IntegrationTest {
     void openReminderGoesOnceAndOnlyToHouseholdsWithAnApp() {
         assertThat(reminders.run()).isEqualTo(1);
         assertThat(unread()).isEqualTo(1);
+        // Bấm thông báo phải mở màn Khoản thu của app.
+        assertThat(jdbc.queryForObject("select link from notifications where recipient_citizen_id = ?", String.class,
+                citizenId)).contains("citizen.charges");
         // Chạy lại cùng ngày không gửi trùng.
         assertThat(reminders.run()).isZero();
         assertThat(unread()).isEqualTo(1);
@@ -98,5 +101,8 @@ class HouseholdReminderIT extends IntegrationTest {
                         .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sent").value(1));
+        // BR-GEN-03: chạy tay có audit ai chạy và gửi bao nhiêu.
+        assertThat(jdbc.queryForObject("select (after_data->>'sent')::int from audit_logs"
+                + " where action = 'RUN_HOUSEHOLD_REMINDERS'", Integer.class)).isEqualTo(1);
     }
 }

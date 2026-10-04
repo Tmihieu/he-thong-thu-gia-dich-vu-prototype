@@ -15,4 +15,8 @@ public interface PaymentReminderRepository extends JpaRepository<PaymentReminder
     @Query(value = "select coalesce(max(cast(substring(code, 4) as integer)), 0) from payment_reminders",
             nativeQuery = true)
     int maxCodeNumber();
+
+    /** Khóa theo tiền tố mã tới hết transaction, để hai lần ghi cùng lúc không lấy trùng số. */
+    @Query(value = "select count(*) from pg_advisory_xact_lock(hashtext(:prefix))", nativeQuery = true)
+    long lockCodePrefix(String prefix);
 }

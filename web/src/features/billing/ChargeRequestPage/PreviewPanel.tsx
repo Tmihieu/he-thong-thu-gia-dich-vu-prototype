@@ -1,6 +1,7 @@
-import { Alert, Button, Card, Descriptions, Space, Table, Tag } from 'antd';
+import { Alert, Button, Card, Descriptions, Space, Table } from 'antd';
 
 import { MoneyText } from '../../../shared/MoneyText';
+import { StatusTag } from '../../../shared/StatusTag';
 import type { IssueResult } from '../api';
 
 type SkippedRow = IssueResult['skipped'][number];
@@ -13,19 +14,64 @@ interface Props {
   onBack: () => void;
 }
 
-/** Kết quả xem trước: số khoản sẽ sinh, tổng tiền, danh sách bỏ qua kèm lý do; nút Phát hành. */
-export function PreviewPanel({ result, publishing = false, error, onPublish, onBack }: Props) {
+/** Nhãn nhóm hộ bị bỏ qua khi lập khoản (BR-BIL-06, QĐ-L14); mã lạ giữ nguyên lý do backend trả. */
+const SKIP_LABELS: Record<string, string> = {
+  SUBJECT_NOT_ACTIVE: 'Hộ đã ngừng cung cấp dịch vụ',
+  NO_ACTIVE_CONTRACT: 'Chưa có đăng ký thu phí hiệu lực',
+  AREA_WITHOUT_COMPANY: 'Tổ chưa có công ty phụ trách',
+  DUPLICATE_CHARGE: 'Đã có khoản cùng loại phí trùng kỳ',
+  QUOTA_KG_REQUIRED: 'Hộ tính theo ký chưa có định mức kg/tháng',
+};
+const skipLabel = (reason: string) => SKIP_LABELS[reason] ?? reason;
+
+/** Các nhóm bị bỏ qua kèm số hộ + danh sách chi tiết, lọc được theo nhóm. */
+export function SkippedList({ skipped, byReason }: { skipped: SkippedRow[]; byReason: Record<string, number> }) {
+  const groups = Object.keys(byReason);
+  const total = groups.reduce((t, g) => t + (byReason[g] ?? 0), 0);
+  if (total === 0 && skipped.length === 0) return null;
   return (
-    <Card title="Xem trước phiếu yêu cầu thu" style={{ maxWidth: 960 }}>
-      {error && <Alert type="error" showIcon message={error} role="alert" style={{ marginBottom: 16 }} />}
-      {result.warningCount > 0 && (
-        <Alert
-          type="warning"
-          showIcon
-          style={{ marginBottom: 16 }}
-          message={`${result.warningCount} hộ ở tổ chưa có công ty phụ trách sẽ không được lập khoản. Hãy phân công khu vực rồi lập lại cho các tổ đó.`}
-        />
-      )}
+    <>
+      <Alert
+        type="warning"
+        showIcon
+        style={{ marginBottom: 12 }}
+        message={`Bỏ qua ${total} hộ, không lập khoản`}
+        description={
+          <ul style={{ margin: 0, paddingLeft: 18 }}>
+            {groups.map((g) => (
+              <li key={g}>
+                {skipLabel(g)}: {byReason[g]} hộ
+              </li>
+            ))}
+          </ul>
+        }
+      />
+      <Table<SkippedRow>
+        size="small"
+        rowKey="subjectId"
+        dataSource={skipped}
+        scroll={{ x: 640 }}
+        pagination={{ pageSize: 10, hideOnSinglePage: true }}
+        columns={[
+          { title: 'Mã', dataIndex: 'subjectCode' },
+          { title: 'Tên', dataIndex: 'subjectName' },
+          { title: 'Tổ', dataIndex: 'areaCode' },
+          {
+            title: 'Lý do',
+            filters: groups.map((g) => ({ text: skipLabel(g), value: g })),
+            onFilter: (v, s) => s.reason === v,
+            render: (_, s) => <StatusTag tone={s.warning ? 'warning' : 'neutral'}>{s.message || skipLabel(s.reason)}</StatusTag>,
+          },
+        ]}
+      />
+    </>
+  );
+}
+
+/** Phần số liệu của xem trước: số khoản, tổng tiền, các nhóm hộ bị bỏ qua kèm lý do. Dùng chung cho phiếu YCT và mở kỳ dự thảo. */
+export function PreviewSummary({ result }: { result: IssueResult }) {
+  return (
+    <>
       <Descriptions column={{ xs: 1, md: 3 }} bordered size="small" style={{ marginBottom: 16 }}>
         <Descriptions.Item label="Số khoản sẽ sinh">{result.chargeCount}</Descriptions.Item>
         <Descriptions.Item label="Trong đó miễn 100%">{result.exemptCount}</Descriptions.Item>
@@ -33,24 +79,17 @@ export function PreviewPanel({ result, publishing = false, error, onPublish, onB
           <MoneyText value={result.totalAmount} strong />
         </Descriptions.Item>
       </Descriptions>
-      {result.skipped.length > 0 && (
-        <Table<SkippedRow>
-          size="small"
-          rowKey="subjectId"
-          title={() => `Bỏ qua ${result.skipped.length} hộ`}
-          dataSource={result.skipped}
-          pagination={{ pageSize: 10, hideOnSinglePage: true }}
-          columns={[
-            { title: 'Mã', dataIndex: 'subjectCode' },
-            { title: 'Tên', dataIndex: 'subjectName' },
-            { title: 'Tổ', dataIndex: 'areaCode' },
-            {
-              title: 'Lý do',
-              render: (_, s) => (s.warning ? <Tag color="orange">{s.message}</Tag> : s.message),
-            },
-          ]}
-        />
-      )}
+      <SkippedList skipped={result.skipped} byReason={result.skippedByReason} />
+    </>
+  );
+}
+
+/** Kết quả xem trước: số khoản sẽ sinh, tổng tiền, danh sách bỏ qua kèm lý do; nút Phát hành. */
+export function PreviewPanel({ result, publishing = false, error, onPublish, onBack }: Props) {
+  return (
+    <Card title="Xem trước phiếu yêu cầu thu" style={{ maxWidth: 960 }}>
+      {error && <Alert type="error" showIcon message={error} role="alert" style={{ marginBottom: 16 }} />}
+      <PreviewSummary result={result} />
       <Space style={{ marginTop: 16 }}>
         <Button type="primary" onClick={onPublish} loading={publishing} disabled={result.chargeCount === 0}>
           Phát hành {result.chargeCount} khoản

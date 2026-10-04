@@ -24,8 +24,11 @@ export interface RequestOptions {
   signal?: AbortSignal;
 }
 
+// Bản web đóng gói vào web quản trị (đường dẫn /citizen, xem web/package.json `build:citizen`) chạy cùng origin: gọi /api
+// qua proxy của nginx / Vite. Trên điện thoại `window.location` không có nên vẫn theo EXPO_PUBLIC_API_URL.
+const sameOrigin = typeof window !== 'undefined' && window.location?.pathname?.startsWith('/citizen') ? window.location.origin : null;
 // Phải đọc bằng dấu chấm để Expo inline giá trị lúc đóng gói.
-let baseUrl = process.env.EXPO_PUBLIC_API_URL ?? '';
+let baseUrl = sameOrigin ?? process.env.EXPO_PUBLIC_API_URL ?? '';
 let tokenGetter: () => string | null = () => null;
 let unauthorizedHandler: () => void = () => {};
 

@@ -64,14 +64,16 @@ async function request<T>(method: string, path: string, options: RequestOptions 
   const headers: Record<string, string> = { Accept: asBlob ? '*/*' : 'application/json' };
   const token = tokenGetter();
   if (token) headers.Authorization = `Bearer ${token}`;
-  if (options.body !== undefined) headers['Content-Type'] = 'application/json';
+  const isForm = options.body instanceof FormData;
+  // FormData (tải file lên): để trình duyệt tự đặt Content-Type kèm boundary.
+  if (options.body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
 
   let res: Response;
   try {
     res = await fetch(buildUrl(path, options.params), {
       method,
       headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: options.body === undefined ? undefined : isForm ? (options.body as FormData) : JSON.stringify(options.body),
       signal: options.signal,
     });
   } catch (err) {

@@ -21,7 +21,7 @@ import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 
 /**
  * Kỳ thu tháng ({@code 2026-10}) hoặc quý ({@code 2026-Q4}). Mã, tên và ngày đầu/cuối kỳ sinh từ loại + năm + số.
- * Trạng thái chỉ đi tới: COLLECTING (ngay khi mở) → LOCKED.
+ * Trạng thái chỉ đi tới: COLLECTING (ngay khi mở) → LOCKED; kỳ tự tạo đi DRAFT → COLLECTING → LOCKED.
  */
 @Getter
 @Entity
@@ -98,6 +98,28 @@ public class CollectionPeriod extends BaseEntity {
         p.tariffVersion = tariffVersion;
         p.status = PeriodStatus.COLLECTING;
         return p;
+    }
+
+    /** Kỳ dự thảo do hệ thống tự tạo: ngày mở lấy ngày đầu kỳ, chưa có khoản nào cho tới khi cán bộ xã mở kỳ. */
+    public static CollectionPeriod draft(PeriodType type, int year, int number, LocalDate dueDate,
+            TariffVersion tariffVersion) {
+        CollectionPeriod p = open(type, year, number, null, dueDate, tariffVersion);
+        p.status = PeriodStatus.DRAFT;
+        return p;
+    }
+
+    /** Cán bộ xã mở kỳ dự thảo: chỉ từ Dự thảo, sang Đang thu. */
+    public void publish() {
+        requireStatus(PeriodStatus.DRAFT, PeriodStatus.COLLECTING);
+        status = PeriodStatus.COLLECTING;
+    }
+
+    /** Biểu giá có thể đổi sau khi dự thảo được tạo; kỳ dự thảo lấy lại biểu giá hiệu lực tại ngày đầu kỳ. */
+    public void useTariff(TariffVersion version) {
+        if (status != PeriodStatus.DRAFT) {
+            throw new BusinessRuleException("PERIOD_TARIFF_LOCKED", "Kỳ " + code + " đã mở, không đổi biểu giá được.");
+        }
+        tariffVersion = version;
     }
 
     /** Cán bộ xã khóa kỳ (G1): chỉ từ Đang thu; sau khóa không phát hành, ghi thu, lập phiếu thu cho kỳ. */
