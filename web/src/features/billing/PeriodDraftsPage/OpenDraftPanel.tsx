@@ -25,8 +25,11 @@ interface Props {
 /** Xem trước khoản của một kỳ dự thảo, chọn hạn hộ đóng rồi "Mở kỳ & phát hành" trong một bước. */
 export function OpenDraftPanel({ period, onClose }: Props) {
   const [picked, setPicked] = useState<Dayjs | null>(null);
+  const [openPicked, setOpenPicked] = useState<Dayjs | null>(null);
+  const [duePicked, setDuePicked] = useState<Dayjs | null>(null);
   const [done, setDone] = useState<PublishPeriodResult | null>(null);
-  const preview = useDraftPreview(period.id, picked?.format(ISO));
+  const schedule = { openDate: openPicked?.format(ISO), companyDueDate: duePicked?.format(ISO) };
+  const preview = useDraftPreview(period.id, { ...schedule, householdDueDate: picked?.format(ISO) });
   const publish = usePublishPeriod();
 
   if (done) {
@@ -59,11 +62,13 @@ export function OpenDraftPanel({ period, onClose }: Props) {
 
   const { result } = preview.data;
   const dueDate = picked ?? dayjs(preview.data.dueDate);
+  const openDate = openPicked ?? dayjs(preview.data.period.openDate);
+  const companyDue = duePicked ?? dayjs(preview.data.period.dueDate);
   const publishing = publish.isPending;
 
   function submit() {
     publish.mutate(
-      { periodId: period.id, householdDueDate: dueDate.format(ISO) },
+      { periodId: period.id, ...schedule, householdDueDate: dueDate.format(ISO) },
       { onSuccess: (r) => setDone(r) },
     );
   }
@@ -77,22 +82,46 @@ export function OpenDraftPanel({ period, onClose }: Props) {
         <Descriptions.Item label="Thời gian">
           <DateText value={period.startDate} /> – <DateText value={period.endDate} />
         </Descriptions.Item>
-        <Descriptions.Item label="Hạn công ty nộp xã">
-          <DateText value={period.dueDate} />
-        </Descriptions.Item>
         <Descriptions.Item label="Biểu giá áp dụng">{preview.data.period.tariffVersionCode}</Descriptions.Item>
       </Descriptions>
       <Form layout="vertical" requiredMark={false} disabled={publishing}>
+        <Space size="middle" wrap align="start">
+          <Form.Item label="Ngày mở" extra="Mặc định là ngày đầu kỳ.">
+            <DatePicker
+              aria-label="Ngày mở"
+              format={DATE_FORMAT}
+              allowClear={false}
+              value={openDate}
+              onChange={(d) => {
+                setOpenPicked(d);
+                setPicked(null);
+              }}
+            />
+          </Form.Item>
+          <Form.Item label="Hạn công ty nộp xã" extra="Mặc định theo quy tắc của quản trị.">
+            <DatePicker
+              aria-label="Hạn công ty nộp xã"
+              format={DATE_FORMAT}
+              allowClear={false}
+              value={companyDue}
+              disabledDate={(d) => d.isBefore(openDate, 'day')}
+              onChange={(d) => {
+                setDuePicked(d);
+                setPicked(null);
+              }}
+            />
+          </Form.Item>
+        </Space>
         <Form.Item
           label="Hạn hộ đóng"
-          extra={`Mặc định theo quy tắc của quản trị; chọn từ ${dayjs(period.openDate).format(DATE_FORMAT)} đến ${dayjs(period.dueDate).format(DATE_FORMAT)}.`}
+          extra={`Mặc định theo quy tắc của quản trị; chọn từ ${openDate.format(DATE_FORMAT)} đến ${companyDue.format(DATE_FORMAT)}.`}
         >
           <DatePicker
             aria-label="Hạn hộ đóng"
             format={DATE_FORMAT}
             allowClear={false}
             value={dueDate}
-            disabledDate={(d) => d.isBefore(period.openDate, 'day') || d.isAfter(period.dueDate, 'day')}
+            disabledDate={(d) => d.isBefore(openDate, 'day') || d.isAfter(companyDue, 'day')}
             onChange={(d) => setPicked(d)}
           />
         </Form.Item>

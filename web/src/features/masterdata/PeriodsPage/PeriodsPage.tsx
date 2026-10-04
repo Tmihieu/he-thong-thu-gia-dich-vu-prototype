@@ -31,7 +31,7 @@ export function PeriodsPage() {
       <PeriodRuleCard />
       <Space style={{ marginBottom: 16 }}>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-          Mở kỳ thủ công
+          Tạo kỳ dự thảo
         </Button>
       </Space>
       <Table<Period>
@@ -61,7 +61,7 @@ export function PeriodsPage() {
           },
         ]}
       />
-      <Modal title="Mở kỳ thu" open={formOpen} onCancel={closeForm} footer={null} destroyOnHidden>
+      <Modal title="Tạo kỳ dự thảo" open={formOpen} onCancel={closeForm} footer={null} destroyOnHidden>
         <OpenPeriodForm
           tariffs={tariffs.data ?? []}
           submitting={openPeriod.isPending}
@@ -70,7 +70,7 @@ export function PeriodsPage() {
           onSubmit={(req) =>
             openPeriod.mutate(req, {
               onSuccess: (p) => {
-                message.success(`Đã mở kỳ ${p.label}`);
+                message.success(`Đã tạo kỳ dự thảo ${p.label}, cán bộ xã sẽ đặt ngày và mở kỳ`);
                 closeForm();
               },
             })

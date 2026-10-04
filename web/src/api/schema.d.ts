@@ -3017,17 +3017,6 @@ export interface components {
              * @example 10
              */
             number: number;
-            /**
-             * Format: date
-             * @description Để trống thì lấy ngày đầu kỳ
-             */
-            openDate?: string;
-            /**
-             * Format: date
-             * @description Hạn công ty nộp xã
-             */
-            dueDate: string;
-            note?: string;
         };
         DraftRunDto: {
             created: boolean;
@@ -3516,6 +3505,16 @@ export interface components {
         PublishPeriodRequest: {
             /**
              * Format: date
+             * @description Ngày mở kỳ; trống thì giữ ngày của dự thảo (đầu kỳ)
+             */
+            openDate?: string;
+            /**
+             * Format: date
+             * @description Hạn công ty nộp xã; trống thì giữ hạn của dự thảo
+             */
+            companyDueDate?: string;
+            /**
+             * Format: date
              * @description Hạn hộ đóng; trống thì theo quy tắc của quản trị
              */
             householdDueDate?: string;
@@ -3554,6 +3553,16 @@ export interface components {
             message: string;
         };
         DraftPreviewRequest: {
+            /**
+             * Format: date
+             * @description Ngày mở kỳ; trống thì giữ ngày của dự thảo (đầu kỳ)
+             */
+            openDate?: string;
+            /**
+             * Format: date
+             * @description Hạn công ty nộp xã; trống thì giữ hạn của dự thảo
+             */
+            companyDueDate?: string;
             /**
              * Format: date
              * @description Hạn hộ đóng; trống thì theo quy tắc của quản trị

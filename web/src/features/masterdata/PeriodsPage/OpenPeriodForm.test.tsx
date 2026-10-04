@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 
-import { pickDate, pickOption } from '../../../test/antd';
+import { pickOption } from '../../../test/antd';
 import type { TariffVersion } from '../api';
 import { OpenPeriodForm } from './OpenPeriodForm';
 
@@ -21,42 +21,32 @@ async function pickOptionByLabel(label: string, option: string) {
   await pickOption(screen.getByRole('combobox', { name: label }), option);
 }
 
-function typeDate(label: string, value: string) {
-  pickDate(screen.getByLabelText(label), value);
-}
-
 function setYear(year: number) {
   const input = screen.getByLabelText('Năm');
   fireEvent.change(input, { target: { value: String(year) } });
 }
 
 describe('OpenPeriodForm', () => {
-  it('thiếu tháng và hạn nộp thì báo lỗi, không gửi', async () => {
+  it('thiếu tháng thì báo lỗi, không gửi', async () => {
     const onSubmit = vi.fn();
     render(<OpenPeriodForm tariffs={tariffs} onSubmit={onSubmit} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Mở kỳ' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo kỳ dự thảo' }));
 
     expect(await screen.findByText('Vui lòng chọn tháng')).toBeInTheDocument();
-    expect(screen.getByText('Vui lòng chọn hạn nộp')).toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it('chọn tháng 10/2026 thì hiện biểu giá QĐ 65/2026 và gửi đúng dữ liệu', async () => {
+  it('chọn tháng 10/2026 thì hiện biểu giá QĐ 65/2026 và chỉ gửi loại kỳ, năm, tháng', async () => {
     const onSubmit = vi.fn();
     render(<OpenPeriodForm tariffs={tariffs} onSubmit={onSubmit} />);
 
     setYear(2026);
     await pickOptionByLabel('Tháng', 'Tháng 10');
     expect(await screen.findByText('BG-65-2026 · QĐ 65/2026/QĐ-UBND')).toBeInTheDocument();
-    typeDate('Hạn công ty nộp xã', '31/10/2026');
-    await userEvent.click(screen.getByRole('button', { name: 'Mở kỳ' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo kỳ dự thảo' }));
 
-    await waitFor(() =>
-      expect(onSubmit).toHaveBeenCalledWith({
-        type: 'MONTH', year: 2026, number: 10, openDate: undefined, dueDate: '2026-10-31', note: undefined,
-      }),
-    );
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({ type: 'MONTH', year: 2026, number: 10 }));
   });
 
   it('kỳ 08/2026 tự hiện biểu giá cũ QĐ 67/2025', async () => {
@@ -64,20 +54,6 @@ describe('OpenPeriodForm', () => {
     setYear(2026);
     await pickOptionByLabel('Tháng', 'Tháng 8');
     expect(await screen.findByText('BG-67-2025 · QĐ 67/2025/QĐ-UBND')).toBeInTheDocument();
-  });
-
-  it('hạn nộp trước ngày mở thì báo lỗi', async () => {
-    const onSubmit = vi.fn();
-    render(<OpenPeriodForm tariffs={tariffs} onSubmit={onSubmit} />);
-
-    setYear(2026);
-    await pickOptionByLabel('Tháng', 'Tháng 10');
-    typeDate('Ngày mở', '05/10/2026');
-    typeDate('Hạn công ty nộp xã', '04/10/2026');
-    await userEvent.click(screen.getByRole('button', { name: 'Mở kỳ' }));
-
-    expect(await screen.findByText('Hạn nộp không được trước ngày mở kỳ')).toBeInTheDocument();
-    expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it('hiện thông báo lỗi tiếng Việt từ máy chủ', () => {

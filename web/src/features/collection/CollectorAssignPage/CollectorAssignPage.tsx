@@ -94,7 +94,7 @@ export function CollectorAssignPage() {
                     cancelText="Hủy"
                     onConfirm={() =>
                       end.mutate(
-                        { id: r.assignment!.id, endDate: today },
+                        { id: r.assignment!.id, endDate: dayjs().subtract(1, 'day').format('YYYY-MM-DD') },
                         { onSuccess: () => message.success(`Đã kết thúc phân tổ ${r.code}`) },
                       )
                     }
