@@ -83,6 +83,24 @@ class ChargeEligibilityTest {
     }
 
     @Test
+    void contractIsChosenByThePeriodBeingBilledNotByIssueDate() {
+        // BR-MD-09: hộ đổi số người, đăng ký cũ (≥3) hết 31/10, đăng ký mới (≤2) từ 01/11.
+        ServiceContract old = ServiceContract.create("ĐK-DTH-0004", subject, TariffGroup.HH_3_PLUS,
+                LocalDate.of(2026, 1, 1), LocalDate.of(2026, 10, 31), false, null, null);
+        ServiceContract next = ServiceContract.create("ĐK-DTH-0005", subject, TariffGroup.HH_UP_TO_2,
+                LocalDate.of(2026, 11, 1), null, false, null, null);
+        CollectionPeriod november = CollectionPeriod.open(PeriodType.MONTH, 2026, 11, null, LocalDate.of(2026, 11, 30), bg65);
+        LocalDate issueOct25 = LocalDate.of(2026, 10, 25);
+
+        // Phát hành kỳ 11 ngày 25/10 (kỳ đã mở): phải lấy đăng ký mới, không phải đăng ký cũ đang hiệu lực ngày 25/10.
+        assertThat(eligibility.decide(subject, List.of(old, next), 1L, List.of(), november, issueOct25))
+                .isEqualTo(new Eligible(next, 1L));
+        // Kỳ 10 đang chạy vẫn tính theo đăng ký cũ.
+        assertThat(eligibility.decide(subject, List.of(old, next), 1L, List.of(), october, issueOct25))
+                .isEqualTo(new Eligible(old, 1L));
+    }
+
+    @Test
     void areaWithoutCompanyIsSkippedAsWarning() {
         Skipped s = (Skipped) decide(List.of(contract), null, List.of(), october);
 

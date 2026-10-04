@@ -109,6 +109,9 @@ public class ChargeRequestService {
     }
 
     public IssueResult publish(IssueCommand cmd, CurrentUser actor) {
+        // Phát hành song song cùng kỳ xếp hàng: lượt sau lập kế hoạch lại sau khi lượt trước commit nên thấy khoản trùng
+        // và bỏ qua đúng cách (BR-BIL-06), thay vì đụng ràng buộc ex_charges_overlap / mã phiếu rồi báo 409 chung chung.
+        requests.lockKey("charge-request:" + cmd.periodId());
         Plan plan = plan(cmd, actor);
         if (plan.charges().isEmpty()) {
             return plan.result(null);

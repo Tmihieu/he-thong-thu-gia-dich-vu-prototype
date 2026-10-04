@@ -170,6 +170,11 @@ class SubjectServiceTest {
         ContractCommand closedUpTo2 = new ContractCommand(TariffGroup.HH_UP_TO_2, LocalDate.of(2026, 1, 1),
                 LocalDate.of(2026, 6, 30), false, null, null, null);
         assertThat(service.create(household(), closedUpTo2, officer).getStatus()).isEqualTo(SubjectStatus.ACTIVE);
+        // Có ngày kết thúc nhưng còn hiệu lực tới tương lai (hôm nay 15/10/2026) thì vẫn phải khớp số thành viên.
+        ContractCommand upTo2UntilYearEnd = new ContractCommand(TariffGroup.HH_UP_TO_2, LocalDate.of(2026, 1, 1),
+                LocalDate.of(2026, 12, 31), false, null, null, null);
+        assertThatThrownBy(() -> service.create(household(), upTo2UntilYearEnd, officer)).extracting("code")
+                .isEqualTo("TARIFF_GROUP_MISMATCH");
     }
 
     @Test

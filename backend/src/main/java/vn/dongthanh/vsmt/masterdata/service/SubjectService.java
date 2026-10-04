@@ -153,10 +153,16 @@ public class SubjectService {
                 .max(Comparator.naturalOrder()).map(d -> d.plusDays(1)).orElse(null);
         for (ServiceContract c : contracts.findBySubjectIdOrderByValidFromDesc(subject.getId())) {
             boolean householdGroup = c.getTariffGroup() == TariffGroup.HH_UP_TO_2 || c.getTariffGroup() == TariffGroup.HH_3_PLUS;
-            if (c.getValidTo() != null || !householdGroup || c.getTariffGroup() == expected) {
+            // Đăng ký có ngày kết thúc ở tương lai vẫn đang hiệu lực: cũng phải đổi nhóm (chỉ bỏ đăng ký đã hết).
+            boolean closed = c.getValidTo() != null && c.getValidTo().isBefore(LocalDate.now(clock));
+            if (closed || !householdGroup || c.getTariffGroup() == expected) {
                 continue;
             }
             Map<String, Object> before = snapshot(c);
+            LocalDate originalEnd = c.getValidTo();
+            if (effective != null && originalEnd != null && originalEnd.isBefore(effective)) {
+                continue; // hết hiệu lực trước kỳ sau: không còn gì để nối tiếp
+            }
             if (effective == null || !c.getValidFrom().isBefore(effective)) {
                 c.change(expected, c.getValidFrom(), c.getValidTo(), c.isExempt(), c.getExemptReason(), c.getExemptDecisionNo());
                 audit.record(actor, "UPDATE_CONTRACT", CONTRACT, c.getContractNo(), before, snapshot(c));
@@ -164,7 +170,7 @@ public class SubjectService {
                 c.closeOn(effective.minusDays(1));
                 audit.record(actor, "UPDATE_CONTRACT", CONTRACT, c.getContractNo(), before, snapshot(c));
                 // Hợp đồng nối tiếp giữ nguyên miễn giảm và định mức; không phát lại sự kiện miễn để khỏi tạo đề nghị trùng.
-                createContract(subject, new ContractCommand(expected, effective, null, c.isExempt(), c.getExemptReason(),
+                createContract(subject, new ContractCommand(expected, effective, originalEnd, c.isExempt(), c.getExemptReason(),
                         c.getExemptDecisionNo(), c.getNote(), c.getQuotaKg()), actor, false);
             }
         }
@@ -313,11 +319,12 @@ public class SubjectService {
 
     /**
      * Nhóm giá hộ gia đình phải khớp số thành viên hiện tại: ≤2 người → {@code HH_UP_TO_2}, ≥3 → {@code HH_3_PLUS}.
-     * Chỉ kiểm hợp đồng chưa có ngày kết thúc: hợp đồng đã đóng phản ánh số thành viên lúc đó.
+     * Chỉ bỏ qua hợp đồng đã hết hiệu lực (ngày kết thúc trước hôm nay): hợp đồng đã đóng phản ánh số thành viên lúc đó.
      */
-    private static void requireGroupFits(ServiceSubject s, ContractCommand cmd) {
+    private void requireGroupFits(ServiceSubject s, ContractCommand cmd) {
         boolean householdGroup = cmd.tariffGroup() == TariffGroup.HH_UP_TO_2 || cmd.tariffGroup() == TariffGroup.HH_3_PLUS;
-        if (!householdGroup || cmd.validTo() != null) {
+        // Đăng ký có ngày kết thúc ở tương lai vẫn còn hiệu lực nên phải khớp; chỉ đăng ký đã hết mới là lịch sử.
+        if (!householdGroup || (cmd.validTo() != null && cmd.validTo().isBefore(LocalDate.now(clock)))) {
             return;
         }
         if (s.getSubjectType() != SubjectType.HOUSEHOLD) {
