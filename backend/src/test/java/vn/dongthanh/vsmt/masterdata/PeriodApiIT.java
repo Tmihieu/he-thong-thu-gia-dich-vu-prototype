@@ -70,41 +70,43 @@ class PeriodApiIT extends IntegrationTest {
     }
 
     @Test
-    void adminOpensMonthPeriodWithTariffAndAudit() throws Exception {
-        open(admin, "MONTH", 10, "2026-10-31")
+    void adminCreatesDraftPeriodWithTariffAndAudit() throws Exception {
+        open(admin, "MONTH", 10)
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.code").value("2026-10"))
                 .andExpect(jsonPath("$.label").value("Tháng 10/2026"))
                 .andExpect(jsonPath("$.startDate").value("2026-10-01"))
                 .andExpect(jsonPath("$.openDate").value("2026-10-01"))
                 .andExpect(jsonPath("$.tariffVersionCode").value("BG-IT-2026"))
-                .andExpect(jsonPath("$.status").value("COLLECTING"));
+                .andExpect(jsonPath("$.status").value("DRAFT"));
 
         assertThat(jdbc.queryForObject("select actor_username from audit_logs"
-                + " where action = 'OPEN_PERIOD' and entity_id = '2026-10'", String.class)).isEqualTo("admin_it");
+                + " where action = 'CREATE_DRAFT_PERIOD' and entity_id = '2026-10'", String.class)).isEqualTo("admin_it");
     }
 
     @Test
     void communeOfficerAndCompanyCannotOpenPeriods() throws Exception {
-        open(officer, "MONTH", 10, "2026-10-31")
+        open(officer, "MONTH", 10)
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
-        open(company, "QUARTER", 4, "2026-12-31").andExpect(status().isForbidden());
+        open(company, "QUARTER", 4).andExpect(status().isForbidden());
     }
 
     @Test
     void openingTheSamePeriodTwiceReturns409() throws Exception {
-        open(admin, "MONTH", 10, "2026-10-31").andExpect(status().isCreated());
-        open(admin, "MONTH", 10, "2026-11-15")
+        open(admin, "MONTH", 10).andExpect(status().isCreated());
+        open(admin, "MONTH", 10)
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("PERIOD_ALREADY_EXISTS"));
     }
 
     @Test
     void everyInternalRoleListsPeriodsAndCanFilterByDate() throws Exception {
-        open(admin, "MONTH", 10, "2026-10-31");
-        open(admin, "QUARTER", 4, "2026-12-31");
-        open(admin, "MONTH", 12, "2026-12-31");
+        open(admin, "MONTH", 10);
+        open(admin, "QUARTER", 4);
+        open(admin, "MONTH", 12);
+        // Danh sách chỉ gồm kỳ đã mở; kỳ dự thảo do cán bộ xã mở (PeriodPublishService) nên ở đây đặt thẳng Đang thu.
+        jdbc.update("update collection_periods set status = 'COLLECTING'");
 
         mvc.perform(get("/api/masterdata/periods").header(HttpHeaders.AUTHORIZATION, company))
                 .andExpect(status().isOk())
@@ -116,19 +118,19 @@ class PeriodApiIT extends IntegrationTest {
     @Test
     void invalidInputAndMissingTariffAreRejected() throws Exception {
         mvc.perform(post("/api/masterdata/periods").header(HttpHeaders.AUTHORIZATION, admin)
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"type\":\"MONTH\",\"year\":2026,\"number\":10}"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"type\":\"MONTH\",\"year\":2026,\"number\":13}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
 
         mvc.perform(post("/api/masterdata/periods").header(HttpHeaders.AUTHORIZATION, admin)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"type\":\"MONTH\",\"year\":2030,\"number\":1,\"dueDate\":\"2030-01-31\"}"))
+                        .content("{\"type\":\"MONTH\",\"year\":2030,\"number\":1}"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("TARIFF_NOT_FOUND"));
     }
 
-    private ResultActions open(String token, String type, int number, String dueDate) throws Exception {
-        String body = "{\"type\":\"%s\",\"year\":2026,\"number\":%d,\"dueDate\":\"%s\"}".formatted(type, number, dueDate);
+    private ResultActions open(String token, String type, int number) throws Exception {
+        String body = "{\"type\":\"%s\",\"year\":2026,\"number\":%d}".formatted(type, number);
         return mvc.perform(post("/api/masterdata/periods").header(HttpHeaders.AUTHORIZATION, token)
                 .contentType(MediaType.APPLICATION_JSON).content(body));
     }

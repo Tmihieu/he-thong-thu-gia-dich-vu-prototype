@@ -1,5 +1,6 @@
 package vn.dongthanh.vsmt.masterdata.service;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -28,6 +29,8 @@ public class CompanyService {
 
     private final CompanyRepository companies;
     private final AuditService audit;
+    private final AreaAssignmentService areaAssignments;
+    private final Clock clock;
 
     public record CompanyCommand(String name, String contactName, String contactPhone, ActiveStatus status,
             LocalDate validFrom, LocalDate validTo, CompanyType orgType, String taxCode, String address, String email,
@@ -53,11 +56,15 @@ public class CompanyService {
         Company company = companies.findById(id)
                 .orElseThrow(() -> new NotFoundException("COMPANY_NOT_FOUND", "Không tìm thấy công ty."));
         Map<String, Object> before = snapshot(company);
+        boolean stopping = company.getStatus() == ActiveStatus.ACTIVE && cmd.status() == ActiveStatus.INACTIVE;
         company.setName(cmd.name().trim());
         company.setContactName(cmd.contactName().trim());
         company.setContactPhone(cmd.contactPhone());
         company.setValidFrom(cmd.validFrom());
         apply(company, cmd);
+        if (stopping) {
+            areaAssignments.endAllOfCompany(company, LocalDate.now(clock));
+        }
         audit.record(actor, "UPDATE_COMPANY", ENTITY, company.getCode(), before, snapshot(company));
         return company;
     }

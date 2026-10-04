@@ -35,7 +35,7 @@ public class PeriodOpeningController {
     @PostMapping("/{id}/draft-preview")
     public DraftPreviewDto preview(@PathVariable Long id, @Valid @RequestBody DraftPreviewRequest req,
             @AuthenticationPrincipal CurrentUser actor) {
-        DraftPreview p = service.preview(id, req.householdDueDate(), actor);
+        DraftPreview p = service.preview(id, req.openDate(), req.companyDueDate(), req.householdDueDate(), actor);
         return new DraftPreviewDto(PeriodDto.of(p.period()), p.dueDate(), IssueResultDto.of(p.result()));
     }
 
@@ -43,15 +43,19 @@ public class PeriodOpeningController {
     @PostMapping("/{id}/publish")
     public PublishPeriodDto publish(@PathVariable Long id, @Valid @RequestBody PublishPeriodRequest req,
             @AuthenticationPrincipal CurrentUser actor) {
-        PublishResult r = service.publish(id, req.householdDueDate(), req.note(), actor);
+        PublishResult r = service.publish(id, req.openDate(), req.companyDueDate(), req.householdDueDate(), req.note(), actor);
         return new PublishPeriodDto(PeriodDto.of(r.period()), IssueResultDto.of(r.result()));
     }
 
     public record DraftPreviewRequest(
+            @Schema(description = "Ngày mở kỳ; trống thì giữ ngày của dự thảo (đầu kỳ)") LocalDate openDate,
+            @Schema(description = "Hạn công ty nộp xã; trống thì giữ hạn của dự thảo") LocalDate companyDueDate,
             @Schema(description = "Hạn hộ đóng; trống thì theo quy tắc của quản trị") LocalDate householdDueDate) {
     }
 
     public record PublishPeriodRequest(
+            @Schema(description = "Ngày mở kỳ; trống thì giữ ngày của dự thảo (đầu kỳ)") LocalDate openDate,
+            @Schema(description = "Hạn công ty nộp xã; trống thì giữ hạn của dự thảo") LocalDate companyDueDate,
             @Schema(description = "Hạn hộ đóng; trống thì theo quy tắc của quản trị") LocalDate householdDueDate,
             @Size(max = 2000) String note) {
     }

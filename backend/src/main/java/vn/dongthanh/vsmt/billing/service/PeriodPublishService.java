@@ -58,21 +58,25 @@ public class PeriodPublishService {
      * Xem trước các khoản sẽ lập khi mở kỳ. Kỳ dự thảo lấy lại biểu giá hiệu lực tại ngày đầu kỳ (biểu giá có thể
      * vừa được ban hành sau lúc hệ thống tạo dự thảo), nên số tiền xem trước khớp với lúc mở kỳ.
      */
-    public DraftPreview preview(Long periodId, LocalDate householdDueDate, CurrentUser actor) {
+    public DraftPreview preview(Long periodId, LocalDate openDate, LocalDate companyDueDate, LocalDate householdDueDate,
+            CurrentUser actor) {
         actor.requireRole(Role.COMMUNE_OFFICER);
         CollectionPeriod period = periods.findByIdWithTariff(periodId).orElseThrow(PeriodPublishService::notFound);
         requireDraft(period);
         refreshTariff(period);
+        schedule(period, openDate, companyDueDate);
         LocalDate due = dueDate(period, householdDueDate);
         return new DraftPreview(period, due, chargeRequests.previewDraft(command(period, due, null), actor));
     }
 
-    public PublishResult publish(Long periodId, LocalDate householdDueDate, String note, CurrentUser actor) {
+    public PublishResult publish(Long periodId, LocalDate openDate, LocalDate companyDueDate, LocalDate householdDueDate,
+            String note, CurrentUser actor) {
         actor.requireRole(Role.COMMUNE_OFFICER);
         // Khóa dòng kỳ: hai cán bộ cùng bấm thì người sau thấy kỳ đã mở.
         CollectionPeriod period = periods.findByIdForUpdate(periodId).orElseThrow(PeriodPublishService::notFound);
         requireDraft(period);
         TariffVersion tariff = refreshTariff(period);
+        schedule(period, openDate, companyDueDate);
         LocalDate due = dueDate(period, householdDueDate);
         IssueCommand cmd = command(period, due, note);
 
@@ -84,12 +88,22 @@ public class PeriodPublishService {
         Map<String, Object> after = new LinkedHashMap<>();
         after.put("status", period.getStatus());
         after.put("tariffVersion", tariff.getCode());
+        after.put("openDate", period.getOpenDate());
+        after.put("companyDueDate", period.getDueDate());
         after.put("dueDate", due);
         after.put("requestCode", result.requestCode());
         after.put("chargeCount", result.chargeCount());
         after.put("totalAmount", result.totalAmount());
         audit.record(actor, "PUBLISH_PERIOD", ENTITY, period.getCode(), Map.of("status", PeriodStatus.DRAFT), after);
         return new PublishResult(period, result);
+    }
+
+    /** Cán bộ xã đặt ngày mở / hạn công ty nộp xã (trống thì giữ giá trị của dự thảo). */
+    private static void schedule(CollectionPeriod period, LocalDate openDate, LocalDate companyDueDate) {
+        if (openDate != null || companyDueDate != null) {
+            period.schedule(openDate != null ? openDate : period.getOpenDate(),
+                    companyDueDate != null ? companyDueDate : period.getDueDate());
+        }
     }
 
     private static void requireDraft(CollectionPeriod period) {
@@ -110,6 +124,10 @@ public class PeriodPublishService {
     /** Hạn hộ đóng: người dùng chọn, hoặc ngày mở (hoặc hôm nay nếu muộn hơn) cộng số ngày theo quy tắc, không quá hạn nộp xã. */
     private LocalDate dueDate(CollectionPeriod period, LocalDate requested) {
         if (requested != null) {
+            if (requested.isBefore(period.getOpenDate()) || requested.isAfter(period.getDueDate())) {
+                throw new BusinessRuleException("HOUSEHOLD_DUE_OUT_OF_RANGE",
+                        "Hạn hộ đóng phải nằm giữa ngày mở kỳ và hạn công ty nộp xã.");
+            }
             return requested;
         }
         LocalDate from = LocalDate.now(clock);

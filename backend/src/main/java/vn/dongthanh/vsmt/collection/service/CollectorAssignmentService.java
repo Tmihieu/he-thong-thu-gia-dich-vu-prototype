@@ -115,6 +115,12 @@ public class CollectorAssignmentService {
                 .filter(x -> Objects.equals(x.getCompany().getId(), actor.companyId()))
                 .orElseThrow(() -> new NotFoundException("COLLECTOR_ASSIGNMENT_NOT_FOUND", "Không tìm thấy phân tổ."));
         Map<String, Object> before = snapshot(a);
+        if (endDate.isBefore(a.getValidFrom())) {
+            // Phân tổ chưa từng có ngày hiệu lực nào trước ngày kết thúc: xóa hẳn thay vì giữ lại 1 ngày.
+            assignments.delete(a);
+            audit.record(actor, "END_COLLECTOR_ASSIGNMENT", ENTITY, a.getArea().getCode(), before, null);
+            return a;
+        }
         a.closeOn(endDate);
         audit.record(actor, "END_COLLECTOR_ASSIGNMENT", ENTITY, a.getArea().getCode(), before, snapshot(a));
         return a;
@@ -125,8 +131,13 @@ public class CollectorAssignmentService {
     public void onAreaReassigned(AreaReassignedEvent e) {
         for (CollectorAssignment a : assignments.findOpenOfCompanyInArea(e.areaId(), e.oldCompanyId(), e.fromDate())) {
             Map<String, Object> before = snapshot(a);
-            a.closeOn(e.fromDate().minusDays(1));
-            audit.recordSystem("END_COLLECTOR_ASSIGNMENT", ENTITY, a.getArea().getCode(), before, snapshot(a));
+            if (a.getValidFrom().isBefore(e.fromDate())) {
+                a.closeOn(e.fromDate().minusDays(1));
+                audit.recordSystem("END_COLLECTOR_ASSIGNMENT", ENTITY, a.getArea().getCode(), before, snapshot(a));
+            } else {
+                assignments.delete(a);
+                audit.recordSystem("END_COLLECTOR_ASSIGNMENT", ENTITY, a.getArea().getCode(), before, null);
+            }
         }
     }
 

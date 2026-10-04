@@ -103,6 +103,24 @@ public class AreaAssignmentService {
         return saved;
     }
 
+    /**
+     * Công ty ngừng hợp tác: mọi phân công còn hiệu lực hết hiệu lực từ {@code today} (ngày cuối là hôm qua); phân công
+     * bắt đầu từ hôm nay trở đi thì xóa hẳn. Khu vực thành "Chưa có công ty"; phân tổ người đi thu nghe sự kiện để đóng theo.
+     */
+    public void endAllOfCompany(Company company, LocalDate today) {
+        for (AreaAssignment a : assignments.findOpenOfCompany(company.getId(), today)) {
+            Map<String, Object> before = snapshot(a);
+            events.publishEvent(new AreaReassignedEvent(a.getArea().getId(), company.getId(), null, today));
+            if (a.getValidFrom().isBefore(today)) {
+                a.closeOn(today.minusDays(1));
+                audit.recordSystem("END_AREA_ASSIGNMENT", ENTITY, a.getArea().getCode(), before, snapshot(a));
+            } else {
+                assignments.delete(a);
+                audit.recordSystem("DELETE_AREA_ASSIGNMENT", ENTITY, a.getArea().getCode(), before, null);
+            }
+        }
+    }
+
     @Transactional(readOnly = true)
     public List<AreaAssignment> history(Long areaId) {
         return assignments.findHistory(areaId);

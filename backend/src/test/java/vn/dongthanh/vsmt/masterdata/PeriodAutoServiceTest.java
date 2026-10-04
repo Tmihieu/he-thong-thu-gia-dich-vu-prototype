@@ -265,4 +265,30 @@ class PeriodAutoServiceTest {
                 .isInstanceOf(BusinessRuleException.class);
         verify(audit, never()).record(any(), any(), any(), any(), any(), any());
     }
+
+    // ---- quản trị tạo dự thảo bằng tay ----
+
+    @Test
+    void adminCreatesDraftWithOnlyTypeYearAndNumberAndOfficersAreNotified() {
+        CollectionPeriod p = service.createDraft(PeriodType.QUARTER, 2026, 4, admin);
+
+        assertThat(p.getCode()).isEqualTo("2026-Q4");
+        assertThat(p.getStatus()).isEqualTo(PeriodStatus.DRAFT);
+        assertThat(p.getOpenDate()).isEqualTo(LocalDate.of(2026, 10, 1));
+        // Cuối quý 31/12 + 10 ngày nộp xã theo quy tắc.
+        assertThat(p.getDueDate()).isEqualTo(LocalDate.of(2027, 1, 10));
+        verify(audit).record(eq(admin), eq("CREATE_DRAFT_PERIOD"), eq("CollectionPeriod"), eq("2026-Q4"), isNull(), any());
+        verify(notifications).publish(any(), isNull());
+    }
+
+    @Test
+    void manualDraftRejectsDuplicateAndNonAdmin() {
+        when(periods.existsByCode("2026-10")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.createDraft(PeriodType.MONTH, 2026, 10, admin))
+                .isInstanceOf(vn.dongthanh.vsmt.platform.common.ConflictException.class);
+        assertThatThrownBy(() -> service.createDraft(PeriodType.MONTH, 2026, 11, officer))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(periods, never()).save(any());
+    }
 }

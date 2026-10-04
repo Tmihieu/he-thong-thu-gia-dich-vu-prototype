@@ -13,18 +13,12 @@ import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository;
 import vn.dongthanh.vsmt.masterdata.domain.PeriodStatus;
-import vn.dongthanh.vsmt.masterdata.domain.PeriodType;
-import vn.dongthanh.vsmt.masterdata.domain.TariffVersion;
-import vn.dongthanh.vsmt.platform.common.ConflictException;
 import vn.dongthanh.vsmt.platform.common.NotFoundException;
 import vn.dongthanh.vsmt.platform.domain.Role;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
 import vn.dongthanh.vsmt.platform.service.AuditService;
 
-/**
- * Mở kỳ thu (quản trị, G1), kỳ vào thẳng Đang thu. Kỳ gắn phiên bản biểu giá có hiệu lực tại ngày đầu kỳ.
- * Khóa kỳ do cán bộ xã làm ở T32.
- */
+/** Khóa kỳ (cán bộ xã, G1) và tra cứu kỳ thu. Quản trị tạo kỳ dự thảo ở {@link PeriodAutoService#createDraft}. */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -33,30 +27,8 @@ public class PeriodService {
     static final String ENTITY = "CollectionPeriod";
 
     private final CollectionPeriodRepository periods;
-    private final TariffService tariffs;
     private final AuditService audit;
     private final Clock clock;
-
-    public record OpenPeriodCommand(PeriodType type, int year, int number, LocalDate openDate, LocalDate dueDate,
-            String note) {
-    }
-
-    public CollectionPeriod open(OpenPeriodCommand cmd, CurrentUser actor) {
-        actor.requireRole(Role.ADMIN);
-        // Dựng kỳ tạm để kiểm tra số tháng/quý và sinh mã trước khi tra biểu giá.
-        CollectionPeriod draft = CollectionPeriod.open(cmd.type(), cmd.year(), cmd.number(), cmd.openDate(),
-                cmd.dueDate(), null);
-        if (periods.existsByCode(draft.getCode())) {
-            throw new ConflictException("PERIOD_ALREADY_EXISTS", "Kỳ " + draft.getCode() + " đã được mở trước đó.");
-        }
-        TariffVersion tariff = tariffs.activeVersionOn(draft.getStartDate());
-        CollectionPeriod period = CollectionPeriod.open(cmd.type(), cmd.year(), cmd.number(), cmd.openDate(),
-                cmd.dueDate(), tariff);
-        period.setNote(cmd.note());
-        CollectionPeriod saved = periods.save(period);
-        audit.record(actor, "OPEN_PERIOD", ENTITY, saved.getCode(), null, snapshot(saved));
-        return saved;
-    }
 
     /**
      * Đặt kỳ sang Đã khóa. Chỉ gọi từ PeriodLockService (remittance) sau khi đã kiểm tra hết nợ bằng sổ công ty–kỳ

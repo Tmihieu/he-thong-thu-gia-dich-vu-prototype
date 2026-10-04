@@ -30,7 +30,6 @@ import vn.dongthanh.vsmt.masterdata.domain.PeriodStatus;
 import vn.dongthanh.vsmt.masterdata.domain.PeriodType;
 import vn.dongthanh.vsmt.masterdata.service.PeriodAutoService;
 import vn.dongthanh.vsmt.masterdata.service.PeriodService;
-import vn.dongthanh.vsmt.masterdata.service.PeriodService.OpenPeriodCommand;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
 
 @Tag(name = "Danh mục: kỳ thu")
@@ -61,23 +60,18 @@ public class PeriodController {
         return PeriodDto.of(periods.get(id));
     }
 
-    @Operation(summary = "Mở kỳ thu tháng/quý (quản trị), vào thẳng Đang thu; gắn biểu giá có hiệu lực tại ngày đầu kỳ")
+    @Operation(summary = "Tạo kỳ thu tháng/quý dự thảo (quản trị) và báo cán bộ xã; cán bộ xã đặt ngày mở, hạn nộp rồi mở kỳ")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public PeriodDto open(@Valid @RequestBody OpenPeriodRequest req, @AuthenticationPrincipal CurrentUser actor) {
-        return PeriodDto.of(periods.open(new OpenPeriodCommand(req.type(), req.year(), req.number(), req.openDate(),
-                req.dueDate(), req.note()), actor));
+        return PeriodDto.of(auto.createDraft(req.type(), req.year(), req.number(), actor));
     }
 
     public record OpenPeriodRequest(
             @Schema(requiredMode = RequiredMode.REQUIRED) @NotNull(message = "không được để trống") PeriodType type,
             @Schema(requiredMode = RequiredMode.REQUIRED, example = "2026") @Min(2020) @Max(2100) int year,
             @Schema(requiredMode = RequiredMode.REQUIRED, example = "10", description = "Tháng 1–12 hoặc quý 1–4")
-            @Min(1) @Max(12) int number,
-            @Schema(description = "Để trống thì lấy ngày đầu kỳ") LocalDate openDate,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Hạn công ty nộp xã")
-            @NotNull(message = "không được để trống") LocalDate dueDate,
-            @Size(max = 2000) String note) {
+            @Min(1) @Max(12) int number) {
     }
 
     public record PeriodDto(

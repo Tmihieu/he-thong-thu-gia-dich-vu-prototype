@@ -114,6 +114,18 @@ public class CollectionPeriod extends BaseEntity {
         status = PeriodStatus.COLLECTING;
     }
 
+    /** Cán bộ xã đặt ngày mở và hạn công ty nộp xã cho kỳ dự thảo trước khi mở. */
+    public void schedule(LocalDate open, LocalDate due) {
+        if (status != PeriodStatus.DRAFT) {
+            throw new BusinessRuleException("PERIOD_SCHEDULE_LOCKED", "Kỳ " + code + " đã mở, không đổi ngày được.");
+        }
+        if (due.isBefore(open)) {
+            throw new BusinessRuleException("PERIOD_DUE_BEFORE_OPEN", "Hạn công ty nộp xã không được trước ngày mở kỳ.");
+        }
+        openDate = open;
+        dueDate = due;
+    }
+
     /** Biểu giá có thể đổi sau khi dự thảo được tạo; kỳ dự thảo lấy lại biểu giá hiệu lực tại ngày đầu kỳ. */
     public void useTariff(TariffVersion version) {
         if (status != PeriodStatus.DRAFT) {
