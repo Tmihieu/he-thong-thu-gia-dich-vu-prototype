@@ -27,10 +27,11 @@ interface Props {
 /** Xem trước khoản của một kỳ dự thảo, chọn hạn hộ đóng rồi "Mở kỳ & phát hành" trong một bước. */
 export function OpenDraftPanel({ period, initial, onClose }: Props) {
   const [picked, setPicked] = useState<Dayjs | null>(initial?.householdDueDate ? dayjs(initial.householdDueDate) : null);
-  const [openPicked, setOpenPicked] = useState<Dayjs | null>(null);
   const [duePicked, setDuePicked] = useState<Dayjs | null>(initial?.companyDueDate ? dayjs(initial.companyDueDate) : null);
   const [done, setDone] = useState<PublishPeriodResult | null>(null);
-  const schedule = { openDate: openPicked?.format(ISO), companyDueDate: duePicked?.format(ISO) };
+  // Kỳ mở ngay khi cán bộ xã bấm: ngày mở là hôm nay.
+  const openDate = dayjs();
+  const schedule = { openDate: openDate.format(ISO), companyDueDate: duePicked?.format(ISO) };
   const preview = useDraftPreview(period.id, { ...schedule, householdDueDate: picked?.format(ISO) });
   const publish = usePublishPeriod();
 
@@ -64,7 +65,6 @@ export function OpenDraftPanel({ period, initial, onClose }: Props) {
 
   const { result } = preview.data;
   const dueDate = picked ?? dayjs(preview.data.dueDate);
-  const openDate = openPicked ?? dayjs(preview.data.period.openDate);
   const companyDue = duePicked ?? dayjs(preview.data.period.dueDate);
   const publishing = publish.isPending;
 
@@ -82,24 +82,14 @@ export function OpenDraftPanel({ period, initial, onClose }: Props) {
       )}
       <Descriptions column={{ xs: 1, md: 2 }} size="small" style={{ marginBottom: 16 }}>
         <Descriptions.Item label="Thời gian">
-          <DateText value={period.startDate} /> – <DateText value={period.endDate} />
+          <span style={{ whiteSpace: 'nowrap' }}>
+            <DateText value={period.startDate} /> – <DateText value={period.endDate} />
+          </span>
         </Descriptions.Item>
         <Descriptions.Item label="Biểu giá áp dụng">{preview.data.period.tariffVersionCode}</Descriptions.Item>
       </Descriptions>
       <Form layout="vertical" requiredMark={false} disabled={publishing}>
         <Space size="middle" wrap align="start">
-          <Form.Item label="Ngày mở">
-            <DatePicker
-              aria-label="Ngày mở"
-              format={DATE_FORMAT}
-              allowClear={false}
-              value={openDate}
-              onChange={(d) => {
-                setOpenPicked(d);
-                setPicked(null);
-              }}
-            />
-          </Form.Item>
           <Form.Item label="Hạn công ty nộp xã">
             <DatePicker
               aria-label="Hạn công ty nộp xã"
@@ -113,17 +103,17 @@ export function OpenDraftPanel({ period, initial, onClose }: Props) {
               }}
             />
           </Form.Item>
+          <Form.Item label="Hạn hộ đóng">
+            <DatePicker
+              aria-label="Hạn hộ đóng"
+              format={DATE_FORMAT}
+              allowClear={false}
+              value={dueDate}
+              disabledDate={(d) => d.isBefore(openDate, 'day') || d.isAfter(companyDue, 'day')}
+              onChange={(d) => setPicked(d)}
+            />
+          </Form.Item>
         </Space>
-        <Form.Item label="Hạn hộ đóng">
-          <DatePicker
-            aria-label="Hạn hộ đóng"
-            format={DATE_FORMAT}
-            allowClear={false}
-            value={dueDate}
-            disabledDate={(d) => d.isBefore(openDate, 'day') || d.isAfter(companyDue, 'day')}
-            onChange={(d) => setPicked(d)}
-          />
-        </Form.Item>
       </Form>
       <PreviewSummary result={result} />
       <Space>

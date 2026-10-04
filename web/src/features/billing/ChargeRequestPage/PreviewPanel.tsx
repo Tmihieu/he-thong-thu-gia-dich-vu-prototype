@@ -1,4 +1,5 @@
-import { Alert, Button, Card, Descriptions, Space, Table } from 'antd';
+import { Alert, Button, Card, Checkbox, Descriptions, Space, Table } from 'antd';
+import { useState } from 'react';
 
 import { MoneyText } from '../../../shared/MoneyText';
 import { StatusTag } from '../../../shared/StatusTag';
@@ -24,11 +25,16 @@ const SKIP_LABELS: Record<string, string> = {
 };
 const skipLabel = (reason: string) => SKIP_LABELS[reason] ?? reason;
 
-/** Các nhóm bị bỏ qua kèm số hộ + danh sách chi tiết, lọc được theo nhóm. */
+/**
+ * Các nhóm hộ bị bỏ qua: một dòng tiêu đề, mỗi loại lý do một dòng có ô chọn; tích loại nào thì bảng chỉ còn hộ loại đó
+ * (không tích gì thì hiện tất cả).
+ */
 export function SkippedList({ skipped, byReason }: { skipped: SkippedRow[]; byReason: Record<string, number> }) {
+  const [picked, setPicked] = useState<string[]>([]);
   const groups = Object.keys(byReason);
   const total = groups.reduce((t, g) => t + (byReason[g] ?? 0), 0);
   if (total === 0 && skipped.length === 0) return null;
+  const shown = picked.length === 0 ? skipped : skipped.filter((s) => picked.includes(s.reason));
   return (
     <>
       <Alert
@@ -37,19 +43,19 @@ export function SkippedList({ skipped, byReason }: { skipped: SkippedRow[]; byRe
         style={{ marginBottom: 12 }}
         message={`Bỏ qua ${total} hộ, không lập khoản`}
         description={
-          <ul style={{ margin: 0, paddingLeft: 18 }}>
+          <Checkbox.Group value={picked} onChange={(v) => setPicked(v as string[])} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {groups.map((g) => (
-              <li key={g}>
+              <Checkbox key={g} value={g}>
                 {skipLabel(g)}: {byReason[g]} hộ
-              </li>
+              </Checkbox>
             ))}
-          </ul>
+          </Checkbox.Group>
         }
       />
       <Table<SkippedRow>
         size="small"
         rowKey="subjectId"
-        dataSource={skipped}
+        dataSource={shown}
         scroll={{ x: 640 }}
         pagination={{ pageSize: 10, hideOnSinglePage: true }}
         columns={[
@@ -58,8 +64,6 @@ export function SkippedList({ skipped, byReason }: { skipped: SkippedRow[]; byRe
           { title: 'Tổ', dataIndex: 'areaCode' },
           {
             title: 'Lý do',
-            filters: groups.map((g) => ({ text: skipLabel(g), value: g })),
-            onFilter: (v, s) => s.reason === v,
             render: (_, s) => <StatusTag tone={s.warning ? 'warning' : 'neutral'}>{s.message || skipLabel(s.reason)}</StatusTag>,
           },
         ]}
