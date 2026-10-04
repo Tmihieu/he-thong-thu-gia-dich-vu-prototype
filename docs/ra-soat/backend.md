@@ -40,10 +40,29 @@ Trạng thái: **chưa xong**. Lane Backend không chạy Maven (quyền chạy 
 | 23 | `HouseholdReminderService.runBy` | Chạy nhắc tay có audit `RUN_HOUSEHOLD_REMINDERS` | BR-GEN-03 | 61c6082 | HouseholdReminderIT |
 | 24 | complaint + bulky (citizen) | Lọc theo HỘ, không theo tài khoản; khiếu nại nhập hộ qua điện thoại vẫn không hiện ở app | QĐ-L10, BR-CIT-02 | 612fd31 | CitizenComplaintIT |
 | 25 | `TariffService.updateDraft` | Bản đã ban hành không sửa được đơn giá/ngày: 422 `TARIFF_NOT_DRAFT` (bỏ `TARIFF_VALIDITY_LOCKED` và action `UPDATE_TARIFF_VERSION`) | BR-MD-11, QĐ-L7 | 97bc2f1 | TariffDraftIT (đã đổi kỳ vọng) |
+| 26 | `ChargeEligibility` | Chọn đăng ký hiệu lực TRONG kỳ lập khoản (không theo ngày phát hành); đăng ký bắt đầu muộn giữa kỳ nay được lập khoản | BR-MD-09 | 20d0cc8 | ChargeEligibilityTest |
+| 27 | `SubjectService` | `syncHouseholdGroup`/`requireGroupFits` xét cả đăng ký có `validTo` tương lai; đăng ký nối tiếp giữ `validTo` gốc | BR-MD-06/09 | a9c927b | SubjectServiceTest (không có ca cho nhánh sync) |
+| 28 | `ChargeRequestService.publish` | Phát hành cùng kỳ xếp hàng bằng advisory lock; DB vốn đã chặn trùng bằng `ex_charges_overlap` nên không có rủi ro nhân đôi, chỉ sửa thông báo 409 chung | BR-BIL-06 | a24034f | không có test song song |
 
 Ghi chú: audit entity của `CREATE_STREET` là `Street` (id = id đường), `StreetService:83`. Đề nghị hoàn "chờ" không cần trừ: đã chặn một đề nghị chờ / khoản / loại (`APPROVAL_PENDING_EXISTS`), nên không thể có nhiều đề nghị chờ cộng quá số đã thu.
 
-## Việc giao nhưng chưa làm (bị chặn quyền)
+## Chưa xử lý — để sau (mức rủi ro)
+| Mục | Rủi ro | Ghi chú |
+|---|---|---|
+| Đổi loại đối tượng khỏi hộ gia đình, đăng ký nhóm HGĐ còn nguyên (`SubjectService.update`) | Trung bình | `updateContract` sau đó báo `TARIFF_GROUP_MISMATCH`; chặn đổi loại khi còn đăng ký nhóm HGĐ |
+| `end(endDate)` đặt ENDED ngay dù ngày tương lai, hộ biến khỏi phát hành | Trung bình | Chờ xã (Q4, QĐ-L11) |
+| Ban hành biểu giá chạy đua với mở kỳ (`TariffService.issue` / `PeriodService.open`) | Thấp–trung bình | Cần khóa chung; xác suất thấp (chỉ quản trị làm) |
+| Hạn đóng khoản trước ngày phát hành; hạn kỳ không so với khoảng kỳ | Thấp | Chờ xã (Q7, QĐ-L11) |
+| `legacyPhotoReadable` cho đọc ảnh bulky của hộ khác nếu biết tên UUID | Thấp | Tên không đoán được; kiểm hộ sở hữu như `photoForCompany` |
+| `companyId` người dùng không kiểm tồn tại trước DB | Thấp | Nếu có FK thì chỉ là 409 chung; xác nhận FK V3 |
+| Ảnh `/api/citizen/photos` không có hạn mức theo tài khoản | Thấp | Có ngưỡng ổ đĩa 1 GB; dùng chung hạn mức với chợ |
+| Phản ánh / rác cồng kềnh gửi từ app không có `clientRequestId` (bấm đúp tạo 2 bản) | Thấp | Thêm như `MarketService.create` |
+| Swagger / api-docs mở mọi profile | Thấp (demo) | Chỉ bật ở dev khi triển khai thật |
+| Khóa tài khoản không hiệu lực ngay; OTP cố định không giới hạn thử | Demo | BR-PLT-06, BR-CIT-01 |
+| Danh sách nhắc nộp / `row()` dựng lại cả sổ kỳ cho từng dòng | Thấp (hiệu năng) | Chỉ chậm khi dữ liệu lớn |
+| Hoàn khoản chưa Đã thu; lập đề nghị hoàn chồng | Không còn | QĐ-L9 giữ; đã chặn một đề nghị chờ / khoản / loại |
+
+## Việc giao nhưng chưa làm (đã chuyển cho leader làm trên nhánh tích hợp: QĐ-L1, CORS)
 - **QĐ-L1 / BR-MD-03**: `CompanyService.create` đang chỉ `ADMIN`, `update` cho `COMMUNE_OFFICER` + `ADMIN`; cần cả hai vai trò create + update, sửa `CompanyApiIT` (thêm ca ADMIN tạo được). `CompanyApiIT` đang đỏ vì test dùng `officer` tạo công ty và `admin` PUT → 403.
 - **CORS** chỉ profile demo/dev, origin `http://localhost:*` và `http://127.0.0.1:*`, OPTIONS không cần token, kèm test preflight.
 - `CompanyApiIT` đỏ 2 ca cho tới khi làm QĐ-L1 (ADMIN và COMMUNE_OFFICER đều create + update; sửa test thêm ca ADMIN tạo được, vai trò khác 403).
