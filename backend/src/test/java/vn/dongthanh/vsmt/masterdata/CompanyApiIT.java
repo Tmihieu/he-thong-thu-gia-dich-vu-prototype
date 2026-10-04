@@ -74,8 +74,18 @@ class CompanyApiIT extends IntegrationTest {
                 .andExpect(status().isBadRequest());
         send(post("/api/masterdata/companies"), fx.bearer(fx.dv01Manager), BODY.formatted("null", "null"))
                 .andExpect(status().isForbidden());
-        send(put("/api/masterdata/companies/" + fx.dv01.getId()), fx.bearer(fx.admin), BODY.formatted("null", "null"))
+        send(put("/api/masterdata/companies/" + fx.dv01.getId()), fx.bearer(fx.dv01Manager), BODY.formatted("null", "null"))
                 .andExpect(status().isForbidden());
+    }
+
+    /** QĐ-L1 / BR-MD-03: quản trị cũng thêm và sửa được công ty (nút thêm nằm ở màn cấu hình của quản trị). */
+    @Test
+    void adminAlsoCreatesAndEdits() throws Exception {
+        String admin = fx.bearer(fx.admin);
+        send(post("/api/masterdata/companies"), admin, BODY.formatted("null", "null"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.code").value("DV08"));
+        send(put("/api/masterdata/companies/" + fx.dv01.getId()), admin, BODY.formatted("null", "null"))
+                .andExpect(status().isOk());
     }
 
     @Test

@@ -66,3 +66,7 @@ spring:
       on-profile: demo
   flyway:
     locations: classpath:db/migration,classpath:db/seed
+# Chỉ demo: cho bản web của app người dân (Expo web, cổng bất kỳ trên máy này) gọi API.
+vsmt:
+  cors:
+    allowed-origin-patterns: http://localhost:*,http://127.0.0.1:*
