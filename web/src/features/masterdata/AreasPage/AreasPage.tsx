@@ -78,9 +78,6 @@ export function AreasPage() {
         <Checkbox checked={unassignedOnly} onChange={(e) => setUnassignedOnly(e.target.checked)}>
           Chỉ tổ chưa có công ty
         </Checkbox>
-        <Button type="primary" disabled={selected.length === 0} onClick={() => openModal(selected)}>
-          Phân công {selected.length > 0 ? `(${selected.length} tổ)` : ''}
-        </Button>
       </Space>
       <Table<Row>
         rowKey="id"

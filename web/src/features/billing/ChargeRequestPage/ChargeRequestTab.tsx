@@ -140,7 +140,7 @@ export function ChargeRequestTab() {
           ))}
         {step.kind === 'done' && (
           <div style={{ marginTop: 16 }}>
-            <SkippedList skipped={step.result.skipped} />
+            <SkippedList skipped={step.result.skipped} byReason={step.result.skippedByReason} />
           </div>
         )}
       </Drawer>

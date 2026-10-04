@@ -25,21 +25,22 @@ const SKIP_LABELS: Record<string, string> = {
 const skipLabel = (reason: string) => SKIP_LABELS[reason] ?? reason;
 
 /** Các nhóm bị bỏ qua kèm số hộ + danh sách chi tiết, lọc được theo nhóm. */
-export function SkippedList({ skipped }: { skipped: SkippedRow[] }) {
-  if (skipped.length === 0) return null;
-  const groups = [...new Set(skipped.map((s) => s.reason as string))];
+export function SkippedList({ skipped, byReason }: { skipped: SkippedRow[]; byReason: Record<string, number> }) {
+  const groups = Object.keys(byReason);
+  const total = groups.reduce((t, g) => t + (byReason[g] ?? 0), 0);
+  if (total === 0 && skipped.length === 0) return null;
   return (
     <>
       <Alert
         type="warning"
         showIcon
         style={{ marginBottom: 12 }}
-        message={`Bỏ qua ${skipped.length} hộ, không lập khoản`}
+        message={`Bỏ qua ${total} hộ, không lập khoản`}
         description={
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             {groups.map((g) => (
               <li key={g}>
-                {skipLabel(g)}: {skipped.filter((s) => s.reason === g).length} hộ
+                {skipLabel(g)}: {byReason[g]} hộ
               </li>
             ))}
           </ul>
@@ -79,7 +80,7 @@ export function PreviewPanel({ result, publishing = false, error, onPublish, onB
           <MoneyText value={result.totalAmount} strong />
         </Descriptions.Item>
       </Descriptions>
-      <SkippedList skipped={result.skipped} />
+      <SkippedList skipped={result.skipped} byReason={result.skippedByReason} />
       <Space style={{ marginTop: 16 }}>
         <Button type="primary" onClick={onPublish} loading={publishing} disabled={result.chargeCount === 0}>
           Phát hành {result.chargeCount} khoản
