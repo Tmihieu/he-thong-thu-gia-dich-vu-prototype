@@ -49,6 +49,13 @@ PageHeader cho các màn cấp trang (Tiến độ, Đối soát, Khu vực đư
 - Tiền mặt người đi thu: thẻ "đang giữ" nổi, hai thẻ phụ cùng hàng.
 - Export cho lane Web xã (Dashboard, QĐ-L13): `web/src/features/remittance/rateBand.ts` → `rateBand(rate): 'red'|'gold'|'orange'|'green'` (BR-REM-11) và `cappedRate(rate)`; dùng `token[rateBand(rate)]`.
 
+## Đợt 5
+- Người đi thu: "Chưa thu" = mọi khoản còn trạng thái Chưa thu (kể cả thu một phần, vắng, hẹn), "Quá hạn" là tập con; `matchesChip`/`countChips` + test `workState.test.ts`. Ảnh: Đã thu 4/9, Chưa thu 5 (5 quá hạn) khớp màn công ty.
+- Đối soát: cột Kết quả theo dấu gap backend (0 Khớp / âm "Thu rồi chưa nộp" / dương "Nộp trước"); bỏ `RECONCILIATION_TONES`.
+- Tiến độ: bỏ dòng phụ trong ô Phải thu, bảng size small, chỉ cuộn khi < 900px; ở 1366px thấy đủ cột (ảnh).
+- Tổng quan Công ty: màu 3 vòng theo `rateBand`; chữ "đang giữ … tiền mặt" không bẻ dòng.
+- Đã chụp và soát: Tiến độ, Đối soát, Khiếu nại (xã + công ty, tạo KN-1026-001 qua API, chuyển DV01), Đồ cồng kềnh (trống), Khu vực được giao, Tiền mặt người đi thu. Chưa chụp phân tổ, phiếu thu xã lập (nằm trong tab, script không mở tab), thông báo.
+
 ## Sạn chưa sửa
 - Màn Công ty đếm "Số hộ đã thu x/y" tính cả hộ Miễn giảm/Đã xóa nợ ở mẫu số — cần backend cho số đếm riêng, nên để nguyên.
 - `PeriodTrend` còn vài màu cứng (`#eef1f4`, `#fff`); đổi sang token khi lane Web xã đưa token chung.

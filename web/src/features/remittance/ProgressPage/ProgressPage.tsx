@@ -10,7 +10,6 @@ import { StatusTag } from '../../../shared/StatusTag';
 import { MoneyText } from '../../../shared/MoneyText';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type AreaProgress, type LedgerRow, useAreaProgress, useCompanyLedger } from '../api';
-import { LedgerBreakdown } from '../LedgerBreakdown';
 import { LedgerStats } from '../LedgerStats';
 import { cappedRate } from '../rateBand';
 import { RemainingText } from '../RemainingText';
@@ -19,8 +18,8 @@ import { ReminderModal } from './ReminderModal';
 
 function Rate({ rate, low }: { rate: number; low: boolean }) {
   return (
-    <Space size={4} style={{ minWidth: 150 }}>
-      <Progress percent={cappedRate(rate)} size="small" showInfo={false} status={low ? 'exception' : 'normal'} style={{ width: 80 }} />
+    <Space size={4} style={{ minWidth: 120 }}>
+      <Progress percent={cappedRate(rate)} size="small" showInfo={false} status={low ? 'exception' : 'normal'} style={{ width: 56 }} />
       <span style={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{cappedRate(rate).toLocaleString('vi-VN')}%</span>
     </Space>
   );
@@ -80,11 +79,12 @@ export function ProgressPage() {
         />
       )}
       <Table<LedgerRow>
+        size="small"
         rowKey="companyId"
         loading={ledger.isLoading}
         dataSource={rows}
         pagination={false}
-        scroll={{ x: 'max-content' }}
+        scroll={{ x: 900 }}
         locale={{ emptyText: 'Kỳ này chưa có khoản phải thu' }}
         expandable={{
           expandedRowRender: (r) => (
@@ -107,19 +107,18 @@ export function ProgressPage() {
         columns={[
           {
             title: 'Công ty',
-            width: 220,
+            width: 180,
             render: (_, r) => (
-              <Typography.Text ellipsis={{ tooltip: true }} style={{ maxWidth: 200 }}>{`${r.companyCode} · ${r.companyName}`}</Typography.Text>
+              <Typography.Text ellipsis={{ tooltip: true }} style={{ maxWidth: 160 }}>{`${r.companyCode} · ${r.companyName}`}</Typography.Text>
             ),
           },
           {
             title: 'Phải thu',
             dataIndex: 'due',
             align: 'right',
-            render: (v: number, r) => (
+            render: (v: number) => (
               <>
                 <MoneyText value={v} />
-                <LedgerBreakdown row={r} />
               </>
             ),
           },

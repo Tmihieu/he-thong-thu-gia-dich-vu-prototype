@@ -40,9 +40,11 @@ export function workChip(w: CollectorCharge): WorkChip | null {
 /** Hộ có thuộc nút lọc không: "Chưa thu" gồm cả quá hạn, "Quá hạn" là tập con của "Chưa thu". */
 export function matchesChip(w: CollectorCharge, chip: WorkChip): boolean {
   if (chip === 'ALL') return true;
-  const g = workState(w).group;
-  if (chip === 'OVERDUE') return g === 'UNPAID' && w.charge.overdue;
-  return g === chip;
+  // Khoản chưa thu hết (kể cả đã thu một phần, đã hẹn, vắng nhà) vẫn là "Chưa thu" (BR-COL-03).
+  const unpaid = w.charge.status === 'UNPAID';
+  if (chip === 'UNPAID') return unpaid;
+  if (chip === 'OVERDUE') return unpaid && w.charge.overdue;
+  return workState(w).group === chip;
 }
 
 export function countChips(items: CollectorCharge[]): Record<string, number> {
