@@ -19,7 +19,7 @@ function Rate({ rate, low }: { rate: number; low: boolean }) {
   );
 }
 
-function sum(rows: LedgerRow[], key: 'due' | 'collected' | 'received' | 'remaining' | 'previousDebt') {
+function sum(rows: LedgerRow[], key: 'due' | 'payable' | 'collected' | 'received' | 'remaining' | 'previousDebt') {
   return rows.reduce((t, r) => t + r[key], 0);
 }
 
@@ -70,6 +70,7 @@ export function ProgressPage() {
             ['Phải thu', sum(rows, 'due')],
             ['Công ty đã thu', sum(rows, 'collected')],
             ['Đã nộp về xã', sum(rows, 'received')],
+            ['Phải nộp xã', sum(rows, 'payable')],
             ['Còn phải nộp', sum(rows, 'remaining')],
             ['Nợ kỳ trước', sum(rows, 'previousDebt')],
           ] as const
@@ -115,23 +116,7 @@ export function ProgressPage() {
         }}
         columns={[
           { title: 'Công ty', render: (_, r) => `${r.companyCode} · ${r.companyName}` },
-          {
-            title: 'Phải thu',
-            dataIndex: 'due',
-            align: 'right',
-            render: (v: number, r) => (
-              <>
-                <MoneyText value={v} />
-                {r.retained > 0 && (
-                  <div>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      phải nộp xã <MoneyText value={r.payable} />
-                    </Typography.Text>
-                  </div>
-                )}
-              </>
-            ),
-          },
+          { title: 'Phải thu', dataIndex: 'due', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           {
             title: 'Đã thu',
             dataIndex: 'collected',
@@ -145,6 +130,8 @@ export function ProgressPage() {
               </>
             ),
           },
+          { title: 'Công ty giữ lại', dataIndex: 'retained', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Phải nộp xã', dataIndex: 'payable', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           { title: 'Đã nộp về xã', dataIndex: 'received', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           { title: 'Tỷ lệ nộp', render: (_, r) => <Rate rate={r.remittedRate} low={r.lowRemittedRate} /> },
           { title: 'Còn phải nộp', dataIndex: 'remaining', align: 'right', render: (v: number) => <MoneyText value={v} strong /> },

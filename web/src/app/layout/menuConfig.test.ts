@@ -1,4 +1,4 @@
-import { homePath, MENU, menuPath, ROLE_BASE, ROLE_LABELS, ROLES } from './menuConfig';
+import { homePath, MENU, menuPath, visibleMenu, ROLE_BASE, ROLE_LABELS, ROLES } from './menuConfig';
 
 describe('menuConfig', () => {
   it('có đúng 5 vai trò nội bộ (thêm Lãnh đạo 29/09/2026), không có người dân', () => {
@@ -7,7 +7,7 @@ describe('menuConfig', () => {
   });
 
   it('menu mỗi vai trò khớp danh mục màn hình của prototype (inventory §3)', () => {
-    const labels = (role: keyof typeof MENU) => MENU[role].map((e) => e.label);
+    const labels = (role: keyof typeof MENU) => visibleMenu(role).map((e) => e.label);
     expect(labels('COMMUNE_OFFICER')).toEqual([
       'Hồ sơ hộ',
       'Khoản thu',
@@ -19,9 +19,9 @@ describe('menuConfig', () => {
       'Đề nghị',
       'Chợ cộng đồng',
     ]);
-    expect(labels('COMPANY_MANAGER')).toEqual(['Khu vực được giao', 'Khiếu nại', 'Rác cồng kềnh', 'Chợ cộng đồng']);
+    expect(labels('COMPANY_MANAGER')).toEqual(['Khu vực được giao', 'Khiếu nại', 'Chợ cộng đồng']);
     expect(labels('COLLECTOR')).toEqual(['Danh sách thu', 'Tiền mặt', 'Tài khoản', 'Chợ cộng đồng']);
-    expect(labels('ADMIN')).toEqual(['Tài khoản', 'Cấu hình', 'Nhật ký', 'Quản trị dữ liệu']);
+    expect(labels('ADMIN')).toEqual(['Tài khoản', 'Cấu hình', 'Nhật ký']);
     expect(labels('LEADER')).toEqual(['Dashboard', 'Chờ duyệt', 'Báo cáo tổng hợp', 'Tiến độ thu', 'Đối soát', 'Chợ cộng đồng']);
   });
 

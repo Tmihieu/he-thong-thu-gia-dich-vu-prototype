@@ -23,7 +23,13 @@ import vn.dongthanh.vsmt.collection.domain.Payment;
 import vn.dongthanh.vsmt.collection.domain.PaymentMethod;
 import vn.dongthanh.vsmt.collection.domain.PaymentRepository;
 import vn.dongthanh.vsmt.collection.domain.VisitResult;
+import vn.dongthanh.vsmt.citizen.domain.CitizenAccountRepository;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
+import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository;
+import vn.dongthanh.vsmt.masterdata.domain.PeriodStatus;
+import vn.dongthanh.vsmt.notification.domain.NotificationKind;
+import vn.dongthanh.vsmt.notification.service.NotificationService;
+import vn.dongthanh.vsmt.notification.service.NotificationService.NotificationCommand;
 import vn.dongthanh.vsmt.masterdata.service.PeriodGuard;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 import vn.dongthanh.vsmt.platform.common.ConflictException;
@@ -55,6 +61,9 @@ public class CollectionService {
     private final CollectorAssignmentService scope;
     private final UserRepository users;
     private final PeriodGuard periodGuard;
+    private final CollectionPeriodRepository periods;
+    private final CitizenAccountRepository citizenAccounts;
+    private final NotificationService notifications;
     private final AuditService audit;
     private final Clock clock;
 
@@ -91,7 +100,7 @@ public class CollectionService {
         if (existing.isPresent()) {
             return replay(existing.get(), cmd.chargeId());
         }
-        requireCollectable(charge);
+        CollectionPeriod ledgerPeriod = requireCollectable(charge);
         if (cmd.method() == PaymentMethod.APP_SIMULATED || cmd.method() == PaymentMethod.REFUND) {
             throw new BusinessRuleException("PAYMENT_METHOD_INVALID",
                     "Thanh toán qua app người dân và hoàn tiền không ghi nhận ở đây.");
@@ -112,7 +121,7 @@ public class CollectionService {
                 .code(code).charge(charge).amount(cmd.amount()).method(cmd.method()).paidAt(now)
                 .collectorId(collectorId).confirmedBy(actor.id()).bankRef(blankToNull(cmd.bankRef()))
                 .note(blankToNull(cmd.note())).clientRequestId(cmd.clientRequestId())
-                .build());
+                .ledgerPeriod(ledgerPeriod).build());
         long paidAfter = paidBefore + cmd.amount();
         if (paidAfter >= charge.getAmount()) {
             charge.markPaid(now);
@@ -122,6 +131,7 @@ public class CollectionService {
         after.put("paymentAmount", cmd.amount());
         after.put("method", cmd.method());
         audit.record(actor, "RECORD_PAYMENT", ENTITY, charge.getCode(), before, after);
+        notifyHousehold(charge, cmd.amount(), charge.getAmount() - paidAfter);
         return new PaymentOutcome(payment, charge, paidAfter, charge.getAmount() - paidAfter, false);
     }
 
@@ -141,7 +151,7 @@ public class CollectionService {
             }
             return replay(existing.get(), cmd.chargeId());
         }
-        requireCollectable(charge);
+        CollectionPeriod ledgerPeriod = requireCollectable(charge);
 
         long paidBefore = payments.sumByChargeId(charge.getId());
         long remaining = charge.getAmount() - paidBefore;
@@ -156,7 +166,7 @@ public class CollectionService {
         Payment payment = payments.save(Payment.builder()
                 .code(code).charge(charge).amount(remaining).method(PaymentMethod.APP_SIMULATED).paidAt(now)
                 .citizenAccountId(cmd.citizenAccountId()).clientRequestId(cmd.clientRequestId())
-                .build());
+                .ledgerPeriod(ledgerPeriod).build());
         charge.markPaid(now);
         Map<String, Object> after = state(charge, charge.getAmount());
         after.put("payment", code);
@@ -279,8 +289,18 @@ public class CollectionService {
         return charge;
     }
 
-    private void requireCollectable(Charge charge) {
-        periodGuard.requireOpen(charge.getPeriod());
+    /**
+     * Khoản của kỳ đã khóa vẫn thu được: tiền ghi nhận vào kỳ đang thu mới nhất (thu muộn), kỳ đã khóa không đổi.
+     * Trả về kỳ ghi nhận, hoặc null khi khoản còn ở kỳ đang thu (ghi nhận ở chính kỳ của khoản).
+     */
+    private CollectionPeriod requireCollectable(Charge charge) {
+        CollectionPeriod ledgerPeriod = null;
+        if (PeriodStatus.LOCKED.name().equals(periods.lockStatusForShare(charge.getPeriod().getId()))) {
+            ledgerPeriod = periods.findByStatusOrderByStartDateDesc(PeriodStatus.COLLECTING).stream().findFirst()
+                    .orElseThrow(() -> new BusinessRuleException("PERIOD_LOCKED", "Kỳ " + charge.getPeriod().getCode()
+                            + " đã khóa và chưa có kỳ đang thu để ghi nhận khoản thu muộn."));
+            periodGuard.requireOpen(ledgerPeriod);
+        }
         if (charge.getStatus() == ChargeStatus.EXEMPT) {
             throw new BusinessRuleException("CHARGE_EXEMPT", "Khoản " + charge.getCode() + " được miễn, không thu.");
         }
@@ -289,6 +309,17 @@ public class CollectionService {
         }
         if (charge.getStatus() == ChargeStatus.WRITTEN_OFF) {
             throw new BusinessRuleException("CHARGE_WRITTEN_OFF", "Khoản " + charge.getCode() + " đã xóa nợ, không thu.");
+        }
+        return ledgerPeriod;
+    }
+
+    /** Báo hộ khi người thu ghi tiền hoặc khi hộ tự thanh toán: hộ thấy ngay số tiền và còn thiếu bao nhiêu. */
+    private void notifyHousehold(Charge charge, long amount, long remaining) {
+        String body = "Đã ghi nhận " + Money.format(amount) + " cho khoản " + charge.getCode()
+                + (remaining > 0 ? ", còn thiếu " + Money.format(remaining) + "." : ", khoản đã thu đủ.");
+        for (Long citizenId : citizenAccounts.findActiveIdsBySubject(charge.getSubject().getId())) {
+            notifications.publish(NotificationCommand.toCitizen(citizenId, NotificationKind.RECEIPT,
+                    "Biên nhận thu phí " + charge.getPeriod().getCode(), body, null), null);
         }
     }
 

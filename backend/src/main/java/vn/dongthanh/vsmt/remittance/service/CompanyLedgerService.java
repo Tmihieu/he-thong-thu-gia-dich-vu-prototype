@@ -27,16 +27,19 @@ import vn.dongthanh.vsmt.remittance.service.LedgerStatus.Reconciliation;
 import vn.dongthanh.vsmt.remittance.service.RemittedTotals.Received;
 
 /**
- * Sổ công ty–kỳ, nguồn số liệu duy nhất cho tiến độ, đối soát, màn công ty, phiếu thu, nhắc nộp và khóa kỳ.
+ * Sổ công ty–kỳ, nguồn số liệu duy nhất cho tiến độ, đối soát, màn công ty, biên nhận, nhắc nộp và khóa kỳ.
  * <ul>
  * <li>Phải thu (sửa R6): Σ khoản theo công ty chụp lúc phát hành (G3), không dùng phân công hiện tại.</li>
- * <li>Công ty đã thu (R8, G4): Σ thanh toán. Đã nộp về xã (R7): Σ phiếu thu. Còn phải nộp = phải thu − đã nộp.</li>
- * <li>Điều chỉnh kỳ trước (O10): khoản của kỳ đã khóa được xóa nợ, ghi nhận ở kỳ này; còn phải nộp = phải thu −
- * điều chỉnh − đã nộp. Đã thu đã trừ tiền hoàn ghi nhận ở kỳ này (T58); cột "đã hoàn" chỉ để hiển thị.</li>
- * <li>Nợ kỳ trước (R9–R11): Σ max(0, phải thu − đã nộp) các kỳ khác đã hết hạn. Quá hạn: hạn kỳ &lt; hôm nay và còn nộp.</li>
- * <li>Tiến độ (R13) và đối soát (R14, chênh lệch = đã nộp − đã thu) như prototype.</li>
- * <li>Cờ dưới 45% ở cấp công ty (màn tiến độ của xã) tính theo đã nộp về xã / phải thu như prototype; tỷ lệ đã thu
- * và cờ của nó vẫn giữ cho màn tổng quan của công ty.</li>
+ * <li>Công ty đã thu (R8, G4): Σ thanh toán (trừ hoàn, T58). Đã nộp về xã (R7): Σ biên nhận.</li>
+ * <li>Mô hình 03/10, tính trên số ĐÃ THU: giữ lại = phần thu gom của tiền hộ đã đóng (theo số chụp trên khoản); phải
+ * nộp xã = đã thu − giữ lại (phần vận chuyển); còn phải nộp = phải nộp xã − đã nộp. Hộ chưa đóng không làm công ty
+ * nợ xã, nên kỳ khóa được khi công ty đã nộp đủ phần của tiền đã thu.</li>
+ * <li>Điều chỉnh kỳ trước (O10): khoản kỳ đã khóa được xóa nợ, ghi nhận ở kỳ này; chỉ để hiển thị, không đổi số phải nộp
+ * vì khoản chưa thu thì chưa có tiền để nộp.</li>
+ * <li>Nợ kỳ trước (R9–R11): Σ max(0, phải nộp xã − đã nộp) các kỳ khác đã hết hạn. Quá hạn: hạn kỳ &lt; hôm nay và còn nộp.</li>
+ * <li>Tiến độ (R13) và đối soát (R14, chênh lệch = đã nộp − phải nộp xã, một cơ sở tính).</li>
+ * <li>Tỷ lệ nộp và cờ dưới 45% (màn tiến độ của xã) tính theo đã nộp / phải nộp xã; tỷ lệ đã thu và cờ của nó vẫn giữ
+ * cho màn tổng quan của công ty.</li>
  * </ul>
  */
 @Service
@@ -59,7 +62,7 @@ public class CompanyLedgerService {
             long retained, long payable) {
     }
 
-    /** Mọi công ty có khoản, thanh toán, phiếu thu trong kỳ hoặc còn nợ kỳ trước; sắp theo mã công ty. */
+    /** Mọi công ty có khoản, thanh toán, biên nhận trong kỳ hoặc còn nợ kỳ trước; sắp theo mã công ty. */
     public List<LedgerRow> ledger(Long periodId) {
         CollectionPeriod period = period(periodId);
         LocalDate today = LocalDate.now(clock);
@@ -106,7 +109,7 @@ public class CompanyLedgerService {
                 });
     }
 
-    /** Còn phải nộp của công ty cho kỳ (dùng chặn số tiền phiếu thu, R15). */
+    /** Còn phải nộp của công ty cho kỳ (dùng chặn số tiền biên nhận, R15). */
     public long remaining(Long companyId, Long periodId) {
         return ledger(periodId).stream().filter(r -> r.companyId().equals(companyId)).mapToLong(LedgerRow::remaining)
                 .findFirst().orElse(0L);
@@ -130,7 +133,7 @@ public class CompanyLedgerService {
         remitted.receivedByCompanyAndPeriod().stream().filter(r -> r.companyId() == companyId)
                 .forEach(r -> receivedByPeriod.merge(r.periodId(), r.amount(), Long::sum));
         Map<Long, Long> remainingByPeriod = new HashMap<>();
-        queries.dueByCompanyAndPeriodBefore(today).stream().filter(d -> d.companyId() == companyId)
+        queries.collectedByCompanyAndPeriodBefore(today).stream().filter(d -> d.companyId() == companyId)
                 .forEach(d -> remainingByPeriod.merge(d.periodId(),
                         d.amount() - retainedByPeriod.getOrDefault(d.periodId(), 0L) - receivedByPeriod.getOrDefault(d.periodId(), 0L),
                         Long::sum));
@@ -155,18 +158,16 @@ public class CompanyLedgerService {
         long collected = collectedRow == null ? 0 : collectedRow.amount();
         long received = receivedRow == null ? 0 : receivedRow.amount();
         long receiptCount = receivedRow == null ? 0 : receivedRow.receiptCount();
-        // Phải nộp xã = phải thu − điều chỉnh − phần thu gom công ty cầm lại (tính từ biểu giá, xã chốt 03/10).
+        // Phải nộp xã = đã thu − phần thu gom công ty cầm lại (chụp từ biểu giá trên khoản, xã chốt 03/10).
         long retained = retainedRow == null ? 0 : retainedRow.amount();
-        long payable = due - adjustment - retained;
+        long payable = collected - retained;
         long remaining = payable - received;
-        // Điều chỉnh kỳ trước là phần công ty đã nộp thừa ở kỳ khóa, tính như đã nộp để đối soát khớp được.
-        // Phần công ty giữ lại cũng không phải nộp, nên cộng vào vế đã nộp.
-        long gap = received + adjustment + retained - collected;
+        long gap = received - payable;
         boolean pastDue = period.getDueDate().isBefore(today);
         boolean overdue = pastDue && remaining > 0;
 
         Progress progress;
-        if (remaining <= 0) {
+        if (remaining <= 0 && previousDebt == 0) {
             progress = Progress.PAID_IN_FULL;
         } else if (overdue || previousDebt > 0) {
             progress = Progress.OVERDUE;
@@ -189,7 +190,7 @@ public class CompanyLedgerService {
         // Phải thu 0 thì tỷ lệ 0% và vẫn gắn cờ, như prototype.
         return new LedgerRow(company.getId(), company.getCode(), company.getName(), period.getId(), due, chargeCount,
                 adjustment, refunded, collected, received, receiptCount, remaining, gap, previousDebt, overdue, percent(collected, due),
-                due == 0 || lowRate(collected, due), percent(received, due - retained), due == 0 || lowRate(received, due - retained),
+                due == 0 || lowRate(collected, due), percent(received, payable), payable == 0 ? due == 0 : lowRate(received, payable),
                 progress, reconciliation, retained, payable);
     }
 
@@ -211,7 +212,7 @@ public class CompanyLedgerService {
         remitted.receivedByCompanyAndPeriod()
                 .forEach(r -> receivedByKey.merge(r.companyId() + ":" + r.periodId(), r.amount(), Long::sum));
         Map<Long, Long> debt = new HashMap<>();
-        for (CompanyPeriodAmount d : queries.dueByCompanyAndPeriodBefore(today)) {
+        for (CompanyPeriodAmount d : queries.collectedByCompanyAndPeriodBefore(today)) {
             if (d.periodId() == currentPeriodId) {
                 continue;
             }

@@ -17,7 +17,6 @@ type IconName = keyof typeof Ionicons.glyphMap;
 const SHORTCUTS: { label: string; icon: IconName; href: Href }[] = [
   { label: 'Khoản phí\nphải đóng', icon: 'wallet-outline', href: '/charges' },
   { label: 'Gửi phản ánh\nkiến nghị', icon: 'chatbubble-ellipses-outline', href: '/complaints/new' },
-  { label: 'Đăng ký\nrác cồng kềnh', icon: 'cube-outline', href: '/bulky' },
   { label: 'Chợ\nđồ cũ', icon: 'storefront-outline', href: '/market' },
   { label: 'Lịch\nthu gom', icon: 'calendar-outline', href: '/schedule' },
   { label: 'Xác nhận\nthanh toán', icon: 'receipt-outline', href: '/confirmations' },

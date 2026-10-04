@@ -20,6 +20,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import vn.dongthanh.vsmt.collection.domain.PaymentMethod;
+import vn.dongthanh.vsmt.collection.service.CollectionService;
+import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentCommand;
 import vn.dongthanh.vsmt.remittance.domain.ReceiptMethod;
 import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService;
 import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService.IssueReceiptCommand;
@@ -37,12 +40,18 @@ class ReminderIT extends IntegrationTest {
     @Autowired CollectionFixture fx;
     @Autowired MutableClock clock;
     @Autowired CompanyReceiptService receipts;
+    @Autowired CollectionService collection;
 
     @BeforeEach
     void seed() {
         fx.build();
-        // DV07 nộp đủ kỳ 10; DV01 chưa nộp.
-        receipts.issue(new IssueReceiptCommand(fx.dv07.getId(), fx.october.getId(), 160_000, ReceiptMethod.CASH, null,
+        // Công ty chỉ nộp phần của tiền hộ đã đóng (xã chốt 03/10): mỗi công ty có một khoản hộ đã đóng 80.000.
+        collection.recordPayment(new PaymentCommand(fx.chargeId("DTH-H000001"), 80_000, PaymentMethod.CASH, "lk-1", null,
+                null, null), fx.actor(fx.thu07));
+        collection.recordPayment(new PaymentCommand(fx.chargeId("DTH-H000005"), 80_000, PaymentMethod.CASH, "lk-2", null,
+                null, null), fx.actor(fx.thu12));
+        // DV07 nộp đủ phần phải nộp kỳ 10; DV01 chưa nộp.
+        receipts.issue(new IssueReceiptCommand(fx.dv07.getId(), fx.october.getId(), 80_000, ReceiptMethod.CASH, null,
                 null, null, null), fx.actor(fx.officer));
     }
 
@@ -64,14 +73,14 @@ class ReminderIT extends IntegrationTest {
 
         mvc.perform(get("/api/remittance/reminders/draft").param("companyId", fx.dv01.getId().toString())
                         .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer)))
-                .andExpect(jsonPath("$.amount").value(320_000))
+                .andExpect(jsonPath("$.amount").value(80_000))
                 .andExpect(jsonPath("$.dueDate").value("2026-11-08"))
                 .andExpect(jsonPath("$.debts[0].periodLabel").value("Tháng 10/2026"));
 
         remind(fx.dv01.getId())
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.code").value("NN-001"))
-                .andExpect(jsonPath("$.amount").value(320_000));
+                .andExpect(jsonPath("$.amount").value(80_000));
 
         mvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.dv01Manager)))
                 .andExpect(jsonPath("$.items[0].kind").value("REMINDER"))

@@ -1,7 +1,7 @@
 package vn.dongthanh.vsmt.platform.common;
 
 /**
- * Đọc số tiền VND bằng chữ cho phiếu thu (R29), vd. 4200000 → "Bốn triệu hai trăm nghìn đồng".
+ * Đọc số tiền VND bằng chữ cho biên nhận (R29), vd. 4200000 → "Bốn triệu hai trăm nghìn đồng".
  * Nhóm ba chữ số bằng 0 được bỏ qua; nhóm khác 0 không đứng đầu thì đọc đủ ("không trăm", "linh").
  */
 public final class VietnameseMoneyWords {

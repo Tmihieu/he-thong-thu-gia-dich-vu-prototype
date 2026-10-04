@@ -42,7 +42,7 @@ export function useAreaProgress(periodId: number | undefined) {
   });
 }
 
-/** Phiếu thu theo kỳ; công ty chỉ nhận phiếu của mình (backend lọc). */
+/** Biên nhận theo kỳ; công ty chỉ nhận phiếu của mình (backend lọc). */
 export function useReceipts(periodId: number | undefined, companyId?: number) {
   return useQuery({
     queryKey: [...remittanceKeys.receipts, periodId, companyId],

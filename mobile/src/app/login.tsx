@@ -134,9 +134,6 @@ export default function LoginScreen() {
           )}
         </View>
 
-        <Pressable onPress={() => router.push('/connection')} style={styles.linkButton} accessibilityRole="button">
-          <Text style={styles.link}>Kiểm tra kết nối máy chủ</Text>
-        </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );

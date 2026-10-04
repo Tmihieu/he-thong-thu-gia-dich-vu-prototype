@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.remittance.domain.CompanyReceiptRepository;
 import vn.dongthanh.vsmt.remittance.service.LedgerQueries.CompanyPeriodAmount;
 
-/** Tiền công ty đã nộp về xã = Σ phiếu thu công ty (R7), đọc từ bảng company_receipts. */
+/** Tiền công ty đã nộp về xã = Σ biên nhận công ty (R7), đọc từ bảng company_receipts. */
 @Component
 @RequiredArgsConstructor
 public class RemittedTotals {

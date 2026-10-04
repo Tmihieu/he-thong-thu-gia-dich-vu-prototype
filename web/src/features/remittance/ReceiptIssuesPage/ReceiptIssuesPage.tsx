@@ -81,7 +81,7 @@ function ResolveModal({ issue, onClose }: { issue: ReceiptIssue | null; onClose:
   );
 }
 
-/** Màn mới (prototype chưa có): cán bộ xã xem sai sót phiếu thu công ty báo và đóng kèm ghi chú (G6). */
+/** Màn mới (prototype chưa có): cán bộ xã xem sai sót biên nhận công ty báo và đóng kèm ghi chú (G6). */
 export function ReceiptIssuesPage() {
   const [status, setStatus] = useState<ReceiptIssueStatus | 'ALL'>('PENDING');
   const [resolving, setResolving] = useState<ReceiptIssue | null>(null);

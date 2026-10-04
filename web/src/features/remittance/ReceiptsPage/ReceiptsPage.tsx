@@ -25,7 +25,7 @@ function CompanyReceipts({ periodId, companyId, onPrint }: { periodId: number; c
       loading={receipts.isLoading}
       dataSource={receipts.data ?? []}
       pagination={false}
-      locale={{ emptyText: 'Chưa có phiếu thu' }}
+      locale={{ emptyText: 'Chưa có biên nhận' }}
       columns={[
         { title: 'Số phiếu', dataIndex: 'code' },
         { title: 'Ngày nộp', dataIndex: 'receiptDate', render: (d: string) => <DateText value={d} /> },
@@ -45,7 +45,7 @@ function CompanyReceipts({ periodId, companyId, onPrint }: { periodId: number; c
   );
 }
 
-/** Phiếu thu công ty của cán bộ xã (§10 bước 5): công ty – kỳ còn phải nộp, lập phiếu, lịch sử và bản in. */
+/** Biên nhận công ty của cán bộ xã (§10 bước 5): công ty – kỳ còn phải nộp, lập phiếu, lịch sử và bản in. */
 export function ReceiptsPage() {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
@@ -88,6 +88,8 @@ export function ReceiptsPage() {
           { title: 'Công ty', render: (_, r) => `${r.companyCode} · ${r.companyName}` },
           { title: 'Phải thu', dataIndex: 'due', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           { title: 'Đã thu của hộ', dataIndex: 'collected', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Công ty giữ lại', dataIndex: 'retained', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Phải nộp xã', dataIndex: 'payable', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           {
             title: 'Đã nộp về xã',
             align: 'right',
@@ -95,7 +97,7 @@ export function ReceiptsPage() {
               <Space direction="vertical" size={0}>
                 <MoneyText value={r.received} />
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {r.receiptCount} phiếu thu
+                  {r.receiptCount} biên nhận
                 </Typography.Text>
               </Space>
             ),

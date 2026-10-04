@@ -100,7 +100,7 @@ public class CollectionPeriod extends BaseEntity {
         return p;
     }
 
-    /** Cán bộ xã khóa kỳ (G1): chỉ từ Đang thu; sau khóa không phát hành, ghi thu, lập phiếu thu cho kỳ. */
+    /** Cán bộ xã khóa kỳ (G1): chỉ từ Đang thu; sau khóa không phát hành, ghi thu, lập biên nhận cho kỳ. */
     public void lock(OffsetDateTime at, Long by) {
         requireStatus(PeriodStatus.COLLECTING, PeriodStatus.LOCKED);
         status = PeriodStatus.LOCKED;

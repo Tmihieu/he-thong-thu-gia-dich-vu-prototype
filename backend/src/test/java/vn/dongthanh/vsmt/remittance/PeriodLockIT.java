@@ -19,6 +19,9 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.transaction.annotation.Transactional;
 
 import vn.dongthanh.vsmt.platform.domain.User;
+import vn.dongthanh.vsmt.collection.domain.PaymentMethod;
+import vn.dongthanh.vsmt.collection.service.CollectionService;
+import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentCommand;
 import vn.dongthanh.vsmt.remittance.domain.ReceiptMethod;
 import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService;
 import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService.IssueReceiptCommand;
@@ -34,10 +37,16 @@ class PeriodLockIT extends IntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired CollectionFixture fx;
     @Autowired CompanyReceiptService receipts;
+    @Autowired CollectionService collection;
 
     @BeforeEach
     void seed() {
         fx.build();
+        // Công ty chỉ nộp phần của tiền hộ đã đóng (xã chốt 03/10): mỗi công ty có một khoản hộ đã đóng 80.000.
+        collection.recordPayment(new PaymentCommand(fx.chargeId("DTH-H000001"), 80_000, PaymentMethod.CASH, "lk-1", null,
+                null, null), fx.actor(fx.thu07));
+        collection.recordPayment(new PaymentCommand(fx.chargeId("DTH-H000005"), 80_000, PaymentMethod.CASH, "lk-2", null,
+                null, null), fx.actor(fx.thu12));
     }
 
     @Test
@@ -45,8 +54,8 @@ class PeriodLockIT extends IntegrationTest {
         lock(fx.officer)
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("PERIOD_HAS_DEBT"))
-                .andExpect(jsonPath("$.message").value(allOf(containsString("DV01: 320.000 đ"),
-                        containsString("DV07: 160.000 đ"))));
+                .andExpect(jsonPath("$.message").value(allOf(containsString("DV01: 80.000 đ"),
+                        containsString("DV07: 80.000 đ"))));
         lock(fx.admin).andExpect(status().isForbidden());
     }
 
@@ -82,9 +91,9 @@ class PeriodLockIT extends IntegrationTest {
     }
 
     private void remitInFull() {
-        receipts.issue(new IssueReceiptCommand(fx.dv01.getId(), fx.october.getId(), 320_000, ReceiptMethod.TRANSFER,
+        receipts.issue(new IssueReceiptCommand(fx.dv01.getId(), fx.october.getId(), 80_000, ReceiptMethod.TRANSFER,
                 null, null, null, null), fx.actor(fx.officer));
-        receipts.issue(new IssueReceiptCommand(fx.dv07.getId(), fx.october.getId(), 160_000, ReceiptMethod.TRANSFER,
+        receipts.issue(new IssueReceiptCommand(fx.dv07.getId(), fx.october.getId(), 80_000, ReceiptMethod.TRANSFER,
                 null, null, null, null), fx.actor(fx.officer));
     }
 

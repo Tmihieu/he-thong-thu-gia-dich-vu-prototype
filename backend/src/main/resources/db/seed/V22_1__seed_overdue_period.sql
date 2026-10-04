@@ -5,7 +5,8 @@
 -- Số liệu theo quy tắc của service: khoản chụp công ty theo phân công ngày phát hành 01/09 (G3), đơn giá tháng của
 -- nhóm giá theo BG-65-2026 là biểu giá hiệu lực ngày đầu kỳ (R1); khoản Đã thu khi Σ thanh toán = số tiền (G4);
 -- người đi thu đã bàn giao hết tiền mặt (R21); xã lập một phiếu thu một phần (R15).
--- DV01: phải thu 1.319.000 (19 khoản), đã thu 609.000 (8 lần), đã nộp 400.000, còn phải nộp 919.000.
+-- DV01: phải thu 1.319.000 (19 khoản), đã thu 609.000 (8 lần), công ty giữ lại phần thu gom của số đã thu (khoảng 434.000),
+-- phải nộp xã khoảng 175.000 (phần vận chuyển, xã chốt 03/10), đã nộp 100.000, còn phải nộp khoảng 75.000.
 -- Seed chỉ ghi dữ liệu tiền và nhật ký, không tạo thông báo như lúc chạy thật (vd. RECEIPT gửi DV01 khi lập phiếu thu).
 
 insert into collection_periods (code, period_type, label, start_date, end_date, open_date, due_date,
@@ -79,7 +80,7 @@ group by v.code, u.id, u.company_id, m.id;
 
 insert into company_receipts (code, company_id, period_id, amount, method, receipt_date, payer_name, document_ref,
                               note, created_by)
-select 'PT-CT-0926-001', c.id, p.id, 400000, 'TRANSFER', date '2026-09-22', c.contact_name, 'UNC-DEMO-0922',
+select 'PT-CT-0926-001', c.id, p.id, 100000, 'TRANSFER', date '2026-09-22', c.contact_name, 'UNC-DEMO-0922',
        'Nộp đợt 1', u.id
 from companies c, collection_periods p, users u
 where c.code = 'DV01' and p.code = '2026-09' and u.username = 'canbo_xa';

@@ -31,7 +31,7 @@ export function LockPeriodButton({ periodId }: { periodId: number }) {
     <>
       <Popconfirm
         title={`Khóa kỳ ${period.label}?`}
-        description="Sau khi khóa không phát hành khoản, ghi thu hay lập phiếu thu cho kỳ này được nữa."
+        description="Sau khi khóa không phát hành khoản, ghi thu hay lập biên nhận cho kỳ này được nữa."
         okText="Khóa kỳ"
         cancelText="Hủy"
         onConfirm={() => lock.mutate()}

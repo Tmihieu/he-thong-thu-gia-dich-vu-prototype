@@ -20,7 +20,7 @@ import vn.dongthanh.vsmt.remittance.service.CompanyLedgerService.LedgerRow;
 
 /**
  * Khóa kỳ (cán bộ xã, G1): chặn khi còn bất kỳ công ty nào phải thu − đã nộp &gt; 0 cho kỳ, không cần quá hạn
- * (G15, R19); lỗi liệt kê công ty và số còn nợ. Khóa dòng kỳ trong transaction để không có phiếu thu/khoản mới
+ * (G15, R19); lỗi liệt kê công ty và số còn nợ. Khóa dòng kỳ trong transaction để không có biên nhận/khoản mới
  * chen vào giữa lúc kiểm tra và lúc khóa.
  */
 @Service

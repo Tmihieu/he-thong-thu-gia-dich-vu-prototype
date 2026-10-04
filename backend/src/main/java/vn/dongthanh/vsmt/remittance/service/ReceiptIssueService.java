@@ -28,7 +28,7 @@ import vn.dongthanh.vsmt.remittance.domain.ReceiptIssueStatus;
 import vn.dongthanh.vsmt.remittance.domain.ReceiptIssueType;
 
 /**
- * Báo sai sót phiếu thu (R28): quản lý công ty báo trên phiếu của mình → thông báo RECEIPT tới cán bộ xã;
+ * Báo sai sót biên nhận (R28): quản lý công ty báo trên phiếu của mình → thông báo RECEIPT tới cán bộ xã;
  * xã xử lý = đóng kèm ghi chú kết quả (G6) → thông báo RECEIPT về công ty. Không sửa, không hủy phiếu.
  */
 @Service
@@ -49,7 +49,7 @@ public class ReceiptIssueService {
         actor.requireRole(Role.COMPANY_MANAGER);
         CompanyReceipt receipt = receipts.findByIdWithDetails(receiptId)
                 .filter(r -> Objects.equals(r.getCompany().getId(), actor.companyId()))
-                .orElseThrow(() -> new NotFoundException("RECEIPT_NOT_FOUND", "Không tìm thấy phiếu thu của công ty."));
+                .orElseThrow(() -> new NotFoundException("RECEIPT_NOT_FOUND", "Không tìm thấy biên nhận của công ty."));
         if (description == null || description.isBlank()) {
             throw new BusinessRuleException("RECEIPT_ISSUE_DESCRIPTION_REQUIRED", "Phải mô tả sai sót.");
         }
@@ -57,7 +57,7 @@ public class ReceiptIssueService {
         ReceiptIssue saved = issues.save(ReceiptIssue.report(receipt, type, correctAmount, text, actor.id()));
         String extra = correctAmount == null ? "" : " Số đúng theo công ty: " + Money.format(correctAmount) + ".";
         notifications.publish(NotificationCommand.toRole(Role.COMMUNE_OFFICER, NotificationKind.RECEIPT,
-                receipt.getCompany().getCode() + " báo sai sót phiếu thu " + receipt.getCode(), text + extra,
+                receipt.getCompany().getCode() + " báo sai sót biên nhận " + receipt.getCode(), text + extra,
                 link("remittance.receiptIssues", "issueId", saved.getId())), actor.id());
         Map<String, Object> after = new LinkedHashMap<>();
         after.put("receipt", receipt.getCode());
@@ -75,7 +75,7 @@ public class ReceiptIssueService {
         issue.resolve(resolutionNote, actor.id(), OffsetDateTime.now(clock));
         CompanyReceipt receipt = issue.getReceipt();
         notifications.publish(NotificationCommand.toCompany(receipt.getCompany().getId(), Role.COMPANY_MANAGER,
-                NotificationKind.RECEIPT, "Xã đã xử lý sai sót phiếu thu " + receipt.getCode(), issue.getResolutionNote(),
+                NotificationKind.RECEIPT, "Xã đã xử lý sai sót biên nhận " + receipt.getCode(), issue.getResolutionNote(),
                 link("company.receipts", "receiptId", receipt.getId())), actor.id());
         audit.record(actor, "RESOLVE_RECEIPT_ISSUE", ENTITY, String.valueOf(issue.getId()),
                 Map.of("status", ReceiptIssueStatus.PENDING),

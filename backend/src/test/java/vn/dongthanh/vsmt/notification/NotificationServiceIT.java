@@ -78,7 +78,7 @@ class NotificationServiceIT extends IntegrationTest {
     @Test
     void roleNotificationIsSeenByEveryUserOfTheRoleAndReadStateIsShared() throws Exception {
         Notification n = notifications.publish(NotificationCommand.toRole(Role.COMMUNE_OFFICER, NotificationKind.RECEIPT,
-                "DV01 báo sai sót phiếu thu", "Phiếu PT-CT-1026-001 ghi sai số tiền", null), dv01User.getId());
+                "DV01 báo sai sót biên nhận", "Phiếu PT-CT-1026-001 ghi sai số tiền", null), dv01User.getId());
 
         mvc.perform(get("/api/notifications/unread-count").header(HttpHeaders.AUTHORIZATION, bearer(canboA)))
                 .andExpect(jsonPath("$.unreadCount").value(1));

@@ -84,6 +84,10 @@ public class Charge extends BaseEntity {
     @Column(nullable = false, updatable = false)
     private LocalDate coverageTo;
 
+    /** Phần thu gom công ty giữ lại, chụp lúc phát hành; phần vận chuyển nộp xã = số tiền − phần này (xã chốt 03/10). */
+    @Column(nullable = false, updatable = false)
+    private long collectionAmount;
+
     @Column(nullable = false)
     private LocalDate dueDate;
 
@@ -113,6 +117,7 @@ public class Charge extends BaseEntity {
         c.unitPrice = amount.unitPrice();
         c.months = amount.months();
         c.amount = amount.amount();
+        c.collectionAmount = amount.collectionAmount();
         c.coverageFrom = request.getPeriod().getStartDate();
         c.coverageTo = request.getPeriod().getEndDate();
         c.dueDate = request.getDueDate();

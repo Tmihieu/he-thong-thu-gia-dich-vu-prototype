@@ -94,7 +94,7 @@ describe('Đối soát', () => {
     expect(screen.getByText('Lệch')).toBeInTheDocument();
     const dv01Row = screen.getByText('DV01 · Công ty MTĐT Đông Thạnh').closest('tr')!;
     expect(within(dv01Row).getByText('thu rồi chưa nộp')).toBeInTheDocument();
-    expect(within(dv01Row).getByText('1 phiếu thu')).toBeInTheDocument();
+    expect(within(dv01Row).getByText('1 biên nhận')).toBeInTheDocument();
     expect(screen.getAllByText('400.000 đ', norm).length).toBeGreaterThan(0);
   });
 });
@@ -173,7 +173,7 @@ describe('Nhắc nộp', () => {
   });
 });
 
-describe('Phiếu thu công ty', () => {
+describe('Biên nhận công ty', () => {
   it('lập phiếu một phần cho DV01 rồi hiện bản in có số tiền bằng chữ và lũy kế', async () => {
     const fetchFn = mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
@@ -189,7 +189,7 @@ describe('Phiếu thu công ty', () => {
         }),
     });
     renderApp('/commune/charges');
-    await userEvent.click(await screen.findByRole('tab', { name: 'Phiếu thu công ty' }));
+    await userEvent.click(await screen.findByRole('tab', { name: 'Biên nhận công ty' }));
 
     await userEvent.click(await screen.findByRole('button', { name: 'Lập phiếu DV01' }));
     const dialog = await screen.findByRole('dialog');

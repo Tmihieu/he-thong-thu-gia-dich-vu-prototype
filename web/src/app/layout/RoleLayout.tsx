@@ -5,7 +5,7 @@ import { Link, Outlet, useLocation } from 'react-router';
 
 import { NotificationBell } from '../../features/notifications/NotificationBell';
 import { type Me, useAuth } from '../auth/authContext';
-import { homePath, MENU, menuPath } from './menuConfig';
+import { homePath, menuPath, visibleMenu } from './menuConfig';
 import './shell.css';
 
 const SYSTEM_NAME = 'Quản lý thu giá dịch vụ vệ sinh môi trường';
@@ -30,7 +30,7 @@ function MobileLayout({ user, onLogout }: { user: Me; onLogout: () => void }) {
         <Outlet />
       </main>
       <nav aria-label="Điều hướng" className="clm-tabbar">
-        {MENU[user.role].map((entry) => {
+        {visibleMenu(user.role).map((entry) => {
           const to = menuPath(user.role, entry);
           return (
             <Link key={entry.path} to={to} className={`clm-tab${pathname.startsWith(to) ? ' active' : ''}`}>
@@ -85,7 +85,7 @@ export function RoleLayout() {
 
       <aside className={`sidebar${drawerOpen ? ' open' : ''}`}>
         <nav className="role-nav" aria-label="Menu chính">
-          {MENU[user.role].map((entry) => {
+          {visibleMenu(user.role).map((entry) => {
             const to = menuPath(user.role, entry);
             const active = pathname.startsWith(to);
             return (

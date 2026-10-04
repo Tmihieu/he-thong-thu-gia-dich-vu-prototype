@@ -15,7 +15,7 @@ import { type Receipt, type ReceiptIssue, useReceiptIssues, useReceipts } from '
 import { ReportIssueModal } from './ReportIssueModal';
 
 /**
- * "Phiếu thu xã lập" của công ty: chỉ phiếu của công ty mình (backend lọc), kèm lũy kế và còn phải nộp;
+ * "Biên nhận xã lập" của công ty: chỉ phiếu của công ty mình (backend lọc), kèm lũy kế và còn phải nộp;
  * báo sai sót trên từng phiếu và theo dõi kết quả xã xử lý (G6: xã đóng kèm ghi chú, không sửa phiếu).
  */
 export function CompanyReceiptsPage() {
@@ -32,14 +32,14 @@ export function CompanyReceiptsPage() {
         <PeriodSelect value={periodId} onChange={setPeriodId} />
       </Space>
       {error && (
-        <Alert type="error" showIcon message={error instanceof ApiError ? error.message : 'Không tải được phiếu thu'} />
+        <Alert type="error" showIcon message={error instanceof ApiError ? error.message : 'Không tải được biên nhận'} />
       )}
       <Table<Receipt>
         rowKey="id"
         loading={receipts.isLoading}
         dataSource={receipts.data ?? []}
         pagination={false}
-        locale={{ emptyText: 'Kỳ này xã chưa lập phiếu thu nào cho công ty' }}
+        locale={{ emptyText: 'Kỳ này xã chưa lập biên nhận nào cho công ty' }}
         columns={[
           { title: 'Số phiếu', dataIndex: 'code' },
           { title: 'Ngày nộp', dataIndex: 'receiptDate', render: (d: string) => <DateText value={d} /> },

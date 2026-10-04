@@ -4,11 +4,11 @@ import {
   AuditOutlined,
   BarChartOutlined,
   CheckSquareOutlined,
-  DashboardOutlined,
   DatabaseOutlined,
+  DeleteOutlined,
+  DashboardOutlined,
   BankOutlined,
   CommentOutlined,
-  DeleteOutlined,
   EnvironmentOutlined,
   FileSearchOutlined,
   FundOutlined,
@@ -29,12 +29,14 @@ export interface MenuEntry {
   path: string;
   label: string;
   icon: ComponentType;
+  /** Ẩn khỏi menu (ngoài phạm vi chốt với xã) nhưng route vẫn còn để mở lại khi cần. */
+  hidden?: boolean;
 }
 
 export const ROLE_LABELS: Record<Role, string> = {
   COMMUNE_OFFICER: 'Cán bộ xã',
   COMPANY_MANAGER: 'Công ty môi trường',
-  COLLECTOR: 'Người đi thu',
+  COLLECTOR: 'Người thu tiền',
   ADMIN: 'Quản trị',
   LEADER: 'Lãnh đạo',
 };
@@ -63,7 +65,7 @@ export const MENU: Record<Role, MenuEntry[]> = {
   COMPANY_MANAGER: [
     { path: 'assigned', label: 'Khu vực được giao', icon: ApartmentOutlined },
     { path: 'complaints', label: 'Khiếu nại', icon: CommentOutlined },
-    { path: 'bulky', label: 'Rác cồng kềnh', icon: DeleteOutlined },
+    { path: 'bulky', label: 'Rác cồng kềnh', icon: DeleteOutlined, hidden: true },
     { path: 'market', label: 'Chợ cộng đồng', icon: ShopOutlined },
   ],
   COLLECTOR: [
@@ -76,7 +78,7 @@ export const MENU: Record<Role, MenuEntry[]> = {
     { path: 'accounts', label: 'Tài khoản', icon: TeamOutlined },
     { path: 'config', label: 'Cấu hình', icon: SettingOutlined },
     { path: 'logs', label: 'Nhật ký', icon: FileSearchOutlined },
-    { path: 'data', label: 'Quản trị dữ liệu', icon: DatabaseOutlined },
+    { path: 'data', label: 'Quản trị dữ liệu', icon: DatabaseOutlined, hidden: true },
   ],
   // Lãnh đạo chỉ xem + duyệt (SPEC §9.10): tiến độ, đối soát dùng lại màn của xã ở chế độ chỉ đọc.
   LEADER: [
@@ -88,6 +90,11 @@ export const MENU: Record<Role, MenuEntry[]> = {
     { path: 'market', label: 'Chợ cộng đồng', icon: ShopOutlined },
   ],
 };
+
+/** Mục hiển thị trên menu (bỏ mục ẩn). */
+export function visibleMenu(role: Role): MenuEntry[] {
+  return MENU[role].filter((e) => !e.hidden);
+}
 
 export function menuPath(role: Role, entry: MenuEntry): string {
   return `${ROLE_BASE[role]}/${entry.path}`;

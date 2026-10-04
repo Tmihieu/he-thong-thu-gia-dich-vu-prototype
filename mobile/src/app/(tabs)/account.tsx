@@ -54,14 +54,6 @@ export default function AccountScreen() {
           />
         </Card>
 
-        <Card>
-          <CardTitle>Ứng dụng</CardTitle>
-          <NavRow
-            icon={<Ionicons name="wifi-outline" size={20} color={colors.primary} />}
-            title="Kiểm tra kết nối máy chủ"
-            onPress={() => router.push('/connection')}
-          />
-        </Card>
 
         <Button title="Đăng xuất" variant="ghost" onPress={() => void signOut()} />
       </View>

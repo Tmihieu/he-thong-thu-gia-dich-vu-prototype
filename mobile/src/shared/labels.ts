@@ -71,6 +71,7 @@ export const COMPLAINT_CATEGORY_LABELS: Record<ComplaintCategory, string> = {
   OVERCHARGE: 'Thu phí cao hơn định mức',
   POLLUTION_POINT: 'Điểm tập kết gây ô nhiễm',
   STAFF_ATTITUDE: 'Thái độ nhân viên thu gom',
+  PAID_NOT_RECORDED: 'Đã đóng nhưng chưa được ghi nhận',
   OTHER: 'Vấn đề khác',
 };
 

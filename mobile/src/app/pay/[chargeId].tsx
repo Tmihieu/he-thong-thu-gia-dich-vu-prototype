@@ -1,7 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { ApiError } from '../../api/client';
 import { useCharge, usePay } from '../../features/citizen/api';
@@ -11,19 +10,18 @@ import { Button, Card, CardTitle, ErrorBox, Line, Loading, Muted, Screen, Tag } 
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
-/** Các "cổng" chỉ để chọn cho giống thật; tất cả đều mô phỏng, không có giao dịch tiền thật (O1). */
-const METHODS: { key: string; title: string; subtitle: string; icon: IconName }[] = [
-  { key: 'qr', title: 'Quét QR chuyển khoản', subtitle: 'Vào tài khoản của công ty thu gom', icon: 'qr-code-outline' },
-  { key: 'wallet', title: 'Ví điện tử', subtitle: 'MoMo, Viettel Money, ZaloPay', icon: 'wallet-outline' },
-  { key: 'bank', title: 'Ngân hàng liên kết', subtitle: 'Thẻ nội địa, Internet Banking', icon: 'card-outline' },
-];
+/** Chỉ thanh toán bằng quét VietQR vào tài khoản công ty thu gom (xã chốt); giao dịch trong bản demo là mô phỏng (O1). */
+const METHOD: { title: string; subtitle: string; icon: IconName } = {
+  title: 'Quét VietQR chuyển khoản',
+  subtitle: 'Vào tài khoản của công ty thu gom',
+  icon: 'qr-code-outline',
+};
 
 export default function PayScreen() {
   const { chargeId } = useLocalSearchParams<{ chargeId: string }>();
   const id = Number(chargeId);
   const charge = useCharge(id);
   const pay = usePay(id);
-  const [method, setMethod] = useState(METHODS[0].key);
 
   const c = charge.data;
   const payable = c?.status === 'UNPAID';
@@ -67,25 +65,13 @@ export default function PayScreen() {
 
           <Card>
             <CardTitle>Phương thức thanh toán</CardTitle>
-            {METHODS.map((m) => {
-              const selected = m.key === method;
-              return (
-                <Pressable
-                  key={m.key}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                  onPress={() => setMethod(m.key)}
-                  style={[styles.method, selected && styles.methodSelected]}
-                >
-                  <Ionicons name={m.icon} size={22} color={colors.primary} />
-                  <View style={styles.flex}>
-                    <Text style={styles.methodTitle}>{m.title}</Text>
-                    <Muted>{m.subtitle}</Muted>
-                  </View>
-                  <View style={[styles.radio, selected && styles.radioSelected]} />
-                </Pressable>
-              );
-            })}
+            <View style={[styles.method, styles.methodSelected]}>
+              <Ionicons name={METHOD.icon} size={22} color={colors.primary} />
+              <View style={styles.flex}>
+                <Text style={styles.methodTitle}>{METHOD.title}</Text>
+                <Muted>{METHOD.subtitle}</Muted>
+              </View>
+            </View>
           </Card>
 
           <Card style={styles.notice}>
@@ -128,8 +114,6 @@ const styles = StyleSheet.create({
   },
   methodSelected: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
   methodTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
-  radio: { width: 18, height: 18, borderRadius: radius.pill, borderWidth: 2, borderColor: colors.border },
-  radioSelected: { borderColor: colors.primary, borderWidth: 6 },
   notice: { borderColor: colors.warning, backgroundColor: colors.warningSoft },
   noticeTitle: { fontSize: 15, fontWeight: '700', color: colors.warning },
   noticeText: { fontSize: 14, color: colors.text, lineHeight: 20 },

@@ -32,7 +32,7 @@ import vn.dongthanh.vsmt.remittance.domain.CompanyReceiptRepository;
 import vn.dongthanh.vsmt.remittance.domain.ReceiptMethod;
 
 /**
- * Phiếu thu xã lập cho công ty (R15): chỉ cán bộ xã; 1 phiếu 1 kỳ, 1 kỳ nộp nhiều lần; 0 &lt; số tiền ≤ còn phải nộp
+ * Biên nhận xã lập cho công ty (R15): chỉ cán bộ xã; 1 phiếu 1 kỳ, 1 kỳ nộp nhiều lần; 0 &lt; số tiền ≤ còn phải nộp
  * theo sổ công ty–kỳ. Khóa dòng kỳ thu trong transaction để mã phiếu tuần tự không trùng và hai phiếu song song
  * không cùng vượt số còn nộp.
  */
@@ -98,13 +98,13 @@ public class CompanyReceiptService {
         after.put("remainingAfter", remaining - cmd.amount());
         audit.record(actor, "ISSUE_COMPANY_RECEIPT", ENTITY, code, null, after);
         notifications.publish(NotificationCommand.toCompany(company.getId(), Role.COMPANY_MANAGER, NotificationKind.RECEIPT,
-                "Xã đã lập phiếu thu " + code, "Đã ghi nhận " + Money.format(cmd.amount()) + " cho " + period.getLabel()
+                "Xã đã lập biên nhận " + code, "Đã ghi nhận " + Money.format(cmd.amount()) + " cho " + period.getLabel()
                         + ". Còn phải nộp kỳ này: " + Money.format(remaining - cmd.amount()) + ".",
                 ReceiptIssueService.link("company.receipts", "receiptId", saved.getId())), actor.id());
         return saved;
     }
 
-    /** Phiếu thu theo kỳ/công ty; công ty chỉ thấy phiếu của mình. Kèm lũy kế (R30). */
+    /** Biên nhận theo kỳ/công ty; công ty chỉ thấy phiếu của mình. Kèm lũy kế (R30). */
     @Transactional(readOnly = true)
     public List<ReceiptView> list(Long periodId, Long companyId, CurrentUser actor) {
         actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER, Role.LEADER);
@@ -126,9 +126,9 @@ public class CompanyReceiptService {
     @Transactional(readOnly = true)
     public ReceiptView get(Long id, CurrentUser actor) {
         CompanyReceipt r = receipts.findByIdWithDetails(id)
-                .orElseThrow(() -> new NotFoundException("RECEIPT_NOT_FOUND", "Không tìm thấy phiếu thu."));
+                .orElseThrow(() -> new NotFoundException("RECEIPT_NOT_FOUND", "Không tìm thấy biên nhận."));
         if (actor.role() == Role.COMPANY_MANAGER && !Objects.equals(r.getCompany().getId(), actor.companyId())) {
-            throw new NotFoundException("RECEIPT_NOT_FOUND", "Không tìm thấy phiếu thu.");
+            throw new NotFoundException("RECEIPT_NOT_FOUND", "Không tìm thấy biên nhận.");
         }
         return list(r.getPeriod().getId(), r.getCompany().getId(), actor).stream()
                 .filter(v -> v.receipt().getId().equals(id)).findFirst().orElseThrow();

@@ -50,12 +50,13 @@ export function LeaderDashboardPage() {
       rows.reduce(
         (t, r) => ({
           due: t.due + r.due,
+          payable: t.payable + r.payable,
           collected: t.collected + r.collected,
           received: t.received + r.received,
           remaining: t.remaining + Math.max(r.remaining, 0),
           previousDebt: t.previousDebt + r.previousDebt,
         }),
-        { due: 0, collected: 0, received: 0, remaining: 0, previousDebt: 0 },
+        { due: 0, payable: 0, collected: 0, received: 0, remaining: 0, previousDebt: 0 },
       ),
     [rows],
   );
@@ -84,7 +85,7 @@ export function LeaderDashboardPage() {
           <Kpi label="Công ty đã thu" value={total.collected} percent={pct(total.collected, total.due)} color="#16794a" note="trên số phải thu" />
         </Col>
         <Col xs={24} md={12} xl={6}>
-          <Kpi label="Đã nộp về xã" value={total.received} percent={pct(total.received, total.due)} color="#175cd3" note="trên số phải thu" />
+          <Kpi label="Đã nộp về xã" value={total.received} percent={pct(total.received, total.payable)} color="#175cd3" note="trên số phải nộp xã" />
         </Col>
         <Col xs={24} md={12} xl={6}>
           <Kpi

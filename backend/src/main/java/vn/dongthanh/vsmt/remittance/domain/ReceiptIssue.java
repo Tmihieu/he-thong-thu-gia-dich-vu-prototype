@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 import vn.dongthanh.vsmt.platform.common.BaseEntity;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 
-/** Công ty báo sai sót một phiếu thu; xã đóng kèm ghi chú kết quả (G6), không sửa phiếu. */
+/** Công ty báo sai sót một biên nhận; xã đóng kèm ghi chú kết quả (G6), không sửa phiếu. */
 @Getter
 @Entity
 @Table(name = "receipt_issues")

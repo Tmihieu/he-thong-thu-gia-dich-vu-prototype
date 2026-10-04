@@ -182,7 +182,7 @@ export function CompanyOverviewPage() {
             note={
               row ? (
                 <Space size={4} wrap>
-                  <span>{row.receiptCount} phiếu thu · còn <MoneyText value={row.remaining} /></span>
+                  <span>{row.receiptCount} biên nhận · còn <MoneyText value={row.remaining} /></span>
                   <Tag color={PROGRESS_COLORS[row.progress]}>{PROGRESS_LABELS[row.progress]}</Tag>
                   {row.previousDebt > 0 && (
                     <Typography.Text type="danger">

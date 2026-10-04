@@ -32,7 +32,7 @@ import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService;
 import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService.IssueReceiptCommand;
 import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService.ReceiptView;
 
-@Tag(name = "Nộp tiền về xã: phiếu thu công ty")
+@Tag(name = "Nộp tiền về xã: biên nhận công ty")
 @RestController
 @RequestMapping("/api/remittance/receipts")
 @RequiredArgsConstructor
@@ -40,7 +40,7 @@ public class CompanyReceiptController {
 
     private final CompanyReceiptService receipts;
 
-    @Operation(summary = "Lập phiếu thu khi công ty nộp tiền (cán bộ xã); số tiền ≤ còn phải nộp của kỳ")
+    @Operation(summary = "Lập biên nhận khi công ty nộp tiền (cán bộ xã); số tiền ≤ còn phải nộp của kỳ")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ReceiptDto issue(@Valid @RequestBody IssueReceiptRequest req, @AuthenticationPrincipal CurrentUser actor) {
@@ -49,14 +49,14 @@ public class CompanyReceiptController {
         return ReceiptDto.of(receipts.get(r.getId(), actor));
     }
 
-    @Operation(summary = "Phiếu thu theo kỳ/công ty, kèm lũy kế đã nộp tới từng phiếu; công ty chỉ thấy phiếu của mình")
+    @Operation(summary = "Biên nhận theo kỳ/công ty, kèm lũy kế đã nộp tới từng phiếu; công ty chỉ thấy phiếu của mình")
     @GetMapping
     public List<ReceiptDto> list(@RequestParam(required = false) Long periodId,
             @RequestParam(required = false) Long companyId, @AuthenticationPrincipal CurrentUser actor) {
         return receipts.list(periodId, companyId, actor).stream().map(ReceiptDto::of).toList();
     }
 
-    @Operation(summary = "Một phiếu thu (để in: số tiền bằng chữ, lũy kế, còn phải nộp)")
+    @Operation(summary = "Một biên nhận (để in: số tiền bằng chữ, lũy kế, còn phải nộp)")
     @GetMapping("/{id}")
     public ReceiptDto get(@PathVariable Long id, @AuthenticationPrincipal CurrentUser actor) {
         return ReceiptDto.of(receipts.get(id, actor));

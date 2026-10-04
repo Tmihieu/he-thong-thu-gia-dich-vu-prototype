@@ -203,10 +203,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Phiếu thu theo kỳ/công ty, kèm lũy kế đã nộp tới từng phiếu; công ty chỉ thấy phiếu của mình */
+        /** Biên nhận theo kỳ/công ty, kèm lũy kế đã nộp tới từng phiếu; công ty chỉ thấy phiếu của mình */
         get: operations["list_1"];
         put?: never;
-        /** Lập phiếu thu khi công ty nộp tiền (cán bộ xã); số tiền ≤ còn phải nộp của kỳ */
+        /** Lập biên nhận khi công ty nộp tiền (cán bộ xã); số tiền ≤ còn phải nộp của kỳ */
         post: operations["issue"];
         delete?: never;
         options?: never;
@@ -221,10 +221,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Sai sót phiếu thu; công ty chỉ thấy sai sót trên phiếu của mình */
+        /** Sai sót biên nhận; công ty chỉ thấy sai sót trên phiếu của mình */
         get: operations["list_2"];
         put?: never;
-        /** Công ty báo sai sót trên phiếu thu của mình; thông báo tới cán bộ xã */
+        /** Công ty báo sai sót trên biên nhận của mình; thông báo tới cán bộ xã */
         post: operations["report"];
         delete?: never;
         options?: never;
@@ -1120,7 +1120,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Một phiếu thu (để in: số tiền bằng chữ, lũy kế, còn phải nộp) */
+        /** Một biên nhận (để in: số tiền bằng chữ, lũy kế, còn phải nộp) */
         get: operations["get_1"];
         put?: never;
         post?: never;
@@ -2594,7 +2594,7 @@ export interface components {
             /** @enum {string} */
             channel: "APP" | "PHONE" | "IN_PERSON";
             /** @enum {string} */
-            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "OTHER";
+            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "PAID_NOT_RECORDED" | "OTHER";
             summary: string;
             content: string;
             /**
@@ -2627,7 +2627,7 @@ export interface components {
             /** @enum {string} */
             channel: "APP" | "PHONE" | "IN_PERSON";
             /** @enum {string} */
-            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "OTHER";
+            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "PAID_NOT_RECORDED" | "OTHER";
             summary: string;
             content: string;
             /** @enum {string} */
@@ -2913,7 +2913,7 @@ export interface components {
         };
         SubmitComplaintRequest: {
             /** @enum {string} */
-            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "OTHER";
+            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "PAID_NOT_RECORDED" | "OTHER";
             content: string;
             /** @description Nơi xảy ra sự việc; để trống = địa chỉ hộ */
             location?: string;
@@ -2930,7 +2930,7 @@ export interface components {
             /** Format: date */
             receivedDate: string;
             /** @enum {string} */
-            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "OTHER";
+            category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "PAID_NOT_RECORDED" | "OTHER";
             summary: string;
             content: string;
             location: string | null;

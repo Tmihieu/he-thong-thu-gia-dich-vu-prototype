@@ -18,7 +18,7 @@ import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
 import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.platform.common.BaseEntity;
 
-/** Phiếu thu xã lập khi công ty nộp tiền (R15). Không sửa, không hủy; sai thì lập phiếu mới (G6). */
+/** Biên nhận xã lập khi công ty nộp tiền (R15). Không sửa, không hủy; sai thì lập phiếu mới (G6). */
 @Getter
 @Entity
 @Table(name = "company_receipts")

@@ -73,6 +73,8 @@ export function ReconciliationPage() {
           { title: 'Công ty', render: (_, r) => `${r.companyCode} · ${r.companyName}` },
           { title: 'Phải thu', dataIndex: 'due', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           { title: 'Đã thu', dataIndex: 'collected', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Công ty giữ lại', dataIndex: 'retained', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Phải nộp xã', dataIndex: 'payable', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           {
             title: 'Đã nộp về xã',
             align: 'right',
@@ -80,7 +82,7 @@ export function ReconciliationPage() {
               <Space direction="vertical" size={0}>
                 <MoneyText value={r.received} />
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {r.receiptCount} phiếu thu
+                  {r.receiptCount} biên nhận
                 </Typography.Text>
               </Space>
             ),

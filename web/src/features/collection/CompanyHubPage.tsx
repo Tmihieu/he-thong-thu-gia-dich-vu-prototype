@@ -10,7 +10,7 @@ const TABS = ['overview', 'collectors', 'receipts'] as const;
 
 /**
  * Màn "Khu vực được giao" của công ty (prototype: assigned): tổng quan + nhận tiền mặt (T29) + hộ được giao,
- * phân tổ (T28), phiếu thu xã lập (T35).
+ * phân tổ (T28), biên nhận xã lập (T35).
  */
 export function CompanyHubPage() {
   const [tab, setTab] = useTabParam(TABS, 'overview');
@@ -25,7 +25,7 @@ export function CompanyHubPage() {
         items={[
           { key: 'overview', label: 'Tổng quan', children: <CompanyOverviewPage /> },
           { key: 'collectors', label: 'Phân tổ', children: <CollectorAssignPage /> },
-          { key: 'receipts', label: 'Phiếu thu xã lập', children: <CompanyReceiptsPage /> },
+          { key: 'receipts', label: 'Biên nhận xã lập', children: <CompanyReceiptsPage /> },
         ]}
       />
     </>

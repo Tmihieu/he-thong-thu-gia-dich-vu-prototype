@@ -48,7 +48,7 @@ describe('Nhật ký', () => {
     expect(await screen.findByText('Ghi nhận thanh toán')).toBeInTheDocument();
     expect(screen.getByText('Người dân thanh toán trên app')).toBeInTheDocument();
     expect(screen.getAllByText('12/10/2026 17:40')).toHaveLength(2);
-    expect(screen.getByText('Người đi thu')).toBeInTheDocument();
+    expect(screen.getByText('Người thu tiền')).toBeInTheDocument();
     expect(screen.getByText('Khoản phải thu của hộ · KT-1026-000001')).toBeInTheDocument();
     // Vai trò người dân (app) không phải vai trò đăng nhập web nhưng vẫn có nhãn tiếng Việt.
     expect(screen.getByText('Người dân')).toBeInTheDocument();

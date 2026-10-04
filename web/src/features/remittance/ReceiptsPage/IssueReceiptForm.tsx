@@ -27,7 +27,7 @@ interface Props {
   onCancel: () => void;
 }
 
-/** Lập phiếu thu khi công ty nộp tiền (R15): 0 < số tiền ≤ còn phải nộp của kỳ, ngày không sau hôm nay. */
+/** Lập biên nhận khi công ty nộp tiền (R15): 0 < số tiền ≤ còn phải nộp của kỳ, ngày không sau hôm nay. */
 export function IssueReceiptForm({ row, periodLabel, submitting, error, onSubmit, onCancel }: Props) {
   const [form] = Form.useForm<FormValues>();
   const method = Form.useWatch('method', form);
@@ -48,7 +48,7 @@ export function IssueReceiptForm({ row, periodLabel, submitting, error, onSubmit
 
   return (
     <Modal
-      title={row ? `Lập phiếu thu · ${row.companyCode} · ${periodLabel ?? ''}` : 'Lập phiếu thu'}
+      title={row ? `Lập biên nhận · ${row.companyCode} · ${periodLabel ?? ''}` : 'Lập biên nhận'}
       open={row !== null}
       onCancel={onCancel}
       onOk={() => form.submit()}

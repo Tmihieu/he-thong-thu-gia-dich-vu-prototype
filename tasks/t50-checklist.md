@@ -9,7 +9,7 @@ Dùng khi chạy tay kịch bản §10. Cách chạy và điều kiện seed: `d
 **Mặc định đang dùng** (phiên -fe đề xuất, người dùng cho "dùng mặc định" 28/09/2026; muốn khác thì báo trước khi chạy):
 - Mở kỳ là Đang thu luôn, **không có** nút "Bắt đầu thu" (data dictionary §5.0 P1).
 - Bước 2 phân công KV24 cho **DV01**.
-- Bước 5: nhắc nộp → lập phiếu thu **hết 919.000 kỳ 09** → lập phiếu **một phần kỳ 10**.
+- Bước 5: nhắc nộp → lập phiếu thu **hết số còn nợ kỳ 09 (khoảng 75.000)** → lập phiếu **một phần kỳ 10**.
 
 **Không phải lỗi:** Phí rác cồng kềnh không sinh khoản thu (O5). Không có chữ "biên lai" trong app (O1).
 
@@ -24,8 +24,8 @@ Dùng khi chạy tay kịch bản §10. Cách chạy và điều kiện seed: `d
 | 3b | `thu07` (điện thoại, `http://<IP LAN>:5173`) | Danh sách thu (kỳ 10/2026): ghi **2 hộ tiền mặt**, **1 hộ vắng** | 2 hộ thành Đã thu, 1 hộ có lượt vắng; Tiền mặt đang giữ = tổng 2 hộ | ☐ | ☐ |
 | 3c | `dv01` | Khu vực được giao → Tổng quan → **Nhận tiền mặt** của `thu07` | `thu07` → Tiền mặt: đang giữ về **0** | ☐ | ☐ |
 | 3d | `thu07` | Chọn kỳ **09/2026** → hộ `DTH-H000122` → Lịch sử; một hộ → **Báo sai thông tin** | Lịch sử: vắng 08/09, thu 10/09. `canbo_xa` và `dv01` có thông báo ở chuông | ☐ | ☐ |
-| 5a | `canbo_xa` | Tiến độ thu (kỳ 10/2026) → dòng DV01 → **Nhắc nộp** → gửi | Trước khi nhắc: DV01 **Quá hạn nộp**, "Nợ kỳ trước 919.000". `dv01` có "Nhắc nộp tiền Tháng 09/2026" ở chuông | ☐ | ☐ |
-| 5b | `canbo_xa` | Khoản thu → Phiếu thu công ty → kỳ **09/2026** → **Lập phiếu** DV01, **919.000** | Tự mở bản in, số tiền bằng chữ đúng; kỳ 09 DV01 Đã nộp đủ | ☐ | ☐ |
+| 5a | `canbo_xa` | Tiến độ thu (kỳ 10/2026) → dòng DV01 → **Nhắc nộp** → gửi | Trước khi nhắc: DV01 **Quá hạn nộp**, "Nợ kỳ trước" khoảng 75.000. `dv01` có "Nhắc nộp tiền Tháng 09/2026" ở chuông | ☐ | ☐ |
+| 5b | `canbo_xa` | Khoản thu → Phiếu thu công ty → kỳ **09/2026** → **Lập phiếu** DV01, đúng số còn phải nộp (khoảng **75.000**) | Tự mở bản in, số tiền bằng chữ đúng; kỳ 09 DV01 Đã nộp đủ | ☐ | ☐ |
 | 5c | `canbo_xa` | Kỳ **10/2026** → **Lập phiếu** DV01, số nhỏ hơn "còn phải nộp" | Tiến độ thu: **Nộp một phần**; Đối soát: **Đang nộp**; 3 màn (Tiến độ, Đối soát, màn DV01) cùng số | ☐ | ☐ |
 | 5d | `dv01` → `canbo_xa` | Phiếu thu xã lập → **Báo sai sót** một phiếu; xã → Khoản thu → Sai sót phiếu thu → xử lý kèm ghi chú | Phiếu hiện "Đã báo sai sót · chờ xã kiểm tra" rồi Đã xử lý; `dv01` có thông báo | ☐ | ☐ |
 | 8 | `canbo_xa` | Đối soát → **Khóa kỳ** 10/2026 | **Bị chặn**, lý do nêu công ty còn nợ và số tiền (không phải "chỉ khóa được kỳ đang thu") | ☐ | ☐ |

@@ -87,7 +87,7 @@ public class LedgerController {
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Công ty đã thu của hộ (đã trừ hoàn)") long collected,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã nộp về xã") long received,
             @Schema(requiredMode = RequiredMode.REQUIRED) long receiptCount,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Còn phải nộp = phải thu − điều chỉnh − đã nộp")
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Còn phải nộp xã = phải nộp − đã nộp")
             long remaining,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã nộp − đã thu; âm là thu rồi chưa nộp") long gap,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Nợ các kỳ trước đã hết hạn") long previousDebt,
@@ -99,8 +99,8 @@ public class LedgerController {
             boolean lowRemittedRate,
             @Schema(requiredMode = RequiredMode.REQUIRED) Progress progress,
             @Schema(requiredMode = RequiredMode.REQUIRED) Reconciliation reconciliation,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phần công ty giữ lại theo tỷ lệ cấu hình") long retained,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phải nộp xã = phải thu − điều chỉnh − phần giữ lại") long payable) {
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phần thu gom công ty giữ lại, tính trên tiền hộ đã đóng (theo biểu giá chụp trên khoản)") long retained,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phải nộp xã = đã thu − phần giữ lại (phần vận chuyển của tiền hộ đã đóng)") long payable) {
 
         static LedgerRowDto of(LedgerRow r) {
             return new LedgerRowDto(r.companyId(), r.companyCode(), r.companyName(), r.periodId(), r.due(),

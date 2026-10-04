@@ -9,5 +9,6 @@ public enum ComplaintCategory {
     OVERCHARGE,
     POLLUTION_POINT,
     STAFF_ATTITUDE,
+    PAID_NOT_RECORDED,
     OTHER
 }

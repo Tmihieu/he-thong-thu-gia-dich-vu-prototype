@@ -17,7 +17,7 @@ interface Props {
   onClose: () => void;
 }
 
-/** Công ty báo sai sót một phiếu thu xã lập (R28); xã nhận thông báo và kiểm tra. */
+/** Công ty báo sai sót một biên nhận xã lập (R28); xã nhận thông báo và kiểm tra. */
 export function ReportIssueModal({ receipt, onClose }: Props) {
   const { message } = App.useApp();
   const queryClient = useQueryClient();

@@ -49,7 +49,7 @@ class ReceiptIssueIT extends IntegrationTest {
     void issuingAReceiptNotifiesTheCompany() throws Exception {
         mvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.dv01Manager)))
                 .andExpect(jsonPath("$.items[0].kind").value("RECEIPT"))
-                .andExpect(jsonPath("$.items[0].title").value("Xã đã lập phiếu thu " + receipt.getCode()));
+                .andExpect(jsonPath("$.items[0].title").value("Xã đã lập biên nhận " + receipt.getCode()));
         mvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.dv07Manager)))
                 .andExpect(jsonPath("$.total").value(0));
     }
@@ -67,7 +67,7 @@ class ReceiptIssueIT extends IntegrationTest {
 
         mvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer)))
                 .andExpect(jsonPath("$.items[0].kind").value("RECEIPT"))
-                .andExpect(jsonPath("$.items[0].title").value("DV01 báo sai sót phiếu thu " + receipt.getCode()));
+                .andExpect(jsonPath("$.items[0].title").value("DV01 báo sai sót biên nhận " + receipt.getCode()));
         mvc.perform(get("/api/remittance/receipt-issues").param("status", "PENDING")
                         .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer)))
                 .andExpect(jsonPath("$.length()").value(1))
@@ -83,7 +83,7 @@ class ReceiptIssueIT extends IntegrationTest {
                 .andExpect(jsonPath("$.code").value("RECEIPT_ISSUE_ALREADY_RESOLVED"));
 
         mvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.dv01Manager)))
-                .andExpect(jsonPath("$.items[0].title").value("Xã đã xử lý sai sót phiếu thu " + receipt.getCode()));
+                .andExpect(jsonPath("$.items[0].title").value("Xã đã xử lý sai sót biên nhận " + receipt.getCode()));
         mvc.perform(get("/api/remittance/receipt-issues").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.dv01Manager)))
                 .andExpect(jsonPath("$[0].status").value("RESOLVED"))
                 .andExpect(jsonPath("$[0].resolutionNote").value("Đã kiểm tra sao kê, lập phiếu bổ sung 50.000 đ"));

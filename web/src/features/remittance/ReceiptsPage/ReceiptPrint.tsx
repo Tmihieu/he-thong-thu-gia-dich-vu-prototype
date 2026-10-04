@@ -22,14 +22,14 @@ function Line({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-/** Bản in phiếu thu công ty: số tiền bằng chữ (R29) và lũy kế đã nộp tới phiếu này (R30). */
+/** Bản in biên nhận công ty: số tiền bằng chữ (R29) và lũy kế đã nộp tới phiếu này (R30). */
 export function ReceiptPrint({ receipt, onClose }: { receipt: Receipt | null; onClose: () => void }) {
   return (
     <Modal
       open={receipt !== null}
       onCancel={onClose}
       width={720}
-      title="Bản in phiếu thu"
+      title="Bản in biên nhận"
       footer={[
         <Button key="close" onClick={onClose}>
           Đóng

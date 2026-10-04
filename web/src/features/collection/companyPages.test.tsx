@@ -136,7 +136,7 @@ describe('Công ty: phân tổ', () => {
 });
 
 describe('Công ty: tổng quan', () => {
-  it('bấm thẻ số hộ / số tiền đã thu lọc hộ đã thu; bấm thẻ đã nộp về xã mở tab phiếu thu', async () => {
+  it('bấm thẻ số hộ / số tiền đã thu lọc hộ đã thu; bấm thẻ đã nộp về xã mở tab biên nhận', async () => {
     api();
     renderApp('/company/assigned');
 
@@ -147,7 +147,7 @@ describe('Công ty: tổng quan', () => {
     expect(screen.getByRole('button', { name: 'Xem chi tiết Số tiền đã thu' })).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Xem chi tiết Số tiền đã nộp về xã' }));
-    expect(await screen.findByRole('tab', { name: 'Phiếu thu xã lập', selected: true })).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: 'Biên nhận xã lập', selected: true })).toBeInTheDocument();
   });
 
   it('vòng tiến độ lấy đúng dòng sổ công ty; nhận tiền mặt lỗi thì hiện thông báo tiếng Việt từ máy chủ', async () => {
