@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Alert, App, DatePicker, Form, Input, Modal, Table } from 'antd';
+import { Alert, App, DatePicker, Form, Input, Modal, Select, Table } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { api } from '../../../api/client';
 import { errorText } from '../../../shared/errorText';
@@ -15,13 +15,24 @@ type Debt = components['schemas']['DebtDto'];
 type Reminder = components['schemas']['ReminderDto'];
 
 interface Props {
-  companyId: number | null;
+  open: boolean;
+  /** Các công ty quá hạn nộp của kỳ đang xem. */
+  companies: { id: number; name: string }[];
   onClose: () => void;
 }
 
-/** Popup nhắc nộp (R16): xem trước các kỳ quá hạn, số tiền, sửa nội dung và hạn nộp mới rồi gửi tới công ty. */
-export function ReminderModal({ companyId, onClose }: Props) {
+/**
+ * Popup nhắc nộp (R16): chọn công ty quá hạn, xem trước các kỳ còn nợ và số tiền, sửa nội dung và hạn nộp mới rồi gửi.
+ * Chỉ một công ty quá hạn thì chọn sẵn công ty đó.
+ */
+export function ReminderModal({ open, companies, onClose }: Props) {
   const { message } = App.useApp();
+  const [picked, setPicked] = useState<number | null>(null);
+  const companyId = open ? (picked ?? (companies.length === 1 ? companies[0]!.id : null)) : null;
+  const close = () => {
+    setPicked(null);
+    onClose();
+  };
   const [form] = Form.useForm<{ dueDate: Dayjs; content: string }>();
   const draft = useQuery({
     queryKey: ['remittance', 'reminder-draft', companyId],
@@ -37,7 +48,7 @@ export function ReminderModal({ companyId, onClose }: Props) {
       }),
     onSuccess: (r) => {
       message.success(`Đã gửi nhắc nộp ${r.code} tới ${r.companyCode}`);
-      onClose();
+      close();
     },
   });
 
@@ -48,9 +59,9 @@ export function ReminderModal({ companyId, onClose }: Props) {
   const error = send.error ?? draft.error;
   return (
     <Modal
-      title={draft.data ? `Nhắc nộp · ${draft.data.companyCode} · ${draft.data.companyName}` : 'Nhắc nộp'}
-      open={companyId !== null}
-      onCancel={onClose}
+      title="Nhắc công ty nộp tiền về xã"
+      open={open}
+      onCancel={close}
       onOk={() => form.submit()}
       okText="Gửi nhắc nộp"
       cancelText="Hủy"
@@ -68,6 +79,17 @@ export function ReminderModal({ companyId, onClose }: Props) {
           message={errorText(error)}
         />
       )}
+      <Form layout="vertical">
+        <Form.Item label="Công ty cần nhắc" required style={{ marginBottom: 16 }}>
+          <Select
+            aria-label="Công ty cần nhắc"
+            placeholder="Chọn công ty quá hạn nộp"
+            value={companyId}
+            onChange={setPicked}
+            options={companies.map((c) => ({ value: c.id, label: c.name }))}
+          />
+        </Form.Item>
+      </Form>
       {draft.isLoading && <LoadingBlock rows={3} />}
       {draft.data && (
         <>

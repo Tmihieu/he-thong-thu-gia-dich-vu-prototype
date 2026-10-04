@@ -90,7 +90,7 @@ describe('Tiến độ thu', () => {
     });
     renderApp('/commune/progress');
 
-    const row = (await screen.findByText('DV03 · Công ty Ba')).closest('tr')!;
+    const row = (await screen.findByText('Công ty Ba')).closest('tr')!;
     expect(within(row).getByText('37,5%')).toBeInTheDocument();
     expect(within(row).getByText('75% đã thu')).toBeInTheDocument();
     expect(row.querySelector('.ant-progress-status-exception')).not.toBeNull();
@@ -148,7 +148,7 @@ describe('Khóa kỳ', () => {
 });
 
 describe('Nhắc nộp', () => {
-  it('công ty quá hạn có nút Nhắc nộp; popup hiện nợ theo kỳ và gửi nội dung đã sửa', async () => {
+  it('nút Nhắc công ty nộp mở popup chọn công ty quá hạn; hiện nợ theo kỳ và gửi nội dung đã sửa', async () => {
     const fetchFn = mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
       'GET /api/masterdata/periods': () => jsonResponse(200, periods),
@@ -168,9 +168,11 @@ describe('Nhắc nộp', () => {
     });
     renderApp('/commune/progress');
 
-    expect(screen.queryByRole('button', { name: 'Nhắc nộp DV01' })).not.toBeInTheDocument();
-    await userEvent.click(await screen.findByRole('button', { name: 'Nhắc nộp DV07' }));
+    await userEvent.click(await screen.findByRole('button', { name: /Nhắc công ty nộp \(1\)/ }));
+    // Dòng công ty không còn nút nhắc riêng; chỉ một công ty quá hạn nên popup chọn sẵn công ty đó.
+    expect(screen.queryByRole('button', { name: /^Nhắc nộp/ })).not.toBeInTheDocument();
     const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('combobox', { name: 'Công ty cần nhắc' })).toBeInTheDocument();
     expect(await within(dialog).findByText('Tháng 09/2026')).toBeInTheDocument();
     expect(within(dialog).getByText('950.000 đ', norm)).toBeInTheDocument();
 

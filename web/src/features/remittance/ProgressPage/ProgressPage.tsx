@@ -1,5 +1,5 @@
 import { BellOutlined } from '@ant-design/icons';
-import { Alert, Button, Popover, Progress, Space, Table, Typography } from 'antd';
+import { Alert, Button, Progress, Space, Table, Typography } from 'antd';
 import { useState } from 'react';
 
 import { useAuth } from '../../../app/auth/authContext';
@@ -58,7 +58,7 @@ function UnpaidHouseholds({ periodId, areaId, companyId }: { periodId: number; a
  */
 export function ProgressPage() {
   const [periodId, setPeriodId] = useState<number>();
-  const [reminding, setReminding] = useState<number | null>(null);
+  const [reminding, setReminding] = useState(false);
   // Lãnh đạo xem màn này chỉ đọc: không nhắc nộp (SPEC §9.10).
   const readOnly = useAuth().user?.role === 'LEADER';
   const ledger = useCompanyLedger(periodId);
@@ -76,21 +76,9 @@ export function ProgressPage() {
           <Space wrap>
             <PeriodSelect value={periodId} onChange={setPeriodId} />
             {overdue.length > 0 && !readOnly && (
-              <Popover
-                trigger="click"
-                title={`${overdue.length} công ty quá hạn nộp`}
-                content={
-                  <Space direction="vertical">
-                    {overdue.map((r) => (
-                      <Button key={r.companyId} size="small" danger block onClick={() => setReminding(r.companyId)}>
-                        {`Nhắc nộp ${r.companyCode} · ${r.companyName}`}
-                      </Button>
-                    ))}
-                  </Space>
-                }
-              >
-                <Button danger icon={<BellOutlined />}>{`Nhắc công ty nộp (${overdue.length})`}</Button>
-              </Popover>
+              <Button danger icon={<BellOutlined />} onClick={() => setReminding(true)}>
+                {`Nhắc công ty nộp (${overdue.length})`}
+              </Button>
             )}
           </Space>
         }
@@ -141,7 +129,9 @@ export function ProgressPage() {
             title: 'Công ty',
             width: 180,
             render: (_, r) => (
-              <Typography.Text ellipsis={{ tooltip: true }} style={{ maxWidth: 160 }}>{`${r.companyCode} · ${r.companyName}`}</Typography.Text>
+              <Typography.Text ellipsis={{ tooltip: `${r.companyCode} · ${r.companyName}` }} style={{ maxWidth: 160 }}>
+                {r.companyName}
+              </Typography.Text>
             ),
           },
           {
@@ -179,20 +169,15 @@ export function ProgressPage() {
           {
             title: 'Trạng thái',
             dataIndex: 'progress',
-            render: (p: LedgerRow['progress'], r) => (
-              <Space size={4} wrap>
-                <StatusTag tone={PROGRESS_TONES[p]}>{PROGRESS_LABELS[p]}</StatusTag>
-                {p === 'OVERDUE' && !readOnly && (
-                  <Button size="small" danger onClick={() => setReminding(r.companyId)} aria-label={`Nhắc nộp ${r.companyCode}`}>
-                    Nhắc nộp
-                  </Button>
-                )}
-              </Space>
-            ),
+            render: (p: LedgerRow['progress']) => <StatusTag tone={PROGRESS_TONES[p]}>{PROGRESS_LABELS[p]}</StatusTag>,
           },
         ]}
       />
-      <ReminderModal companyId={reminding} onClose={() => setReminding(null)} />
+      <ReminderModal
+        open={reminding}
+        companies={overdue.map((r) => ({ id: r.companyId, name: r.companyName }))}
+        onClose={() => setReminding(false)}
+      />
     </>
   );
 }

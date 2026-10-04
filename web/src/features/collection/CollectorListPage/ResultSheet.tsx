@@ -87,10 +87,6 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
     },
   });
 
-  useEffect(() => {
-    if (item) form.setFieldsValue({ result: initialMethod ?? 'CASH', collectorId: defaultCollectorId });
-  }, [item, form, defaultCollectorId, initialMethod]);
-
   const qr = !collectors && initialMethod === 'TRANSFER';
   const chargeId = item?.charge.id;
   const watch = useQuery({
@@ -98,6 +94,8 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
     queryFn: () => api.get<CollectorCharge[]>('/api/collection/my-work', { params: { periodId: item!.charge.periodId } }),
     enabled: qr && item !== null,
     refetchInterval: 3000,
+    // Người đi thu đưa máy cho hộ xem hoặc chuyển sang app khác: vẫn hỏi lại máy chủ, nếu không màn QR không tự đóng.
+    refetchIntervalInBackground: true,
   });
   const paidByHousehold = qr && watch.data?.find((w) => w.charge.id === chargeId)?.charge.status === 'PAID';
   useEffect(() => {
@@ -137,6 +135,9 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
       <Form<Values>
         form={form}
         layout="vertical"
+        // Ngăn kéo hủy nội dung khi đóng nên form dựng lại mỗi lần mở: đặt giá trị đầu ở đây. Đặt bằng setFieldsValue trong
+        // effect thì trên máy tắt hiệu ứng động form chưa dựng xong, ô ẩn "result" rỗng và bấm xác nhận không gửi được.
+        initialValues={{ result: initialMethod ?? 'CASH', collectorId: defaultCollectorId }}
         onFinish={(v) => {
           if (!submit.isPending) submit.mutate(v);
         }}
