@@ -3,12 +3,10 @@ package vn.dongthanh.vsmt.collection;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -34,17 +32,12 @@ import vn.dongthanh.vsmt.billing.domain.ChargeRepository;
 import vn.dongthanh.vsmt.billing.domain.ChargeRequest;
 import vn.dongthanh.vsmt.billing.domain.ChargeScope;
 import vn.dongthanh.vsmt.billing.domain.ChargeStatus;
-import vn.dongthanh.vsmt.collection.domain.CollectionVisit;
-import vn.dongthanh.vsmt.collection.domain.CollectionVisitRepository;
 import vn.dongthanh.vsmt.collection.domain.Payment;
 import vn.dongthanh.vsmt.collection.domain.PaymentMethod;
 import vn.dongthanh.vsmt.collection.domain.PaymentRepository;
-import vn.dongthanh.vsmt.collection.domain.VisitResult;
 import vn.dongthanh.vsmt.collection.service.CollectionService;
-import vn.dongthanh.vsmt.collection.service.CollectionService.CitizenPaymentCommand;
 import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentCommand;
 import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentOutcome;
-import vn.dongthanh.vsmt.collection.service.CollectionService.VisitCommand;
 import vn.dongthanh.vsmt.collection.service.CollectorAssignmentService;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
@@ -72,11 +65,10 @@ import vn.dongthanh.vsmt.platform.domain.UserRepository;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
 import vn.dongthanh.vsmt.platform.service.AuditService;
 
-/** Viết trước (TDD) cho T21: đủ tiền → PAID, chống gửi trùng, kỳ khóa, khoản miễn, thu vượt, lượt ghé, phạm vi. */
+/** Viết trước (TDD) cho T21: đủ tiền → PAID, không thu một phần, chống gửi trùng, kỳ khóa, khoản miễn, phạm vi. */
 class CollectionServiceTest {
 
     final PaymentRepository payments = mock(PaymentRepository.class);
-    final CollectionVisitRepository visits = mock(CollectionVisitRepository.class);
     final ChargeRepository charges = mock(ChargeRepository.class);
     final CollectorAssignmentService scope = mock(CollectorAssignmentService.class);
     final UserRepository users = mock(UserRepository.class);
@@ -85,7 +77,7 @@ class CollectionServiceTest {
     final NotificationService notifications = mock(NotificationService.class);
     final AuditService audit = mock(AuditService.class);
     final Clock clock = Clock.fixed(Instant.parse("2026-10-12T10:40:00Z"), ZoneId.of("Asia/Ho_Chi_Minh"));
-    final CollectionService service = new CollectionService(payments, visits, charges, scope, users,
+    final CollectionService service = new CollectionService(payments, charges, scope, users,
             new PeriodGuard(periods), citizenAccounts, notifications, audit, clock);
 
     final Company dv01 = withId(Company.create("DV01", "Công ty Một", "A", "0900000001", LocalDate.of(2026, 1, 1)), 1L);
@@ -109,7 +101,6 @@ class CollectionServiceTest {
         });
         when(payments.sumByChargeId(900L)).thenAnswer(inv -> saved.stream().mapToLong(Payment::getAmount).sum());
         when(payments.maxCodeNumber("TT-1026-")).thenReturn(122);
-        when(visits.save(any(CollectionVisit.class))).thenAnswer(inv -> inv.getArgument(0));
         User thu07 = withId(User.create("thu07", "Người thu", Role.COLLECTOR, 1L, "x"), 21L);
         when(users.findById(21L)).thenReturn(Optional.of(thu07));
     }
@@ -140,58 +131,56 @@ class CollectionServiceTest {
     }
 
     @Test
-    void auditKeepsChargeAmountApartFromThisPaymentAmount() {
-        service.recordPayment(cash(30_000, "req-1"), collector);
-        service.recordCitizenPayment(new CitizenPaymentCommand(900L, 128L, 77L, "0902000001", 50_000, "app-1"));
+    void bankTransferAuditsChargeAmountApartFromThisPaymentAmount() {
+        service.recordBankTransfer(900L, 80_000, "FT26100001", "sepay-1");
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, Object>> staffAfter = ArgumentCaptor.forClass(Map.class);
-        verify(audit).record(eq(collector), eq("RECORD_PAYMENT"), eq("Charge"), eq(charge.getCode()), any(),
-                staffAfter.capture());
-        assertThat(staffAfter.getValue()).containsEntry("chargeAmount", 80_000L).containsEntry("paymentAmount", 30_000L)
-                .containsEntry("paidAmount", 30_000L).doesNotContainKey("amount");
-
+        ArgumentCaptor<Map<String, Object>> transferBefore = ArgumentCaptor.forClass(Map.class);
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, Object>> citizenBefore = ArgumentCaptor.forClass(Map.class);
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, Object>> citizenAfter = ArgumentCaptor.forClass(Map.class);
-        verify(audit).recordCitizen(eq("0902000001"), eq("RECORD_CITIZEN_PAYMENT"), eq("Charge"), eq(charge.getCode()),
-                citizenBefore.capture(), citizenAfter.capture());
-        assertThat(citizenBefore.getValue()).containsEntry("chargeAmount", 80_000L)
-                .containsEntry("paidAmount", 30_000L);
-        assertThat(citizenAfter.getValue()).containsEntry("chargeAmount", 80_000L)
-                .containsEntry("paymentAmount", 50_000L).containsEntry("paidAmount", 80_000L).doesNotContainKey("amount");
+        ArgumentCaptor<Map<String, Object>> transferAfter = ArgumentCaptor.forClass(Map.class);
+        verify(audit).recordSystem(eq("RECORD_BANK_TRANSFER"), eq("Charge"), eq(charge.getCode()),
+                transferBefore.capture(), transferAfter.capture());
+        assertThat(transferBefore.getValue()).containsEntry("chargeAmount", 80_000L).containsEntry("paidAmount", 0L);
+        assertThat(transferAfter.getValue()).containsEntry("chargeAmount", 80_000L)
+                .containsEntry("paymentAmount", 80_000L).containsEntry("paidAmount", 80_000L).doesNotContainKey("amount");
+        assertThat(charge.getStatus()).isEqualTo(ChargeStatus.PAID);
+        assertThat(saved).singleElement().satisfies(p -> {
+            assertThat(p.getMethod()).isEqualTo(PaymentMethod.TRANSFER);
+            assertThat(p.getCollectorId()).isNull();
+        });
     }
 
     @Test
     void chargeRowIsLockedBeforeItIsLoadedAndBeforeTheRequestIdIsChecked() {
-        service.recordPayment(cash(30_000, "req-1"), collector);
-        service.recordCitizenPayment(new CitizenPaymentCommand(900L, 128L, 77L, "0902000001", 50_000, "app-1"));
+        service.recordPayment(cash(80_000, "req-1"), collector);
+        assertThatThrownBy(() -> service.recordBankTransfer(900L, 80_000, "FT26100001", "sepay-1"))
+                .extracting("code").isEqualTo("CHARGE_ALREADY_PAID");
 
         InOrder order = inOrder(charges, payments);
         order.verify(charges).lockById(900L);
         order.verify(charges).findByIdWithDetails(900L);
         order.verify(payments).findByClientRequestId("req-1");
         order.verify(charges).lockById(900L);
+        order.verify(payments).findByClientRequestId("sepay-1");
         order.verify(charges).findByIdWithDetails(900L);
-        order.verify(payments).findByClientRequestId("app-1");
     }
 
     @Test
-    void partialPaymentKeepsChargeUnpaidUntilFullyPaid() {
-        service.recordPayment(cash(30_000, "req-1"), collector);
-        assertThat(charge.getStatus()).isEqualTo(ChargeStatus.UNPAID);
+    void partialPaymentIsRejectedSoChargeIsEitherPaidOrUnpaid() {
+        assertThatThrownBy(() -> service.recordPayment(cash(30_000, "req-1"), collector))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("80.000")
+                .extracting("code").isEqualTo("PAYMENT_AMOUNT_INVALID");
 
-        PaymentOutcome second = service.recordPayment(cash(50_000, "req-2"), collector);
-        assertThat(charge.getStatus()).isEqualTo(ChargeStatus.PAID);
-        assertThat(second.paidAmount()).isEqualTo(80_000);
+        assertThat(charge.getStatus()).isEqualTo(ChargeStatus.UNPAID);
+        assertThat(saved).isEmpty();
     }
 
     @Test
     void householdIsNotifiedWhenAPaymentIsRecorded() {
         when(citizenAccounts.findActiveIdsBySubject(any())).thenReturn(List.of(7L));
 
-        service.recordPayment(cash(30_000, "req-1"), collector);
+        service.recordPayment(cash(80_000, "req-1"), collector);
 
         verify(notifications).publish(any(), any());
     }
@@ -223,8 +212,6 @@ class CollectionServiceTest {
         ReflectionTestUtils.setField(october, "status", PeriodStatus.LOCKED);
         assertThatThrownBy(() -> service.recordPayment(cash(80_000, "req-1"), collector))
                 .extracting("code").isEqualTo("PERIOD_LOCKED");
-        assertThatThrownBy(() -> service.recordVisit(visit(VisitResult.ABSENT, null, "v-1"), collector))
-                .extracting("code").isEqualTo("PERIOD_LOCKED");
     }
 
     @Test
@@ -237,14 +224,12 @@ class CollectionServiceTest {
     }
 
     @Test
-    void amountMustBePositiveAndNotExceedRemaining() {
-        assertThatThrownBy(() -> service.recordPayment(cash(0, "req-1"), collector))
-                .extracting("code").isEqualTo("PAYMENT_AMOUNT_INVALID");
-        service.recordPayment(cash(60_000, "req-2"), collector);
-        assertThatThrownBy(() -> service.recordPayment(cash(20_001, "req-3"), collector))
-                .isInstanceOf(BusinessRuleException.class)
-                .hasMessageContaining("20.000")
-                .extracting("code").isEqualTo("PAYMENT_AMOUNT_INVALID");
+    void amountMustEqualTheAmountDue() {
+        for (long amount : new long[] {0, 79_999, 80_001}) {
+            assertThatThrownBy(() -> service.recordPayment(cash(amount, "req-" + amount), collector))
+                    .extracting("code").isEqualTo("PAYMENT_AMOUNT_INVALID");
+        }
+        assertThat(saved).isEmpty();
     }
 
     @Test
@@ -255,21 +240,7 @@ class CollectionServiceTest {
     }
 
     @Test
-    void visitsDoNotChangeChargeStatusAndAppointmentNeedsADate() {
-        service.recordVisit(visit(VisitResult.ABSENT, null, "v-1"), collector);
-        service.recordVisit(visit(VisitResult.REFUSED, null, "v-2"), collector);
-        service.recordVisit(visit(VisitResult.APPOINTMENT, LocalDate.of(2026, 10, 15), "v-3"), collector);
-
-        assertThat(charge.getStatus()).isEqualTo(ChargeStatus.UNPAID);
-        assertThatThrownBy(() -> service.recordVisit(visit(VisitResult.APPOINTMENT, null, "v-4"), collector))
-                .extracting("code").isEqualTo("VISIT_REVISIT_DATE_REQUIRED");
-        verify(audit, never()).record(any(), anyString(), anyString(), any(), any(), any());
-    }
-
-    @Test
     void replayIsReturnedOnlyInsideTheCallersScope() {
-        CollectionVisit firstVisit = service.recordVisit(visit(VisitResult.ABSENT, null, "v-1"), collector).visit();
-        when(visits.findByClientRequestId("v-1")).thenReturn(Optional.of(firstVisit));
         Payment first = service.recordPayment(cash(80_000, "req-1"), collector).payment();
         when(payments.findByClientRequestId("req-1")).thenReturn(Optional.of(first));
 
@@ -277,25 +248,12 @@ class CollectionServiceTest {
         doThrow(new NotFoundException("CHARGE_NOT_FOUND", "x")).when(scope).requireInScope(charge, otherCollector);
         assertThatThrownBy(() -> service.recordPayment(cash(80_000, "req-1"), otherCollector))
                 .isInstanceOf(NotFoundException.class);
-        assertThatThrownBy(() -> service.recordVisit(visit(VisitResult.ABSENT, null, "v-1"), otherCollector))
-                .isInstanceOf(NotFoundException.class);
 
         CurrentUser otherCompany = new CurrentUser(6L, "dv07", Role.COMPANY_MANAGER, 7L);
         assertThatThrownBy(() -> service.recordPayment(cash(80_000, "req-1"), otherCompany))
                 .isInstanceOf(NotFoundException.class);
-        assertThatThrownBy(() -> service.recordVisit(visit(VisitResult.ABSENT, null, "v-1"), otherCompany))
-                .isInstanceOf(NotFoundException.class);
 
         assertThat(service.recordPayment(cash(80_000, "req-1"), collector).replayed()).isTrue();
-    }
-
-    @Test
-    void sameVisitRequestIdIsRecordedOnce() {
-        CollectionVisit first = service.recordVisit(visit(VisitResult.ABSENT, null, "v-1"), collector).visit();
-        when(visits.findByClientRequestId("v-1")).thenReturn(Optional.of(first));
-
-        assertThat(service.recordVisit(visit(VisitResult.ABSENT, null, "v-1"), collector).replayed()).isTrue();
-        verify(visits).save(any());
     }
 
     @Test
@@ -326,17 +284,17 @@ class CollectionServiceTest {
     }
 
     @Test
-    void appSimulatedMethodIsNotAllowedForStaff() {
-        assertThatThrownBy(() -> service.recordPayment(new PaymentCommand(900L, 80_000, PaymentMethod.APP_SIMULATED,
-                "req-1", null, null, null), collector)).extracting("code").isEqualTo("PAYMENT_METHOD_INVALID");
+    void staffRecordCashOnlyBecauseTransfersArriveFromTheBank() {
+        for (PaymentMethod method : List.of(PaymentMethod.TRANSFER, PaymentMethod.APP_SIMULATED, PaymentMethod.REFUND)) {
+            assertThatThrownBy(() -> service.recordPayment(new PaymentCommand(900L, 80_000, method,
+                    "req-" + method, null, null, null), collector)).extracting("code").isEqualTo("PAYMENT_METHOD_INVALID");
+        }
+        assertThat(saved).isEmpty();
+        assertThat(charge.getStatus()).isEqualTo(ChargeStatus.UNPAID);
     }
 
     private PaymentCommand cash(long amount, String requestId) {
         return new PaymentCommand(900L, amount, PaymentMethod.CASH, requestId, null, null, null);
-    }
-
-    private VisitCommand visit(VisitResult result, LocalDate revisit, String requestId) {
-        return new VisitCommand(900L, result, revisit, null, requestId);
     }
 
     private Charge newCharge(ChargeAmount amount, Long id) {

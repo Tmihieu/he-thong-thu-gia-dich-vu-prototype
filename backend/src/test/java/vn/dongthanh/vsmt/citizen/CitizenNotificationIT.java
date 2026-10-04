@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import vn.dongthanh.vsmt.citizen.domain.CitizenAccount;
 import vn.dongthanh.vsmt.citizen.domain.CitizenAccountRepository;
+import vn.dongthanh.vsmt.collection.service.CollectionService;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubjectRepository;
 import vn.dongthanh.vsmt.notification.domain.Notification;
 import vn.dongthanh.vsmt.notification.domain.NotificationKind;
@@ -44,6 +45,7 @@ class CitizenNotificationIT extends IntegrationTest {
     @Autowired CollectionFixture fx;
     @Autowired CitizenAccountRepository accounts;
     @Autowired ServiceSubjectRepository subjects;
+    @Autowired CollectionService collection;
     @Autowired NotificationService notifications;
     @Autowired JwtService jwt;
     @Autowired ObjectMapper json;
@@ -130,9 +132,8 @@ class CitizenNotificationIT extends IntegrationTest {
     }
 
     @Test
-    void appPaymentAndClosedComplaintShowUpAsNotifications() throws Exception {
-        citizen(citizenA, post("/api/citizen/payments"), "{\"chargeId\": %d, \"amount\": 80000, \"clientRequestId\": \"n-1\"}"
-                .formatted(fx.chargeId("DTH-H000001"))).andExpect(status().isOk());
+    void vietQrPaymentAndClosedComplaintShowUpAsNotifications() throws Exception {
+        collection.recordBankTransfer(fx.chargeId("DTH-H000001"), 80_000, "FT26100001", "sepay-n-1");
         String body = citizen(citizenA, post("/api/citizen/complaints"),
                 "{\"category\": \"OTHER\", \"content\": \"Có mùi hôi ở điểm tập kết\"}")
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
@@ -140,10 +141,8 @@ class CitizenNotificationIT extends IntegrationTest {
         mvc.perform(post("/api/complaints/{id}/close", complaintId).header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer))
                 .contentType(MediaType.APPLICATION_JSON).content("{\"resolution\": \"Đã dọn\"}")).andExpect(status().isOk());
 
-        citizen(citizenA, get("/api/citizen/notifications").param("kind", "TRANSACTION"), null)
-                .andExpect(jsonPath("$.items[0].title").value("Thanh toán thành công"))
-                .andExpect(jsonPath("$.items[0].link.screen").value("citizen.paymentConfirmation"))
-                .andExpect(jsonPath("$.items[0].link.params.paymentId").isNumber());
+        citizen(citizenA, get("/api/citizen/notifications").param("kind", "RECEIPT"), null)
+                .andExpect(jsonPath("$.items[0].title").value("Đã ghi nhận thu phí 2026-10"));
         citizen(citizenA, get("/api/citizen/notifications").param("kind", "COMPLAINT"), null)
                 .andExpect(jsonPath("$.items[0].title").value("Phản ánh KN-1026-001 · Đã giải quyết"))
                 .andExpect(jsonPath("$.items[0].link.screen").value("citizen.complaintDetail"))

@@ -81,24 +81,21 @@ class CollectionApiIT extends IntegrationTest {
     }
 
     @Test
-    void partialPaymentThenOverpaymentIsRejected() throws Exception {
+    void partialOrExcessAmountIsRejected() throws Exception {
         long charge = fx.chargeId("DTH-H000002");
-        pay(collector, charge, 30_000, "req-1").andExpect(jsonPath("$.chargeStatus").value("UNPAID"))
-                .andExpect(jsonPath("$.remainingAmount").value(50_000));
-        pay(collector, charge, 60_000, "req-2")
+        pay(collector, charge, 30_000, "req-1")
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("PAYMENT_AMOUNT_INVALID"))
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("50.000")));
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("80.000")));
+        pay(collector, charge, 90_000, "req-2")
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("PAYMENT_AMOUNT_INVALID"));
+        assertThat(jdbc.queryForObject("select count(*) from payments", Integer.class)).isZero();
     }
 
     @Test
-    void visitsShowUpInCollectorWorkListWithoutChangingStatus() throws Exception {
-        long absent = fx.chargeId("DTH-H000002");
-        mvc.perform(post("/api/collection/visits").header(HttpHeaders.AUTHORIZATION, collector)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"chargeId\":%d,\"result\":\"ABSENT\",\"note\":\"Nhà khóa cửa\",\"clientRequestId\":\"v-1\"}"
-                                .formatted(absent)))
-                .andExpect(status().isCreated());
+    void collectorWorkListShowsPaidAndUnpaidCharges() throws Exception {
+        long unpaid = fx.chargeId("DTH-H000002");
         pay(collector, fx.chargeId("DTH-H000001"), 80_000, "req-1");
 
         mvc.perform(get("/api/collection/my-work").header(HttpHeaders.AUTHORIZATION, collector))
@@ -109,8 +106,7 @@ class CollectionApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$[0].lastPaidAt").isNotEmpty())
                 .andExpect(jsonPath("$[1].charge.status").value("UNPAID"))
                 .andExpect(jsonPath("$[1].lastPaidAt").isEmpty())
-                .andExpect(jsonPath("$[1].remainingAmount").value(80_000))
-                .andExpect(jsonPath("$[1].lastVisit.result").value("ABSENT"));
+                .andExpect(jsonPath("$[1].remainingAmount").value(80_000));
 
         // Quản lý công ty thấy mọi khoản của công ty (KV07 + KV09), lọc được theo tổ; công ty khác không thấy.
         mvc.perform(get("/api/collection/company-work").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.dv01Manager)))
@@ -124,9 +120,9 @@ class CollectionApiIT extends IntegrationTest {
         mvc.perform(get("/api/collection/company-work").header(HttpHeaders.AUTHORIZATION, collector))
                 .andExpect(status().isForbidden());
 
-        mvc.perform(get("/api/collection/charges/" + absent + "/activity").header(HttpHeaders.AUTHORIZATION,
+        mvc.perform(get("/api/collection/charges/" + unpaid + "/activity").header(HttpHeaders.AUTHORIZATION,
                         fx.bearer(fx.officer)))
-                .andExpect(jsonPath("$.visits[0].note").value("Nhà khóa cửa"))
+                .andExpect(jsonPath("$.remainingAmount").value(80_000))
                 .andExpect(jsonPath("$.payments").isEmpty());
     }
 
@@ -140,11 +136,22 @@ class CollectionApiIT extends IntegrationTest {
 
         mvc.perform(post("/api/collection/payments").header(HttpHeaders.AUTHORIZATION, manager)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"chargeId\":%d,\"amount\":80000,\"method\":\"TRANSFER\",\"clientRequestId\":\"req-2\",\"collectorId\":%d}"
+                        .content("{\"chargeId\":%d,\"amount\":80000,\"method\":\"CASH\",\"clientRequestId\":\"req-2\",\"collectorId\":%d}"
                                 .formatted(charge, fx.thu09.getId())))
                 .andExpect(status().isCreated());
         assertThat(jdbc.queryForObject("select collector_id from payments", Long.class)).isEqualTo(fx.thu09.getId());
         assertThat(jdbc.queryForObject("select confirmed_by from payments", Long.class)).isEqualTo(fx.dv01Manager.getId());
+    }
+
+    @Test
+    void transferCannotBeRecordedByHandOnlyByTheBankViaVietQr() throws Exception {
+        mvc.perform(post("/api/collection/payments").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.thu07))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"chargeId\":%d,\"amount\":80000,\"method\":\"TRANSFER\",\"clientRequestId\":\"req-t\"}"
+                                .formatted(fx.chargeId("DTH-H000001"))))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("PAYMENT_METHOD_INVALID"));
+        assertThat(jdbc.queryForObject("select count(*) from payments", Integer.class)).isZero();
     }
 
     private ResultActions pay(String token, long chargeId, long amount, String requestId) throws Exception {

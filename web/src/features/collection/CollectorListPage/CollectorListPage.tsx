@@ -20,7 +20,7 @@ import { normalizeText } from '../../../shared/normalizeText';
 import { usePeriods } from '../../masterdata/api';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type CollectorCharge, useCashHeld, useMyWork, useMyWorkAllPeriods } from '../api';
-import { byChipOrder, COLLECTOR_CHIPS, countChips, RESULT_LABELS, matchesChip, type WorkChip, workState } from '../workState';
+import { byChipOrder, countChips, matchesChip, WORK_CHIPS, type WorkChip, workState } from '../workState';
 import '../collector.css';
 import { HouseholdHistory } from './HouseholdHistory';
 import { ReportSubjectForm } from './ReportSubjectForm';
@@ -142,7 +142,7 @@ export function CollectorListPage() {
       </section>
 
       <div className="clm-chips" role="group" aria-label="Lọc theo kết quả">
-        {COLLECTOR_CHIPS.map((c) => (
+        {WORK_CHIPS.map((c) => (
           <button key={c.value} type="button" className={`clm-chip${chip === c.value ? ' active' : ''}`} aria-pressed={chip === c.value} onClick={() => setChip(c.value)}>
             {c.label} <b>{counts[c.value] ?? 0}</b>
           </button>
@@ -267,17 +267,10 @@ export function CollectorListPage() {
                       <small>Nhân viên thu gom</small>
                       <span>{user?.fullName}</span>
                     </div>
-                    {(w.lastPaidAt || w.lastVisit) && (
+                    {w.lastPaidAt && (
                       <div className="clm-kv">
                         <small>Nhật ký đi thu</small>
-                        <span>
-                          {w.lastPaidAt && <div>Đã thu lúc {formatDate(w.lastPaidAt, true)}</div>}
-                          {w.lastVisit && (
-                            <div>
-                              {RESULT_LABELS[w.lastVisit.result]} lúc {formatDate(w.lastVisit.visitedAt, true)}
-                            </div>
-                          )}
-                        </span>
+                        <span>Đã thu lúc {formatDate(w.lastPaidAt, true)}</span>
                       </div>
                     )}
                   </details>

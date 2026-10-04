@@ -81,7 +81,7 @@ class CitizenApiIT extends IntegrationTest {
     @Test
     void chargesListOnlyOwnHouseholdWithPaidAndRemainingAmounts() throws Exception {
         long chargeA = fx.chargeId("DTH-H000001");
-        collection.recordPayment(new PaymentCommand(chargeA, 30_000, PaymentMethod.CASH, "req-citizen-1", null, null,
+        collection.recordPayment(new PaymentCommand(chargeA, 80_000, PaymentMethod.CASH, "req-citizen-1", null, null,
                 null), fx.actor(fx.thu07));
 
         mvc.perform(get("/api/citizen/charges").header(HttpHeaders.AUTHORIZATION, bearer(citizenA)))
@@ -91,9 +91,9 @@ class CitizenApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$[0].periodCode").value(fx.october.getCode()))
                 .andExpect(jsonPath("$[0].feeTypeName").value("Phí VSMT"))
                 .andExpect(jsonPath("$[0].amount").value(80_000))
-                .andExpect(jsonPath("$[0].paidAmount").value(30_000))
-                .andExpect(jsonPath("$[0].remainingAmount").value(50_000))
-                .andExpect(jsonPath("$[0].status").value("UNPAID"))
+                .andExpect(jsonPath("$[0].paidAmount").value(80_000))
+                .andExpect(jsonPath("$[0].remainingAmount").value(0))
+                .andExpect(jsonPath("$[0].status").value("PAID"))
                 .andExpect(jsonPath("$[0].dueDate").value("2026-10-25"))
                 .andExpect(jsonPath("$[0].overdue").value(false));
 

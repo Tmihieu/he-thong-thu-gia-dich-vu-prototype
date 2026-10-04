@@ -96,17 +96,17 @@ class MoneyConcurrencyIT extends IntegrationTest {
     }
 
     @Test
-    void secondPaymentOnTheSameChargeWaitsForTheFirstAndCannotExceedTheAmount() throws Exception {
+    void secondPaymentOnTheSameChargeWaitsForTheFirstAndSeesItPaid() throws Exception {
         List<MockHttpServletResponse> waited = whileHeldOpen(
-                () -> collection.recordPayment(new PaymentCommand(chargeId, 50_000, PaymentMethod.CASH, "p-a", null,
+                () -> collection.recordPayment(new PaymentCommand(chargeId, 80_000, PaymentMethod.CASH, "p-a", null,
                         null, null), fx.actor(fx.thu07)),
-                () -> pay(50_000, "p-b"));
+                () -> pay(80_000, "p-b"));
 
-        assertRejected(waited.get(0), "PAYMENT_AMOUNT_INVALID");
+        assertRejected(waited.get(0), "CHARGE_ALREADY_PAID");
         assertThat(jdbc.queryForObject("select sum(amount) from payments where charge_id = ?", Long.class, chargeId))
-                .isEqualTo(50_000L);
+                .isEqualTo(80_000L);
         assertThat(jdbc.queryForObject("select status from charges where id = ?", String.class, chargeId))
-                .isEqualTo("UNPAID");
+                .isEqualTo("PAID");
     }
 
     @Test

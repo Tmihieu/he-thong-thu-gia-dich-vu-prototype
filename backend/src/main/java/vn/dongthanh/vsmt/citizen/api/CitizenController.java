@@ -18,8 +18,6 @@ import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.citizen.api.CitizenDtos.CitizenAccountDto;
 import vn.dongthanh.vsmt.citizen.api.CitizenDtos.CitizenChargeDto;
 import vn.dongthanh.vsmt.citizen.api.CitizenDtos.CitizenLoginResponse;
-import vn.dongthanh.vsmt.citizen.api.CitizenDtos.CitizenPaymentRequest;
-import vn.dongthanh.vsmt.citizen.api.CitizenDtos.CitizenPaymentResponse;
 import vn.dongthanh.vsmt.citizen.api.CitizenDtos.CitizenProfileDto;
 import vn.dongthanh.vsmt.citizen.api.CitizenDtos.CitizenScheduleDto;
 import vn.dongthanh.vsmt.citizen.api.CitizenDtos.OtpRequest;
@@ -32,10 +30,9 @@ import vn.dongthanh.vsmt.citizen.service.CitizenPaymentService;
 import vn.dongthanh.vsmt.citizen.service.CitizenQueryService;
 import vn.dongthanh.vsmt.collection.api.BankTransferController.TransferInfoDto;
 import vn.dongthanh.vsmt.collection.service.BankTransferService;
-import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentOutcome;
 import vn.dongthanh.vsmt.platform.security.CurrentCitizen;
 
-@Tag(name = "App người dân: tài khoản, hộ, khoản phải đóng, thanh toán mô phỏng")
+@Tag(name = "App người dân: tài khoản, hộ, khoản phải đóng, chuyển khoản VietQR")
 @RestController
 @RequestMapping("/api/citizen")
 @RequiredArgsConstructor
@@ -89,20 +86,10 @@ public class CitizenController {
         return CitizenChargeDto.of(query.charge(citizen, id));
     }
 
-    @Operation(summary = "Thông tin chuyển khoản (VietQR) cho một khoản của hộ: tài khoản công ty, số còn thiếu, mã nội dung")
+    @Operation(summary = "Thông tin chuyển khoản (VietQR) cho một khoản của hộ: tài khoản công ty, số cần đóng, mã nội dung")
     @GetMapping("/charges/{id}/transfer-info")
     public TransferInfoDto transferInfo(@AuthenticationPrincipal CurrentCitizen citizen, @PathVariable Long id) {
         return TransferInfoDto.of(transfers.transferInfoOfSubject(id, query.requireActive(citizen).getSubject().getId()));
-    }
-
-    @Operation(summary = "Thanh toán mô phỏng một khoản của hộ (trả đúng số còn thiếu)")
-    @PostMapping("/payments")
-    public CitizenPaymentResponse pay(@AuthenticationPrincipal CurrentCitizen citizen,
-            @Valid @RequestBody CitizenPaymentRequest request) {
-        PaymentOutcome outcome = payments.pay(citizen, request.chargeId(), request.amount(), request.clientRequestId());
-        // Nạp lại kèm khoản: bản ghi trả về khi gửi lại cùng clientRequestId chưa nạp khoản, không đọc được ngoài transaction.
-        return new CitizenPaymentResponse(outcome.replayed(),
-                PaymentConfirmationDto.of(payments.confirmation(citizen, outcome.payment().getId())));
     }
 
     @Operation(summary = "Các xác nhận thanh toán của hộ (mọi hình thức), mới nhất trước")

@@ -43,6 +43,7 @@ import vn.dongthanh.vsmt.citizen.domain.MarketPost;
 import vn.dongthanh.vsmt.citizen.domain.MarketPostRepository;
 import vn.dongthanh.vsmt.citizen.domain.MarketTag;
 import vn.dongthanh.vsmt.citizen.domain.MarketCategory;
+import vn.dongthanh.vsmt.collection.service.CollectionService;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubjectRepository;
 import vn.dongthanh.vsmt.support.CollectionFixture;
 import vn.dongthanh.vsmt.support.DatabaseCleaner;
@@ -63,6 +64,7 @@ class CitizenApiNoTransactionIT extends IntegrationTest {
     @Autowired TransactionTemplate tx;
     @Autowired CitizenAccountRepository accounts;
     @Autowired ServiceSubjectRepository subjects;
+    @Autowired CollectionService collection;
     @Autowired MarketPostRepository marketPosts;
     @Autowired MarketCommentRepository marketComments;
     @Autowired ObjectMapper json;
@@ -102,17 +104,12 @@ class CitizenApiNoTransactionIT extends IntegrationTest {
     }
 
     @Test
-    void payTwiceWithSameRequestIdReturnsConfirmationBothTimes() throws Exception {
-        String pay = "{\"chargeId\":%d,\"amount\":80000,\"clientRequestId\":\"nt-1\"}".formatted(chargeId);
-        ok(post("/api/citizen/payments"), pay).andExpect(jsonPath("$.replayed").value(false));
-        JsonNode replay = body(ok(post("/api/citizen/payments"), pay)
-                .andExpect(jsonPath("$.replayed").value(true))
-                .andExpect(jsonPath("$.confirmation.chargeCode").isNotEmpty()));
-        long paymentId = replay.get("confirmation").get("id").asLong();
+    void vietQrConfirmationLoadsOutsideTestTransaction() throws Exception {
+        long paymentId = collection.recordBankTransfer(chargeId, 80_000, "FT26100001", "sepay-nt-1").getId();
 
         ok(get("/api/citizen/payments")).andExpect(jsonPath("$[0].periodLabel").isNotEmpty());
         ok(get("/api/citizen/payments/" + paymentId + "/confirmation")).andExpect(jsonPath("$.companyName").isNotEmpty());
-        ok(get("/api/citizen/notifications")).andExpect(jsonPath("$.items[0].title").value("Thanh toán thành công"));
+        ok(get("/api/citizen/notifications")).andExpect(jsonPath("$.items[0].title").value("Đã ghi nhận thu phí 2026-10"));
     }
 
     @Test

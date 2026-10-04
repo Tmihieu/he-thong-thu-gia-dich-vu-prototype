@@ -13,7 +13,6 @@ const item = {
   paidAmount: 0,
   remainingAmount: 80_000,
   lastPaidAt: null,
-  lastVisit: null,
 } as unknown as CollectorCharge;
 
 type Handler = Parameters<typeof mockApi>[0][string];

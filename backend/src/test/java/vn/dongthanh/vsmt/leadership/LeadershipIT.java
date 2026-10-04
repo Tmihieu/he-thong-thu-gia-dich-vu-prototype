@@ -140,7 +140,7 @@ class LeadershipIT extends IntegrationTest {
     @Test
     void writeOffNeedsAnUntouchedUnpaidCharge() throws Exception {
         long charge = fx.chargeId("DTH-H000001");
-        pay(charge, 30_000, "p-1");
+        pay(charge, 80_000, "p-1");
         send("/api/leadership/approvals", officer, writeOff(charge))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("WRITE_OFF_NOT_ALLOWED"));

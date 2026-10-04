@@ -53,14 +53,6 @@ String? validateMarketPost({
 
 final _random = Random.secure();
 
-String _rand8() => _random.nextInt(1 << 32).toRadixString(36).padLeft(7, '0').substring(0, 7);
-
-/// Khóa chống trùng cho thanh toán: `app-<ms base36>-<ngẫu nhiên>`, tối đa 40 ký tự.
-String paymentRequestId() {
-  final id = 'app-${DateTime.now().millisecondsSinceEpoch.toRadixString(36)}-${_rand8()}${_rand8()}';
-  return id.length > 40 ? id.substring(0, 40) : id;
-}
-
 /// UUID v4 cho `clientRequestId` của chợ (backend yêu cầu đúng định dạng uuid).
 String uuidV4() {
   final b = List<int>.generate(16, (_) => _random.nextInt(256));

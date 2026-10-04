@@ -1,7 +1,6 @@
 package vn.dongthanh.vsmt.collection.service;
 
 import java.time.Clock;
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -17,12 +16,9 @@ import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.billing.domain.Charge;
 import vn.dongthanh.vsmt.billing.domain.ChargeRepository;
 import vn.dongthanh.vsmt.billing.domain.ChargeStatus;
-import vn.dongthanh.vsmt.collection.domain.CollectionVisit;
-import vn.dongthanh.vsmt.collection.domain.CollectionVisitRepository;
 import vn.dongthanh.vsmt.collection.domain.Payment;
 import vn.dongthanh.vsmt.collection.domain.PaymentMethod;
 import vn.dongthanh.vsmt.collection.domain.PaymentRepository;
-import vn.dongthanh.vsmt.collection.domain.VisitResult;
 import vn.dongthanh.vsmt.citizen.domain.CitizenAccountRepository;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
 import vn.dongthanh.vsmt.notification.domain.NotificationKind;
@@ -40,11 +36,13 @@ import vn.dongthanh.vsmt.platform.security.CurrentUser;
 import vn.dongthanh.vsmt.platform.service.AuditService;
 
 /**
- * Ghi nhận kết quả thu (R20, G4): thanh toán tiền mặt / chuyển khoản và lượt ghé không thu được.
+ * Ghi nhận kết quả thu (R20, G4): hộ chỉ có Đã đóng hoặc Chưa đóng, nên mỗi lần thu phải đúng bằng số cần đóng và
+ * khoản chuyển ngay sang Đã thu; không có thu một phần hay lượt ghé không thu được. Chỉ hai cách đóng: tiền mặt cho
+ * người đi thu ({@link #recordPayment}) và chuyển khoản VietQR, ghi tự động khi ngân hàng báo về
+ * ({@link #recordBankTransfer}); không ai tự bấm "đã chuyển khoản", không có thanh toán mô phỏng.
  * Người đi thu chỉ ghi cho khoản trong tổ được giao; quản lý công ty ghi thay cho hộ của công ty mình (phải chọn
- * người đi thu đang giữ tiền). Gửi lại cùng {@code clientRequestId} trả kết quả cũ (sau khi kiểm phạm vi). Khoản
- * chuyển Đã thu khi tổng thanh toán bằng số tiền khoản; thu vượt số còn thiếu bị chặn. Kỳ đã khóa hoặc khoản miễn thì
- * không ghi được.
+ * người đi thu đang giữ tiền). Gửi lại cùng {@code clientRequestId} trả kết quả cũ (sau khi kiểm phạm vi). Kỳ đã khóa
+ * hoặc khoản miễn thì không ghi được.
  */
 @Service
 @RequiredArgsConstructor
@@ -54,7 +52,6 @@ public class CollectionService {
     static final String ENTITY = "Charge";
 
     private final PaymentRepository payments;
-    private final CollectionVisitRepository visits;
     private final ChargeRepository charges;
     private final CollectorAssignmentService scope;
     private final UserRepository users;
@@ -68,23 +65,11 @@ public class CollectionService {
             String bankRef, String note, Long collectorId) {
     }
 
-    public record VisitCommand(Long chargeId, VisitResult result, LocalDate revisitDate, String note,
-            String clientRequestId) {
-    }
-
     public record PaymentOutcome(Payment payment, Charge charge, long paidAmount, long remainingAmount,
             boolean replayed) {
     }
 
-    public record VisitOutcome(CollectionVisit visit, boolean replayed) {
-    }
-
-    /** Người dân thanh toán mô phỏng trên app: trả đúng số còn thiếu của khoản thuộc hộ mình. */
-    public record CitizenPaymentCommand(Long chargeId, Long subjectId, Long citizenAccountId, String citizenPhone,
-            long amount, String clientRequestId) {
-    }
-
-    public record Activity(Charge charge, List<Payment> payments, List<CollectionVisit> visits, long paidAmount) {
+    public record Activity(Charge charge, List<Payment> payments, long paidAmount) {
     }
 
     public PaymentOutcome recordPayment(PaymentCommand cmd, CurrentUser actor) {
@@ -99,16 +84,16 @@ public class CollectionService {
             return replay(existing.get(), cmd.chargeId());
         }
         requireCollectable(charge);
-        if (cmd.method() == PaymentMethod.APP_SIMULATED || cmd.method() == PaymentMethod.REFUND) {
+        if (cmd.method() != PaymentMethod.CASH) {
             throw new BusinessRuleException("PAYMENT_METHOD_INVALID",
-                    "Thanh toán qua app người dân và hoàn tiền không ghi nhận ở đây.");
+                    "Chỉ ghi nhận tiền mặt ở đây; chuyển khoản tự ghi nhận khi ngân hàng báo tiền vào qua mã VietQR.");
         }
         Long collectorId = collectorFor(cmd, actor);
 
         long paidBefore = payments.sumByChargeId(charge.getId());
         long remaining = charge.getAmount() - paidBefore;
-        if (cmd.amount() <= 0 || cmd.amount() > remaining) {
-            throw new BusinessRuleException("PAYMENT_AMOUNT_INVALID", "Số tiền phải lớn hơn 0 và không vượt số còn thiếu ("
+        if (cmd.amount() != remaining) {
+            throw new BusinessRuleException("PAYMENT_AMOUNT_INVALID", "Số tiền phải đúng bằng số cần đóng ("
                     + Money.format(remaining) + ").");
         }
         String code = nextCode(charge);
@@ -120,63 +105,18 @@ public class CollectionService {
                 .collectorId(collectorId).confirmedBy(actor.id()).bankRef(blankToNull(cmd.bankRef()))
                 .note(blankToNull(cmd.note())).clientRequestId(cmd.clientRequestId())
                 .build());
-        long paidAfter = paidBefore + cmd.amount();
-        if (paidAfter >= charge.getAmount()) {
-            charge.markPaid(now);
-        }
-        Map<String, Object> after = state(charge, paidAfter);
+        charge.markPaid(now);
+        Map<String, Object> after = state(charge, charge.getAmount());
         after.put("payment", code);
         after.put("paymentAmount", cmd.amount());
         after.put("method", cmd.method());
         audit.record(actor, "RECORD_PAYMENT", ENTITY, charge.getCode(), before, after);
-        notifyHousehold(charge, cmd.amount(), charge.getAmount() - paidAfter);
-        return new PaymentOutcome(payment, charge, paidAfter, charge.getAmount() - paidAfter, false);
-    }
-
-    /**
-     * Thanh toán mô phỏng từ app người dân (T40, O1): khoản phải thuộc hộ của tài khoản, số tiền phải bằng đúng số
-     * còn thiếu (công ty vừa thu một phần thì app phải tải lại), trả đủ thì khoản chuyển Đã thu.
-     */
-    public PaymentOutcome recordCitizenPayment(CitizenPaymentCommand cmd) {
-        lockRequest(cmd.clientRequestId());
-        charges.lockById(cmd.chargeId());
-        Charge charge = charges.findByIdWithDetails(cmd.chargeId())
-                .filter(c -> c.getSubject().getId().equals(cmd.subjectId()))
-                .orElseThrow(() -> new NotFoundException("CHARGE_NOT_FOUND", "Không tìm thấy khoản thu."));
-        Optional<Payment> existing = payments.findByClientRequestId(cmd.clientRequestId());
-        if (existing.isPresent()) {
-            if (!Objects.equals(existing.get().getCitizenAccountId(), cmd.citizenAccountId())) {
-                throw requestReused();
-            }
-            return replay(existing.get(), cmd.chargeId());
-        }
-        requireCollectable(charge);
-
-        long paidBefore = payments.sumByChargeId(charge.getId());
-        long remaining = charge.getAmount() - paidBefore;
-        if (cmd.amount() != remaining) {
-            throw new BusinessRuleException("PAYMENT_AMOUNT_CHANGED", "Số tiền cần đóng đã thay đổi, hiện còn "
-                    + Money.format(remaining) + ". Vui lòng tải lại trước khi thanh toán.");
-        }
-        String code = nextCode(charge);
-        OffsetDateTime now = OffsetDateTime.now(clock);
-        Map<String, Object> before = state(charge, paidBefore);
-
-        Payment payment = payments.save(Payment.builder()
-                .code(code).charge(charge).amount(remaining).method(PaymentMethod.APP_SIMULATED).paidAt(now)
-                .citizenAccountId(cmd.citizenAccountId()).clientRequestId(cmd.clientRequestId())
-                .build());
-        charge.markPaid(now);
-        Map<String, Object> after = state(charge, charge.getAmount());
-        after.put("payment", code);
-        after.put("paymentAmount", remaining);
-        after.put("method", PaymentMethod.APP_SIMULATED);
-        audit.recordCitizen(cmd.citizenPhone(), "RECORD_CITIZEN_PAYMENT", ENTITY, charge.getCode(), before, after);
+        notifyHousehold(charge, cmd.amount());
         return new PaymentOutcome(payment, charge, charge.getAmount(), 0, false);
     }
 
     /**
-     * Chuyển khoản ngân hàng đã được SePay xác nhận (04/10): số tiền phải bằng đúng số còn thiếu thì mới ghi và khoản
+     * Chuyển khoản ngân hàng đã được SePay xác nhận (04/10): số tiền phải bằng đúng số cần đóng thì mới ghi và khoản
      * chuyển Đã thu; không gắn người đi thu (tiền vào thẳng tài khoản công ty). {@code requestKey} theo mã giao dịch SePay
      * nên SePay gửi lại không ghi lần hai.
      */
@@ -193,7 +133,7 @@ public class CollectionService {
         long remaining = charge.getAmount() - paidBefore;
         if (amount != remaining) {
             throw new BusinessRuleException("TRANSFER_AMOUNT_MISMATCH", "Số tiền chuyển khoản " + Money.format(amount)
-                    + " khác số còn thiếu " + Money.format(remaining) + ".");
+                    + " khác số cần đóng " + Money.format(remaining) + ".");
         }
         String code = nextCode(charge);
         OffsetDateTime now = OffsetDateTime.now(clock);
@@ -208,7 +148,7 @@ public class CollectionService {
         after.put("paymentAmount", amount);
         after.put("method", PaymentMethod.TRANSFER);
         audit.recordSystem("RECORD_BANK_TRANSFER", ENTITY, charge.getCode(), before, after);
-        notifyHousehold(charge, amount, 0);
+        notifyHousehold(charge, amount);
         return payment;
     }
 
@@ -255,37 +195,16 @@ public class CollectionService {
                 .orElseThrow(() -> new NotFoundException("PAYMENT_NOT_FOUND", "Không tìm thấy thanh toán."));
     }
 
-    public VisitOutcome recordVisit(VisitCommand cmd, CurrentUser actor) {
-        actor.requireRole(Role.COLLECTOR, Role.COMPANY_MANAGER);
-        lockRequest(cmd.clientRequestId());
-        Charge charge = loadInScope(cmd.chargeId(), actor);
-        Optional<CollectionVisit> existing = visits.findByClientRequestId(cmd.clientRequestId());
-        if (existing.isPresent()) {
-            if (!existing.get().getCharge().getId().equals(cmd.chargeId())) {
-                throw requestReused();
-            }
-            return new VisitOutcome(existing.get(), true);
-        }
-        requireCollectable(charge);
-        if (cmd.result() == VisitResult.APPOINTMENT && cmd.revisitDate() == null) {
-            throw new BusinessRuleException("VISIT_REVISIT_DATE_REQUIRED", "Hẹn lại phải có ngày hẹn.");
-        }
-        CollectionVisit visit = visits.save(CollectionVisit.record(charge, cmd.result(), OffsetDateTime.now(clock),
-                cmd.revisitDate(), blankToNull(cmd.note()), actor.id(), cmd.clientRequestId()));
-        return new VisitOutcome(visit, false);
-    }
-
-    /** Lịch sử thu của một khoản: các lần thanh toán và lượt ghé (theo phạm vi người gọi). */
+    /** Lịch sử thu của một khoản: các lần thanh toán (theo phạm vi người gọi). */
     @Transactional(readOnly = true)
     public Activity activity(Long chargeId, CurrentUser actor) {
         Charge charge = actor.hasRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.LEADER)
                 ? charges.findByIdWithDetails(chargeId).orElseThrow(CollectionService::chargeNotFound)
                 : loadInScope(chargeId, actor);
-        return new Activity(charge, payments.findByChargeIdOrderByPaidAtAsc(chargeId),
-                visits.findByChargeIdOrderByVisitedAtAsc(chargeId), payments.sumByChargeId(chargeId));
+        return new Activity(charge, payments.findByChargeIdOrderByPaidAtAsc(chargeId), payments.sumByChargeId(chargeId));
     }
 
-    /** Đã thu và lượt ghé mới nhất cho nhiều khoản (danh sách của người đi thu). */
+    /** Đã thu và lần thu gần nhất cho nhiều khoản (danh sách của người đi thu). */
     @Transactional(readOnly = true)
     public Map<Long, ChargeProgress> progressOf(List<Long> chargeIds) {
         Map<Long, ChargeProgress> result = new HashMap<>();
@@ -298,13 +217,11 @@ public class CollectionService {
             paid.put((Long) r[0], ((Number) r[1]).longValue());
             paidAt.put((Long) r[0], (OffsetDateTime) r[2]);
         });
-        Map<Long, CollectionVisit> latest = new HashMap<>();
-        visits.findLatestByChargeIds(chargeIds).forEach(v -> latest.put(v.getCharge().getId(), v));
-        chargeIds.forEach(id -> result.put(id, new ChargeProgress(paid.getOrDefault(id, 0L), paidAt.get(id), latest.get(id))));
+        chargeIds.forEach(id -> result.put(id, new ChargeProgress(paid.getOrDefault(id, 0L), paidAt.get(id))));
         return result;
     }
 
-    public record ChargeProgress(long paidAmount, OffsetDateTime lastPaidAt, CollectionVisit lastVisit) {
+    public record ChargeProgress(long paidAmount, OffsetDateTime lastPaidAt) {
     }
 
     private PaymentOutcome replay(Payment existing, Long chargeId) {
@@ -339,10 +256,9 @@ public class CollectionService {
         }
     }
 
-    /** Báo hộ khi người thu ghi tiền: hộ thấy ngay số tiền đã ghi nhận và còn thiếu bao nhiêu. */
-    private void notifyHousehold(Charge charge, long amount, long remaining) {
-        String body = "Đã ghi nhận " + Money.format(amount) + " cho khoản " + charge.getCode()
-                + (remaining > 0 ? ", còn thiếu " + Money.format(remaining) + "." : ", khoản đã thu đủ.");
+    /** Báo hộ khi người thu ghi tiền: hộ thấy ngay khoản đã được ghi nhận Đã đóng. */
+    private void notifyHousehold(Charge charge, long amount) {
+        String body = "Đã ghi nhận " + Money.format(amount) + " cho khoản " + charge.getCode() + ", khoản đã đóng.";
         for (Long citizenId : citizenAccounts.findActiveIdsBySubject(charge.getSubject().getId())) {
             notifications.publish(NotificationCommand.toCitizen(citizenId, NotificationKind.RECEIPT,
                     "Đã ghi nhận thu phí " + charge.getPeriod().getCode(), body, null), null);
