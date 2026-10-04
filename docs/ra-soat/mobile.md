@@ -98,7 +98,7 @@ Chạy `expo start --web` ở cổng 8083 (8082 đang do cửa sổ leader dùng
 | 20 | `Callout` có nội dung gồm nhiều mảnh (chuỗi + biến) sinh lỗi "Unexpected text node", chữ nằm ngoài `<Text>` (font serif, sai cỡ) ở Gửi phản ánh, Rác cồng kềnh, Kiểm tra kết nối | Có: `Callout` tự bọc `<Text>` khi mọi con là chuỗi / số; ảnh sau hết lỗi |
 | 21 | Thông báo trống vẫn hiện "Đã đọc hết" | Có |
 | 22 | Xác nhận thanh toán: "Hộ: Đỗ Thanh Châu, DTH-\nH000128" bị ngắt giữa mã hộ | Có: tách thành hai dòng "Hộ" và "Mã hộ" |
-| 23 | Nhãn tab bar nhnhìn như bị cắt ở mép dưới ảnh; đã bỏ `paddingTop` và `minHeight` do mình đặt thêm nhưng ảnh sau vẫn y hệt | **Chưa kết luận:** có thể do chiều cao khung chụp giả lập (1500) chứ không phải lỗi thật. Cần xem trên máy / giả lập thật |
+| 23 | Nhãn tab bar nhìn như bị cắt ở mép dưới ảnh; đã bỏ `paddingTop` và `minHeight` do mình đặt thêm nhưng ảnh sau vẫn y hệt | **Chưa kết luận:** có thể do chiều cao khung chụp giả lập (1500) chứ không phải lỗi thật. Cần xem trên máy / giả lập thật |
 
 Sạn thấy nhưng chưa sửa: mã khoản dài ngắt giữa chừng ở dòng phụ màn Thanh toán (`KT-0526-` xuống dòng); đăng nhập dư nhiều khoảng trống bên dưới, logo canh trái (chấp nhận được, không ảnh hưởng dùng); dòng đầu hàng "Hộ của tôi" ở Tài khoản chỉ hiện mã hộ, nên hiện tên hộ (chưa quyết, không ảnh hưởng nghiệp vụ).
 
