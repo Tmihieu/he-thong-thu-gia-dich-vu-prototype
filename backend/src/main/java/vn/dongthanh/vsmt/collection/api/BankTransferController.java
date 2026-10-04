@@ -81,7 +81,7 @@ public class BankTransferController {
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Số còn thiếu của khoản") long amount,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Mã ghi trong nội dung chuyển khoản") String code) {
 
-        static TransferInfoDto of(TransferInfo i) {
+        public static TransferInfoDto of(TransferInfo i) {
             return new TransferInfoDto(i.configured(), i.bankName(), i.bankAccount(), i.accountHolder(), i.amount(), i.code());
         }
     }

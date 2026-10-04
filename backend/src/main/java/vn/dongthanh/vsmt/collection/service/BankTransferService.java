@@ -20,6 +20,7 @@ import vn.dongthanh.vsmt.collection.service.CollectionService.Activity;
 import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.masterdata.domain.CompanyRepository;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
+import vn.dongthanh.vsmt.platform.common.NotFoundException;
 import vn.dongthanh.vsmt.platform.domain.Role;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
 
@@ -108,11 +109,23 @@ public class BankTransferService {
     /** Thông tin QR của khoản; người đi thu / công ty chỉ xem được khoản trong phạm vi của mình. */
     public TransferInfo transferInfo(Long chargeId, CurrentUser actor) {
         Activity activity = collection.activity(chargeId, actor);
-        Company company = activity.charge().getCompany();
+        return infoOf(activity.charge(), activity.paidAmount());
+    }
+
+    /** Thông tin QR cho app người dân: chỉ khoản của hộ mình, khoản hộ khác coi như không tồn tại. */
+    public TransferInfo transferInfoOfSubject(Long chargeId, Long subjectId) {
+        Charge charge = charges.findByIdWithDetails(chargeId)
+                .filter(c -> c.getSubject().getId().equals(subjectId))
+                .orElseThrow(() -> new NotFoundException("CHARGE_NOT_FOUND", "Không tìm thấy khoản thu."));
+        return infoOf(charge, collection.paidOf(chargeId));
+    }
+
+    private static TransferInfo infoOf(Charge charge, long paid) {
+        Company company = charge.getCompany();
         String account = normalize(company.getBankAccount());
         boolean configured = !account.isEmpty() && company.getBankName() != null && !company.getBankName().isBlank();
         return new TransferInfo(configured, company.getBankName(), configured ? account : null, company.getName(),
-                activity.charge().getAmount() - activity.paidAmount(), codeOf(chargeId));
+                charge.getAmount() - paid, codeOf(charge.getId()));
     }
 
     /** Chuyển khoản chờ đối chiếu: công ty thấy của mình, cán bộ xã / quản trị / lãnh đạo thấy tất cả. */

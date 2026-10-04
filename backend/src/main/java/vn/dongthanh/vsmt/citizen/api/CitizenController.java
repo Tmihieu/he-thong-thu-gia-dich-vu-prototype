@@ -30,6 +30,8 @@ import vn.dongthanh.vsmt.citizen.service.CitizenAuthService;
 import vn.dongthanh.vsmt.citizen.service.CitizenAuthService.LoginResult;
 import vn.dongthanh.vsmt.citizen.service.CitizenPaymentService;
 import vn.dongthanh.vsmt.citizen.service.CitizenQueryService;
+import vn.dongthanh.vsmt.collection.api.BankTransferController.TransferInfoDto;
+import vn.dongthanh.vsmt.collection.service.BankTransferService;
 import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentOutcome;
 import vn.dongthanh.vsmt.platform.security.CurrentCitizen;
 
@@ -42,6 +44,7 @@ public class CitizenController {
     private final CitizenAuthService auth;
     private final CitizenQueryService query;
     private final CitizenPaymentService payments;
+    private final BankTransferService transfers;
 
     @Operation(summary = "Yêu cầu mã OTP (mô phỏng, không gửi SMS)")
     @SecurityRequirements
@@ -84,6 +87,12 @@ public class CitizenController {
     @GetMapping("/charges/{id}")
     public CitizenChargeDto charge(@AuthenticationPrincipal CurrentCitizen citizen, @PathVariable Long id) {
         return CitizenChargeDto.of(query.charge(citizen, id));
+    }
+
+    @Operation(summary = "Thông tin chuyển khoản (VietQR) cho một khoản của hộ: tài khoản công ty, số còn thiếu, mã nội dung")
+    @GetMapping("/charges/{id}/transfer-info")
+    public TransferInfoDto transferInfo(@AuthenticationPrincipal CurrentCitizen citizen, @PathVariable Long id) {
+        return TransferInfoDto.of(transfers.transferInfoOfSubject(id, query.requireActive(citizen).getSubject().getId()));
     }
 
     @Operation(summary = "Thanh toán mô phỏng một khoản của hộ (trả đúng số còn thiếu)")
