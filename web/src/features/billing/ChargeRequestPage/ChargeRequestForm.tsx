@@ -1,7 +1,7 @@
 import { Alert, Button, DatePicker, Form, Input, InputNumber, Radio, Select, Space } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 
-import { formatDate, formatMoney } from '../../../shared/format';
+import { formatMoney } from '../../../shared/format';
 import { CHARGE_SCOPE_LABELS, type ChargeScope } from '../../../shared/labels';
 import type { Area, Company, Period } from '../../masterdata/api';
 import type { FeeType, IssueRequest } from '../api';
@@ -136,7 +136,6 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
           label="Hạn hộ đóng"
           name="dueDate"
           dependencies={['periodId', 'companyDueDate']}
-          extra={period && dueLimit ? `Từ ngày mở kỳ ${formatDate(period.openDate)} đến hạn công ty nộp xã ${formatDate(dueLimit.format('YYYY-MM-DD'))}` : undefined}
           rules={[
             { required: true, message: 'Vui lòng chọn hạn đóng' },
             {
