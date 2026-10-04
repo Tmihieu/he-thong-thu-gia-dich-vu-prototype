@@ -4,15 +4,16 @@ import { PageHeader } from '../../shared/PageHeader';
 import { useTabParam } from '../../shared/useTabParam';
 import { CompanyReceiptsPage } from '../remittance/CompanyReceiptsPage/CompanyReceiptsPage';
 import { BankTransfersTab } from './BankTransfersTab';
+import { CollectorAccountsPage } from './CollectorAccountsPage/CollectorAccountsPage';
 import { CollectorAssignPage } from './CollectorAssignPage/CollectorAssignPage';
 import { CompanyOverviewPage } from './CompanyOverviewPage/CompanyOverviewPage';
 
 // Hộ được giao nằm ngay dưới tổng quan; link cũ ?tab=households rơi về tổng quan.
-const TABS = ['overview', 'collectors', 'receipts', 'transfers'] as const;
+const TABS = ['overview', 'collectors', 'accounts', 'receipts', 'transfers'] as const;
 
 /**
  * Màn "Khu vực được giao" của công ty (prototype: assigned): tổng quan + nhận tiền mặt (T29) + hộ được giao,
- * phân tổ (T28), phiếu thu xã lập (T35).
+ * người đi thu và phân tổ (T28), phiếu thu xã lập (T35).
  */
 export function CompanyHubPage() {
   const [tab, setTab] = useTabParam(TABS, 'overview');
@@ -25,6 +26,7 @@ export function CompanyHubPage() {
         items={[
           { key: 'overview', label: 'Tổng quan', children: <CompanyOverviewPage /> },
           { key: 'collectors', label: 'Phân tổ', children: <CollectorAssignPage /> },
+          { key: 'accounts', label: 'Người đi thu', children: <CollectorAccountsPage /> },
           { key: 'receipts', label: 'Phiếu thu xã lập', children: <CompanyReceiptsPage /> },
           { key: 'transfers', label: 'Chuyển khoản chờ đối chiếu', children: <BankTransfersTab /> },
         ]}

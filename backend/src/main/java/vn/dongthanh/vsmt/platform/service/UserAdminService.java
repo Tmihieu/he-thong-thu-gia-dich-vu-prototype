@@ -9,6 +9,7 @@ import java.util.Objects;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +25,8 @@ import vn.dongthanh.vsmt.platform.domain.UserStatus;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
 
 /**
- * Quản trị tài khoản web (T51): chỉ ADMIN; mọi thao tác ghi nhật ký, không bao giờ ghi mật khẩu.
+ * Quản trị tài khoản web (T51): ADMIN quản mọi tài khoản; quản lý công ty chỉ quản tài khoản người đi thu của chính
+ * công ty mình (BR-PLT-08). Mọi thao tác ghi nhật ký, không bao giờ ghi mật khẩu.
  * Quản trị không tự khóa hay tự đổi vai trò của mình để khỏi mất quyền vào hệ thống.
  * ponytail: khóa/đổi vai trò chỉ chặn từ lần đăng nhập sau; token đang dùng còn hiệu lực tới hết hạn (8 giờ).
  * Cần chặn ngay thì kiểm trạng thái tài khoản mỗi request.
@@ -45,6 +47,10 @@ public class UserAdminService {
             String organization) {
     }
 
+    /** Quản lý công ty chỉ nhập từng này; vai trò và công ty do máy chủ ép, không nhận từ client. */
+    public record CollectorCommand(String fullName, String phone, String email) {
+    }
+
     @Transactional(readOnly = true)
     public List<User> list(CurrentUser actor) {
         actor.requireRole(Role.ADMIN);
@@ -53,6 +59,10 @@ public class UserAdminService {
 
     public User create(String username, String password, UserCommand cmd, CurrentUser actor) {
         actor.requireRole(Role.ADMIN);
+        return doCreate(username, password, cmd, actor);
+    }
+
+    private User doCreate(String username, String password, UserCommand cmd, CurrentUser actor) {
         String normalized = username.trim().toLowerCase(Locale.ROOT);
         if (users.existsByUsername(normalized)) {
             throw new ConflictException("USERNAME_TAKEN", "Tên đăng nhập " + normalized + " đã có.");
@@ -67,7 +77,10 @@ public class UserAdminService {
 
     public User update(Long id, UserCommand cmd, CurrentUser actor) {
         actor.requireRole(Role.ADMIN);
-        User user = find(id);
+        return doUpdate(find(id), cmd, actor);
+    }
+
+    private User doUpdate(User user, UserCommand cmd, CurrentUser actor) {
         if (isSelf(user, actor) && cmd.role() != user.getRole()) {
             throw new BusinessRuleException("CANNOT_CHANGE_OWN_ROLE", "Không tự đổi vai trò của tài khoản đang đăng nhập.");
         }
@@ -85,7 +98,10 @@ public class UserAdminService {
 
     public User setStatus(Long id, UserStatus status, CurrentUser actor) {
         actor.requireRole(Role.ADMIN);
-        User user = find(id);
+        return doSetStatus(find(id), status, actor);
+    }
+
+    private User doSetStatus(User user, UserStatus status, CurrentUser actor) {
         if (isSelf(user, actor) && status == UserStatus.LOCKED) {
             throw new BusinessRuleException("CANNOT_LOCK_SELF", "Không tự khóa tài khoản đang đăng nhập.");
         }
@@ -98,9 +114,58 @@ public class UserAdminService {
 
     public User resetPassword(Long id, String password, CurrentUser actor) {
         actor.requireRole(Role.ADMIN);
-        User user = find(id);
+        return doResetPassword(find(id), password, actor);
+    }
+
+    private User doResetPassword(User user, String password, CurrentUser actor) {
         user.setPasswordHash(encode(password));
         audit.record(actor, "RESET_PASSWORD", ENTITY, user.getUsername(), null, null);
+        return user;
+    }
+
+    // --- Quản lý công ty quản người đi thu của công ty mình (BR-PLT-08) ---
+
+    @Transactional(readOnly = true)
+    public List<User> listCollectors(CurrentUser actor) {
+        return users.findByCompanyIdAndRoleOrderByUsername(ownCompany(actor), Role.COLLECTOR);
+    }
+
+    public User createCollector(String username, String password, CollectorCommand cmd, CurrentUser actor) {
+        return doCreate(username, password, collectorCommand(cmd, null, actor), actor);
+    }
+
+    public User updateCollector(Long id, CollectorCommand cmd, CurrentUser actor) {
+        User user = findOwnCollector(id, actor);
+        return doUpdate(user, collectorCommand(cmd, user.getOrganization(), actor), actor);
+    }
+
+    public User setCollectorStatus(Long id, UserStatus status, CurrentUser actor) {
+        return doSetStatus(findOwnCollector(id, actor), status, actor);
+    }
+
+    public User resetCollectorPassword(Long id, String password, CurrentUser actor) {
+        return doResetPassword(findOwnCollector(id, actor), password, actor);
+    }
+
+    private static Long ownCompany(CurrentUser actor) {
+        actor.requireRole(Role.COMPANY_MANAGER);
+        if (actor.companyId() == null) {
+            throw new AccessDeniedException("Tài khoản quản lý chưa gắn công ty");
+        }
+        return actor.companyId();
+    }
+
+    private static UserCommand collectorCommand(CollectorCommand cmd, String organization, CurrentUser actor) {
+        return new UserCommand(cmd.fullName(), Role.COLLECTOR, ownCompany(actor), cmd.phone(), cmd.email(), organization);
+    }
+
+    /** Tài khoản không phải người đi thu của công ty mình thì coi như không tồn tại, để không lộ tài khoản khác. */
+    private User findOwnCollector(Long id, CurrentUser actor) {
+        Long companyId = ownCompany(actor);
+        User user = find(id);
+        if (user.getRole() != Role.COLLECTOR || !Objects.equals(user.getCompanyId(), companyId)) {
+            throw new NotFoundException("USER_NOT_FOUND", "Không tìm thấy tài khoản.");
+        }
         return user;
     }
 
