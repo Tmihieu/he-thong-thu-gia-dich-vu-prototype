@@ -1,7 +1,7 @@
 import { Alert, Button, DatePicker, Form, Input, InputNumber, Radio, Select, Space } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 
-import { formatDate, formatMoney } from '../../../shared/format';
+import { formatMoney } from '../../../shared/format';
 import { CHARGE_SCOPE_LABELS, type ChargeScope } from '../../../shared/labels';
 import type { Area, Company, Period } from '../../masterdata/api';
 import type { FeeType, IssueRequest } from '../api';
@@ -13,6 +13,7 @@ interface FormValues {
   areaIds?: number[];
   companyId?: number;
   dueDate?: Dayjs | null;
+  companyDueDate?: Dayjs | null;
   unitPrice?: number | null;
   note?: string;
 }
@@ -26,7 +27,8 @@ interface Props {
   error?: string | null;
   /** Giá trị đã nhập lần trước (bấm "Sửa lại" ở bước xem trước) để không phải nhập lại. */
   initial?: IssueRequest | null;
-  onPreview: (req: IssueRequest) => void;
+  /** {@code companyDueDate}: hạn công ty nộp xã do cán bộ xã chọn, chỉ có khi kỳ chưa bắt đầu (dự thảo). */
+  onPreview: (req: IssueRequest, companyDueDate?: string) => void;
 }
 
 /** Form phiếu yêu cầu thu (§10 bước 2): kỳ, loại phí, phạm vi, hạn hộ đóng; bước tiếp theo là Xem trước. */
@@ -37,6 +39,9 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
   const feeTypeId = Form.useWatch('feeTypeId', form);
   const period = periods.find((p) => p.id === periodId);
   const feeType = feeTypes.find((f) => f.id === feeTypeId);
+  const isDraft = period?.status === 'DRAFT';
+  const companyDue = Form.useWatch('companyDueDate', form);
+  const dueLimit = isDraft && companyDue ? companyDue : period ? dayjs(period.dueDate) : undefined;
   const openPeriods = periods.filter((p) => p.status !== 'LOCKED');
 
   function finish(v: FormValues) {
@@ -49,7 +54,7 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
       dueDate: v.dueDate!.format('YYYY-MM-DD'),
       unitPrice: feeType?.pricingMode === 'FIXED' && v.unitPrice != null ? v.unitPrice : undefined,
       note: v.note?.trim() || undefined,
-    });
+    }, isDraft && v.companyDueDate ? v.companyDueDate.format('YYYY-MM-DD') : undefined);
   }
 
   return (
@@ -63,6 +68,16 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
           ? { ...initial, dueDate: dayjs(initial.dueDate) }
           : { scopeType: 'ALL', feeTypeId: feeTypes.find((f) => f.code === 'ENV')?.id }
       }
+      onValuesChange={(changed) => {
+        if ('periodId' in changed) {
+          // Kỳ chưa bắt đầu: mặc định hạn công ty nộp xã là ngày 25 và hạn hộ đóng là ngày 20 của kỳ; cán bộ xã chọn lại được.
+          const p = periods.find((x) => x.id === changed.periodId);
+          form.setFieldsValue({
+            companyDueDate: p ? (p.status === 'DRAFT' ? dayjs(p.endDate).date(25) : dayjs(p.dueDate)) : null,
+            ...(p?.status === 'DRAFT' ? { dueDate: dayjs(p.endDate).date(20) } : {}),
+          });
+        }
+      }}
       onFinish={finish}
       style={{ maxWidth: 720 }}
     >
@@ -73,7 +88,7 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
             aria-label="Kỳ thu"
             style={{ width: 220 }}
             placeholder="Chọn kỳ"
-            options={openPeriods.map((p) => ({ value: p.id, label: `${p.label} (${p.tariffVersionCode})` }))}
+            options={openPeriods.map((p) => ({ value: p.id, label: `${p.label} (${p.tariffVersionCode})${p.status === 'DRAFT' ? ' · chưa bắt đầu' : ''}` }))}
           />
         </Form.Item>
         <Form.Item label="Loại phí" name="feeTypeId" rules={[{ required: true, message: 'Vui lòng chọn loại phí' }]}>
@@ -120,8 +135,7 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
         <Form.Item
           label="Hạn hộ đóng"
           name="dueDate"
-          dependencies={['periodId']}
-          extra={period ? `Từ ngày mở kỳ ${formatDate(period.openDate)} đến hạn công ty nộp xã ${formatDate(period.dueDate)}` : undefined}
+          dependencies={['periodId', 'companyDueDate']}
           rules={[
             { required: true, message: 'Vui lòng chọn hạn đóng' },
             {
@@ -130,7 +144,7 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
                 if (value.isBefore(dayjs(period.openDate), 'day')) {
                   return Promise.reject(new Error('Hạn đóng không được trước ngày mở kỳ'));
                 }
-                if (value.isAfter(dayjs(period.dueDate), 'day')) {
+                if (dueLimit && value.isAfter(dueLimit, 'day')) {
                   return Promise.reject(new Error('Hạn đóng không được sau hạn công ty nộp xã'));
                 }
                 return Promise.resolve();
@@ -139,6 +153,19 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
           ]}
         >
           <DatePicker format="DD/MM/YYYY" placeholder="dd/mm/yyyy" />
+        </Form.Item>
+        <Form.Item
+          label="Hạn công ty nộp về xã"
+          name="companyDueDate"
+        >
+          <DatePicker
+            aria-label="Hạn công ty nộp về xã"
+            format="DD/MM/YYYY"
+            placeholder="dd/mm/yyyy"
+            allowClear={false}
+            disabled={!isDraft}
+            disabledDate={(d) => (period ? d.isBefore(dayjs(period.openDate), 'day') : false)}
+          />
         </Form.Item>
         {feeType?.pricingMode === 'FIXED' && (
           <Form.Item

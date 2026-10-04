@@ -112,6 +112,23 @@ public class BankTransferService {
         return infoOf(activity.charge(), activity.paidAmount());
     }
 
+    /**
+     * Chỉ demo: giả lập ngân hàng báo có đúng số còn phải đóng của khoản, đi qua đúng đường webhook thật (tự khớp mã,
+     * tài khoản, số tiền). Công ty chưa khai tài khoản ngân hàng thì không giả lập được.
+     */
+    public void simulate(Long chargeId, CurrentUser actor) {
+        TransferInfo info = transferInfo(chargeId, actor);
+        if (!info.configured()) {
+            throw new BusinessRuleException("BANK_ACCOUNT_MISSING", "Công ty chưa khai tài khoản ngân hàng.");
+        }
+        if (info.amount() <= 0) {
+            throw new BusinessRuleException("CHARGE_NOT_COLLECTABLE", "Khoản này không còn số cần đóng.");
+        }
+        long now = System.currentTimeMillis();
+        handle(new Incoming(-now, "SIMULATOR", java.time.LocalDateTime.now().toString(), info.bankAccount(), info.code(),
+                info.code(), info.amount(), "SIM" + now));
+    }
+
     /** Thông tin QR cho app người dân: chỉ khoản của hộ mình, khoản hộ khác coi như không tồn tại. */
     public TransferInfo transferInfoOfSubject(Long chargeId, Long subjectId) {
         Charge charge = charges.findByIdWithDetails(chargeId)

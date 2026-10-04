@@ -75,10 +75,11 @@ describe('ChargeRequestForm', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Xem trước' }));
 
     await waitFor(() =>
-      expect(onPreview).toHaveBeenCalledWith({
-        periodId: 5, feeTypeId: 1, scopeType: 'ALL', areaIds: undefined, companyId: undefined, dueDate: '2026-10-25',
-        unitPrice: undefined, note: undefined,
-      }),
+      expect(onPreview).toHaveBeenCalledWith(
+        { periodId: 5, feeTypeId: 1, scopeType: 'ALL', areaIds: undefined, companyId: undefined, dueDate: '2026-10-25',
+          unitPrice: undefined, note: undefined },
+        undefined, // kỳ đã mở: hạn công ty nộp xã không đổi được
+      ),
     );
   });
 

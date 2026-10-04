@@ -19,14 +19,20 @@ function errorMessage(err: unknown): string | null {
 
 interface Props {
   period: Period;
+  /** Hạn đã chọn ở bước lập phiếu (ISO), dùng làm giá trị đầu. */
+  initial?: { householdDueDate?: string; companyDueDate?: string };
   onClose: () => void;
 }
 
 /** Xem trước khoản của một kỳ dự thảo, chọn hạn hộ đóng rồi "Mở kỳ & phát hành" trong một bước. */
-export function OpenDraftPanel({ period, onClose }: Props) {
-  const [picked, setPicked] = useState<Dayjs | null>(null);
+export function OpenDraftPanel({ period, initial, onClose }: Props) {
+  const [picked, setPicked] = useState<Dayjs | null>(initial?.householdDueDate ? dayjs(initial.householdDueDate) : null);
+  const [duePicked, setDuePicked] = useState<Dayjs | null>(initial?.companyDueDate ? dayjs(initial.companyDueDate) : null);
   const [done, setDone] = useState<PublishPeriodResult | null>(null);
-  const preview = useDraftPreview(period.id, picked?.format(ISO));
+  // Kỳ mở ngay khi cán bộ xã bấm: ngày mở là hôm nay.
+  const openDate = dayjs();
+  const schedule = { openDate: openDate.format(ISO), companyDueDate: duePicked?.format(ISO) };
+  const preview = useDraftPreview(period.id, { ...schedule, householdDueDate: picked?.format(ISO) });
   const publish = usePublishPeriod();
 
   if (done) {
@@ -59,11 +65,12 @@ export function OpenDraftPanel({ period, onClose }: Props) {
 
   const { result } = preview.data;
   const dueDate = picked ?? dayjs(preview.data.dueDate);
+  const companyDue = duePicked ?? dayjs(preview.data.period.dueDate);
   const publishing = publish.isPending;
 
   function submit() {
     publish.mutate(
-      { periodId: period.id, householdDueDate: dueDate.format(ISO) },
+      { periodId: period.id, ...schedule, householdDueDate: dueDate.format(ISO) },
       { onSuccess: (r) => setDone(r) },
     );
   }
@@ -75,27 +82,38 @@ export function OpenDraftPanel({ period, onClose }: Props) {
       )}
       <Descriptions column={{ xs: 1, md: 2 }} size="small" style={{ marginBottom: 16 }}>
         <Descriptions.Item label="Thời gian">
-          <DateText value={period.startDate} /> – <DateText value={period.endDate} />
-        </Descriptions.Item>
-        <Descriptions.Item label="Hạn công ty nộp xã">
-          <DateText value={period.dueDate} />
+          <span style={{ whiteSpace: 'nowrap' }}>
+            <DateText value={period.startDate} /> – <DateText value={period.endDate} />
+          </span>
         </Descriptions.Item>
         <Descriptions.Item label="Biểu giá áp dụng">{preview.data.period.tariffVersionCode}</Descriptions.Item>
       </Descriptions>
       <Form layout="vertical" requiredMark={false} disabled={publishing}>
-        <Form.Item
-          label="Hạn hộ đóng"
-          extra={`Mặc định theo quy tắc của quản trị; chọn từ ${dayjs(period.openDate).format(DATE_FORMAT)} đến ${dayjs(period.dueDate).format(DATE_FORMAT)}.`}
-        >
-          <DatePicker
-            aria-label="Hạn hộ đóng"
-            format={DATE_FORMAT}
-            allowClear={false}
-            value={dueDate}
-            disabledDate={(d) => d.isBefore(period.openDate, 'day') || d.isAfter(period.dueDate, 'day')}
-            onChange={(d) => setPicked(d)}
-          />
-        </Form.Item>
+        <Space size="middle" wrap align="start">
+          <Form.Item label="Hạn công ty nộp xã">
+            <DatePicker
+              aria-label="Hạn công ty nộp xã"
+              format={DATE_FORMAT}
+              allowClear={false}
+              value={companyDue}
+              disabledDate={(d) => d.isBefore(openDate, 'day')}
+              onChange={(d) => {
+                setDuePicked(d);
+                setPicked(null);
+              }}
+            />
+          </Form.Item>
+          <Form.Item label="Hạn hộ đóng">
+            <DatePicker
+              aria-label="Hạn hộ đóng"
+              format={DATE_FORMAT}
+              allowClear={false}
+              value={dueDate}
+              disabledDate={(d) => d.isBefore(openDate, 'day') || d.isAfter(companyDue, 'day')}
+              onChange={(d) => setPicked(d)}
+            />
+          </Form.Item>
+        </Space>
       </Form>
       <PreviewSummary result={result} />
       <Space>

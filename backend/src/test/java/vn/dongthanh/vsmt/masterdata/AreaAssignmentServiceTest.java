@@ -178,6 +178,20 @@ class AreaAssignmentServiceTest {
         return new AssignCommand(areaIds, companyId, LocalDate.parse(from), null, null);
     }
 
+    @Test
+    void endingACompanyClosesOpenAssignmentsAndDeletesOnesStartingTodayOrLater() {
+        LocalDate today = LocalDate.of(2026, 10, 5);
+        AreaAssignment running = AreaAssignment.create(kv07, dv01, LocalDate.of(2026, 9, 1), null, null);
+        AreaAssignment startsToday = AreaAssignment.create(kv09, dv01, today, null, null);
+        when(assignments.findOpenOfCompany(1L, today)).thenReturn(List.of(running, startsToday));
+
+        service.endAllOfCompany(dv01, today);
+
+        assertThat(running.getValidTo()).isEqualTo(today.minusDays(1));
+        verify(assignments).delete(startsToday);
+        verify(events, times(2)).publishEvent(any(AreaReassignedEvent.class));
+    }
+
     private static <T> T withId(T entity, Long id) {
         ReflectionTestUtils.setField(entity, "id", id);
         return entity;

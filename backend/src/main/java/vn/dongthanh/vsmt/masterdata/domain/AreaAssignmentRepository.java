@@ -21,4 +21,9 @@ public interface AreaAssignmentRepository extends JpaRepository<AreaAssignment, 
             + " where a.validFrom <= :date and (a.validTo is null or a.validTo >= :date)"
             + " and (:companyId is null or c.id = :companyId) order by ar.code")
     List<AreaAssignment> findActiveOn(LocalDate date, Long companyId);
+
+    /** Phân công của một công ty còn hiệu lực tại hoặc sau {@code date}, kể cả phân công bắt đầu sau đó. */
+    @Query("select a from AreaAssignment a join fetch a.area join fetch a.company"
+            + " where a.company.id = :companyId and (a.validTo is null or a.validTo >= :date)")
+    List<AreaAssignment> findOpenOfCompany(Long companyId, LocalDate date);
 }

@@ -189,12 +189,13 @@ describe('Người đi thu: danh sách thu', () => {
       'src', 'https://qr.sepay.vn/img?acc=0071000888888&bank=Vietcombank&amount=80000&des=VSMT000004');
     expect(within(dialog).getByRole('status')).toHaveTextContent('Đang chờ hộ chuyển khoản');
     expect(within(dialog).queryByRole('button', { name: /^Xác nhận đã thu/ })).not.toBeInTheDocument();
-    expect(within(dialog).queryByRole('button', { name: /mô phỏng/i })).not.toBeInTheDocument();
+    // Nút mô phỏng chỉ có ở chế độ demo (VITE_DEMO_LOGIN), bật mặc định.
+    expect(within(dialog).getByRole('button', { name: 'Mô phỏng chuyển khoản' })).toBeInTheDocument();
     expect(within(dialog).getAllByRole('button').map((b) => b.textContent)).not.toContain('Đã thu chuyển khoản');
     expect(posts(fetchFn, '/api/collection/payments')).toHaveLength(0);
   });
 
-  it('hộ thanh toán xong thì màn QR tự xác nhận và đóng, người đi thu không bấm gì', async () => {
+  it('hộ thanh toán xong thì màn QR chuyển sang "Giao dịch thành công", người đi thu chỉ bấm Hoàn tất', async () => {
     let paid = false;
     const fetchFn = api({
       'GET /api/collection/my-work': () =>
@@ -205,7 +206,8 @@ describe('Người đi thu: danh sách thu', () => {
     await openSheet('Hộ Phạm Thị Dung', 'Chuyển khoản (QR)');
     paid = true;
 
-    expect(await screen.findByText(/Hộ đã chuyển khoản thành công/, undefined, { timeout: 10_000 })).toBeInTheDocument();
+    expect(await screen.findByText('Giao dịch thành công', undefined, { timeout: 10_000 })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Hoàn tất' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(posts(fetchFn, '/api/collection/payments')).toHaveLength(0);
   });
@@ -227,7 +229,7 @@ describe('Người đi thu: lịch sử hộ', () => {
     await userEvent.click(within(row).getByRole('button', { name: 'Lịch sử' }));
     const dialog = await screen.findByRole('dialog');
     expect(await within(dialog).findByText('Đã thu 80.000 đ', norm)).toBeInTheDocument();
-    const items = within(dialog).getAllByRole('listitem').map((li) => li.textContent);
+    const items = within(dialog).getAllByRole('listitem').map((li) => li.textContent).filter((t) => t?.includes('TT-'));
     expect(items).toHaveLength(1);
     expect(items[0]).toContain('TT-1026-000007');
     expect(items[0]).toContain('Tiền mặt');
@@ -255,7 +257,7 @@ describe('Người đi thu: báo sai thông tin hộ', () => {
 });
 
 describe('Người đi thu: các kỳ trước', () => {
-  it('thẻ hộ đánh dấu kỳ trước đã nộp / còn nợ (lấy từ danh sách mọi kỳ)', async () => {
+  it('thẻ hộ chỉ giữ kỳ còn nợ, kỳ đã đóng xem ở Lịch sử (lấy từ danh sách mọi kỳ)', async () => {
     const old = (periodCode: string, status: string, id: number) => {
       const w = work(1, 'Hộ Nguyễn Văn An', { status });
       return { ...w, charge: { ...w.charge, id, periodId: id, periodCode } };
@@ -267,10 +269,15 @@ describe('Người đi thu: các kỳ trước', () => {
     renderApp('/collector/list');
 
     const card = await screen.findByRole('listitem', { name: 'Hộ Nguyễn Văn An' });
-    expect(await within(card).findByText('09/2026', { exact: false })).toBeInTheDocument();
+    expect(await within(card).findByText('Kỳ trước còn nợ')).toBeInTheDocument();
     expect(within(card).getByText((_, el) => el?.classList.contains('debt') === true && el.textContent?.includes('08/2026') === true))
       .toHaveTextContent('còn 80.000 đ');
-    expect(within(screen.getByRole('listitem', { name: 'Hộ Trần Thị Bình' })).queryByText('Các kỳ trước')).not.toBeInTheDocument();
+    expect(within(card).queryByText('09/2026', { exact: false })).not.toBeInTheDocument();
+    expect(within(screen.getByRole('listitem', { name: 'Hộ Trần Thị Bình' })).queryByText('Kỳ trước còn nợ')).not.toBeInTheDocument();
+
+    await userEvent.click(within(card).getByRole('button', { name: 'Lịch sử' }));
+    const paidPeriod = await screen.findByText((_, el) => el?.tagName === 'LI' && el.textContent === 'Kỳ 09/2026 · Đã đóng');
+    expect(paidPeriod).toBeInTheDocument();
   });
 });
 

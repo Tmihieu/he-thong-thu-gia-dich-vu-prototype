@@ -6,7 +6,6 @@ import { ReceiptIssuesPage } from '../remittance/ReceiptIssuesPage/ReceiptIssues
 import { ReceiptsPage } from '../remittance/ReceiptsPage/ReceiptsPage';
 import { ChargeRequestTab } from './ChargeRequestPage/ChargeRequestTab';
 import { ChargesPage } from './ChargesPage/ChargesPage';
-import { PeriodDraftsTab } from './PeriodDraftsPage/PeriodDraftsTab';
 
 const TABS = ['charges', 'requests', 'receipts', 'receipt-issues'] as const;
 
@@ -24,12 +23,8 @@ export function ChargesHubPage() {
           {
             key: 'requests',
             label: 'Phiếu YCT',
-            children: (
-              <>
-                <PeriodDraftsTab />
-                <ChargeRequestTab />
-              </>
-            ),
+            // Tạm tắt "Kỳ chờ mở" (PeriodDraftsTab) cùng tự tạo kỳ.
+            children: <ChargeRequestTab />,
           },
           { key: 'receipts', label: 'Phiếu thu công ty', children: <ReceiptsPage /> },
           { key: 'receipt-issues', label: 'Sai sót phiếu thu', children: <ReceiptIssuesPage /> },

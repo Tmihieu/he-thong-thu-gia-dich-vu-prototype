@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, vi } from 'vitest';
 
 import { TOKEN_KEY } from '../../app/auth/authContext';
-import { pickDate, pickOption } from '../../test/antd';
+import { pickOption } from '../../test/antd';
 import { jsonResponse, mockApi, renderApp } from '../../test/renderApp';
 
 const admin = { id: 1, username: 'admin', fullName: 'Quản trị hệ thống', role: 'ADMIN', companyId: null };
@@ -27,7 +27,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('Cấu hình · kỳ thu', () => {
-  it('mở trùng kỳ thì hiện thông báo tiếng Việt từ máy chủ trong hộp thoại', async () => {
+  it('tạo trùng kỳ thì hiện thông báo tiếng Việt từ máy chủ trong hộp thoại', async () => {
     const fetchFn = mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, admin),
       'GET /api/masterdata/periods': () => jsonResponse(200, [period]),
@@ -38,20 +38,19 @@ describe('Cấu hình · kỳ thu', () => {
     renderApp('/admin/config');
 
     expect(await screen.findByText('Tháng 09/2026')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /Mở kỳ/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Tạo kỳ dự thảo/ }));
     const dialog = await screen.findByRole('dialog');
 
     fireEvent.change(within(dialog).getByLabelText('Năm'), { target: { value: '2026' } });
     await pickOption(within(dialog).getByRole('combobox', { name: 'Tháng' }), 'Tháng 10');
-    pickDate(within(dialog).getByLabelText('Hạn công ty nộp xã'), '31/10/2026');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Mở kỳ' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Tạo kỳ dự thảo' }));
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('Kỳ 2026-10 đã được mở trước đó.');
     const post = fetchFn.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === 'POST');
-    expect(JSON.parse(String((post![1] as RequestInit).body))).toMatchObject({ type: 'MONTH', number: 10, dueDate: '2026-10-31' });
+    expect(JSON.parse(String((post![1] as RequestInit).body))).toEqual({ type: 'MONTH', year: 2026, number: 10 });
   });
 
-  it('mở kỳ xong thì kỳ ở trạng thái "Đang thu" ngay, không có bước "Bắt đầu thu"', async () => {
+  it('tạo kỳ dự thảo xong thì báo cán bộ xã sẽ mở kỳ', async () => {
     const october = { ...period, id: 8, code: '2026-10', label: 'Tháng 10/2026', startDate: '2026-10-01', endDate: '2026-10-31' };
     let list: unknown[] = [];
     mockApi({
@@ -65,16 +64,13 @@ describe('Cấu hình · kỳ thu', () => {
     });
     renderApp('/admin/config');
 
-    await userEvent.click(await screen.findByRole('button', { name: /Mở kỳ/ }));
+    await userEvent.click(await screen.findByRole('button', { name: /Tạo kỳ dự thảo/ }));
     const dialog = await screen.findByRole('dialog');
     fireEvent.change(within(dialog).getByLabelText('Năm'), { target: { value: '2026' } });
     await pickOption(within(dialog).getByRole('combobox', { name: 'Tháng' }), 'Tháng 10');
-    pickDate(within(dialog).getByLabelText('Hạn công ty nộp xã'), '31/10/2026');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Mở kỳ' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Tạo kỳ dự thảo' }));
 
-    expect(await screen.findByText('Tháng 10/2026')).toBeInTheDocument();
-    expect(screen.getByText('Đang thu')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Bắt đầu thu' })).not.toBeInTheDocument();
+    expect(await screen.findByText(/Đã tạo kỳ dự thảo Tháng 10\/2026/)).toBeInTheDocument();
   });
 
   it('tab biểu giá hiện phiên bản và đơn giá theo nhóm', async () => {
@@ -163,7 +159,8 @@ describe('Cấu hình · soạn và ban hành biểu giá', () => {
   });
 });
 
-describe('Cấu hình · tự tạo kỳ thu', () => {
+// Tạm tắt tự tạo kỳ (PeriodRuleCard không hiển thị).
+describe.skip('Cấu hình · tự tạo kỳ thu', () => {
   const rule = {
     enabled: false, periodType: 'MONTH', createDay: 25, householdDueDays: 15, remitDueDays: 10,
     updatedAt: '2026-10-01T00:00:00+07:00',

@@ -57,13 +57,13 @@ describe('Khu vực (cán bộ xã)', () => {
     baseApi(() => [kv07]);
     renderApp('/commune/areas');
 
-    expect(await screen.findByText('KV07 · Tổ dân phố 07')).toBeInTheDocument();
-    expect(screen.getByText('DV01 · Công ty MTĐT Đông Thạnh')).toBeInTheDocument();
+    expect(await screen.findByText('Tổ dân phố 07')).toBeInTheDocument();
+    expect(screen.getByText('Công ty MTĐT Đông Thạnh')).toBeInTheDocument();
     expect(screen.getByText('1 ấp chưa có công ty')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('checkbox', { name: 'Chỉ ấp chưa có công ty' }));
-    await waitFor(() => expect(screen.queryByText('KV07 · Tổ dân phố 07')).not.toBeInTheDocument());
-    expect(screen.getByText('KV24 · Tổ dân phố 24')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText('Tổ dân phố 07')).not.toBeInTheDocument());
+    expect(screen.getByText('Tổ dân phố 24')).toBeInTheDocument();
   });
 
   it('popup chưa chọn công ty và ngày thì báo lỗi, không gửi', async () => {
@@ -119,7 +119,7 @@ describe('Khu vực (cán bộ xã)', () => {
     });
     renderApp('/commune/areas');
 
-    await userEvent.click(await screen.findByRole('button', { name: 'KV07 · Tổ dân phố 07' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Tổ dân phố 07' }));
 
     expect(await screen.findByText('Lịch sử phân công · KV07')).toBeInTheDocument();
     expect(await screen.findByText('DV03 · Công ty Ba')).toBeInTheDocument();

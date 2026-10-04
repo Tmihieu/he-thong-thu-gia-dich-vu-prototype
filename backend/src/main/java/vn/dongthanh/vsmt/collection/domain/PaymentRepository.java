@@ -37,6 +37,11 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             + " group by p.charge.id")
     List<Object[]> refundedByChargeIds(Collection<Long> chargeIds);
 
+    /** [id khoản, lần thu, hình thức] của các lần thu (không tính hoàn), cũ trước; lần cuối của mỗi khoản là lần đóng. */
+    @Query("select p.charge.id, p.paidAt, p.method from Payment p where p.charge.id in :chargeIds"
+            + " and p.method <> 'REFUND' order by p.paidAt, p.id")
+    List<Object[]> paymentsByChargeIds(Collection<Long> chargeIds);
+
     /** Số lớn nhất đang dùng sau tiền tố mã (vd. {@code TT-1026-}); 0 nếu chưa có. */
     @Query(value = "select coalesce(max(cast(substring(code, length(:prefix) + 1) as integer)), 0)"
             + " from payments where code like :prefix || '%'", nativeQuery = true)

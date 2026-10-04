@@ -25,6 +25,7 @@ import vn.dongthanh.vsmt.notification.domain.NotificationKind;
 import vn.dongthanh.vsmt.notification.service.NotificationService;
 import vn.dongthanh.vsmt.notification.service.NotificationService.NotificationCommand;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
+import vn.dongthanh.vsmt.platform.common.ConflictException;
 import vn.dongthanh.vsmt.platform.domain.Role;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
 import vn.dongthanh.vsmt.platform.service.AuditService;
@@ -93,6 +94,10 @@ public class PeriodAutoService {
 
     @Scheduled(cron = "0 30 7 * * *", zone = "Asia/Ho_Chi_Minh")
     public void runDaily() {
+        // Tạm tắt tự tạo kỳ: quản trị tạo kỳ dự thảo bằng tay. Bỏ dòng return để bật lại lịch 7:30.
+        if (true) {
+            return;
+        }
         try {
             DraftRun run = createDraftIfDue(null);
             if (run.created() != null) {
@@ -130,8 +135,29 @@ public class PeriodAutoService {
         } catch (BusinessRuleException e) {
             return new DraftRun(null, "Chưa tạo được " + probe.getLabel() + ": " + e.getMessage());
         }
-        CollectionPeriod draft = periods.save(CollectionPeriod.draft(t.type(), t.year(), t.number(),
-                t.end().plusDays(rule.getRemitDueDays()), tariff));
+        CollectionPeriod draft = saveDraft(t.type(), t.year(), t.number(), t.end(), rule, tariff, actor);
+        return new DraftRun(draft, "Đã tạo kỳ dự thảo " + draft.getLabel() + ".");
+    }
+
+    /**
+     * Quản trị tạo kỳ dự thảo bằng tay chỉ chọn loại kỳ, năm, tháng/quý; ngày mở và hạn công ty nộp xã do cán bộ xã
+     * đặt khi mở kỳ (mặc định: ngày đầu kỳ, cuối kỳ cộng số ngày nộp xã theo quy tắc). Báo cán bộ xã như kỳ tự tạo.
+     */
+    public CollectionPeriod createDraft(PeriodType type, int year, int number, CurrentUser actor) {
+        actor.requireRole(Role.ADMIN);
+        // Dựng kỳ tạm để kiểm tra số tháng/quý, sinh mã và ngày cuối kỳ trước khi tra biểu giá.
+        CollectionPeriod probe = CollectionPeriod.draft(type, year, number, LocalDate.of(year, 12, 31), null);
+        if (periods.existsByCode(probe.getCode())) {
+            throw new ConflictException("PERIOD_ALREADY_EXISTS", "Kỳ " + probe.getCode() + " đã được tạo trước đó.");
+        }
+        TariffVersion tariff = tariffs.activeVersionOn(probe.getStartDate());
+        return saveDraft(type, year, number, probe.getEndDate(), loadRule(), tariff, actor);
+    }
+
+    private CollectionPeriod saveDraft(PeriodType type, int year, int number, LocalDate periodEnd, PeriodAutoRule rule,
+            TariffVersion tariff, CurrentUser actor) {
+        CollectionPeriod draft = periods.save(CollectionPeriod.draft(type, year, number,
+                periodEnd.withDayOfMonth(25), tariff));
         Map<String, Object> after = new LinkedHashMap<>();
         after.put("code", draft.getCode());
         after.put("type", draft.getPeriodType());
@@ -150,7 +176,7 @@ public class PeriodAutoService {
                 "Hệ thống đã tạo " + draft.getLabel() + " ở dạng dự thảo. Vui lòng xem trước các khoản và bấm "
                         + "\"Mở kỳ & phát hành\" để hộ dân nhận khoản thu.",
                 Map.of("screen", "commune.periodDrafts")), null);
-        return new DraftRun(draft, "Đã tạo kỳ dự thảo " + draft.getLabel() + ".");
+        return draft;
     }
 
     /** Các kỳ dự thảo đang chờ cán bộ xã mở, kỳ sớm nhất trước. */

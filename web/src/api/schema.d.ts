@@ -706,7 +706,7 @@ export interface paths {
         /** Danh sách kỳ thu đã mở, mới nhất trước (không gồm kỳ dự thảo); có date thì chỉ các kỳ chứa ngày đó */
         get: operations["list_4"];
         put?: never;
-        /** Mở kỳ thu tháng/quý (quản trị), vào thẳng Đang thu; gắn biểu giá có hiệu lực tại ngày đầu kỳ */
+        /** Tạo kỳ thu tháng/quý dự thảo (quản trị) và báo cán bộ xã; cán bộ xã đặt ngày mở, hạn nộp rồi mở kỳ */
         post: operations["open"];
         delete?: never;
         options?: never;
@@ -1003,6 +1003,23 @@ export interface paths {
         put?: never;
         /** Kết thúc phân tổ vào ngày endDate (quản lý công ty) */
         post: operations["end_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/collection/charges/{id}/simulate-transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Demo: giả lập ngân hàng báo hộ đã chuyển đúng số còn phải đóng của khoản */
+        post: operations["simulate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3017,17 +3034,6 @@ export interface components {
              * @example 10
              */
             number: number;
-            /**
-             * Format: date
-             * @description Để trống thì lấy ngày đầu kỳ
-             */
-            openDate?: string;
-            /**
-             * Format: date
-             * @description Hạn công ty nộp xã
-             */
-            dueDate: string;
-            note?: string;
         };
         DraftRunDto: {
             created: boolean;
@@ -3516,6 +3522,16 @@ export interface components {
         PublishPeriodRequest: {
             /**
              * Format: date
+             * @description Ngày mở kỳ; trống thì giữ ngày của dự thảo (đầu kỳ)
+             */
+            openDate?: string;
+            /**
+             * Format: date
+             * @description Hạn công ty nộp xã; trống thì giữ hạn của dự thảo
+             */
+            companyDueDate?: string;
+            /**
+             * Format: date
              * @description Hạn hộ đóng; trống thì theo quy tắc của quản trị
              */
             householdDueDate?: string;
@@ -3554,6 +3570,16 @@ export interface components {
             message: string;
         };
         DraftPreviewRequest: {
+            /**
+             * Format: date
+             * @description Ngày mở kỳ; trống thì giữ ngày của dự thảo (đầu kỳ)
+             */
+            openDate?: string;
+            /**
+             * Format: date
+             * @description Hạn công ty nộp xã; trống thì giữ hạn của dự thảo
+             */
+            companyDueDate?: string;
             /**
              * Format: date
              * @description Hạn hộ đóng; trống thì theo quy tắc của quản trị
@@ -3960,6 +3986,16 @@ export interface components {
              * @description Số nhân khẩu hiện tại của hộ; hộ kinh doanh / doanh nghiệp là null
              */
             memberCount: number | null;
+            /**
+             * Format: date-time
+             * @description Ngày giờ đóng (lần thu cuối); chỉ điền ở GET /api/billing/charges, khoản chưa thu là null
+             */
+            paidAt: string | null;
+            /**
+             * @description Hình thức đóng (tiền mặt / chuyển khoản); chỉ điền ở GET /api/billing/charges
+             * @enum {string|null}
+             */
+            paymentMethod: "CASH" | "TRANSFER" | "APP_SIMULATED" | "REFUND" | null;
         };
         CollectorChargeDto: {
             charge: components["schemas"]["ChargeDto"];
@@ -6109,6 +6145,26 @@ export interface operations {
             };
         };
     };
+    simulate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     handovers: {
         parameters: {
             query?: {
@@ -7821,6 +7877,8 @@ export interface operations {
                 status?: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
                 subjectId?: number;
                 companyId?: number;
+                /** @description Tìm theo tên hoặc mã hộ */
+                q?: string;
                 page?: number;
                 size?: number;
             };

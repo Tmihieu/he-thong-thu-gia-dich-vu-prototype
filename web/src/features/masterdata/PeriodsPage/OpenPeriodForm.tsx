@@ -1,5 +1,5 @@
-import { Alert, Button, DatePicker, Descriptions, Form, Input, InputNumber, Radio, Select, Space } from 'antd';
-import dayjs, { type Dayjs } from 'dayjs';
+import { Alert, Button, Descriptions, Form, InputNumber, Radio, Select, Space, Typography } from 'antd';
+import dayjs from 'dayjs';
 
 import type { OpenPeriodRequest, TariffVersion } from '../api';
 import { periodStart, tariffOn } from '../api';
@@ -8,12 +8,8 @@ interface FormValues {
   type: 'MONTH' | 'QUARTER';
   year: number;
   number?: number;
-  openDate?: Dayjs | null;
-  dueDate?: Dayjs | null;
-  note?: string;
 }
 
-const DATE_FORMAT = 'DD/MM/YYYY';
 const MONTHS = Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `Tháng ${i + 1}` }));
 const QUARTERS = Array.from({ length: 4 }, (_, i) => ({ value: i + 1, label: `Quý ${i + 1}` }));
 
@@ -38,9 +34,6 @@ export function OpenPeriodForm({ tariffs, submitting = false, error, onSubmit, o
       type: values.type,
       year: values.year,
       number: values.number!,
-      openDate: values.openDate ? values.openDate.format('YYYY-MM-DD') : undefined,
-      dueDate: values.dueDate!.format('YYYY-MM-DD'),
-      note: values.note?.trim() || undefined,
     });
   }
 
@@ -84,32 +77,9 @@ export function OpenPeriodForm({ tariffs, submitting = false, error, onSubmit, o
           />
         </Form.Item>
       </Space>
-      <Space size="middle" wrap>
-        <Form.Item label="Ngày mở" name="openDate" extra="Để trống thì lấy ngày đầu kỳ">
-          <DatePicker format={DATE_FORMAT} placeholder="dd/mm/yyyy" />
-        </Form.Item>
-        <Form.Item
-          label="Hạn công ty nộp xã"
-          name="dueDate"
-          dependencies={['openDate', 'type', 'year', 'number']}
-          rules={[
-            { required: true, message: 'Vui lòng chọn hạn nộp' },
-            ({ getFieldValue }) => ({
-              validator(_, value: Dayjs | null | undefined) {
-                const open: Dayjs | undefined =
-                  getFieldValue('openDate') ?? periodStart(getFieldValue('type'), getFieldValue('year'), getFieldValue('number'));
-                if (!value || !open || !value.isBefore(open, 'day')) return Promise.resolve();
-                return Promise.reject(new Error('Hạn nộp không được trước ngày mở kỳ'));
-              },
-            }),
-          ]}
-        >
-          <DatePicker format={DATE_FORMAT} placeholder="dd/mm/yyyy" />
-        </Form.Item>
-      </Space>
-      <Form.Item label="Ghi chú" name="note">
-        <Input.TextArea rows={2} maxLength={2000} />
-      </Form.Item>
+      <Typography.Paragraph type="secondary">
+        Cán bộ xã sẽ đặt ngày mở và hạn công ty nộp xã khi mở kỳ.
+      </Typography.Paragraph>
       <Descriptions size="small" column={1} style={{ marginBottom: 16 }}>
         <Descriptions.Item label="Biểu giá áp dụng">
           {start ? (tariff ? `${tariff.code} · ${tariff.legalBasis}` : 'Không có biểu giá hiệu lực cho kỳ này') : '—'}
@@ -117,7 +87,7 @@ export function OpenPeriodForm({ tariffs, submitting = false, error, onSubmit, o
       </Descriptions>
       <Space>
         <Button type="primary" htmlType="submit" loading={submitting}>
-          Mở kỳ
+          Tạo kỳ dự thảo
         </Button>
         {onCancel && <Button onClick={onCancel}>Hủy</Button>}
       </Space>

@@ -1,9 +1,9 @@
-import { BellOutlined } from '@ant-design/icons';
+import { BellOutlined, CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons';
 import { Alert, Button, Progress, Space, Table, Typography } from 'antd';
 import { useState } from 'react';
 
 import { useAuth } from '../../../app/auth/authContext';
-import { PROGRESS_LABELS, TARIFF_GROUP_LABELS } from '../../../shared/labels';
+import { TARIFF_GROUP_LABELS } from '../../../shared/labels';
 import { ErrorBlock } from '../../../shared/StateBlock';
 import { PageHeader } from '../../../shared/PageHeader';
 import { StatusTag } from '../../../shared/StatusTag';
@@ -14,7 +14,6 @@ import { type AreaProgress, type LedgerRow, useAreaProgress, useCompanyLedger } 
 import { LedgerStats } from '../LedgerStats';
 import { cappedRate } from '../rateBand';
 import { RemainingText } from '../RemainingText';
-import { PROGRESS_TONES } from '../tones';
 import { ReminderModal } from './ReminderModal';
 
 function Rate({ rate, low }: { rate: number; low: boolean }) {
@@ -94,12 +93,12 @@ export function ProgressPage() {
         />
       )}
       <Table<LedgerRow>
-        size="small"
+        size="middle"
         rowKey="companyId"
         loading={ledger.isLoading}
         dataSource={rows}
         pagination={false}
-        scroll={{ x: 900 }}
+        scroll={{ x: 960 }}
         locale={{ emptyText: 'Kỳ này chưa có khoản phải thu' }}
         // Bấm "+" ở công ty để xem tổ, bấm "+" ở tổ để xem hộ chưa thu.
         expandable={{
@@ -127,7 +126,7 @@ export function ProgressPage() {
         columns={[
           {
             title: 'Công ty',
-            width: 180,
+            width: 200,
             render: (_, r) => (
               <Typography.Text ellipsis={{ tooltip: `${r.companyCode} · ${r.companyName}` }} style={{ maxWidth: 160 }}>
                 {r.companyName}
@@ -148,14 +147,7 @@ export function ProgressPage() {
             title: 'Đã thu',
             dataIndex: 'collected',
             align: 'right',
-            render: (v: number, r) => (
-              <>
-                <MoneyText value={v} />
-                <div>
-                  <Typography.Text type="secondary" style={{ whiteSpace: 'nowrap' }}>{`${cappedRate(r.collectionRate).toLocaleString('vi-VN')}% đã thu`}</Typography.Text>
-                </div>
-              </>
-            ),
+            render: (v: number) => <MoneyText value={v} />,
           },
           { title: 'Đã nộp về xã', dataIndex: 'received', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           { title: 'Tỷ lệ nộp', render: (_, r) => <Rate rate={r.remittedRate} low={r.lowRemittedRate} /> },
@@ -167,9 +159,15 @@ export function ProgressPage() {
             render: (v: number) => (v > 0 ? <Typography.Text type="danger"><MoneyText value={v} /></Typography.Text> : '—'),
           },
           {
-            title: 'Trạng thái',
-            dataIndex: 'progress',
-            render: (p: LedgerRow['progress']) => <StatusTag tone={PROGRESS_TONES[p]}>{PROGRESS_LABELS[p]}</StatusTag>,
+            title: 'Đã nộp đủ',
+            align: 'center',
+            width: 110,
+            render: (_, r) =>
+              r.remaining <= 0 ? (
+                <CheckCircleFilled aria-label="Đã nộp đủ" style={{ color: '#16a34a', fontSize: 18 }} />
+              ) : (
+                <CloseCircleFilled aria-label="Chưa nộp đủ" style={{ color: '#dc2626', fontSize: 18 }} />
+              ),
           },
         ]}
       />

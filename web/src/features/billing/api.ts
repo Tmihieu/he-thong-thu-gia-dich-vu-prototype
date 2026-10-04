@@ -19,6 +19,8 @@ export interface ChargeQuery {
   areaId?: number;
   status?: Charge['status'];
   companyId?: number;
+  /** Tìm theo tên hoặc mã hộ. */
+  q?: string;
   page: number;
   size: number;
 }
@@ -70,10 +72,12 @@ export function usePublishCharges() {
  * Xem trước các khoản sẽ lập khi mở kỳ dự thảo (chỉ đọc, không ghi khoản); {@code householdDueDate} trống thì theo
  * quy tắc của quản trị, kết quả trả lại hạn đã dùng.
  */
-export function useDraftPreview(periodId: number | null, householdDueDate?: string) {
+export type DraftPreviewParams = Pick<PublishPeriodRequest, 'openDate' | 'companyDueDate' | 'householdDueDate'>;
+
+export function useDraftPreview(periodId: number | null, params: DraftPreviewParams = {}) {
   return useQuery({
-    queryKey: [...billingKeys.draftPreview, periodId, householdDueDate ?? 'default'],
-    queryFn: () => api.post<DraftPreview>(`/api/billing/periods/${periodId}/draft-preview`, { householdDueDate }),
+    queryKey: [...billingKeys.draftPreview, periodId, params.openDate, params.companyDueDate, params.householdDueDate ?? 'default'],
+    queryFn: () => api.post<DraftPreview>(`/api/billing/periods/${periodId}/draft-preview`, params),
     enabled: periodId !== null,
     placeholderData: (prev) => prev,
     refetchOnWindowFocus: false,

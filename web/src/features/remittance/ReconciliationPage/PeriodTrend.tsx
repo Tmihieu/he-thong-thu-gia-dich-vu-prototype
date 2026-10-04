@@ -1,5 +1,7 @@
 import { Card, Col, Flex, Row, theme, Typography } from 'antd';
 
+import { cappedRate } from '../rateBand';
+
 import { PERIOD_STATUS_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../shared/StateBlock';
@@ -10,25 +12,36 @@ import { type LedgerRow, useCompanyLedgers } from '../api';
 const pctText = (v: number) => `${Math.round(v).toLocaleString('vi-VN')}%`;
 const sum = (rows: LedgerRow[], key: 'due' | 'collected') => rows.reduce((t, r) => t + r[key], 0);
 
-/** Thanh ngang: nền nhạt = phải thu, phần đậm = đã thu; cùng thang với các kỳ bên cạnh để so được độ lớn. */
-function ScaleBar({ due, collected, max }: { due: number; collected: number; max: number }) {
+/** Thanh ngang: cả thanh = phải thu của kỳ, phần đậm = đã thu, nên độ dài phần đậm đúng bằng tỷ lệ thu (tối đa 100%). */
+function ScaleBar({ rate }: { rate: number }) {
   const { token } = theme.useToken();
-  const w = (v: number) => `${max > 0 ? (v * 100) / max : 0}%`;
   return (
     <div aria-hidden style={{ height: 10, borderRadius: 5, background: token.colorFillTertiary, margin: '10px 0 0' }}>
-      <div style={{ width: w(due), height: '100%', borderRadius: 5, background: token.colorPrimaryBorder }}>
-        <div style={{ width: due > 0 ? `${(collected * 100) / due}%` : 0, maxWidth: '100%', height: '100%', borderRadius: 5, background: token.colorPrimary }} />
-      </div>
+      <div style={{ width: `${cappedRate(rate)}%`, height: '100%', borderRadius: 5, background: token.colorPrimary }} />
     </div>
   );
 }
 
-function PeriodColumn({ period, rows, max }: { period: Period; rows: LedgerRow[]; max: number }) {
+function PeriodColumn({ period, rows, selected, onSelect }: { period: Period; rows: LedgerRow[]; selected: boolean; onSelect: () => void }) {
   const { token } = theme.useToken();
   const due = sum(rows, 'due');
   const collected = sum(rows, 'collected');
+  const rate = due > 0 ? (collected * 100) / due : 0;
   return (
-    <div style={{ boxSizing: 'border-box', height: '100%', padding: 16, borderRadius: 12, border: `1px solid ${token.colorBorderSecondary}`, background: token.colorBgContainer }}>
+    <div
+      role="button"
+      tabIndex={0}
+      aria-pressed={selected}
+      aria-label={`Xem đối soát ${period.label}`}
+      onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+      style={{ boxSizing: 'border-box', height: '100%', padding: 16, borderRadius: 12, cursor: 'pointer', border: `${selected ? 2 : 1}px solid ${selected ? token.colorPrimary : token.colorBorderSecondary}`, background: token.colorBgContainer }}
+    >
       <Flex justify="space-between" align="center">
         <Typography.Text strong style={{ fontSize: 15 }}>
           {period.label}
@@ -41,17 +54,17 @@ function PeriodColumn({ period, rows, max }: { period: Period; rows: LedgerRow[]
         <MoneyText value={collected} />
       </div>
       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-        đã thu trên <MoneyText value={due} /> phải thu{due > 0 && ` (${pctText((collected * 100) / due)})`}
+        đã thu <MoneyText value={collected} /> trên <MoneyText value={due} /> phải thu ({pctText(rate)})
       </Typography.Text>
-      <ScaleBar due={due} collected={collected} max={max} />
+      <ScaleBar rate={rate} />
     </div>
   );
 }
 
 /**
- * Thu 3 tháng gần nhất ở đầu màn đối soát: tháng mới nhất bên trái; mỗi tháng có tổng đã thu / phải thu (thanh cùng thang giữa các tháng).
+ * Thu 3 tháng gần nhất ở đầu màn đối soát: tháng mới nhất bên trái; mỗi tháng có tổng đã thu / phải thu và tỷ lệ thu; bấm một tháng thì bảng bên dưới lọc theo tháng đó.
  */
-export function PeriodTrend() {
+export function PeriodTrend({ selectedId, onSelect }: { selectedId?: number; onSelect: (id: number) => void }) {
   const periods = usePeriods();
   const recent = (periods.data ?? [])
     .filter((p) => p.periodType === 'MONTH')
@@ -60,7 +73,6 @@ export function PeriodTrend() {
   const ledgers = useCompanyLedgers(recent.map((p) => p.id));
   const loading = periods.isLoading || ledgers.some((q) => q.isLoading);
   const failed = periods.error ?? ledgers.find((q) => q.error)?.error;
-  const max = Math.max(0, ...ledgers.map((q) => sum(q.data ?? [], 'due')));
 
   return (
     <Card
@@ -79,7 +91,7 @@ export function PeriodTrend() {
         <Row gutter={[16, 16]}>
           {recent.map((p, i) => (
             <Col key={p.id} xs={24} md={8}>
-              <PeriodColumn period={p} rows={ledgers[i]?.data ?? []} max={max} />
+              <PeriodColumn period={p} rows={ledgers[i]?.data ?? []} selected={p.id === selectedId} onSelect={() => onSelect(p.id)} />
             </Col>
           ))}
         </Row>

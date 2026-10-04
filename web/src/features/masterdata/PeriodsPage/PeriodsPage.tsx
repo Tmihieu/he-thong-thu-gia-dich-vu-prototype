@@ -8,7 +8,6 @@ import { DateText } from '../../../shared/DateText';
 import { PERIOD_STATUS_LABELS, PERIOD_TYPE_LABELS, STATUS_COLORS } from '../../../shared/labels';
 import { type Period, useOpenPeriod, usePeriods, useTariffs } from '../api';
 import { OpenPeriodForm } from './OpenPeriodForm';
-import { PeriodRuleCard } from './PeriodRuleCard';
 
 /**
  * Quy tắc tự tạo kỳ, danh sách kỳ thu và mở kỳ thủ công (quản trị, §10 bước 1).
@@ -28,10 +27,10 @@ export function PeriodsPage() {
 
   return (
     <>
-      <PeriodRuleCard />
+      {/* Tạm tắt tự tạo kỳ: <PeriodRuleCard /> */}
       <Space style={{ marginBottom: 16 }}>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-          Mở kỳ thủ công
+          Tạo kỳ dự thảo
         </Button>
       </Space>
       <Table<Period>
@@ -61,7 +60,7 @@ export function PeriodsPage() {
           },
         ]}
       />
-      <Modal title="Mở kỳ thu" open={formOpen} onCancel={closeForm} footer={null} destroyOnHidden>
+      <Modal title="Tạo kỳ dự thảo" open={formOpen} onCancel={closeForm} footer={null} destroyOnHidden>
         <OpenPeriodForm
           tariffs={tariffs.data ?? []}
           submitting={openPeriod.isPending}
@@ -70,7 +69,7 @@ export function PeriodsPage() {
           onSubmit={(req) =>
             openPeriod.mutate(req, {
               onSuccess: (p) => {
-                message.success(`Đã mở kỳ ${p.label}`);
+                message.success(`Đã tạo kỳ dự thảo ${p.label}, cán bộ xã sẽ đặt ngày và mở kỳ`);
                 closeForm();
               },
             })

@@ -57,8 +57,8 @@ describe('Tiến độ thu', () => {
     const fetchFn = api();
     renderApp('/commune/progress');
 
-    expect(await screen.findByText('Nộp một phần')).toBeInTheDocument();
-    expect(screen.getByText('Quá hạn nộp')).toBeInTheDocument();
+    // Cột "Đã nộp đủ": dấu x đỏ cho công ty còn phải nộp.
+    expect(await screen.findAllByLabelText('Chưa nộp đủ')).toHaveLength(2);
     expect(screen.getByText('1 tổ chưa có công ty thu: KV24')).toBeInTheDocument();
     expect(screen.getAllByText('150.000 đ', norm)).toHaveLength(1);
     await waitFor(() =>
@@ -77,7 +77,7 @@ describe('Tiến độ thu', () => {
     expect(fetchFn.mock.calls.some(([url]) => String(url).startsWith('/api/billing/charges?periodId=10&areaId=7&companyId=1&status=UNPAID'))).toBe(true);
   });
 
-  it('cờ dưới 45% của công ty theo đã nộp về xã / phải thu, hiện % đã nộp; % đã thu nằm ở cột Đã thu', async () => {
+  it('cờ dưới 45% của công ty theo đã nộp về xã / phải thu, hiện % đã nộp; cột Đã thu không còn %', async () => {
     // Đã thu 75% (không thấp) nhưng mới nộp 37,5%: cờ phải bật.
     const dv03 = { ...dv01, companyId: 3, companyCode: 'DV03', companyName: 'Công ty Ba', due: 800_000, collected: 600_000,
       received: 300_000, remaining: 500_000, gap: -300_000, collectionRate: 75, lowCollectionRate: false,
@@ -92,7 +92,7 @@ describe('Tiến độ thu', () => {
 
     const row = (await screen.findByText('Công ty Ba')).closest('tr')!;
     expect(within(row).getByText('37,5%')).toBeInTheDocument();
-    expect(within(row).getByText('75% đã thu')).toBeInTheDocument();
+    expect(within(row).queryByText('75% đã thu')).not.toBeInTheDocument();
     expect(row.querySelector('.ant-progress-status-exception')).not.toBeNull();
   });
 });
@@ -105,7 +105,7 @@ describe('Đối soát', () => {
     // Kết quả theo dấu chênh lệch backend: âm = thu rồi chưa nộp (không còn nhãn "Lệch" đỏ).
     expect(await screen.findAllByText('Thu rồi chưa nộp')).not.toHaveLength(0);
     expect(screen.queryByText('Lệch')).not.toBeInTheDocument();
-    const dv01Row = (await screen.findByRole('cell', { name: 'DV01 · Công ty MTĐT Đông Thạnh' })).closest('tr')!;
+    const dv01Row = (await screen.findByRole('cell', { name: 'Công ty MTĐT Đông Thạnh' })).closest('tr')!;
     expect(within(dv01Row).getByText('thu rồi chưa nộp')).toBeInTheDocument();
     expect(within(dv01Row).getAllByText('Thu rồi chưa nộp')).toHaveLength(1);
     expect(within(dv01Row).getByText('1 phiếu thu')).toBeInTheDocument();
