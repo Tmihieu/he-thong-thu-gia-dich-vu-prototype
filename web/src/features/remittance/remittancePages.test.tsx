@@ -67,8 +67,9 @@ describe('Tiến độ thu', () => {
 
     // Bấm "+" ở công ty thấy tổ; bấm "+" ở tổ mới tải và hiện hộ chưa thu kèm số nhân khẩu, nhóm giá.
     await userEvent.click(screen.getAllByRole('button', { name: /mở rộng|expand/i })[0]!);
-    const area = (await screen.findByText('KV07 · Tổ dân phố 07')).closest('tr')!;
-    expect(screen.getByText('8/10')).toBeInTheDocument();
+    // Tên tổ có ở cả sơ đồ "tổ thu chậm nhất" lẫn bảng: lấy dòng của bảng.
+    const area = (await screen.findAllByText('KV07 · Tổ dân phố 07')).map((e) => e.closest('tr')).find(Boolean)!;
+    expect(within(area).getByText('8/10')).toBeInTheDocument();
     expect(fetchFn.mock.calls.some(([url]) => String(url).startsWith('/api/billing/charges'))).toBe(false);
     await userEvent.click(within(area).getByRole('button', { name: /mở rộng|expand/i }));
     const household = (await screen.findByText('DTH-H000128 · Nguyễn Văn Mẫu')).closest('tr')!;
@@ -90,7 +91,9 @@ describe('Tiến độ thu', () => {
     });
     renderApp('/commune/progress');
 
-    const row = (await screen.findByText('Công ty Ba')).closest('tr')!;
+    const row = (await screen.findAllByText('Công ty Ba')).map((e) => e.closest('tr')).find(Boolean)!;
+    expect(screen.getByText('Tiến độ nộp về xã theo công ty')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /Công ty Ba: đã nộp 38% số phải nộp về xã, đã thu 75% của hộ/ })).toBeInTheDocument();
     expect(within(row).getByText('37,5%')).toBeInTheDocument();
     expect(within(row).getByText('75% đã thu')).toBeInTheDocument();
     expect(row.querySelector('.ant-progress-status-exception')).not.toBeNull();
