@@ -19,14 +19,16 @@ function errorMessage(err: unknown): string | null {
 
 interface Props {
   period: Period;
+  /** Hạn đã chọn ở bước lập phiếu (ISO), dùng làm giá trị đầu. */
+  initial?: { householdDueDate?: string; companyDueDate?: string };
   onClose: () => void;
 }
 
 /** Xem trước khoản của một kỳ dự thảo, chọn hạn hộ đóng rồi "Mở kỳ & phát hành" trong một bước. */
-export function OpenDraftPanel({ period, onClose }: Props) {
-  const [picked, setPicked] = useState<Dayjs | null>(null);
+export function OpenDraftPanel({ period, initial, onClose }: Props) {
+  const [picked, setPicked] = useState<Dayjs | null>(initial?.householdDueDate ? dayjs(initial.householdDueDate) : null);
   const [openPicked, setOpenPicked] = useState<Dayjs | null>(null);
-  const [duePicked, setDuePicked] = useState<Dayjs | null>(null);
+  const [duePicked, setDuePicked] = useState<Dayjs | null>(initial?.companyDueDate ? dayjs(initial.companyDueDate) : null);
   const [done, setDone] = useState<PublishPeriodResult | null>(null);
   const schedule = { openDate: openPicked?.format(ISO), companyDueDate: duePicked?.format(ISO) };
   const preview = useDraftPreview(period.id, { ...schedule, householdDueDate: picked?.format(ISO) });
