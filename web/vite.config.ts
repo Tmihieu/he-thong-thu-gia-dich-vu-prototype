@@ -7,7 +7,7 @@ type ProxyEvents = {
 };
 
 /**
- * App người dân bản web (Expo, đóng gói vào public/citizen bằng `npm run build:citizen`) là một SPA riêng: đường dẫn con
+ * App người dân bản web (Flutter, đóng gói vào public/citizen bằng `npm run build:citizen`) là một SPA riêng: đường dẫn con
  * không phải file tĩnh (vd. /citizen/pay/4) trả về index.html của nó, không rơi vào web quản trị.
  */
 const citizenSpa = (): Plugin => ({

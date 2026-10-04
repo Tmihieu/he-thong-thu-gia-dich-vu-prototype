@@ -2,14 +2,16 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
 /// Địa chỉ backend, truyền lúc build: `--dart-define=API_URL=http://192.168.1.10:8080`.
-/// Mặc định là đường ngrok của bản demo chạy trên điện thoại.
-const String kDefaultApiUrl = String.fromEnvironment(
-  'API_URL',
-  defaultValue: 'https://outer-chasing-headlock.ngrok-free.dev',
-);
+/// Không truyền: bản web (đóng gói vào web quản trị ở /citizen, xem `build:citizen` trong web/package.json) chạy cùng
+/// origin nên gọi /api qua proxy của nginx / Vite; trên điện thoại là đường ngrok của bản demo.
+const String _envApiUrl = String.fromEnvironment('API_URL');
+final String kDefaultApiUrl = _envApiUrl.isNotEmpty
+    ? _envApiUrl
+    : (kIsWeb ? Uri.base.origin : 'https://outer-chasing-headlock.ngrok-free.dev');
 
 /// Lỗi `{code, message}` của backend (message tiếng Việt, hiện thẳng cho người dùng).
 class ApiError implements Exception {
@@ -29,8 +31,8 @@ String errorText(Object? error, String fallback) => error is ApiError ? error.me
 /// Wrapper HTTP cùng quy ước với app Expo cũ (`mobile/src/api/client.ts`): gắn Bearer token, đổi lỗi thành
 /// [ApiError], gặp 401 khi đang có token thì gọi [onUnauthorized] để đăng xuất.
 class ApiClient {
-  ApiClient({String baseUrl = kDefaultApiUrl, http.Client? client})
-      : _baseUrl = baseUrl,
+  ApiClient({String? baseUrl, http.Client? client})
+      : _baseUrl = baseUrl ?? kDefaultApiUrl,
         _client = client ?? http.Client();
 
   final http.Client _client;
