@@ -157,7 +157,6 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
         <Form.Item
           label="Hạn công ty nộp về xã"
           name="companyDueDate"
-          extra={isDraft ? 'Gợi ý: ngày 25 của kỳ' : period ? 'Kỳ đã bắt đầu, không đổi được' : undefined}
         >
           <DatePicker
             aria-label="Hạn công ty nộp về xã"
