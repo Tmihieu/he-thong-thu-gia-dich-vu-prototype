@@ -98,6 +98,8 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
     queryFn: () => api.get<CollectorCharge[]>('/api/collection/my-work', { params: { periodId: item!.charge.periodId } }),
     enabled: qr && item !== null,
     refetchInterval: 3000,
+    // Người đi thu đưa máy cho hộ xem hoặc chuyển sang app khác: vẫn hỏi lại máy chủ, nếu không màn QR không tự đóng.
+    refetchIntervalInBackground: true,
   });
   const paidByHousehold = qr && watch.data?.find((w) => w.charge.id === chargeId)?.charge.status === 'PAID';
   useEffect(() => {
