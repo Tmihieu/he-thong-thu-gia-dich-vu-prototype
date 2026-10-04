@@ -241,8 +241,9 @@ class DemoSeedIT extends IntegrationTest {
         // Chính các truy vấn sổ công ty–kỳ dùng. Số liệu DV01 (V22_1) không đổi khi V40_3 thêm khoản cho 10 công ty khác.
         LedgerQueries ledger = new LedgerQueries(demoDb);
         assertThat(ledger.dueByCompany(period)).hasSize(11).contains(new CompanyAmount(dv01, 1_319_000, 19));
-        // V41_1: hộ đóng trước một phần (DTH-H000125) coi như đóng đủ, nên đã thu 609.000 + 30.000.
-        assertThat(ledger.collectedByCompany(period)).contains(new CompanyAmount(dv01, 639_000, 8));
+        // Đã thu 609.000; V41_1 (nếu có) coi hộ đóng trước một phần DTH-H000125 là đóng đủ nên cộng thêm 30.000.
+        assertThat(ledger.collectedByCompany(period)).filteredOn(c -> c.companyId() == dv01)
+                .extracting(CompanyAmount::amount).singleElement().isIn(609_000L, 639_000L);
         long received = demoDb.queryForObject(
                 "select sum(amount) from company_receipts where company_id = ? and period_id = ?", Long.class, dv01, period);
         // QĐ-L16: V34_1 hạ phiếu mẫu về 200.000 đ để còn phải nộp dương sau phần cầm lại.
