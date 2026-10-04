@@ -12,10 +12,4 @@ export const PROGRESS_TONES: Record<LedgerRow['progress'], Tone> = {
   NOT_PAID: 'neutral',
 };
 
-export const RECONCILIATION_TONES: Record<LedgerRow['reconciliation'], Tone> = {
-  MATCHED: 'success',
-  PENDING: 'warning',
-  MISMATCH: 'danger',
-};
-
 export const ISSUE_TONES: Record<'PENDING' | 'RESOLVED', Tone> = { PENDING: 'warning', RESOLVED: 'success' };

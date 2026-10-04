@@ -13,7 +13,7 @@ import { useTabParam } from '../../../shared/useTabParam';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { remittanceKeys, useCompanyLedger } from '../../remittance/api';
 import { LedgerStats } from '../../remittance/LedgerStats';
-import { cappedRate } from '../../remittance/rateBand';
+import { cappedRate, rateBand } from '../../remittance/rateBand';
 import { PROGRESS_TONES } from '../../remittance/tones';
 import { type CashHeld, collectionKeys, type Handover, useCashHeld, useCollectorAssignments, useCompanyWork, useHandovers } from '../api';
 import { CompanyHouseholdsPage } from '../CompanyHouseholdsPage/CompanyHouseholdsPage';
@@ -24,7 +24,7 @@ type CollectorRow = CashHeld & { assigned: number; assignedAmount: number; paid:
 
 const pct = (v: number | undefined) => (Math.round((v ?? 0) * 10) / 10).toLocaleString('vi-VN');
 const Sub = ({ children }: { children: ReactNode }) => (
-  <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+  <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12, whiteSpace: 'nowrap' }}>
     {children}
   </Typography.Text>
 );
@@ -146,7 +146,7 @@ export function CompanyOverviewPage() {
         <Col xs={24} md={8}>
           <RingCard
             loading={work.isLoading}
-            color={token.colorPrimary}
+            color={token[rateBand(households.total ? (households.paid / households.total) * 100 : 0)]}
             percent={households.total ? (households.paid / households.total) * 100 : 0}
             hasData={households.total > 0}
             label="Số hộ đã thu"
@@ -160,7 +160,7 @@ export function CompanyOverviewPage() {
         <Col xs={24} md={8}>
           <RingCard
             loading={ledger.isLoading}
-            color={row?.lowCollectionRate ? token.colorError : token.colorSuccess}
+            color={token[rateBand(row?.collectionRate ?? 0)]}
             percent={row?.collectionRate ?? 0}
             hasData={!!row}
             label="Số tiền đã thu"
@@ -176,7 +176,7 @@ export function CompanyOverviewPage() {
         <Col xs={24} md={8}>
           <RingCard
             loading={ledger.isLoading}
-            color={token.colorPrimaryActive}
+            color={token[rateBand(cappedRate(row?.remittedRate ?? 0))]}
             percent={cappedRate(row?.remittedRate ?? 0)}
             hasData={!!row}
             label="Số tiền đã nộp về xã"

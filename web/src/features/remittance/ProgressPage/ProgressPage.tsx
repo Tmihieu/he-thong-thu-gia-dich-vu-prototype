@@ -10,7 +10,6 @@ import { StatusTag } from '../../../shared/StatusTag';
 import { MoneyText } from '../../../shared/MoneyText';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type AreaProgress, type LedgerRow, useAreaProgress, useCompanyLedger } from '../api';
-import { LedgerBreakdown } from '../LedgerBreakdown';
 import { LedgerStats } from '../LedgerStats';
 import { cappedRate } from '../rateBand';
 import { RemainingText } from '../RemainingText';
@@ -84,7 +83,7 @@ export function ProgressPage() {
         loading={ledger.isLoading}
         dataSource={rows}
         pagination={false}
-        scroll={{ x: 'max-content' }}
+        scroll={{ x: 1100 }}
         locale={{ emptyText: 'Kỳ này chưa có khoản phải thu' }}
         expandable={{
           expandedRowRender: (r) => (
@@ -116,10 +115,9 @@ export function ProgressPage() {
             title: 'Phải thu',
             dataIndex: 'due',
             align: 'right',
-            render: (v: number, r) => (
+            render: (v: number) => (
               <>
                 <MoneyText value={v} />
-                <LedgerBreakdown row={r} />
               </>
             ),
           },

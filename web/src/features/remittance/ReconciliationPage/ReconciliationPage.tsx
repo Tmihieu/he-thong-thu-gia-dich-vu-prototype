@@ -2,7 +2,6 @@ import { Space, Table, Typography } from 'antd';
 import { useState } from 'react';
 
 import { useAuth } from '../../../app/auth/authContext';
-import { RECONCILIATION_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
 import { PageHeader } from '../../../shared/PageHeader';
 import { StatCard, StatGrid } from '../../../shared/StatCard';
@@ -12,7 +11,6 @@ import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type LedgerRow, useCompanyLedger } from '../api';
 import { LedgerBreakdown } from '../LedgerBreakdown';
 import { RateRings } from '../RateRings';
-import { RECONCILIATION_TONES } from '../tones';
 import { LockPeriodButton } from './LockPeriodButton';
 import { PeriodTrend } from './PeriodTrend';
 
@@ -120,10 +118,16 @@ export function ReconciliationPage() {
           },
           {
             title: 'Kết quả',
-            dataIndex: 'reconciliation',
-            render: (s: LedgerRow['reconciliation']) => (
-              <StatusTag tone={RECONCILIATION_TONES[s]}>{RECONCILIATION_LABELS[s]}</StatusTag>
-            ),
+            dataIndex: 'gap',
+            // Nhãn theo dấu của chênh lệch backend: 0 khớp, âm thu rồi chưa nộp, dương nộp trước.
+            render: (gap: number) =>
+              gap === 0 ? (
+                <StatusTag tone="success">Khớp</StatusTag>
+              ) : gap < 0 ? (
+                <StatusTag tone="warning">Thu rồi chưa nộp</StatusTag>
+              ) : (
+                <StatusTag tone="info">Nộp trước</StatusTag>
+              ),
           },
         ]}
       />
