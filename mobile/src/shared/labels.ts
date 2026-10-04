@@ -25,10 +25,10 @@ export const SUBJECT_STATUS_LABELS: Record<SubjectStatus, string> = {
 export const TARIFF_GROUP_LABELS: Record<TariffGroup, string> = {
   HH_UP_TO_2: 'Hộ gia đình ≤ 2 người',
   HH_3_PLUS: 'Hộ gia đình ≥ 3 người',
-  SMALL_UP_TO_126: 'Chủ nguồn thải nhỏ ≤ 126 kg/tháng',
-  SMALL_126_TO_250: 'Chủ nguồn thải nhỏ 126–250 kg/tháng',
-  SMALL_250_TO_500: 'Chủ nguồn thải nhỏ 250–500 kg/tháng',
-  BY_VOLUME: 'Chủ nguồn thải lớn 500–9.000 kg/tháng',
+  SMALL_UP_TO_126: '≤ 126 kg/tháng (nguồn thải nhỏ)',
+  SMALL_126_TO_250: '126–250 kg/tháng (nguồn thải nhỏ)',
+  SMALL_250_TO_500: '250–500 kg/tháng (nguồn thải nhỏ)',
+  BY_VOLUME: '500–9.000 kg/tháng (nguồn thải lớn)',
 };
 
 export const CHARGE_STATUS_LABELS: Record<ChargeStatus, string> = {

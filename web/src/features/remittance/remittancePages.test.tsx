@@ -42,6 +42,11 @@ function api() {
     'GET /api/masterdata/periods': () => jsonResponse(200, periods),
     'GET /api/remittance/ledger': () => jsonResponse(200, [dv01, dv07]),
     'GET /api/remittance/area-progress': () => jsonResponse(200, areas),
+    'GET /api/billing/charges': (url) =>
+      jsonResponse(200, url.includes('areaId=7&')
+        ? { items: [{ id: 1, code: 'KT-1026-DTH-H000128', subjectCode: 'DTH-H000128', subjectName: 'Nguyễn Văn Mẫu', subjectAddress: 'Số 1',
+            amount: 80_000, status: 'UNPAID', overdue: true }], total: 1, page: 0, size: 500 }
+        : { items: [], total: 0, page: 0, size: 500 }),
   });
 }
 
@@ -60,9 +65,12 @@ describe('Tiến độ thu', () => {
       expect(fetchFn.mock.calls.some(([url]) => String(url) === '/api/remittance/ledger?periodId=10')).toBe(true),
     );
 
-    await userEvent.click(screen.getAllByRole('button', { name: /mở rộng|expand/i })[0]!);
+    // Tổ và hộ chưa thu hiện sẵn, không có nút mở rộng.
+    expect(screen.queryByRole('button', { name: /mở rộng|expand/i })).not.toBeInTheDocument();
     expect(await screen.findByText('KV07 · Tổ dân phố 07')).toBeInTheDocument();
     expect(screen.getByText('8/10')).toBeInTheDocument();
+    expect(await screen.findByText('DTH-H000128 · Nguyễn Văn Mẫu')).toBeInTheDocument();
+    expect(fetchFn.mock.calls.some(([url]) => String(url).startsWith('/api/billing/charges?periodId=10&areaId=7&companyId=1&status=UNPAID'))).toBe(true);
   });
 
   it('cờ dưới 45% của công ty theo đã nộp về xã / phải thu, hiện % đã nộp; % đã thu nằm ở cột Đã thu', async () => {

@@ -1,10 +1,11 @@
 import { BankOutlined, WalletOutlined } from '@ant-design/icons';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, Drawer, Form, Radio, Select, Typography } from 'antd';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Alert, App, Button, Drawer, Form, QRCode, Radio, Select, Typography } from 'antd';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 
 import { api } from '../../../api/client';
+import { DEMO_LOGIN_ENABLED } from '../../../app/auth/demoAccounts';
 import { errorText } from '../../../shared/errorText';
 import { formatMoney } from '../../../shared/format';
 import { MoneyText } from '../../../shared/MoneyText';
@@ -52,7 +53,13 @@ interface Props {
   initialMethod?: Method;
 }
 
-/** Bottom sheet ghi nhận đã thu một hộ: tiền mặt / chuyển khoản, thu đủ số còn thiếu. */
+/**
+ * Bottom sheet ghi nhận đã thu một hộ: tiền mặt / chuyển khoản, thu đủ số còn thiếu.
+ * Người đi thu chọn chuyển khoản (góp ý 04/10): hiện mã QR đúng số tiền, hộ quét và thanh toán trên app người dân,
+ * màn này tự hỏi lại máy chủ và tự đóng khi khoản đã được ghi nhận — người đi thu không tự bấm "đã thu".
+ */
+// ponytail: QR mở trang thanh toán (mô phỏng) của app người dân, chưa phải VietQR ngân hàng; có cổng thanh toán thật thì
+// đổi nội dung QR và để webhook ngân hàng ghi nhận, phần tự hỏi lại ở đây giữ nguyên.
 export function ResultSheet({ item, onClose, collectors, defaultCollectorId, initialMethod }: Props) {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
@@ -84,6 +91,23 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
     if (item) form.setFieldsValue({ result: initialMethod ?? 'CASH', collectorId: defaultCollectorId });
   }, [item, form, defaultCollectorId, initialMethod]);
 
+  const qr = !collectors && initialMethod === 'TRANSFER';
+  const chargeId = item?.charge.id;
+  const watch = useQuery({
+    queryKey: [...collectionKeys.myWork, 'qr', chargeId],
+    queryFn: () => api.get<CollectorCharge[]>('/api/collection/my-work', { params: { periodId: item!.charge.periodId } }),
+    enabled: qr && item !== null,
+    refetchInterval: 3000,
+  });
+  const paidByHousehold = qr && watch.data?.find((w) => w.charge.id === chargeId)?.charge.status === 'PAID';
+  useEffect(() => {
+    if (!paidByHousehold || !item) return;
+    message.success(`Hộ đã chuyển khoản thành công · ${item.charge.subjectName}`);
+    void queryClient.invalidateQueries({ queryKey: collectionKeys.all });
+    void queryClient.invalidateQueries({ queryKey: ['remittance'] });
+    onClose();
+  }, [paidByHousehold, item, message, queryClient, onClose]);
+
   const remaining = item?.remainingAmount ?? 0;
   return (
     <Drawer
@@ -91,7 +115,7 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
       height="auto"
       open={item !== null}
       onClose={onClose}
-      title={initialMethod ? TILES.find((t) => t.value === initialMethod)!.label : 'Ghi nhận đã thu'}
+      title={qr ? 'Quét mã để chuyển khoản' : initialMethod ? TILES.find((t) => t.value === initialMethod)!.label : 'Ghi nhận đã thu'}
       className="clm-sheet"
       destroyOnHidden
       styles={{ body: { paddingBottom: 24 } }}
@@ -140,17 +164,44 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
             />
           </Form.Item>
         )}
-        <p className="clm-tip">
-          <strong>Đã thu:</strong> hệ thống ghi nhận và sinh mã thanh toán; hộ chưa nộp thì cứ để chưa thu.
-        </p>
-        <div className="clm-sheet-actions">
-          <Button size="large" onClick={onClose}>
-            Hủy
-          </Button>
-          <Button size="large" type="primary" htmlType="submit" loading={submit.isPending}>
-            {initialMethod ? `Xác nhận đã thu ${formatMoney(remaining)}` : 'Xác nhận đã thu'}
-          </Button>
-        </div>
+        {qr && item ? (
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <QRCode type="svg" size={220} value={`${window.location.origin}/citizen/pay/${item.charge.id}`} />
+              <Typography.Text strong style={{ fontSize: 20 }}>
+                {formatMoney(remaining)}
+              </Typography.Text>
+              <Typography.Text type="secondary">Nội dung: {item.charge.code}</Typography.Text>
+            </div>
+            <p className="clm-tip" role="status">
+              <strong>Đang chờ hộ thanh toán…</strong> Hộ quét mã và thanh toán đúng số tiền; hệ thống tự xác nhận, không cần bấm gì thêm.
+            </p>
+            <div className="clm-sheet-actions">
+              <Button size="large" onClick={onClose}>
+                Đóng
+              </Button>
+              {DEMO_LOGIN_ENABLED && (
+                <Button size="large" htmlType="submit" loading={submit.isPending}>
+                  Mô phỏng hộ đã chuyển khoản
+                </Button>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="clm-tip">
+              <strong>Đã thu:</strong> hệ thống ghi nhận và sinh mã thanh toán; hộ chưa nộp thì cứ để chưa thu.
+            </p>
+            <div className="clm-sheet-actions">
+              <Button size="large" onClick={onClose}>
+                Hủy
+              </Button>
+              <Button size="large" type="primary" htmlType="submit" loading={submit.isPending}>
+                {initialMethod ? `Xác nhận đã thu ${formatMoney(remaining)}` : 'Xác nhận đã thu'}
+              </Button>
+            </div>
+          </>
+        )}
       </Form>
     </Drawer>
   );

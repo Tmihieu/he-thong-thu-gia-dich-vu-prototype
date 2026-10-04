@@ -20,7 +20,8 @@ export function PeriodDraftsTab() {
   }
 
   const list = drafts.data ?? [];
-  if (list.length === 0) return null;
+  // Vừa mở kỳ cuối cùng thì danh sách rỗng nhưng ngăn kéo còn hiện kết quả: giữ tới khi đóng.
+  if (list.length === 0 && !selected) return null;
 
   return (
     <div style={{ marginBottom: 24 }}>

@@ -22,7 +22,23 @@ interface Row extends Area {
   assignment?: AreaAssignment;
 }
 
-/** Khu vực của cán bộ xã: 24 tổ, công ty đang phụ trách, lọc chưa có công ty, phân công tổ chưa có công ty, lịch sử. */
+/** Bản đồ địa bàn đang lọc (hoặc cả xã). */
+// ponytail: nhúng Google Maps theo tên địa bàn vì hệ thống chưa có ranh giới / tọa độ từng tổ; có dữ liệu ranh tổ từ xã
+// thì đổi sang lớp bản đồ vẽ từng tổ.
+function AreaMap({ district }: { district?: string }) {
+  const q = `${district ? `${district}, ` : 'Xã Đông Thạnh, '}Hóc Môn, Thành phố Hồ Chí Minh`;
+  return (
+    <iframe
+      title="Bản đồ khu vực"
+      src={`https://www.google.com/maps?q=${encodeURIComponent(q)}&z=14&output=embed`}
+      loading="lazy"
+      referrerPolicy="no-referrer-when-downgrade"
+      style={{ width: '100%', height: 320, border: 0, borderRadius: 8, marginBottom: 16 }}
+    />
+  );
+}
+
+/** Khu vực của cán bộ xã: bản đồ địa bàn, 24 tổ, công ty đang phụ trách, lọc chưa có công ty, phân công tổ chưa có công ty, lịch sử. */
 export function AreasPage() {
   const { message } = App.useApp();
   const today = dayjs().format('YYYY-MM-DD');
@@ -79,6 +95,7 @@ export function AreasPage() {
           Chỉ tổ chưa có công ty
         </Checkbox>
       </Space>
+      <AreaMap district={districts.data?.find((d) => d.id === districtId)?.name} />
       <Table<Row>
         rowKey="id"
         loading={areas.isLoading || active.isLoading}

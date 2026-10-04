@@ -177,14 +177,9 @@ export function CollectorListPage() {
                   <div className="clm-amount">
                     <small>Số tiền phải thu</small>
                     <strong>
-                      <MoneyText value={w.charge.amount} />
+                      <MoneyText value={unpaid ? w.remainingAmount : w.charge.amount} />
                     </strong>
                   </div>
-                  {unpaid && w.paidAmount > 0 && (
-                    <p className="clm-partial">
-                      Đã thu <MoneyText value={w.paidAmount} /> · còn thiếu <MoneyText value={w.remainingAmount} />
-                    </p>
-                  )}
                   {previous.length > 0 && (
                     <div className="clm-previous">
                       <small>Các kỳ trước</small>
@@ -223,12 +218,12 @@ export function CollectorListPage() {
                           size="large"
                           className="clm-pay-transfer"
                           icon={<BankOutlined />}
-                          aria-label="Đã thu chuyển khoản"
+                          aria-label="Chuyển khoản (QR)"
                           disabled={locked}
                           title={locked ? 'Kỳ đã khóa' : undefined}
                           onClick={() => setEditing({ item: w, method: 'TRANSFER' })}
                         >
-                          Đã thu chuyển khoản
+                          Chuyển khoản (QR)
                         </Button>
                       </div>
                     ) : (

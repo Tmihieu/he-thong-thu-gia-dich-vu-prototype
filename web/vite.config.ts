@@ -1,13 +1,27 @@
 /// <reference types="vitest/config" />
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 
 type ProxyEvents = {
   on(event: 'proxyRes', listener: (res: { headers: Record<string, unknown> }) => void): void;
 };
 
+/**
+ * App người dân bản web (Expo, đóng gói vào public/citizen bằng `npm run build:citizen`) là một SPA riêng: đường dẫn con
+ * không phải file tĩnh (vd. /citizen/pay/4) trả về index.html của nó, không rơi vào web quản trị.
+ */
+const citizenSpa = (): Plugin => ({
+  name: 'citizen-spa',
+  configureServer(server) {
+    server.middlewares.use((req: { url?: string }, _res: unknown, next: () => void) => {
+      if (req.url && /^\/citizen(\/[^.?]*)?(\?.*)?$/.test(req.url)) req.url = '/citizen/index.html';
+      next();
+    });
+  },
+});
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), citizenSpa()],
   server: {
     port: 5173,
     proxy: {

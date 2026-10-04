@@ -1,4 +1,4 @@
-import { LockOutlined, UserOutlined } from '@ant-design/icons';
+import { LockOutlined, MobileOutlined, UserOutlined } from '@ant-design/icons';
 import { Alert, Button, Card, Divider, Flex, Form, Input, Typography } from 'antd';
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
@@ -104,6 +104,13 @@ export function LoginPage() {
               </Flex>
             </>
           )}
+          <Divider plain style={{ fontSize: 13 }}>
+            Dành cho hộ dân
+          </Divider>
+          {/* App người dân (Expo) bản web, phục vụ cùng origin ở /citizen. */}
+          <Button block icon={<MobileOutlined />} href="/citizen/" target="_blank" rel="noreferrer">
+            Mở ứng dụng người dân
+          </Button>
         </Card>
       </main>
     </div>

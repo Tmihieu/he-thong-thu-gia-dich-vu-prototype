@@ -229,7 +229,6 @@ html, body { background: var(--page); }
 .clm-kv span { color: var(--gray-950); font-weight: 600; text-align: right; }
 .clm-amount { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--gr-line); }
 .clm-amount strong { color: var(--gr-900); font-size: 32px; font-weight: 800; }
-.clm-partial { color: #9a620d !important; font-size: 15px !important; font-weight: 600; }
 .clm-previous { margin-top: 8px; }
 .clm-previous > div { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .clm-prev { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 14px; font-weight: 700; }
