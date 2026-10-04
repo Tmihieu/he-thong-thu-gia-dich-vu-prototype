@@ -68,7 +68,7 @@ export function ImportSubjectsModal({ open, onClose }: { open: boolean; onClose:
       open={open}
       onCancel={close}
       width={900}
-      destroyOnClose
+      destroyOnHidden
       okText={result ? `Nhập ${result.valid} hồ sơ` : 'Nhập'}
       cancelText="Đóng"
       onOk={confirm}

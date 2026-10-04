@@ -36,6 +36,9 @@ export const type = { caption: 13, body: 15, lead: 16, h3: 20, h2: 24, stat: 26 
 
 export const antdTheme: ThemeConfig = {
   token: {
+    // Máy tắt hiệu ứng động (prefers-reduced-motion): tắt motion bằng token của AntD. Không ép animation-duration bằng CSS
+    // toàn cục: rc-motion kẹt ở bước chuẩn bị, dropdown / popup mở ra nằm ngoài màn hình.
+    motion: !(typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches),
     colorPrimary: brand.primary,
     colorSuccess: semantic.success.fg,
     colorWarning: semantic.warning.fg,
