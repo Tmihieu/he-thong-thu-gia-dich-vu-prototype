@@ -69,7 +69,7 @@ export function AreasPage() {
           </>
         }
       />
-      <Space wrap style={{ marginBottom: 16 }}>
+      <Space wrap size={16} style={{ marginBottom: 16 }}>
         <Select
           aria-label="Địa bàn"
           allowClear
@@ -99,6 +99,7 @@ export function AreasPage() {
         loading={areas.isLoading || active.isLoading}
         dataSource={rows}
         pagination={false}
+        tableLayout="fixed"
         rowSelection={{
           selectedRowKeys: selected,
           onChange: (keys) => setSelected(keys as number[]),
@@ -108,21 +109,24 @@ export function AreasPage() {
         columns={[
           {
             title: 'Khu vực',
+            width: '22%',
             render: (_, r) => (
               <Button type="link" style={{ padding: 0 }} onClick={() => setHistoryArea(r)}>
-                {r.code} · {r.name}
+                {r.name}
               </Button>
             ),
           },
-          { title: 'Địa bàn', dataIndex: 'districtCode' },
-          { title: 'Số hộ', dataIndex: 'subjectCount', align: 'right' },
+          { title: 'Địa bàn', width: '20%', render: (_, r) => districtNames.get(r.districtCode) ?? r.districtCode },
+          { title: 'Số hộ', width: '10%', dataIndex: 'subjectCount', align: 'right' },
           {
             title: 'Công ty phụ trách',
+            width: '26%',
             render: (_, r) =>
-              r.assignment ? `${r.assignment.companyCode} · ${r.assignment.companyName}` : <StatusTag color="orange">Chưa có công ty</StatusTag>,
+              r.assignment ? r.assignment.companyName : <StatusTag color="orange">Chưa có công ty</StatusTag>,
           },
           {
             title: 'Hiệu lực',
+            width: '22%',
             render: (_, r) =>
               r.assignment ? (
                 <>
@@ -135,6 +139,8 @@ export function AreasPage() {
           },
           {
             title: '',
+            width: 100,
+            align: 'right',
             render: (_, r) =>
               !r.assignment && (
                 <Button size="small" type="link" onClick={() => openModal([r.id])} aria-label={`Phân công ${r.code}`}>
