@@ -8,7 +8,6 @@ import { DateText } from '../../../shared/DateText';
 import { PERIOD_STATUS_LABELS, PERIOD_TYPE_LABELS, STATUS_COLORS } from '../../../shared/labels';
 import { type Period, useOpenPeriod, usePeriods, useTariffs } from '../api';
 import { OpenPeriodForm } from './OpenPeriodForm';
-import { PeriodRuleCard } from './PeriodRuleCard';
 
 /**
  * Quy tắc tự tạo kỳ, danh sách kỳ thu và mở kỳ thủ công (quản trị, §10 bước 1).
@@ -28,7 +27,7 @@ export function PeriodsPage() {
 
   return (
     <>
-      <PeriodRuleCard />
+      {/* Tạm tắt tự tạo kỳ: <PeriodRuleCard /> */}
       <Space style={{ marginBottom: 16 }}>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
           Tạo kỳ dự thảo

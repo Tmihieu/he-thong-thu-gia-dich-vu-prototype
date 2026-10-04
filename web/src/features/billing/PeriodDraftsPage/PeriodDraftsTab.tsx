@@ -27,7 +27,7 @@ export function PeriodDraftsTab() {
     <div style={{ marginBottom: 24 }}>
       <Typography.Title level={5}>Kỳ chờ mở</Typography.Title>
       <Typography.Paragraph type="secondary">
-        Hệ thống tự tạo kỳ thu kế tiếp theo quy tắc của quản trị. Xem trước các khoản rồi mở kỳ để hộ dân nhận khoản thu.
+        Kỳ thu do quản trị tạo. Đặt ngày mở, hạn nộp, xem trước các khoản rồi mở kỳ để hộ dân nhận khoản thu.
       </Typography.Paragraph>
       <Table<Period>
         rowKey="id"

@@ -94,6 +94,10 @@ public class PeriodAutoService {
 
     @Scheduled(cron = "0 30 7 * * *", zone = "Asia/Ho_Chi_Minh")
     public void runDaily() {
+        // Tạm tắt tự tạo kỳ: quản trị tạo kỳ dự thảo bằng tay. Bỏ dòng return để bật lại lịch 7:30.
+        if (true) {
+            return;
+        }
         try {
             DraftRun run = createDraftIfDue(null);
             if (run.created() != null) {
