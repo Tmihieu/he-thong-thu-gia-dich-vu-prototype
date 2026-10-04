@@ -183,7 +183,7 @@ export function SubjectsPage() {
         rowKey="id"
         loading={subjects.isFetching}
         dataSource={shownItems}
-        scroll={{ x: 1000 }}
+        scroll={{ x: 970 }}
         locale={{ emptyText: subjects.error ? errorTextOrNull(subjects.error) : 'Không có hồ sơ phù hợp' }}
         pagination={{
           current: query.page + 1,
@@ -213,7 +213,7 @@ export function SubjectsPage() {
             title: 'Địa chỉ',
             dataIndex: 'address',
             ellipsis: true,
-            width: 170,
+            width: 150,
             render: (address: string, s) => (
               <>
                 {address}

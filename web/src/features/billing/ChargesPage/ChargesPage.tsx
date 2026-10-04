@@ -89,7 +89,7 @@ export function ChargesPage() {
         }}
         columns={[
           {
-            title: 'Mã khoản / phiếu yêu cầu thu',
+            title: 'Mã khoản',
             className: 'cell-nowrap',
             render: (_, c) => (
               <>
@@ -113,7 +113,7 @@ export function ChargesPage() {
           },
           { title: 'Kỳ', className: 'cell-nowrap', render: (_, c) => periodLabel.get(c.periodId) ?? c.periodCode },
           { title: 'Số tiền', dataIndex: 'amount', align: 'right', className: 'cell-money', render: (v: number) => <MoneyText value={v} /> },
-          { title: 'Công ty phụ trách', dataIndex: 'companyCode', className: 'cell-nowrap' },
+          { title: 'Công ty', dataIndex: 'companyCode', className: 'cell-nowrap' },
           { title: 'Trạng thái', render: (_, c) => <ChargeStatusTag charge={c} /> },
           {
             title: '',
