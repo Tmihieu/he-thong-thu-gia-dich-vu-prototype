@@ -3,7 +3,7 @@ import { Alert, Button, Popover, Progress, Space, Table, Typography } from 'antd
 import { useState } from 'react';
 
 import { useAuth } from '../../../app/auth/authContext';
-import { PROGRESS_LABELS } from '../../../shared/labels';
+import { PROGRESS_LABELS, TARIFF_GROUP_LABELS } from '../../../shared/labels';
 import { ErrorBlock } from '../../../shared/StateBlock';
 import { PageHeader } from '../../../shared/PageHeader';
 import { StatusTag } from '../../../shared/StatusTag';
@@ -26,7 +26,7 @@ function Rate({ rate, low }: { rate: number; low: boolean }) {
   );
 }
 
-/** Hộ còn phải thu của một tổ trong kỳ: hiện sẵn dưới dòng tổ, không phải bấm mở (góp ý 04/10). */
+/** Hộ còn phải thu của một tổ trong kỳ: hiện khi bấm "+" ở dòng tổ; chỉ lúc đó mới gọi API. */
 // ponytail: mỗi tổ một lần gọi, tối đa 500 khoản (giới hạn API); tổ quá 500 hộ chưa thu thì thêm phân trang phía máy chủ.
 function UnpaidHouseholds({ periodId, areaId, companyId }: { periodId: number; areaId: number; companyId: number }) {
   const charges = useCharges({ periodId, areaId, companyId, status: 'UNPAID', page: 0, size: 500 });
@@ -36,14 +36,15 @@ function UnpaidHouseholds({ periodId, areaId, companyId }: { periodId: number; a
       size="small"
       rowKey="id"
       loading={charges.isLoading}
-      title={() => `Hộ chưa thu (${charges.data?.total ?? 0})`}
-      showHeader={false}
+      title={() => (charges.data ? `Hộ chưa thu (${charges.data.total})` : 'Hộ chưa thu')}
       dataSource={charges.data?.items ?? []}
       pagination={{ pageSize: 10, hideOnSinglePage: true, showSizeChanger: false }}
-      locale={{ emptyText: 'Tổ này đã thu hết' }}
+      locale={{ emptyText: charges.isLoading ? 'Đang tải…' : 'Tổ này đã thu hết' }}
       columns={[
         { title: 'Hộ', render: (_, c) => `${c.subjectCode} · ${c.subjectName}` },
         { title: 'Địa chỉ', dataIndex: 'subjectAddress' },
+        { title: 'Số nhân khẩu', dataIndex: 'memberCount', align: 'right', render: (v: number | null) => v ?? '—' },
+        { title: 'Nhóm giá', dataIndex: 'tariffGroup', render: (g: Charge['tariffGroup']) => (g ? TARIFF_GROUP_LABELS[g] : '—') },
         { title: 'Số tiền', dataIndex: 'amount', align: 'right', render: (v: number) => <MoneyText value={v} /> },
         { title: '', width: 90, render: (_, c) => c.overdue && <StatusTag color="red">Quá hạn</StatusTag> },
       ]}
@@ -112,10 +113,8 @@ export function ProgressPage() {
         pagination={false}
         scroll={{ x: 900 }}
         locale={{ emptyText: 'Kỳ này chưa có khoản phải thu' }}
-        // Tổ và hộ chưa thu hiện sẵn dưới từng công ty, không có nút "+" (góp ý 04/10).
+        // Bấm "+" ở công ty để xem tổ, bấm "+" ở tổ để xem hộ chưa thu.
         expandable={{
-          showExpandColumn: false,
-          expandedRowKeys: rows.map((r) => r.companyId),
           expandedRowRender: (r) => (
             <Table<AreaProgress>
               size="small"
@@ -123,8 +122,7 @@ export function ProgressPage() {
               pagination={false}
               dataSource={(areas.data ?? []).filter((a) => a.companyId === r.companyId)}
               expandable={{
-                showExpandColumn: false,
-                expandedRowKeys: (areas.data ?? []).filter((a) => a.paidCount < a.chargeCount).map((a) => `${a.areaId}-${a.companyId}`),
+                rowExpandable: (a) => a.paidCount < a.chargeCount,
                 expandedRowRender: (a) => <UnpaidHouseholds periodId={r.periodId} areaId={a.areaId} companyId={r.companyId} />,
               }}
               columns={[

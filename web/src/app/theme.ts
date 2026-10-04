@@ -94,7 +94,7 @@ export const antdTheme: ThemeConfig = {
       rowHoverBg: '#f3faf6',
       rowSelectedBg: brand.primarySoft,
       rowSelectedHoverBg: '#d9eee2',
-      borderColor: '#eaeef2',
+      borderColor: '#d3dae1', // đậm hơn --gray-200 một nấc để dòng kẻ bảng dễ nhìn
       cellPaddingBlock: 12,
       cellPaddingInline: 14,
       cellPaddingBlockSM: 8,
