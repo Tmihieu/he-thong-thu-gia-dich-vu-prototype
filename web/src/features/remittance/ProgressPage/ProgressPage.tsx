@@ -18,8 +18,8 @@ import { ReminderModal } from './ReminderModal';
 
 function Rate({ rate, low }: { rate: number; low: boolean }) {
   return (
-    <Space size={4} style={{ minWidth: 150 }}>
-      <Progress percent={cappedRate(rate)} size="small" showInfo={false} status={low ? 'exception' : 'normal'} style={{ width: 80 }} />
+    <Space size={4} style={{ minWidth: 120 }}>
+      <Progress percent={cappedRate(rate)} size="small" showInfo={false} status={low ? 'exception' : 'normal'} style={{ width: 56 }} />
       <span style={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{cappedRate(rate).toLocaleString('vi-VN')}%</span>
     </Space>
   );
@@ -79,11 +79,12 @@ export function ProgressPage() {
         />
       )}
       <Table<LedgerRow>
+        size="small"
         rowKey="companyId"
         loading={ledger.isLoading}
         dataSource={rows}
         pagination={false}
-        scroll={{ x: 1100 }}
+        scroll={{ x: 900 }}
         locale={{ emptyText: 'Kỳ này chưa có khoản phải thu' }}
         expandable={{
           expandedRowRender: (r) => (
@@ -106,9 +107,9 @@ export function ProgressPage() {
         columns={[
           {
             title: 'Công ty',
-            width: 220,
+            width: 180,
             render: (_, r) => (
-              <Typography.Text ellipsis={{ tooltip: true }} style={{ maxWidth: 200 }}>{`${r.companyCode} · ${r.companyName}`}</Typography.Text>
+              <Typography.Text ellipsis={{ tooltip: true }} style={{ maxWidth: 160 }}>{`${r.companyCode} · ${r.companyName}`}</Typography.Text>
             ),
           },
           {
