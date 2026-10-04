@@ -35,7 +35,7 @@ public class CompanyService {
     }
 
     public Company create(CompanyCommand cmd, CurrentUser actor) {
-        actor.requireRole(Role.ADMIN);
+        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN);
         int next = companies.maxCodeNumber() + 1;
         if (next > 99) {
             throw new BusinessRuleException("COMPANY_CODE_EXHAUSTED", "Đã dùng hết mã công ty DV01–DV99.");

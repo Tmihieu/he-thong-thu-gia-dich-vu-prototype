@@ -87,20 +87,20 @@ public class LedgerController {
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Công ty đã thu của hộ (đã trừ hoàn)") long collected,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã nộp về xã") long received,
             @Schema(requiredMode = RequiredMode.REQUIRED) long receiptCount,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Còn phải nộp xã = phải nộp − đã nộp")
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Còn phải nộp = phải nộp xã − đã nộp")
             long remaining,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã nộp − đã thu; âm là thu rồi chưa nộp") long gap,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã nộp về xã (kể cả điều chỉnh kỳ trước) − phần vận chuyển của số tiền đã thu; âm là thu rồi chưa nộp đủ") long gap,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Nợ các kỳ trước đã hết hạn") long previousDebt,
             @Schema(requiredMode = RequiredMode.REQUIRED) boolean overdue,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã thu / phải thu (%)") double collectionRate,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Tỷ lệ thu dưới 45%") boolean lowCollectionRate,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã nộp về xã / phải thu (%)") double remittedRate,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Tỷ lệ đã nộp dưới 45% (cờ ở màn tiến độ)")
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã nộp về xã / phải nộp xã (%)") double remittedRate,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Tỷ lệ đã nộp dưới 45% phải nộp xã; phải nộp xã = 0 thì không gắn cờ")
             boolean lowRemittedRate,
             @Schema(requiredMode = RequiredMode.REQUIRED) Progress progress,
             @Schema(requiredMode = RequiredMode.REQUIRED) Reconciliation reconciliation,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phần thu gom công ty giữ lại, tính trên tiền hộ đã đóng (theo biểu giá chụp trên khoản)") long retained,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phải nộp xã = đã thu − phần giữ lại (phần vận chuyển của tiền hộ đã đóng)") long payable) {
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phần thu gom công ty cầm lại, tính từ biểu giá") long retained,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phải nộp xã = phải thu − điều chỉnh − phần giữ lại") long payable) {
 
         static LedgerRowDto of(LedgerRow r) {
             return new LedgerRowDto(r.companyId(), r.companyCode(), r.companyName(), r.periodId(), r.due(),

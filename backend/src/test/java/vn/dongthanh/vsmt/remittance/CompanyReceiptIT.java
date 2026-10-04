@@ -59,9 +59,6 @@ class CompanyReceiptIT extends IntegrationTest {
             fx.build();
             collection.recordPayment(new PaymentCommand(fx.chargeId("DTH-H000001"), 80_000, PaymentMethod.CASH, "p-1",
                     null, null, null), fx.actor(fx.thu07));
-            // DV07 cũng có tiền hộ đã đóng: công ty chỉ nộp được tối đa phần đã thu của hộ.
-            collection.recordPayment(new PaymentCommand(fx.chargeId("DTH-H000005"), 80_000, PaymentMethod.CASH, "p-2",
-                    null, null, null), fx.actor(fx.thu12));
         });
     }
 
@@ -71,28 +68,38 @@ class CompanyReceiptIT extends IntegrationTest {
     }
 
     @Test
+    void remainingAfterIsMeasuredAgainstPayableNotDue() throws Exception {
+        // Công ty cầm lại phần thu gom: phải nộp xã 92.000 trên phải thu 320.000; nộp đủ 92.000 thì không còn nợ.
+        jdbc.update("update tariff_rates set collection_fee = 57000, transport_fee = 23000 where tariff_group = 'HH_3_PLUS'");
+
+        issue(fx.bearer(fx.officer), fx.dv01.getId(), 92_000)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.remainingAfter").value(0));
+    }
+
+    @Test
     void receiptsChangeLedgerReceivedAndRemainingWithCumulativeAndWords() throws Exception {
         String officer = fx.bearer(fx.officer);
-        issue(officer, fx.dv01.getId(), 50_000)
+        issue(officer, fx.dv01.getId(), 200_000)
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.code").value("PT-CT-1026-001"))
                 .andExpect(jsonPath("$.payerName").value("Người Mẫu A"))
-                .andExpect(jsonPath("$.amountInWords").value("Năm mươi nghìn đồng"))
-                .andExpect(jsonPath("$.cumulativePaid").value(50_000))
-                .andExpect(jsonPath("$.remainingAfter").value(30_000));
-        issue(officer, fx.dv01.getId(), 20_000)
+                .andExpect(jsonPath("$.amountInWords").value("Hai trăm nghìn đồng"))
+                .andExpect(jsonPath("$.cumulativePaid").value(200_000))
+                .andExpect(jsonPath("$.remainingAfter").value(120_000));
+        issue(officer, fx.dv01.getId(), 100_000)
                 .andExpect(jsonPath("$.code").value("PT-CT-1026-002"))
-                .andExpect(jsonPath("$.cumulativePaid").value(70_000))
-                .andExpect(jsonPath("$.remainingAfter").value(10_000));
+                .andExpect(jsonPath("$.cumulativePaid").value(300_000))
+                .andExpect(jsonPath("$.remainingAfter").value(20_000));
 
         mvc.perform(get("/api/remittance/ledger").param("periodId", fx.october.getId().toString())
                         .header(HttpHeaders.AUTHORIZATION, officer))
-                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].received").value(contains(70_000)))
-                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].remaining").value(contains(10_000)))
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].received").value(contains(300_000)))
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].remaining").value(contains(20_000)))
                 .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].receiptCount").value(contains(2)))
                 .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].progress").value(contains("PARTIAL")));
 
-        issue(officer, fx.dv01.getId(), 10_001)
+        issue(officer, fx.dv01.getId(), 20_001)
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("RECEIPT_AMOUNT_OUT_OF_RANGE"));
         assertThat(jdbc.queryForObject("select count(*) from audit_logs where action = 'ISSUE_COMPANY_RECEIPT'",
@@ -102,12 +109,12 @@ class CompanyReceiptIT extends IntegrationTest {
     @Test
     void companySeesOnlyItsOwnReceipts() throws Exception {
         String officer = fx.bearer(fx.officer);
-        issue(officer, fx.dv01.getId(), 20_000);
+        issue(officer, fx.dv01.getId(), 100_000);
         issue(officer, fx.dv07.getId(), 50_000);
 
         list(fx.dv07Manager).andExpect(jsonPath("$", hasSize(1))).andExpect(jsonPath("$[0].companyCode").value("DV07"));
         list(fx.officer).andExpect(jsonPath("$[*].companyCode", contains("DV01", "DV07")));
-        long dv01Receipt = jdbc.queryForObject("select id from company_receipts where amount = 20000", Long.class);
+        long dv01Receipt = jdbc.queryForObject("select id from company_receipts where amount = 100000", Long.class);
         mvc.perform(get("/api/remittance/receipts/" + dv01Receipt).header(HttpHeaders.AUTHORIZATION,
                 fx.bearer(fx.dv07Manager))).andExpect(status().isNotFound());
         issue(fx.bearer(fx.dv01Manager), fx.dv01.getId(), 1_000).andExpect(status().isForbidden());
@@ -120,11 +127,11 @@ class CompanyReceiptIT extends IntegrationTest {
         try {
             Callable<String> dv01 = () -> {
                 start.await();
-                return issueDirect(fx.dv01.getId(), 50_000).getCode();
+                return issueDirect(fx.dv01.getId(), 100_000).getCode();
             };
             Callable<String> dv07 = () -> {
                 start.await();
-                return issueDirect(fx.dv07.getId(), 50_000).getCode();
+                return issueDirect(fx.dv07.getId(), 100_000).getCode();
             };
             List<Future<String>> results = List.of(pool.submit(dv01), pool.submit(dv07));
             start.countDown();

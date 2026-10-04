@@ -20,7 +20,7 @@ public interface CollectionPeriodRepository extends JpaRepository<CollectionPeri
 
     Optional<CollectionPeriod> findByCode(String code);
 
-    /** Khóa dòng kỳ thu tới hết transaction (SELECT … FOR UPDATE): tuần tự hóa lập biên nhận, khóa kỳ. */
+    /** Khóa dòng kỳ thu tới hết transaction (SELECT … FOR UPDATE): tuần tự hóa lập phiếu thu, khóa kỳ. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from CollectionPeriod p where p.id = :id")
     Optional<CollectionPeriod> findByIdForUpdate(Long id);

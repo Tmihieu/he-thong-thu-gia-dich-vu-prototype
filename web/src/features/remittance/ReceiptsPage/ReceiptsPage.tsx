@@ -1,20 +1,25 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Space, Table, Typography } from 'antd';
 import { useState } from 'react';
 
-import { api, ApiError } from '../../../api/client';
+import { api } from '../../../api/client';
 import { DateText } from '../../../shared/DateText';
-import { PROGRESS_COLORS, PROGRESS_LABELS, RECEIPT_METHOD_LABELS } from '../../../shared/labels';
+import { PROGRESS_LABELS, RECEIPT_METHOD_LABELS } from '../../../shared/labels';
+import { errorText as apiErrorText } from '../../../shared/errorText';
 import { MoneyText } from '../../../shared/MoneyText';
+import { ErrorBlock } from '../../../shared/StateBlock';
+import { StatusTag } from '../../../shared/StatusTag';
 import { usePeriods } from '../../masterdata/api';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type LedgerRow, type Receipt, useCompanyLedger, useReceipts } from '../api';
+import { LedgerBreakdown } from '../LedgerBreakdown';
+import { LedgerStats } from '../LedgerStats';
 import { IssueReceiptForm, type IssueReceiptRequest } from './IssueReceiptForm';
+import { RemainingText } from '../RemainingText';
+import { PROGRESS_TONES } from '../tones';
 import { ReceiptPrint } from './ReceiptPrint';
 
-function errorText(e: unknown) {
-  return e ? (e instanceof ApiError ? e.message : 'Không thực hiện được. Vui lòng thử lại.') : null;
-}
+const errorText = (e: unknown) => (e ? apiErrorText(e) : null);
 
 function CompanyReceipts({ periodId, companyId, onPrint }: { periodId: number; companyId: number; onPrint: (r: Receipt) => void }) {
   const receipts = useReceipts(periodId, companyId);
@@ -25,7 +30,7 @@ function CompanyReceipts({ periodId, companyId, onPrint }: { periodId: number; c
       loading={receipts.isLoading}
       dataSource={receipts.data ?? []}
       pagination={false}
-      locale={{ emptyText: 'Chưa có biên nhận' }}
+      locale={{ emptyText: 'Chưa có phiếu thu' }}
       columns={[
         { title: 'Số phiếu', dataIndex: 'code' },
         { title: 'Ngày nộp', dataIndex: 'receiptDate', render: (d: string) => <DateText value={d} /> },
@@ -45,7 +50,7 @@ function CompanyReceipts({ periodId, companyId, onPrint }: { periodId: number; c
   );
 }
 
-/** Biên nhận công ty của cán bộ xã (§10 bước 5): công ty – kỳ còn phải nộp, lập phiếu, lịch sử và bản in. */
+/** Phiếu thu công ty của cán bộ xã (§10 bước 5): công ty – kỳ còn phải nộp, lập phiếu, lịch sử và bản in. */
 export function ReceiptsPage() {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
@@ -67,11 +72,12 @@ export function ReceiptsPage() {
 
   return (
     <>
-      <Space style={{ marginBottom: 16 }}>
+      <Space style={{ marginBottom: 16 }} wrap>
         <PeriodSelect value={periodId} onChange={setPeriodId} />
-        {locked && <Tag>Kỳ đã khóa, không lập thêm phiếu</Tag>}
+        {locked && <StatusTag tone="neutral">Kỳ đã khóa, không lập thêm phiếu</StatusTag>}
       </Space>
-      {ledger.error && <Alert type="error" showIcon message={errorText(ledger.error)} style={{ marginBottom: 12 }} />}
+      {ledger.error && <ErrorBlock error={ledger.error} onRetry={() => void ledger.refetch()} />}
+      <LedgerStats rows={ledger.data ?? []} />
       <Table<LedgerRow>
         rowKey="companyId"
         loading={ledger.isLoading}
@@ -86,10 +92,18 @@ export function ReceiptsPage() {
         }}
         columns={[
           { title: 'Công ty', render: (_, r) => `${r.companyCode} · ${r.companyName}` },
-          { title: 'Phải thu', dataIndex: 'due', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          {
+            title: 'Phải thu',
+            dataIndex: 'due',
+            align: 'right',
+            render: (v: number, r) => (
+              <>
+                <MoneyText value={v} />
+                <LedgerBreakdown row={r} />
+              </>
+            ),
+          },
           { title: 'Đã thu của hộ', dataIndex: 'collected', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-          { title: 'Công ty giữ lại', dataIndex: 'retained', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-          { title: 'Phải nộp xã', dataIndex: 'payable', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           {
             title: 'Đã nộp về xã',
             align: 'right',
@@ -97,16 +111,16 @@ export function ReceiptsPage() {
               <Space direction="vertical" size={0}>
                 <MoneyText value={r.received} />
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {r.receiptCount} biên nhận
+                  {r.receiptCount} phiếu thu
                 </Typography.Text>
               </Space>
             ),
           },
-          { title: 'Còn phải nộp', dataIndex: 'remaining', align: 'right', render: (v: number) => <MoneyText value={v} strong /> },
+          { title: 'Còn phải nộp', dataIndex: 'remaining', align: 'right', render: (v: number) => <RemainingText value={v} strong /> },
           {
             title: 'Tiến độ',
             dataIndex: 'progress',
-            render: (p: LedgerRow['progress']) => <Tag color={PROGRESS_COLORS[p]}>{PROGRESS_LABELS[p]}</Tag>,
+            render: (p: LedgerRow['progress']) => <StatusTag tone={PROGRESS_TONES[p]}>{PROGRESS_LABELS[p]}</StatusTag>,
           },
           {
             title: '',

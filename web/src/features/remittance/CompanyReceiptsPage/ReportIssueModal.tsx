@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Alert, App, Descriptions, Form, Input, InputNumber, Modal, Select } from 'antd';
 
-import { api, ApiError } from '../../../api/client';
+import { api } from '../../../api/client';
+import { errorText } from '../../../shared/errorText';
 import { RECEIPT_ISSUE_TYPE_LABELS, type ReceiptIssueType } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
 import { type Receipt, type ReceiptIssue, remittanceKeys } from '../api';
@@ -17,7 +18,7 @@ interface Props {
   onClose: () => void;
 }
 
-/** Công ty báo sai sót một biên nhận xã lập (R28); xã nhận thông báo và kiểm tra. */
+/** Công ty báo sai sót một phiếu thu xã lập (R28); xã nhận thông báo và kiểm tra. */
 export function ReportIssueModal({ receipt, onClose }: Props) {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
@@ -55,7 +56,7 @@ export function ReportIssueModal({ receipt, onClose }: Props) {
           showIcon
           role="alert"
           style={{ marginBottom: 12 }}
-          message={report.error instanceof ApiError ? report.error.message : 'Không gửi được. Vui lòng thử lại.'}
+          message={errorText(report.error, 'Không gửi được. Vui lòng thử lại.')}
         />
       )}
       {receipt && (

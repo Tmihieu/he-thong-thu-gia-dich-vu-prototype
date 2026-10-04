@@ -57,6 +57,14 @@ class NotificationServiceIT extends IntegrationTest {
     }
 
     @Test
+    void overlongBodyIsTruncatedInsteadOfFailingTheCaller() {
+        var saved = notifications.publish(NotificationCommand.toCompany(dv01.getId(), Role.COMPANY_MANAGER,
+                NotificationKind.REMINDER, "Tiêu đề", "x".repeat(2500), null), canboA.getId());
+
+        org.assertj.core.api.Assertions.assertThat(saved.getBody()).hasSize(2000).endsWith("…");
+    }
+
+    @Test
     void companyNotificationIsInvisibleToOtherCompanies() throws Exception {
         notifications.publish(NotificationCommand.toCompany(dv01.getId(), Role.COMPANY_MANAGER, NotificationKind.REMINDER,
                 "Nhắc nộp tiền kỳ 10/2026", "Còn 1.200.000 đ", Map.of("screen", "remittance.receipts",
@@ -78,7 +86,7 @@ class NotificationServiceIT extends IntegrationTest {
     @Test
     void roleNotificationIsSeenByEveryUserOfTheRoleAndReadStateIsShared() throws Exception {
         Notification n = notifications.publish(NotificationCommand.toRole(Role.COMMUNE_OFFICER, NotificationKind.RECEIPT,
-                "DV01 báo sai sót biên nhận", "Phiếu PT-CT-1026-001 ghi sai số tiền", null), dv01User.getId());
+                "DV01 báo sai sót phiếu thu", "Phiếu PT-CT-1026-001 ghi sai số tiền", null), dv01User.getId());
 
         mvc.perform(get("/api/notifications/unread-count").header(HttpHeaders.AUTHORIZATION, bearer(canboA)))
                 .andExpect(jsonPath("$.unreadCount").value(1));

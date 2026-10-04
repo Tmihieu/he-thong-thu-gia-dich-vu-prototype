@@ -76,16 +76,14 @@ Mọi tên, SĐT, địa chỉ là dữ liệu giả ("Mẫu", đầu số `0902
 |---|---|
 | Phải thu (19 khoản: 9 hộ KV07, 9 hộ + 1 hộ kinh doanh KV09, giá BG-65-2026) | 1.319.000 |
 | Công ty đã thu (8 lần; 7 khoản thu đủ, `DTH-H000125` thu một phần) | 609.000 |
-| Công ty giữ lại (phần thu gom của tiền đã thu, theo biểu giá chụp trên khoản) | khoảng 434.000 |
-| Phải nộp xã (đã thu − giữ lại) | khoảng 175.000 |
-| Đã nộp về xã (biên nhận `PT-CT-0926-001`, 22/09) | 100.000 |
-| **Còn phải nộp, quá hạn** | **khoảng 75.000** (số chính xác xem trên màn Tiến độ thu) |
+| Đã nộp về xã (phiếu `PT-CT-0926-001`, 22/09) | 400.000 |
+| **Còn phải nộp, quá hạn** | **919.000** |
 
 - Hộ kịch bản `DTH-H000128` đã đóng kỳ 09 bằng tiền mặt, nên app chỉ còn khoản kỳ 10 để thanh toán ở bước 4.
 - `thu07`, `thu09` đã bàn giao hết tiền mặt kỳ 09 (`BG-0926-01`, `BG-0926-02`): bước 3 bắt đầu với 0 đồng đang giữ.
 - Lịch sử hộ kỳ 09 cho màn người đi thu: `DTH-H000122` vắng 08/09 rồi thu 10/09; `DTH-H000124` hẹn lại 12/09, còn nợ; `DTH-H000125` thu một phần.
 - Các thao tác trên có dòng nhật ký (mở kỳ, phát hành, ghi thu, bàn giao, lập phiếu thu).
-- Vì DV01 còn nợ kỳ 09 nên ở kỳ 10/2026, dòng DV01 trên Tiến độ thu hiện **Quá hạn nộp** kèm "Nợ kỳ trước" (khoảng 75.000) và Đối soát hiện **Lệch** (quy tắc nợ kỳ trước R9–R11), cho tới khi DV01 nộp hết kỳ 09. Công ty chỉ nộp phần vận chuyển của tiền hộ đã đóng (phần thu gom công ty giữ lại, xã chốt 03/10), nên hộ chưa đóng không làm công ty nợ xã. Bước 5 dưới đây làm theo thứ tự đó.
+- Vì DV01 còn nợ kỳ 09 nên ở kỳ 10/2026, dòng DV01 trên Tiến độ thu hiện **Quá hạn nộp** kèm "Nợ kỳ trước 919.000" và Đối soát hiện **Lệch** (quy tắc nợ kỳ trước R9–R11), cho tới khi DV01 nộp hết kỳ 09. Bước 5 dưới đây làm theo thứ tự đó.
 
 ## Kịch bản §10
 
@@ -97,8 +95,8 @@ Web mở ở http://localhost:5173; mỗi vai trò dùng một cửa sổ ẩn d
    - Lịch sử hộ / báo sai (T53): `thu07` chọn kỳ **09/2026** → hộ `DTH-H000122` → **Lịch sử** (vắng 08/09, thu 10/09); **Báo sai thông tin** một hộ → `canbo_xa` và `dv01` nhận thông báo.
 4. **App `0902000128`** → Khoản phí của hộ → khoản kỳ 10/2026 → thanh toán mô phỏng. **`dv01`** → Hộ được giao: `DTH-H000128` hiện **Đã thu**.
 5. Nộp tiền về xã (thứ tự người dùng chốt 28/09/2026, vì nợ kỳ 09 — xem ghi chú ở mục seed):
-   1. **`canbo_xa`** → Tiến độ thu (kỳ 10/2026): dòng DV01 **Quá hạn nộp**, "Nợ kỳ trước" khoảng 75.000 → **Nhắc nộp** → gửi. **`dv01`** thấy thông báo "Nhắc nộp tiền Tháng 09/2026" ở chuông.
-   2. DV01 nộp hết kỳ cũ: `canbo_xa` → Khoản thu → Biên nhận công ty → chọn **kỳ 09/2026** → **Lập phiếu** ở dòng DV01, số tiền bằng đúng số còn phải nộp (khoảng **75.000**) → kỳ 09 của DV01 Đã nộp đủ.
+   1. **`canbo_xa`** → Tiến độ thu (kỳ 10/2026): dòng DV01 **Quá hạn nộp**, "Nợ kỳ trước 919.000" → **Nhắc nộp** → gửi. **`dv01`** thấy thông báo "Nhắc nộp tiền Tháng 09/2026" ở chuông.
+   2. DV01 nộp hết kỳ cũ: `canbo_xa` → Khoản thu → Phiếu thu công ty → chọn **kỳ 09/2026** → **Lập phiếu** ở dòng DV01, số tiền **919.000** → kỳ 09 của DV01 Đã nộp đủ.
    3. DV01 nộp một phần kỳ 10: chọn **kỳ 10/2026** → **Lập phiếu** ở dòng DV01, số tiền nhỏ hơn "còn phải nộp" → Tiến độ thu hiện **Nộp một phần**, Đối soát hiện **Đang nộp**.
    4. **`dv01`** → Khu vực được giao → Phiếu thu xã lập → **Báo sai sót** một phiếu → **`canbo_xa`** → Khoản thu → Sai sót phiếu thu → xử lý (đóng kèm ghi chú).
 6. **App** → Phản ánh, kiến nghị → gửi mới. **`canbo_xa`** → Khiếu nại → chuyển DV01. **`dv01`** → Khiếu nại → phản hồi. **`canbo_xa`** → đóng. App thấy timeline và thông báo.

@@ -1,7 +1,9 @@
-import { Alert, App, Button, Form, Input, InputNumber, Modal, Select, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Form, Input, InputNumber, Modal, Select, Table, Typography } from 'antd';
 import { useState } from 'react';
 
 import { ApiError } from '../../api/client';
+import { StatusTag } from '../../shared/StatusTag';
+import { errorText } from '../../shared/errorText';
 import { type Area, type District, useAreas, useDistricts, useUpdateArea, useUpdateDistrict } from './api';
 
 export function LocationsSettings() {
@@ -19,14 +21,14 @@ export function LocationsSettings() {
   const nameRules = [{ required: true, whitespace: true, message: 'Vui lòng nhập tên' }];
 
   return <>
-    {(districts.error || areas.error) && <Alert type="error" showIcon message={error(districts.error ?? areas.error)} />}
+    {(districts.error || areas.error) && <Alert type="error" showIcon message={errorText(districts.error ?? areas.error, 'Không thể tải danh sách. Vui lòng thử lại.')} />}
     <Table<District>
       rowKey="id" dataSource={districts.data ?? []} loading={districts.isLoading} pagination={false}
       columns={[
         { title: 'Mã địa bàn', dataIndex: 'code' },
         { title: 'Tên địa bàn', dataIndex: 'name' },
         { title: 'Thứ tự', dataIndex: 'sortOrder' },
-        { title: 'Thao tác', align: 'right', render: (_, d) => <Button size="small" aria-label={`Sửa địa bàn ${d.code}`} onClick={() => {
+        { title: 'Thao tác', align: 'right', render: (_, d) => <Button size="small" type="link" aria-label={`Sửa địa bàn ${d.code}`} onClick={() => {
           updateDistrict.reset(); setDistrict(d);
         }}>Sửa</Button> },
       ]}
@@ -41,15 +43,15 @@ export function LocationsSettings() {
         { title: 'Mã khu vực', dataIndex: 'code' },
         { title: 'Tên khu vực', dataIndex: 'name' },
         { title: 'Địa bàn', render: (_, a) => districts.data?.find(d => d.id === a.districtId)?.name ?? a.districtCode },
-        { title: 'Trạng thái', render: (_, a) => a.status === 'ACTIVE' ? <Tag color="green">Hoạt động</Tag> : <Tag>Tạm ngưng</Tag> },
-        { title: 'Thao tác', align: 'right', render: (_, a) => <Button size="small" aria-label={`Sửa khu vực ${a.code}`} onClick={() => {
+        { title: 'Trạng thái', render: (_, a) => a.status === 'ACTIVE' ? <StatusTag color="green">Hoạt động</StatusTag> : <StatusTag>Tạm ngưng</StatusTag> },
+        { title: 'Thao tác', align: 'right', render: (_, a) => <Button size="small" type="link" aria-label={`Sửa khu vực ${a.code}`} onClick={() => {
           updateArea.reset(); setArea(a);
         }}>Sửa</Button> },
       ]}
     />
     <Modal title={`Sửa địa bàn ${district?.code ?? ''}`} open={!!district} destroyOnHidden onCancel={() => setDistrict(null)}
       onOk={() => districtForm.submit()} okText="Lưu thay đổi" cancelText="Hủy" confirmLoading={updateDistrict.isPending}>
-      <Form form={districtForm} layout="vertical" preserve={false} initialValues={district ?? {}} onFinish={values => {
+      <Form name="district" form={districtForm} layout="vertical" preserve={false} initialValues={district ?? {}} onFinish={values => {
         if (district) updateDistrict.mutate({ id: district.id, body: { name: values.name.trim(), note: values.note?.trim() || null, sortOrder: values.sortOrder ?? null } },
           { onSuccess: () => { setDistrict(null); message.success('Đã lưu địa bàn'); } });
       }}>
@@ -61,7 +63,7 @@ export function LocationsSettings() {
     </Modal>
     <Modal title={`Sửa khu vực ${area?.code ?? ''}`} open={!!area} destroyOnHidden onCancel={() => setArea(null)}
       onOk={() => areaForm.submit()} okText="Lưu thay đổi" cancelText="Hủy" confirmLoading={updateArea.isPending}>
-      <Form form={areaForm} layout="vertical" preserve={false} initialValues={area ?? {}} onFinish={values => {
+      <Form name="area" form={areaForm} layout="vertical" preserve={false} initialValues={area ?? {}} onFinish={values => {
         if (area) updateArea.mutate({ id: area.id, body: { name: values.name.trim(), status: values.status } },
           { onSuccess: () => { setArea(null); message.success('Đã lưu khu vực'); } });
       }}>

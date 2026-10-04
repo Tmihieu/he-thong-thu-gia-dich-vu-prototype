@@ -104,7 +104,7 @@ describe('Khu vực (cán bộ xã)', () => {
     await fillAndSubmit(await screen.findByRole('dialog'));
 
     await waitFor(() => expect(screen.queryByText('1 tổ chưa có công ty')).not.toBeInTheDocument());
-    expect(screen.getByRole('button', { name: 'Phân công KV24' })).toHaveTextContent('Đổi công ty');
+    expect(screen.queryByRole('button', { name: 'Phân công KV24' })).not.toBeInTheDocument();
     const post = fetchFn.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === 'POST');
     expect(JSON.parse(String((post![1] as RequestInit).body))).toEqual({ areaIds: [24], companyId: 1, fromDate: '2026-10-01' });
   });

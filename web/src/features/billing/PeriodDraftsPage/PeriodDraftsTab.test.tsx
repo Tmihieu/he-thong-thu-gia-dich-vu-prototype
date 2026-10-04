@@ -18,6 +18,7 @@ const preview = {
     requestCode: null, chargeCount: 211, exemptCount: 5, totalAmount: 14_394_000, warningCount: 9,
     skipped: [{ subjectId: 300, subjectCode: 'NB-H000461', subjectName: 'Hộ Mẫu', areaCode: 'KV24', reason: 'AREA_WITHOUT_COMPANY',
       warning: true, message: 'Khu vực KV24 chưa có công ty phụ trách.' }],
+    skippedByReason: { AREA_WITHOUT_COMPANY: 9 },
   },
 };
 
@@ -57,7 +58,7 @@ describe('Khoản thu · kỳ chờ mở', () => {
     const drawer = await screen.findByRole('dialog');
     expect(await within(drawer).findByText('211')).toBeInTheDocument();
     expect(within(drawer).getByText(/14\.394\.000/)).toBeInTheDocument();
-    expect(within(drawer).getByText(/9 hộ ở tổ chưa có công ty phụ trách/)).toBeInTheDocument();
+    expect(within(drawer).getByText('Tổ chưa có công ty phụ trách: 9 hộ')).toBeInTheDocument();
     expect(within(drawer).getByLabelText('Hạn hộ đóng')).toHaveValue('16/11/2026');
     // Chưa chọn ngày thì xem trước theo quy tắc của quản trị.
     expect(bodyOf(fetchFn, '/api/billing/periods/9/draft-preview')).toEqual({});

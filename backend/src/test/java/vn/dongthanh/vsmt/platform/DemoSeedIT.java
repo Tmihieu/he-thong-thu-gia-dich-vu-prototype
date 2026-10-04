@@ -224,15 +224,18 @@ class DemoSeedIT extends IntegrationTest {
         assertThat(ledger.collectedByCompany(period)).containsExactly(new CompanyAmount(dv01, 609_000, 8));
         long received = demoDb.queryForObject(
                 "select sum(amount) from company_receipts where company_id = ? and period_id = ?", Long.class, dv01, period);
-        assertThat(received).isEqualTo(100_000L);
-        // Như CompanyLedgerService.overdueDebtsOf (nhắc nộp, R16): kỳ có hạn trước hôm nay, còn nợ = đã thu − phần thu gom
-        // công ty giữ lại − đã nộp (mô hình 03/10, tính trên số đã thu). Đúng cả lúc làm seed lẫn ngày demo.
+        // QĐ-L16: V34_1 hạ phiếu mẫu về 200.000 đ để còn phải nộp dương sau phần cầm lại.
+        assertThat(received).isEqualTo(200_000L);
+        // Như CompanyLedgerService.overdueDebtsOf (nhắc nộp, R16, BR-REM-03): kỳ có hạn trước hôm nay, còn nợ =
+        // phải thu − phần thu gom công ty cầm lại − đã nộp. Đúng cả lúc làm seed lẫn ngày demo.
         for (LocalDate today : List.of(LocalDate.of(2026, 9, 28), LocalDate.of(2026, 10, 21))) {
-            assertThat(ledger.collectedByCompanyAndPeriodBefore(today))
-                    .containsExactly(new CompanyPeriodAmount(dv01, period, 609_000));
-            List<CompanyPeriodAmount> retained = ledger.retainedByCompanyAndPeriodBefore(today);
-            assertThat(retained).singleElement().satisfies(r -> assertThat(r.amount()).isBetween(400_000L, 460_000L));
-            assertThat(609_000 - retained.get(0).amount() - received).isPositive();
+            long retained = ledger.retainedByCompanyAndPeriodBefore(today).stream()
+                    .filter(r -> r.companyId() == dv01 && r.periodId() == period).mapToLong(CompanyPeriodAmount::amount).sum();
+            assertThat(ledger.dueByCompanyAndPeriodBefore(today))
+                    .map(d -> new CompanyPeriodAmount(d.companyId(), d.periodId(), d.amount() - retained - received))
+                    .containsExactly(new CompanyPeriodAmount(dv01, period, 1_319_000 - retained - received));
+            // Phiếu mẫu phải nhỏ hơn phải nộp xã, để demo hiện "Đang nộp" chứ không âm (QĐ-L16).
+            assertThat(1_319_000 - retained - received).isPositive();
         }
 
         // Khoản Đã thu đúng khi Σ thanh toán = số tiền, không thu vượt (G4); hộ kịch bản đã đóng kỳ cũ.

@@ -1,12 +1,16 @@
-import { Alert, Card, Col, Row, Space, Statistic, Table, Tag, Typography } from 'antd';
+import { Space, Table, Typography } from 'antd';
 import { useState } from 'react';
 
-import { ApiError } from '../../../api/client';
 import { useAuth } from '../../../app/auth/authContext';
-import { RECONCILIATION_COLORS, RECONCILIATION_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
+import { PageHeader } from '../../../shared/PageHeader';
+import { StatCard, StatGrid } from '../../../shared/StatCard';
+import { ErrorBlock } from '../../../shared/StateBlock';
+import { StatusTag } from '../../../shared/StatusTag';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type LedgerRow, useCompanyLedger } from '../api';
+import { LedgerBreakdown } from '../LedgerBreakdown';
+import { RateRings } from '../RateRings';
 import { LockPeriodButton } from './LockPeriodButton';
 import { PeriodTrend } from './PeriodTrend';
 
@@ -18,7 +22,7 @@ function Gap({ gap }: { gap: number }) {
         <MoneyText value={gap} />
       </Typography.Text>
       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-        {gap < 0 ? 'thu rồi chưa nộp' : 'nộp nhiều hơn báo thu'}
+        {gap < 0 ? 'thu rồi chưa nộp' : 'nộp trước'}
       </Typography.Text>
     </Space>
   );
@@ -38,31 +42,25 @@ export function ReconciliationPage() {
 
   return (
     <>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        Đối soát
-      </Typography.Title>
+      <PageHeader
+        title="Đối soát"
+        description="So số công ty đã thu với số đã nộp về xã; kỳ chỉ khóa được khi không còn công ty nợ."
+        extra={
+          <Space wrap>
+            <PeriodSelect value={periodId} onChange={setPeriodId} />
+            {periodId !== undefined && !readOnly && <LockPeriodButton periodId={periodId} />}
+          </Space>
+        }
+      />
       <PeriodTrend />
-      <Space style={{ marginBottom: 16 }} wrap>
-        <PeriodSelect value={periodId} onChange={setPeriodId} />
-        {periodId !== undefined && !readOnly && <LockPeriodButton periodId={periodId} />}
-      </Space>
-      {ledger.error && <Alert type="error" showIcon message={ledger.error instanceof ApiError ? ledger.error.message : 'Không tải được số liệu'} />}
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-        {(
-          [
-            ['Phải thu', rows.reduce((t, r) => t + r.due, 0)],
-            ['Công ty đã thu', rows.reduce((t, r) => t + r.collected, 0)],
-            ['Đã nộp về xã', rows.reduce((t, r) => t + r.received, 0)],
-            ['Thu rồi chưa nộp', notRemitted],
-          ] as const
-        ).map(([title, value]) => (
-          <Col key={title} xs={12} md={6}>
-            <Card size="small">
-              <Statistic title={title} value={value} formatter={(v) => <MoneyText value={Number(v)} />} />
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      {ledger.error && <ErrorBlock error={ledger.error} onRetry={() => void ledger.refetch()} />}
+      <StatGrid>
+        <StatCard label="Phải nộp xã" tone="info" value={<MoneyText value={rows.reduce((t, r) => t + r.payable, 0)} />} />
+        <StatCard label="Công ty đã thu" tone="info" value={<MoneyText value={rows.reduce((t, r) => t + r.collected, 0)} />} />
+        <StatCard label="Đã nộp về xã" tone="success" value={<MoneyText value={rows.reduce((t, r) => t + r.received, 0)} />} />
+        <StatCard label="Thu rồi chưa nộp" tone={notRemitted > 0 ? 'danger' : 'neutral'} value={<MoneyText value={notRemitted} />} />
+      </StatGrid>
+      <RateRings rows={rows} />
       <Table<LedgerRow>
         rowKey="companyId"
         loading={ledger.isLoading}
@@ -71,10 +69,34 @@ export function ReconciliationPage() {
         locale={{ emptyText: 'Kỳ này chưa có khoản phải thu' }}
         columns={[
           { title: 'Công ty', render: (_, r) => `${r.companyCode} · ${r.companyName}` },
-          { title: 'Phải thu', dataIndex: 'due', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-          { title: 'Đã thu', dataIndex: 'collected', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-          { title: 'Công ty giữ lại', dataIndex: 'retained', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-          { title: 'Phải nộp xã', dataIndex: 'payable', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          {
+            title: 'Phải thu',
+            dataIndex: 'due',
+            align: 'right',
+            render: (v: number, r) => (
+              <>
+                <MoneyText value={v} />
+                <LedgerBreakdown row={r} />
+              </>
+            ),
+          },
+          {
+            title: 'Đã thu',
+            dataIndex: 'collected',
+            align: 'right',
+            render: (v: number, r) => (
+              <>
+                <MoneyText value={v} />
+                {r.refunded > 0 && (
+                  <div>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      đã trừ hoàn <MoneyText value={r.refunded} />
+                    </Typography.Text>
+                  </div>
+                )}
+              </>
+            ),
+          },
           {
             title: 'Đã nộp về xã',
             align: 'right',
@@ -82,7 +104,7 @@ export function ReconciliationPage() {
               <Space direction="vertical" size={0}>
                 <MoneyText value={r.received} />
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {r.receiptCount} biên nhận
+                  {r.receiptCount} phiếu thu
                 </Typography.Text>
               </Space>
             ),
@@ -96,10 +118,16 @@ export function ReconciliationPage() {
           },
           {
             title: 'Kết quả',
-            dataIndex: 'reconciliation',
-            render: (s: LedgerRow['reconciliation']) => (
-              <Tag color={RECONCILIATION_COLORS[s]}>{RECONCILIATION_LABELS[s]}</Tag>
-            ),
+            dataIndex: 'gap',
+            // Nhãn theo dấu của chênh lệch backend: 0 khớp, âm thu rồi chưa nộp, dương nộp trước.
+            render: (gap: number) =>
+              gap === 0 ? (
+                <StatusTag tone="success">Khớp</StatusTag>
+              ) : gap < 0 ? (
+                <StatusTag tone="warning">Thu rồi chưa nộp</StatusTag>
+              ) : (
+                <StatusTag tone="info">Nộp trước</StatusTag>
+              ),
           },
         ]}
       />

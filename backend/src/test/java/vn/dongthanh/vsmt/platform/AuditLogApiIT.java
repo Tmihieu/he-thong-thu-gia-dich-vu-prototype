@@ -29,7 +29,7 @@ import vn.dongthanh.vsmt.support.DatabaseCleaner;
 import vn.dongthanh.vsmt.support.FixedClockConfig;
 import vn.dongthanh.vsmt.support.IntegrationTest;
 
-/** Nhật ký sau kịch bản: phát hành phí (fixture) → người thu ghi thu → xã lập biên nhận công ty. */
+/** Nhật ký sau kịch bản: phát hành phí (fixture) → người thu ghi thu → xã lập phiếu thu công ty. */
 @Transactional
 @Import({FixedClockConfig.class, CollectionFixture.class, DatabaseCleaner.class})
 class AuditLogApiIT extends IntegrationTest {

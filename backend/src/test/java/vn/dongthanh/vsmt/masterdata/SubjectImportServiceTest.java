@@ -28,10 +28,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import vn.dongthanh.vsmt.masterdata.domain.Area;
 import vn.dongthanh.vsmt.masterdata.domain.AreaRepository;
+import vn.dongthanh.vsmt.masterdata.domain.District;
+import vn.dongthanh.vsmt.masterdata.domain.ServiceSubject;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubjectRepository;
+import vn.dongthanh.vsmt.masterdata.domain.Street;
+import vn.dongthanh.vsmt.masterdata.domain.StreetRepository;
 import vn.dongthanh.vsmt.masterdata.domain.SubjectType;
 import vn.dongthanh.vsmt.masterdata.domain.TariffGroup;
 import vn.dongthanh.vsmt.masterdata.service.SubjectImportService;
@@ -48,6 +53,7 @@ class SubjectImportServiceTest {
     final SubjectService subjects = mock(SubjectService.class);
     final ServiceSubjectRepository repo = mock(ServiceSubjectRepository.class);
     final AreaRepository areas = mock(AreaRepository.class);
+    final StreetRepository streets = mock(StreetRepository.class);
     final Clock clock = Clock.fixed(Instant.parse("2026-10-04T03:00:00Z"), ZoneId.of("Asia/Ho_Chi_Minh"));
     final CurrentUser officer = new CurrentUser(3L, "canbo", Role.COMMUNE_OFFICER, null);
     SubjectImportService service;
@@ -55,10 +61,13 @@ class SubjectImportServiceTest {
     @BeforeEach
     void setUp() {
         Area kv07 = mock(Area.class);
+        District district = mock(District.class);
+        when(district.getId()).thenReturn(3L);
+        when(kv07.getDistrict()).thenReturn(district);
         when(kv07.getId()).thenReturn(7L);
         when(kv07.getCode()).thenReturn("KV07");
         when(areas.findAllWithDistrict(null)).thenReturn(List.of(kv07));
-        service = new SubjectImportService(subjects, repo, areas, clock);
+        service = new SubjectImportService(subjects, repo, areas, streets, clock);
     }
 
     static byte[] sheet(String[]... rows) throws IOException {
@@ -139,6 +148,49 @@ class SubjectImportServiceTest {
         assertThat(contract.getAllValues().get(2)).isNull();
         assertThat(cmd.getAllValues().get(2).type()).isEqualTo(SubjectType.BUSINESS_HOUSEHOLD);
         assertThat(cmd.getAllValues().get(0).areaId()).isEqualTo(7L);
+    }
+
+    Street catalogStreet() {
+        Street street = Street.create(mock(District.class), "Nguyễn Huệ", null);
+        ReflectionTestUtils.setField(street, "id", 40L);
+        when(streets.findByDistrictIdAndNameKey(3L, "nguyen hue")).thenReturn(java.util.Optional.of(street));
+        return street;
+    }
+
+    @Test
+    void streetInTheCatalogIsUsedAndAddressDuplicatesAreReported() throws IOException {
+        catalogStreet();
+        ServiceSubject twin = mock(ServiceSubject.class);
+        when(twin.getCode()).thenReturn("DTH-H000001");
+        when(subjects.findSuspectedDuplicates(eq(7L), eq(40L), eq("12"), any(), any(), any())).thenReturn(List.of(twin));
+        byte[] file = sheet(
+                new String[] { "Hộ gia đình", "A", "12", "đường nguyễn huệ", "KV07", "", "3" },
+                new String[] { "Hộ gia đình", "B", "14", "Nguyễn Huệ", "KV07", "", "3" },
+                new String[] { "Hộ gia đình", "C", "14", "Nguyễn Huệ", "KV07", "", "3" });
+
+        ImportPreview p = service.preview(in(file), officer);
+
+        assertThat(p.rows().get(0).errors()).containsExactly("Địa chỉ trùng hồ sơ DTH-H000001");
+        assertThat(p.rows().get(1).errors()).isEmpty();
+        assertThat(p.rows().get(2).errors()).containsExactly("Trùng địa chỉ với một dòng khác trong file");
+    }
+
+    @Test
+    void commitUsesCatalogStreetOrMarksTheNameAsPending() throws IOException {
+        catalogStreet();
+        byte[] file = sheet(
+                new String[] { "Hộ gia đình", "A", "1", "Nguyễn Huệ", "KV07", "", "2" },
+                new String[] { "Hộ gia đình", "B", "2", "Hẻm 1", "KV07", "", "3" });
+
+        service.commit(in(file), officer);
+
+        ArgumentCaptor<SubjectCommand> cmd = ArgumentCaptor.forClass(SubjectCommand.class);
+        verify(subjects, times(2)).create(cmd.capture(), any(), any());
+        assertThat(cmd.getAllValues().get(0).streetId()).isEqualTo(40L);
+        assertThat(cmd.getAllValues().get(0).streetPending()).isFalse();
+        assertThat(cmd.getAllValues().get(1).streetId()).isNull();
+        assertThat(cmd.getAllValues().get(1).streetPending()).isTrue();
+        assertThat(cmd.getAllValues().get(1).street()).isEqualTo("Hẻm 1");
     }
 
     @Test

@@ -1,14 +1,20 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, Card, Col, Progress, Row, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Card, Col, Progress, Row, Space, Table, theme, Typography } from 'antd';
 import { type ReactNode, useMemo, useState } from 'react';
 
-import { api, ApiError } from '../../../api/client';
+import { api } from '../../../api/client';
 import { DateText } from '../../../shared/DateText';
-import { PROGRESS_COLORS, PROGRESS_LABELS } from '../../../shared/labels';
+import { errorText as apiErrorText } from '../../../shared/errorText';
+import { PROGRESS_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
+import { ErrorBlock, EmptyBlock } from '../../../shared/StateBlock';
+import { StatusTag } from '../../../shared/StatusTag';
 import { useTabParam } from '../../../shared/useTabParam';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { remittanceKeys, useCompanyLedger } from '../../remittance/api';
+import { LedgerStats } from '../../remittance/LedgerStats';
+import { cappedRate, rateBand } from '../../remittance/rateBand';
+import { PROGRESS_TONES } from '../../remittance/tones';
 import { type CashHeld, collectionKeys, type Handover, useCashHeld, useCollectorAssignments, useCompanyWork, useHandovers } from '../api';
 import { CompanyHouseholdsPage } from '../CompanyHouseholdsPage/CompanyHouseholdsPage';
 import type { WorkChip } from '../workState';
@@ -18,7 +24,7 @@ type CollectorRow = CashHeld & { assigned: number; assignedAmount: number; paid:
 
 const pct = (v: number | undefined) => (Math.round((v ?? 0) * 10) / 10).toLocaleString('vi-VN');
 const Sub = ({ children }: { children: ReactNode }) => (
-  <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+  <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12, whiteSpace: 'nowrap' }}>
     {children}
   </Typography.Text>
 );
@@ -69,9 +75,7 @@ function RingCard({ loading, color, percent, hasData, label, value, note, onOpen
   );
 }
 
-function errorText(e: unknown) {
-  return e ? (e instanceof ApiError ? e.message : 'Không thực hiện được. Vui lòng thử lại.') : null;
-}
+const errorText = (e: unknown) => (e ? apiErrorText(e) : null);
 
 /**
  * Tổng quan của công ty (theo prototype rsCompanyAssigned): 3 vòng tiến độ (tiền lấy nguyên dòng sổ công ty–kỳ T24);
@@ -79,6 +83,7 @@ function errorText(e: unknown) {
  */
 export function CompanyOverviewPage() {
   const { message } = App.useApp();
+  const { token } = theme.useToken();
   const queryClient = useQueryClient();
   const [periodId, setPeriodId] = useState<number>();
   const [receiving, setReceiving] = useState<CashHeld | null>(null);
@@ -136,28 +141,26 @@ export function CompanyOverviewPage() {
       <Space style={{ marginBottom: 16 }}>
         <PeriodSelect value={periodId} onChange={setPeriodId} />
       </Space>
-      {loadError && <Alert type="error" showIcon message={errorText(loadError)} style={{ marginBottom: 12 }} />}
+      {loadError && <ErrorBlock error={loadError} />}
       <Row gutter={[16, 16]}>
         <Col xs={24} md={8}>
           <RingCard
             loading={work.isLoading}
-            color="#175cd3"
+            color={token[rateBand(households.total ? (households.paid / households.total) * 100 : 0)]}
             percent={households.total ? (households.paid / households.total) * 100 : 0}
             hasData={households.total > 0}
             label="Số hộ đã thu"
             onOpen={showPaidHouseholds}
             value={`${households.paid}/${households.total} hộ`}
             note={
-              <>
-                {households.areas} tổ · phải thu <MoneyText value={row?.due ?? 0} />
-              </>
+`${households.areas} tổ`
             }
           />
         </Col>
         <Col xs={24} md={8}>
           <RingCard
             loading={ledger.isLoading}
-            color={row?.lowCollectionRate ? '#b42318' : '#16794a'}
+            color={token[rateBand(row?.collectionRate ?? 0)]}
             percent={row?.collectionRate ?? 0}
             hasData={!!row}
             label="Số tiền đã thu"
@@ -173,8 +176,8 @@ export function CompanyOverviewPage() {
         <Col xs={24} md={8}>
           <RingCard
             loading={ledger.isLoading}
-            color="#0b3a67"
-            percent={row?.remittedRate ?? 0}
+            color={token[rateBand(cappedRate(row?.remittedRate ?? 0))]}
+            percent={cappedRate(row?.remittedRate ?? 0)}
             hasData={!!row}
             label="Số tiền đã nộp về xã"
             onOpen={() => setTab('receipts')}
@@ -182,13 +185,8 @@ export function CompanyOverviewPage() {
             note={
               row ? (
                 <Space size={4} wrap>
-                  <span>{row.receiptCount} biên nhận · còn <MoneyText value={row.remaining} /></span>
-                  <Tag color={PROGRESS_COLORS[row.progress]}>{PROGRESS_LABELS[row.progress]}</Tag>
-                  {row.previousDebt > 0 && (
-                    <Typography.Text type="danger">
-                      Nợ kỳ trước <MoneyText value={row.previousDebt} />
-                    </Typography.Text>
-                  )}
+                  <span>{row.receiptCount} phiếu thu</span>
+                  <StatusTag tone={PROGRESS_TONES[row.progress]}>{PROGRESS_LABELS[row.progress]}</StatusTag>
                 </Space>
               ) : (
                 'Kỳ này công ty chưa có khoản phải thu'
@@ -197,14 +195,17 @@ export function CompanyOverviewPage() {
           />
         </Col>
       </Row>
-      <Card size="small" className="section-card" style={{ marginTop: 16 }} title="Theo tài khoản người đi thu">
+      <div style={{ marginTop: 16 }}>
+        <LedgerStats rows={ledger.data ?? []} show={['retained', 'payable', 'remaining', 'previousDebt']} />
+      </div>
+      <Card size="small" className="section-card" title="Theo tài khoản người đi thu">
         <Table<CollectorRow>
           size="small"
           rowKey="collectorId"
           loading={cash.isLoading}
           dataSource={collectorRows}
           pagination={false}
-          locale={{ emptyText: 'Công ty chưa có người đi thu' }}
+          locale={{ emptyText: <EmptyBlock title="Công ty chưa có người đi thu" hint="Quản trị tạo tài khoản người đi thu, sau đó phân tổ ở tab Phân tổ." /> }}
           columns={[
             {
               title: 'Tài khoản',
@@ -261,11 +262,11 @@ export function CompanyOverviewPage() {
               title: 'Trạng thái',
               render: (_, c) =>
                 c.held <= 0 ? (
-                  <Tag color="green">Đã nộp đủ</Tag>
-                ) : c.handedOver > 0 ? (
-                  <Tag color="gold">Còn giữ tiền mặt</Tag>
+                  <StatusTag tone="success">Đã bàn giao đủ</StatusTag>
                 ) : (
-                  <Tag color="red">Chưa nộp về công ty</Tag>
+                  <StatusTag tone="warning">
+                    Đang giữ <MoneyText value={c.held} />
+                  </StatusTag>
                 ),
             },
             {
@@ -291,7 +292,7 @@ export function CompanyOverviewPage() {
         loading={handovers.isLoading}
         dataSource={handovers.data ?? []}
         pagination={{ pageSize: 20, hideOnSinglePage: true }}
-        locale={{ emptyText: 'Chưa nhận tiền mặt lần nào' }}
+        locale={{ emptyText: <EmptyBlock title="Chưa nhận tiền mặt lần nào" hint="Khi người đi thu nộp tiền mặt, bấm Nhận tiền mặt ở bảng trên." /> }}
         columns={[
           { title: 'Mã', dataIndex: 'code' },
           { title: 'Ngày', dataIndex: 'handoverDate', render: (d: string) => <DateText value={d} /> },

@@ -54,7 +54,7 @@ class LedgerApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$[0].chargeCount").value(4))
                 .andExpect(jsonPath("$[0].collected").value(80_000))
                 .andExpect(jsonPath("$[0].received").value(0))
-                .andExpect(jsonPath("$[0].remaining").value(80_000))
+                .andExpect(jsonPath("$[0].remaining").value(320_000))
                 .andExpect(jsonPath("$[0].gap").value(-80_000))
                 .andExpect(jsonPath("$[0].collectionRate").value(25.0))
                 .andExpect(jsonPath("$[0].lowCollectionRate").value(true))
@@ -69,17 +69,31 @@ class LedgerApiIT extends IntegrationTest {
     @Test
     void companyKeepsTheCollectionPartAndRemitsOnlyTheTransportPart() throws Exception {
         // Xã chốt 03/10: công ty cầm lại phần thu gom, chỉ nộp phần vận chuyển. Biểu giá 57.000 thu gom + 23.000 vận chuyển.
-        // Phần thu gom chụp trên khoản lúc phát hành, nên đặt thẳng trên khoản (cùng giá trị biểu giá 57.000 + 23.000).
-        jdbc.update("update charges set collection_amount = 57000 where amount = 80000");
+        jdbc.update("update tariff_rates set collection_fee = 57000, transport_fee = 23000 where tariff_group = 'HH_3_PLUS'");
 
         ledger(fx.officer)
                 .andExpect(jsonPath("$[0].due").value(320_000))
-                .andExpect(jsonPath("$[0].collected").value(80_000))
-                .andExpect(jsonPath("$[0].retained").value(57_000))
-                .andExpect(jsonPath("$[0].payable").value(23_000))
-                .andExpect(jsonPath("$[0].remaining").value(23_000))
-                .andExpect(jsonPath("$[1].retained").value(0))
-                .andExpect(jsonPath("$[1].payable").value(0));
+                .andExpect(jsonPath("$[0].retained").value(228_000))
+                .andExpect(jsonPath("$[0].payable").value(92_000))
+                .andExpect(jsonPath("$[0].remaining").value(92_000))
+                // QĐ-L15: đã thu 80.000 (thu gom 57.000, vận chuyển 23.000), chưa nộp: thiếu 23.000, không phải 80.000 + giữ lại.
+                .andExpect(jsonPath("$[0].gap").value(-23_000))
+                .andExpect(jsonPath("$[1].retained").value(114_000))
+                .andExpect(jsonPath("$[1].payable").value(46_000));
+    }
+
+    @Test
+    void exemptChargesAreOutOfTheHouseholdCountDenominator() throws Exception {
+        // DV01 có 4 khoản; một khoản miễn giảm thì chỉ còn 3 khoản cần thu, vẫn đếm 1 hộ miễn.
+        jdbc.update("update charges set status = 'EXEMPT', amount = 0 where id = (select min(id) from charges"
+                + " where company_id = ? and id <> ?)", fx.dv01.getId(), fx.chargeId("DTH-H000001"));
+
+        ledger(fx.officer).andExpect(jsonPath("$[0].chargeCount").value(3));
+        mvc.perform(get("/api/remittance/area-progress").param("periodId", fx.october.getId().toString())
+                .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer)))
+                // DV01 có thể trải nhiều tổ: kiểm tổng trên mọi dòng thay vì giả định một dòng.
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].exemptCount",
+                        org.hamcrest.Matchers.hasItem(1)));
     }
 
     @Test

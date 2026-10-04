@@ -25,6 +25,8 @@ export function CreateApprovalModal({ target, onClose }: Props) {
   const create = useCreateApproval();
   const charge = target?.charge;
   const refund = target?.type === 'REFUND';
+  // ChargeDto chưa có paidAmount: khoản Đã thu đã thu đủ số tiền, nên hạn mức hoàn = số tiền − đã hoàn (backend vẫn kiểm lại, BR-LD-05).
+  const refundable = charge ? charge.amount - charge.refunded : 0;
 
   function close() {
     create.reset();
@@ -69,7 +71,7 @@ export function CreateApprovalModal({ target, onClose }: Props) {
         form={form}
         layout="vertical"
         preserve={false}
-        initialValues={{ amount: refund ? charge?.amount : undefined }}
+        initialValues={{ amount: refund ? refundable : undefined }}
         onFinish={(v) =>
           create.mutate(
             {
@@ -92,10 +94,11 @@ export function CreateApprovalModal({ target, onClose }: Props) {
           <Form.Item
             name="amount"
             label="Số tiền hoàn"
+            extra={charge && charge.refunded > 0 ? `Khoản này đã hoàn ${formatMoney(charge.refunded)}; tối đa hoàn thêm ${formatMoney(refundable)}.` : `Tối đa ${formatMoney(refundable)} (số đã thu).`}
             rules={[
               { required: true, message: 'Vui lòng nhập số tiền hoàn' },
               { type: 'number', min: 1, message: 'Số tiền phải lớn hơn 0' },
-              { type: 'number', max: charge?.amount, message: `Không vượt số tiền khoản (${formatMoney(charge?.amount)})` },
+              { type: 'number', max: refundable, message: `Không vượt số đã thu còn lại (${formatMoney(refundable)})` },
             ]}
           >
             <InputNumber<number>

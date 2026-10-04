@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { Alert, Button, Card, Empty, Image, Input, List, Result, Select, Space, Spin, Tag, Typography } from 'antd';
+import { Button, Card, Image, Input, List, Result, Select, Space, Typography } from 'antd';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 
@@ -7,6 +7,9 @@ import { api, ApiError } from '../../api/client';
 import type { components } from '../../api/schema';
 import { AuthImage } from '../../shared/AuthImage';
 import { DateText } from '../../shared/DateText';
+import { PageHeader } from '../../shared/PageHeader';
+import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../shared/StateBlock';
+import { StatusTag } from '../../shared/StatusTag';
 import {
   MARKET_CATEGORY_LABELS,
   MARKET_STATUS_LABELS,
@@ -20,20 +23,16 @@ type MarketPost = Schemas['MarketPostDto'];
 
 const PAGE_SIZE = 20;
 
-function errorText(e: unknown) {
-  return e instanceof ApiError ? e.message : 'Không tải được dữ liệu. Vui lòng thử lại.';
-}
-
 function PostTags({ post }: { post: MarketPost }) {
   return (
     <Space size={[4, 4]} wrap>
-      <Tag color={post.status === 'OPEN' ? 'green' : 'default'}>{MARKET_STATUS_LABELS[post.status]}</Tag>
+      <StatusTag tone={post.status === 'OPEN' ? 'success' : 'neutral'}>{MARKET_STATUS_LABELS[post.status]}</StatusTag>
       {post.tags.map((t) => (
-        <Tag key={t} color="blue">
+        <StatusTag key={t} tone="info">
           {MARKET_TAG_LABELS[t]}
-        </Tag>
+        </StatusTag>
       ))}
-      <Tag>{MARKET_CATEGORY_LABELS[post.category]}</Tag>
+      <StatusTag>{MARKET_CATEGORY_LABELS[post.category]}</StatusTag>
     </Space>
   );
 }
@@ -75,9 +74,7 @@ export function MarketListPage() {
 
   return (
     <>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        Chợ cộng đồng
-      </Typography.Title>
+      <PageHeader title="Chợ cộng đồng" description="Tin người dân đăng tìm, bán, cho tặng, đổi đồ cũ. Vai trò nội bộ chỉ xem." />
       <Space wrap style={{ marginBottom: 12 }}>
         <Input.Search allowClear placeholder="Tìm theo nội dung" maxLength={100} onSearch={setQ} style={{ width: 240 }} />
         <Select<MarketTag[]>
@@ -112,17 +109,12 @@ export function MarketListPage() {
         />
       </Space>
       {posts.error ? (
-        <Alert
-          type="error"
-          showIcon
-          message={errorText(posts.error)}
-          action={<Button onClick={() => void posts.refetch()}>Thử lại</Button>}
-        />
+        <ErrorBlock error={posts.error} onRetry={() => void posts.refetch()} />
       ) : (
         <List<MarketPost>
           loading={posts.isLoading}
           dataSource={items}
-          locale={{ emptyText: <Empty description="Chưa có tin phù hợp" /> }}
+          locale={{ emptyText: <EmptyBlock title="Chưa có tin phù hợp" hint="Thử bỏ bớt bộ lọc hoặc đổi từ khóa tìm." /> }}
           renderItem={(p) => (
             <List.Item key={p.id} extra={p.photoUrls[0] && <AuthImage path={p.photoUrls[0]} alt={`Ảnh ${p.code}`} size={96} />}>
               <List.Item.Meta
@@ -176,18 +168,13 @@ export function MarketPostPage() {
     </Link>
   );
 
-  if (post.isLoading) return <Spin />;
+  if (post.isLoading) return <LoadingBlock rows={5} />;
   if (post.error) {
     if (post.error instanceof ApiError && post.error.status === 404) {
       return <Result status="404" title="Bài không còn khả dụng" extra={back} />;
     }
     return (
-      <Alert
-        type="error"
-        showIcon
-        message={errorText(post.error)}
-        action={<Button onClick={() => void post.refetch()}>Thử lại</Button>}
-      />
+      <ErrorBlock error={post.error} onRetry={() => void post.refetch()} />
     );
   }
   const p = post.data!;
@@ -214,12 +201,7 @@ export function MarketPostPage() {
       </Card>
       <Card style={{ marginTop: 12 }} title={`Bình luận (${p.commentCount})`}>
         {comments.error ? (
-          <Alert
-            type="error"
-            showIcon
-            message={errorText(comments.error)}
-            action={<Button onClick={() => void comments.refetch()}>Thử lại</Button>}
-          />
+          <ErrorBlock error={comments.error} onRetry={() => void comments.refetch()} />
         ) : (
           <List
             loading={comments.isLoading}

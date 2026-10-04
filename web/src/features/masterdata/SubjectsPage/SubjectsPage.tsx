@@ -1,9 +1,12 @@
-import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
-import { Alert, App, Button, DatePicker, Drawer, Form, Input, Modal, Select, Space, Table, Tag, Typography } from 'antd';
+import { ExclamationCircleOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons';
+import { Alert, App, Button, Checkbox, DatePicker, Drawer, Form, Input, Modal, Select, Space, Table, Tooltip, Typography } from 'antd';
 import type { Dayjs } from 'dayjs';
 import { useState } from 'react';
 
-import { ApiError } from '../../../api/client';
+import { errorTextOrNull } from '../../../shared/errorText';
+import { StatusTag } from '../../../shared/StatusTag';
+import { DateText } from '../../../shared/DateText';
+import { PageHeader } from '../../../shared/PageHeader';
 import {
   SUBJECT_STATUS_COLORS,
   SUBJECT_STATUS_LABELS,
@@ -14,6 +17,7 @@ import {
   type ContractRequest,
   type Subject,
   type SubjectQuery,
+  getSubject,
   useAddContract,
   useAreas,
   useCreateSubject,
@@ -25,10 +29,6 @@ import {
 } from '../api';
 import { ImportSubjectsModal } from './ImportSubjectsModal';
 import { type ProfileSubmit, SubjectProfileForm } from './SubjectProfileForm';
-
-function errorMessage(err: unknown): string {
-  return err instanceof ApiError ? err.message : 'Thao tác không thành công. Vui lòng thử lại.';
-}
 
 type Editing = { mode: 'create' } | { mode: 'edit'; subject: Subject } | null;
 
@@ -58,7 +58,7 @@ function MemberHistory({ subjectId }: { subjectId: number }) {
         pagination={false}
         dataSource={rows}
         columns={[
-          { title: 'Ngày', dataIndex: 'at', render: (v: string) => new Date(v).toLocaleDateString('vi-VN') },
+          { title: 'Ngày', dataIndex: 'at', render: (v: string) => <DateText value={v} /> },
           { title: 'Người sửa', dataIndex: 'by' },
           { title: 'Số người', render: (_, r) => (r.from == null ? `Tạo hồ sơ: ${r.to ?? '—'}` : `${r.from} → ${r.to ?? '—'}`) },
         ]}
@@ -72,7 +72,12 @@ export function SubjectsPage() {
   const { message } = App.useApp();
   const areas = useAreas();
   const [query, setQuery] = useState<SubjectQuery>({ page: 0, size: 20 });
+  const [unnormalizedOnly, setUnnormalizedOnly] = useState(false);
   const subjects = useSubjects(query);
+  const items = subjects.data?.items ?? [];
+  const isUnnormalized = (s: Subject) => s.streetPending || !s.streetId;
+  const unnormalizedCount = items.filter(isUnnormalized).length;
+  const shownItems = unnormalizedOnly ? items.filter(isUnnormalized) : items;
   const create = useCreateSubject();
   const update = useUpdateSubject();
   const addContract = useAddContract();
@@ -109,7 +114,16 @@ export function SubjectsPage() {
       }
       setEditing(null);
     } catch (err) {
-      setSaveError(errorMessage(err));
+      setSaveError(errorTextOrNull(err));
+    }
+  }
+
+  /** Từ cảnh báo nghi trùng: chuyển sang sửa hồ sơ đã có. */
+  async function openExisting(id: number) {
+    try {
+      openEditor({ mode: 'edit', subject: await getSubject(id) });
+    } catch (err) {
+      setSaveError(errorTextOrNull(err));
     }
   }
 
@@ -120,9 +134,20 @@ export function SubjectsPage() {
 
   return (
     <>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        Hồ sơ hộ
-      </Typography.Title>
+      <PageHeader
+        title="Hồ sơ hộ"
+        description="Tìm, thêm, sửa hồ sơ và đăng ký thu phí của hộ, hộ kinh doanh, doanh nghiệp."
+        extra={
+          <Space>
+            <Button icon={<UploadOutlined />} onClick={() => setImporting(true)}>
+              Nhập từ Excel
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => openEditor({ mode: 'create' })}>
+              Thêm hộ
+            </Button>
+          </Space>
+        }
+      />
       <Space wrap style={{ marginBottom: 16 }}>
         <Input.Search
           aria-label="Tìm hồ sơ"
@@ -157,18 +182,16 @@ export function SubjectsPage() {
           onChange={(status?: Subject['status']) => setQuery((prev) => ({ ...prev, status, page: 0 }))}
           options={Object.entries(SUBJECT_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
         />
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => openEditor({ mode: 'create' })}>
-          Thêm hộ
-        </Button>
-        <Button icon={<UploadOutlined />} onClick={() => setImporting(true)}>
-          Nhập từ Excel
-        </Button>
+        <Checkbox checked={unnormalizedOnly} onChange={(e) => setUnnormalizedOnly(e.target.checked)}>
+          Địa chỉ chưa chuẩn hóa ({unnormalizedCount} trên trang)
+        </Checkbox>
       </Space>
       <Table<Subject>
         rowKey="id"
         loading={subjects.isFetching}
-        dataSource={subjects.data?.items ?? []}
-        locale={{ emptyText: subjects.error ? errorMessage(subjects.error) : 'Không có hồ sơ phù hợp' }}
+        dataSource={shownItems}
+        scroll={{ x: 970 }}
+        locale={{ emptyText: subjects.error ? errorTextOrNull(subjects.error) : 'Không có hồ sơ phù hợp' }}
         pagination={{
           current: query.page + 1,
           pageSize: query.size,
@@ -181,33 +204,55 @@ export function SubjectsPage() {
           {
             title: 'Mã',
             dataIndex: 'code',
+            className: 'cell-nowrap',
+            width: 120,
+            fixed: 'left',
             render: (code: string, s) => (
               <Button type="link" style={{ padding: 0 }} onClick={() => openEditor({ mode: 'edit', subject: s })}>
                 {code}
               </Button>
             ),
           },
-          { title: 'Tên', dataIndex: 'name' },
-          { title: 'Loại', dataIndex: 'subjectType', render: (t: Subject['subjectType']) => SUBJECT_TYPE_LABELS[t] },
-          { title: 'Địa chỉ', dataIndex: 'address' },
-          { title: 'Tổ/Ấp/Thôn', dataIndex: 'areaCode' },
-          { title: 'SĐT', dataIndex: 'phone', render: (p: string | null) => p ?? '—' },
+          { title: 'Tên', dataIndex: 'name', width: 150, ellipsis: true },
+          { title: 'Loại', dataIndex: 'subjectType', className: 'cell-nowrap', width: 110, render: (t: Subject['subjectType']) => SUBJECT_TYPE_LABELS[t] },
+          { title: 'Tổ', dataIndex: 'areaCode', className: 'cell-nowrap', width: 80 },
+          {
+            title: 'Địa chỉ',
+            dataIndex: 'address',
+            ellipsis: true,
+            width: 150,
+            render: (address: string, s) => (
+              <>
+                {address}
+                {(s.streetPending || !s.streetId) && (
+                  <Tooltip title={s.streetPending ? 'Đường đang chờ xác minh' : 'Địa chỉ chưa chuẩn hóa theo danh mục đường'}>
+                    <ExclamationCircleOutlined style={{ marginLeft: 8, color: s.streetPending ? '#8a5300' : '#7f8b99' }} aria-label="Địa chỉ cần chuẩn hóa" />
+                  </Tooltip>
+                )}
+              </>
+            ),
+          },
+          { title: 'SĐT', dataIndex: 'phone', className: 'cell-nowrap', width: 110, render: (p: string | null) => p ?? '—' },
           {
             title: 'Nhóm giá',
+            width: 140,
+            ellipsis: true,
             render: (_, s) =>
               s.currentContract ? (
                 <>
                   {TARIFF_GROUP_LABELS[s.currentContract.tariffGroup]}{' '}
-                  {s.currentContract.exempt && <Tag color="purple">Miễn 100%</Tag>}
+                  {s.currentContract.exempt && <StatusTag color="purple">Miễn 100%</StatusTag>}
                 </>
               ) : (
-                <Tag>Chưa đăng ký thu</Tag>
+                <StatusTag>Chưa đăng ký thu</StatusTag>
               ),
           },
           {
             title: 'Trạng thái',
             dataIndex: 'status',
-            render: (st: Subject['status']) => <Tag color={SUBJECT_STATUS_COLORS[st]}>{SUBJECT_STATUS_LABELS[st]}</Tag>,
+            width: 120,
+            className: 'cell-nowrap',
+            render: (st: Subject['status']) => <StatusTag color={SUBJECT_STATUS_COLORS[st]}>{SUBJECT_STATUS_LABELS[st]}</StatusTag>,
           },
         ]}
       />
@@ -234,6 +279,7 @@ export function SubjectsPage() {
             submitting={saving}
             error={saveError}
             onSubmit={save}
+            onOpenExisting={(id) => void openExisting(id)}
             onCancel={() => setEditing(null)}
           />
         )}
@@ -254,7 +300,7 @@ export function SubjectsPage() {
         onOk={() => endForm.submit()}
         destroyOnHidden
       >
-        {endSubject.error && <Alert type="error" showIcon message={errorMessage(endSubject.error)} role="alert" />}
+        {endSubject.error && <Alert type="error" showIcon message={errorTextOrNull(endSubject.error)} role="alert" />}
         <Form
           form={endForm}
           layout="vertical"

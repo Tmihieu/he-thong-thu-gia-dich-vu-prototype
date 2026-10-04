@@ -1,9 +1,10 @@
-import { Alert, App, Button, Popconfirm, Space, Table, Typography } from 'antd';
+import { App, Button, Popconfirm, Space, Table, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 
-import { ApiError } from '../../../api/client';
+import { errorText as apiErrorText } from '../../../shared/errorText';
 import { DateText } from '../../../shared/DateText';
+import { EmptyBlock, ErrorBlock } from '../../../shared/StateBlock';
 import { useActiveAssignments } from '../../masterdata/api';
 import {
   type CollectorAssignment,
@@ -18,9 +19,7 @@ interface Row extends AreaOption {
   assignment: CollectorAssignment | undefined;
 }
 
-function errorText(e: unknown) {
-  return e ? (e instanceof ApiError ? e.message : 'Không thực hiện được. Vui lòng thử lại.') : null;
-}
+const errorText = (e: unknown) => (e ? apiErrorText(e) : null);
 
 /** "Phân tổ": các tổ công ty đang phụ trách → người đi thu hiện tại; gán / đổi / kết thúc. */
 export function CollectorAssignPage() {
@@ -57,15 +56,15 @@ export function CollectorAssignPage() {
           Phân tổ đã chọn ({selected.length})
         </Button>
       </Space>
-      {loadError && <Alert type="error" showIcon message={errorText(loadError)} style={{ marginBottom: 12 }} />}
-      {end.error && <Alert type="error" showIcon role="alert" message={errorText(end.error)} style={{ marginBottom: 12 }} />}
+      {loadError && <ErrorBlock error={loadError} />}
+      {end.error && <ErrorBlock error={end.error} />}
       <Table<Row>
         rowKey="id"
         loading={areas.isLoading || assignments.isLoading}
         dataSource={rows}
         pagination={false}
         rowSelection={{ selectedRowKeys: selected, onChange: (keys) => setSelected(keys as number[]) }}
-        locale={{ emptyText: 'Công ty chưa được giao tổ nào' }}
+        locale={{ emptyText: <EmptyBlock title="Công ty chưa được giao tổ nào" hint="Xã gán khu vực cho công ty ở màn Khu vực, tổ sẽ hiện ở đây để bạn phân người đi thu." /> }}
         columns={[
           { title: 'Tổ', render: (_, r) => `${r.code} · ${r.name}` },
           {

@@ -132,7 +132,7 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   REFUND: 'Hoàn tiền',
 };
 
-/** Loại sai sót biên nhận công ty báo (R28). */
+/** Loại sai sót phiếu thu công ty báo (R28). */
 export const RECEIPT_ISSUE_TYPE_LABELS: Record<ReceiptIssueType, string> = {
   WRONG_AMOUNT: 'Sai số tiền',
   WRONG_PERIOD: 'Sai kỳ thu',

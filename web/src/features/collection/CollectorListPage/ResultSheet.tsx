@@ -4,12 +4,13 @@ import { Alert, App, Button, Drawer, Form, Radio, Select, Typography } from 'ant
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 
-import { api, ApiError } from '../../../api/client';
+import { api } from '../../../api/client';
+import { errorText } from '../../../shared/errorText';
 import { formatMoney } from '../../../shared/format';
 import { MoneyText } from '../../../shared/MoneyText';
 import { type Collector, type CollectorCharge, collectionKeys, type PaymentResult } from '../api';
 
-type Method = 'CASH' | 'TRANSFER';
+export type Method = 'CASH' | 'TRANSFER';
 
 /**
  * Góp ý BA 03/10: người đi thu chỉ đánh dấu đã thu và chọn hình thức, thu đủ số còn thiếu. Vắng nhà / hẹn / từ chối /
@@ -47,10 +48,12 @@ interface Props {
   /** Quản lý công ty ghi thay (T28): chọn người đi thu đã nhận tiền, mặc định người phụ trách tổ. */
   collectors?: Collector[];
   defaultCollectorId?: number;
+  /** Người đi thu bấm thẳng nút "Đã thu tiền mặt / chuyển khoản" trên thẻ hộ: chỉ còn bước xác nhận số tiền. */
+  initialMethod?: Method;
 }
 
 /** Bottom sheet ghi nhận đã thu một hộ: tiền mặt / chuyển khoản, thu đủ số còn thiếu. */
-export function ResultSheet({ item, onClose, collectors, defaultCollectorId }: Props) {
+export function ResultSheet({ item, onClose, collectors, defaultCollectorId, initialMethod }: Props) {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [form] = Form.useForm<Values>();
@@ -71,13 +74,15 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId }: P
     onSuccess: (text) => {
       message.success(text);
       void queryClient.invalidateQueries({ queryKey: collectionKeys.all });
+      // Số công ty đã thu ở sổ công ty–kỳ đổi theo (Tiến độ, Đối soát, màn Công ty).
+      void queryClient.invalidateQueries({ queryKey: ['remittance'] });
       onClose();
     },
   });
 
   useEffect(() => {
-    if (item) form.setFieldsValue({ result: 'CASH', collectorId: defaultCollectorId });
-  }, [item, form, defaultCollectorId]);
+    if (item) form.setFieldsValue({ result: initialMethod ?? 'CASH', collectorId: defaultCollectorId });
+  }, [item, form, defaultCollectorId, initialMethod]);
 
   const remaining = item?.remainingAmount ?? 0;
   return (
@@ -86,7 +91,7 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId }: P
       height="auto"
       open={item !== null}
       onClose={onClose}
-      title="Cập nhật kết quả"
+      title={initialMethod ? TILES.find((t) => t.value === initialMethod)!.label : 'Ghi nhận đã thu'}
       className="clm-sheet"
       destroyOnHidden
       styles={{ body: { paddingBottom: 24 } }}
@@ -102,7 +107,7 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId }: P
           showIcon
           role="alert"
           style={{ marginBottom: 12 }}
-          message={submit.error instanceof ApiError ? submit.error.message : 'Không gửi được. Vui lòng thử lại.'}
+          message={errorText(submit.error, 'Không gửi được. Vui lòng thử lại.')}
         />
       )}
       <Form<Values>
@@ -113,7 +118,7 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId }: P
         }}
         preserve={false}
       >
-        <Form.Item name="result" label="Kết quả" rules={[{ required: true, message: 'Vui lòng chọn kết quả' }]}>
+        <Form.Item name="result" label="Kết quả" hidden={initialMethod !== undefined} rules={[{ required: true, message: 'Vui lòng chọn kết quả' }]}>
           <Radio.Group className="clm-tiles">
             {TILES.map((t) => (
               <Radio.Button key={t.value} value={t.value}>
@@ -143,7 +148,7 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId }: P
             Hủy
           </Button>
           <Button size="large" type="primary" htmlType="submit" loading={submit.isPending}>
-            Lưu kết quả
+            {initialMethod ? `Xác nhận đã thu ${formatMoney(remaining)}` : 'Xác nhận đã thu'}
           </Button>
         </div>
       </Form>

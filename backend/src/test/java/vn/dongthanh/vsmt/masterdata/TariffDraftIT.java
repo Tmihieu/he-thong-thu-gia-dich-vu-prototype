@@ -102,23 +102,22 @@ class TariffDraftIT extends IntegrationTest {
                 .containsExactly("CREATE_TARIFF_DRAFT", "UPDATE_TARIFF_DRAFT", "END_TARIFF_VERSION",
                         "ISSUE_TARIFF_VERSION");
 
-        // Đã ban hành được sửa đơn giá nhưng không ban hành lại.
+        // QĐ-L7: đã ban hành thì không sửa đơn giá, cũng không ban hành lại.
         mvc.perform(put("/api/masterdata/tariffs/" + id).header(HttpHeaders.AUTHORIZATION, admin)
                 .contentType(MediaType.APPLICATION_JSON).content(draft("2027-01-01", 1)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.rates[0].collectionFee").value(1))
-                .andExpect(jsonPath("$.status").value("ACTIVE"));
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("TARIFF_NOT_DRAFT"));
         assertThat(jdbc.queryForObject("select count(*) from audit_logs where action = 'UPDATE_TARIFF_VERSION'",
-                Integer.class)).isEqualTo(1);
+                Integer.class)).isZero();
         issue(admin, id).andExpect(status().isUnprocessableEntity());
     }
 
     @Test
-    void issuedValidityCannotChangeAndOnlyAdminCanEdit() throws Exception {
+    void issuedTariffCannotBeEditedAndOnlyAdminCanEdit() throws Exception {
         mvc.perform(put("/api/masterdata/tariffs/" + bg65.getId()).header(HttpHeaders.AUTHORIZATION, admin)
                 .contentType(MediaType.APPLICATION_JSON).content(draft("2026-10-01", 50_000)))
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("TARIFF_VALIDITY_LOCKED"));
+                .andExpect(jsonPath("$.code").value("TARIFF_NOT_DRAFT"));
         mvc.perform(put("/api/masterdata/tariffs/" + bg65.getId())
                 .header(HttpHeaders.AUTHORIZATION, token("officer_edit", Role.COMMUNE_OFFICER))
                 .contentType(MediaType.APPLICATION_JSON).content(draft("2026-09-01", 50_000)))

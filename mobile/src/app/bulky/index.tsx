@@ -1,29 +1,29 @@
 import { router } from 'expo-router';
 
-import { ApiError } from '../../api/client';
-import { BulkyCard } from '../../features/bulky/BulkyCard';
+import { BulkyRow } from '../../features/bulky/BulkyCard';
 import { useBulkyRequests } from '../../features/citizen/api';
-import { Button, Card, Empty, ErrorBox, Loading, Screen } from '../../shared/ui';
+import { Button, EmptyState, ListGroup, ListScreen } from '../../shared/ui';
 
 export default function BulkyListScreen() {
   const list = useBulkyRequests();
 
   return (
-    <Screen refreshing={list.isFetching && !list.isPending} onRefresh={() => void list.refetch()}>
-      <Button title="Đăng ký mới" onPress={() => router.push('/bulky/new')} />
-      {list.isPending ? <Loading /> : null}
-      {list.error ? (
-        <ErrorBox
-          message={list.error instanceof ApiError ? list.error.message : 'Không tải được danh sách yêu cầu.'}
-          onRetry={() => void list.refetch()}
-        />
-      ) : null}
-      {list.data?.length === 0 ? (
-        <Card>
-          <Empty>Bạn chưa đăng ký thu gom rác cồng kềnh.</Empty>
-        </Card>
-      ) : null}
-      {list.data?.map((r) => <BulkyCard key={r.id} r={r} />)}
-    </Screen>
+    <ListScreen
+      data={list.data}
+      keyOf={(r) => String(r.id)}
+      render={(r) => (
+        <ListGroup>
+          <BulkyRow r={r} />
+        </ListGroup>
+      )}
+      isPending={list.isPending}
+      error={list.error}
+      fallbackError="Không tải được danh sách yêu cầu."
+      onRetry={() => void list.refetch()}
+      refreshing={list.isFetching && !list.isPending}
+      onRefresh={() => void list.refetch()}
+      empty={<EmptyState icon="cube-outline" title="Bạn chưa đăng ký thu gom rác cồng kềnh" message="Nệm, tủ, sofa, thiết bị điện lớn, xà bần: công ty thu gom báo phí rồi hẹn ngày đến lấy." />}
+      footer={<Button title="Đăng ký thu gom mới" icon="add-circle-outline" onPress={() => router.push('/bulky/new')} />}
+    />
   );
 }

@@ -18,6 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
+import vn.dongthanh.vsmt.collection.domain.CollectorAssignmentRepository;
+import vn.dongthanh.vsmt.masterdata.domain.ActiveStatus;
+import vn.dongthanh.vsmt.masterdata.domain.AddressText;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
 import vn.dongthanh.vsmt.masterdata.domain.AreaRepository;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
@@ -27,9 +30,12 @@ import vn.dongthanh.vsmt.masterdata.domain.ServiceContractRepository;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubject;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubjectRepository;
 import vn.dongthanh.vsmt.masterdata.domain.SubjectStatus;
+import vn.dongthanh.vsmt.masterdata.domain.Street;
+import vn.dongthanh.vsmt.masterdata.domain.StreetRepository;
 import vn.dongthanh.vsmt.masterdata.domain.SubjectType;
 import vn.dongthanh.vsmt.masterdata.domain.TariffGroup;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
+import vn.dongthanh.vsmt.platform.common.ConflictException;
 import vn.dongthanh.vsmt.platform.common.NotFoundException;
 import vn.dongthanh.vsmt.platform.domain.Role;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
@@ -50,14 +56,21 @@ public class SubjectService {
     private final ServiceSubjectRepository subjects;
     private final ServiceContractRepository contracts;
     private final AreaRepository areas;
+    private final StreetRepository streets;
     private final AreaAssignmentService assignments;
     private final AuditService audit;
     private final ApplicationEventPublisher events;
     private final CollectionPeriodRepository periods;
     private final Clock clock;
+    private final CollectorAssignmentRepository collectorAssignments;
 
+    /**
+     * @param streetId        đường chuẩn trong danh mục; null thì {@code street} là tên tạm (chờ xác minh) hoặc địa chỉ cũ
+     * @param duplicateReason lý do xác nhận "là hộ khác" khi địa chỉ nghi trùng hồ sơ có sẵn
+     */
     public record SubjectCommand(SubjectType type, String name, String houseNo, String street, Long areaId, String phone,
-            Integer memberCount, String representativeName, String taxCode, String note) {
+            Integer memberCount, String representativeName, String taxCode, String note, Long streetId,
+            boolean streetPending, String unitNo, String locationNote, String duplicateReason) {
     }
 
     public record ContractCommand(TariffGroup tariffGroup, LocalDate validFrom, LocalDate validTo, boolean exempt,
@@ -79,8 +92,13 @@ public class SubjectService {
         int digits = 7 - cmd.type().codePrefix().length();
         String code = prefix + String.format("%0" + digits + "d", subjects.maxCodeNumber(prefix) + 1);
 
+        Street street = resolveStreet(cmd, area, null);
+        List<ServiceSubject> twins = suspectedDuplicates(area.getId(), street, cmd.houseNo(), cmd.unitNo(), null);
+        requireDuplicateReason(twins, cmd);
+
         ServiceSubject subject = ServiceSubject.create(code, cmd.type(), cmd.name().trim(), blankToNull(cmd.houseNo()),
-                cmd.street().trim(), area);
+                street != null ? street.getName() : cmd.street().trim(), area);
+        applyAddress(subject, cmd, street);
         apply(subject, cmd, area);
         if (contract != null) {
             requireGroupFits(subject, contract);
@@ -90,7 +108,8 @@ public class SubjectService {
             subject.setStatus(SubjectStatus.ACTIVE);
         }
         ServiceSubject saved = subjects.save(subject);
-        audit.record(actor, "CREATE_SUBJECT", SUBJECT, saved.getCode(), null, snapshot(saved));
+        audit.record(actor, "CREATE_SUBJECT", SUBJECT, saved.getCode(), null,
+                withDuplicateNote(snapshot(saved), twins, cmd));
         if (contract != null) {
             saveContract(saved, contract, actor);
         }
@@ -101,12 +120,20 @@ public class SubjectService {
         actor.requireRole(Role.COMMUNE_OFFICER);
         ServiceSubject subject = find(id);
         Map<String, Object> before = snapshot(subject);
+        Area area = area(cmd.areaId());
+        Street street = resolveStreet(cmd, area, subject);
+        // Chỉ hỏi lại khi địa chỉ đổi: sửa SĐT của hộ vốn đã trùng không bị chặn lại.
+        List<ServiceSubject> twins = addressKey(subject).equals(addressKey(area.getId(), street, cmd.houseNo(), cmd.unitNo()))
+                ? List.of()
+                : suspectedDuplicates(area.getId(), street, cmd.houseNo(), cmd.unitNo(), subject.getId());
+        requireDuplicateReason(twins, cmd);
         Integer membersBefore = subject.getMemberCount();
         subject.setSubjectType(cmd.type());
         subject.setName(cmd.name().trim());
-        subject.setAddressParts(blankToNull(cmd.houseNo()), cmd.street().trim());
-        apply(subject, cmd, area(cmd.areaId()));
-        audit.record(actor, "UPDATE_SUBJECT", SUBJECT, subject.getCode(), before, snapshot(subject));
+        applyAddress(subject, cmd, street);
+        apply(subject, cmd, area);
+        audit.record(actor, "UPDATE_SUBJECT", SUBJECT, subject.getCode(), before,
+                withDuplicateNote(snapshot(subject), twins, cmd));
         syncHouseholdGroup(subject, membersBefore, actor);
         return subject;
     }
@@ -126,10 +153,16 @@ public class SubjectService {
                 .max(Comparator.naturalOrder()).map(d -> d.plusDays(1)).orElse(null);
         for (ServiceContract c : contracts.findBySubjectIdOrderByValidFromDesc(subject.getId())) {
             boolean householdGroup = c.getTariffGroup() == TariffGroup.HH_UP_TO_2 || c.getTariffGroup() == TariffGroup.HH_3_PLUS;
-            if (c.getValidTo() != null || !householdGroup || c.getTariffGroup() == expected) {
+            // Đăng ký có ngày kết thúc ở tương lai vẫn đang hiệu lực: cũng phải đổi nhóm (chỉ bỏ đăng ký đã hết).
+            boolean closed = c.getValidTo() != null && c.getValidTo().isBefore(LocalDate.now(clock));
+            if (closed || !householdGroup || c.getTariffGroup() == expected) {
                 continue;
             }
             Map<String, Object> before = snapshot(c);
+            LocalDate originalEnd = c.getValidTo();
+            if (effective != null && originalEnd != null && originalEnd.isBefore(effective)) {
+                continue; // hết hiệu lực trước kỳ sau: không còn gì để nối tiếp
+            }
             if (effective == null || !c.getValidFrom().isBefore(effective)) {
                 c.change(expected, c.getValidFrom(), c.getValidTo(), c.isExempt(), c.getExemptReason(), c.getExemptDecisionNo());
                 audit.record(actor, "UPDATE_CONTRACT", CONTRACT, c.getContractNo(), before, snapshot(c));
@@ -137,7 +170,7 @@ public class SubjectService {
                 c.closeOn(effective.minusDays(1));
                 audit.record(actor, "UPDATE_CONTRACT", CONTRACT, c.getContractNo(), before, snapshot(c));
                 // Hợp đồng nối tiếp giữ nguyên miễn giảm và định mức; không phát lại sự kiện miễn để khỏi tạo đề nghị trùng.
-                createContract(subject, new ContractCommand(expected, effective, null, c.isExempt(), c.getExemptReason(),
+                createContract(subject, new ContractCommand(expected, effective, originalEnd, c.isExempt(), c.getExemptReason(),
                         c.getExemptDecisionNo(), c.getNote(), c.getQuotaKg()), actor, false);
             }
         }
@@ -176,7 +209,7 @@ public class SubjectService {
     public ServiceContract updateContract(Long contractId, ContractCommand cmd, CurrentUser actor) {
         actor.requireRole(Role.COMMUNE_OFFICER);
         ServiceContract contract = contracts.findById(contractId)
-                .orElseThrow(() -> new NotFoundException("CONTRACT_NOT_FOUND", "Không tìm thấy hợp đồng."));
+                .orElseThrow(() -> new NotFoundException("CONTRACT_NOT_FOUND", "Không tìm thấy đăng ký thu phí."));
         requireNoOverlap(contract.getSubject().getId(), cmd.validFrom(), cmd.validTo(), contract.getId());
         requireGroupFits(contract.getSubject(), cmd);
         Map<String, Object> before = snapshot(contract);
@@ -199,6 +232,11 @@ public class SubjectService {
                 assignments.companyOf(subject.getArea().getId(), LocalDate.now()).orElse(null), actor.companyId())) {
             throw notFound();
         }
+        // BR-GEN-04: người đi thu chỉ đọc hộ trong tổ được giao, không phải mọi hộ của công ty.
+        if (actor.role() == Role.COLLECTOR
+                && !collectorAssignments.findAreaIdsOf(actor.id(), LocalDate.now()).contains(subject.getArea().getId())) {
+            throw notFound();
+        }
         return subject;
     }
 
@@ -208,6 +246,10 @@ public class SubjectService {
         List<Long> areaIds = scoped
                 ? assignments.activeOn(LocalDate.now(), actor).stream().map(a -> a.getArea().getId()).toList()
                 : List.of();
+        if (actor.role() == Role.COLLECTOR) {
+            List<Long> mine = collectorAssignments.findAreaIdsOf(actor.id(), LocalDate.now());
+            areaIds = areaIds.stream().filter(mine::contains).toList();
+        }
         if (scoped && areaIds.isEmpty()) {
             return Page.empty(page);
         }
@@ -270,18 +312,19 @@ public class SubjectService {
                 .filter(c -> c.overlaps(from, to))
                 .findFirst()
                 .ifPresent(c -> {
-                    throw new BusinessRuleException("CONTRACT_OVERLAP", "Đối tượng đã có hợp đồng " + c.getContractNo()
+                    throw new BusinessRuleException("CONTRACT_OVERLAP", "Đối tượng đã có đăng ký thu phí " + c.getContractNo()
                             + " còn hiệu lực trong khoảng thời gian này.");
                 });
     }
 
     /**
      * Nhóm giá hộ gia đình phải khớp số thành viên hiện tại: ≤2 người → {@code HH_UP_TO_2}, ≥3 → {@code HH_3_PLUS}.
-     * Chỉ kiểm hợp đồng chưa có ngày kết thúc: hợp đồng đã đóng phản ánh số thành viên lúc đó.
+     * Chỉ bỏ qua hợp đồng đã hết hiệu lực (ngày kết thúc trước hôm nay): hợp đồng đã đóng phản ánh số thành viên lúc đó.
      */
-    private static void requireGroupFits(ServiceSubject s, ContractCommand cmd) {
+    private void requireGroupFits(ServiceSubject s, ContractCommand cmd) {
         boolean householdGroup = cmd.tariffGroup() == TariffGroup.HH_UP_TO_2 || cmd.tariffGroup() == TariffGroup.HH_3_PLUS;
-        if (!householdGroup || cmd.validTo() != null) {
+        // Đăng ký có ngày kết thúc ở tương lai vẫn còn hiệu lực nên phải khớp; chỉ đăng ký đã hết mới là lịch sử.
+        if (!householdGroup || (cmd.validTo() != null && cmd.validTo().isBefore(LocalDate.now(clock)))) {
             return;
         }
         if (s.getSubjectType() != SubjectType.HOUSEHOLD) {
@@ -292,6 +335,93 @@ public class SubjectService {
             throw new BusinessRuleException("TARIFF_GROUP_MISMATCH", "Hộ có " + s.getMemberCount()
                     + " thành viên phải áp nhóm " + (expected == TariffGroup.HH_UP_TO_2 ? "≤2 người" : "từ 3 người") + ".");
         }
+    }
+
+    /** Hồ sơ nghi trùng địa chỉ với địa chỉ đang nhập (kể cả đã ngừng), cho màn hình cảnh báo. */
+    @Transactional(readOnly = true)
+    public List<ServiceSubject> findSuspectedDuplicates(Long areaId, Long streetId, String houseNo, String unitNo,
+            Long excludeSubjectId, CurrentUser actor) {
+        actor.requireRole(Role.COMMUNE_OFFICER);
+        Area area = area(areaId);
+        Street street = streetId == null ? null : resolveStreet(streetId, area, null);
+        return suspectedDuplicates(area.getId(), street, houseNo, unitNo, excludeSubjectId);
+    }
+
+    /**
+     * Cùng tổ/ấp + đường chuẩn + số nhà chuẩn hóa (giữ "/" và hậu tố), phân biệt thêm theo phòng/căn nếu cả hai đều
+     * có. Số nhà trống hoặc chưa chọn đường chuẩn thì không phải bằng chứng: trả rỗng. Chỉ là dấu hiệu, không chặn tuyệt đối.
+     */
+    private List<ServiceSubject> suspectedDuplicates(Long areaId, Street street, String houseNo, String unitNo,
+            Long excludeId) {
+        String house = AddressText.houseKey(houseNo);
+        if (street == null || house.isEmpty()) {
+            return List.of();
+        }
+        String unit = AddressText.unitKey(unitNo);
+        return subjects.findByAddressSlot(areaId, street.getId(), excludeId).stream()
+                .filter(o -> house.equals(AddressText.houseKey(o.getHouseNo())))
+                .filter(o -> {
+                    String ou = AddressText.unitKey(o.getUnitNo());
+                    return unit.isEmpty() || ou.isEmpty() || unit.equals(ou);
+                }).toList();
+    }
+
+    private static void requireDuplicateReason(List<ServiceSubject> twins, SubjectCommand cmd) {
+        if (!twins.isEmpty() && blankToNull(cmd.duplicateReason()) == null) {
+            throw new ConflictException("DUPLICATE_SUSPECTED", "Địa chỉ này trùng với hồ sơ "
+                    + String.join(", ", twins.stream().map(ServiceSubject::getCode).toList())
+                    + ". Mở hồ sơ đã có, hoặc ghi lý do xác nhận đây là hộ khác.");
+        }
+    }
+
+    private static Map<String, Object> withDuplicateNote(Map<String, Object> snapshot, List<ServiceSubject> twins,
+            SubjectCommand cmd) {
+        if (!twins.isEmpty()) {
+            snapshot.put("duplicateReason", cmd.duplicateReason().trim());
+            snapshot.put("duplicateOf", twins.stream().map(ServiceSubject::getCode).toList());
+        }
+        return snapshot;
+    }
+
+    private static String addressKey(ServiceSubject s) {
+        return addressKey(s.getArea().getId(), s.getStreetRef(), s.getHouseNo(), s.getUnitNo());
+    }
+
+    private static String addressKey(Long areaId, Street street, String houseNo, String unitNo) {
+        return areaId + "|" + (street == null ? "" : street.getId()) + "|" + AddressText.houseKey(houseNo) + "|"
+                + AddressText.unitKey(unitNo);
+    }
+
+    private Street resolveStreet(SubjectCommand cmd, Area area, ServiceSubject existing) {
+        if (cmd.streetId() == null) {
+            if (cmd.street() == null || cmd.street().isBlank()) {
+                throw new BusinessRuleException("STREET_REQUIRED",
+                        "Chọn đường trong danh mục hoặc nhập tên đường chờ xác minh.");
+            }
+            return null;
+        }
+        return resolveStreet(cmd.streetId(), area, existing);
+    }
+
+    /** Đường phải cùng xã/phường với tổ/ấp; đường đã tạm ngưng chỉ giữ được nếu hồ sơ đang dùng sẵn. */
+    private Street resolveStreet(Long streetId, Area area, ServiceSubject existing) {
+        Street street = streets.findByIdWithDistrict(streetId)
+                .orElseThrow(() -> new NotFoundException("STREET_NOT_FOUND", "Không tìm thấy đường trong danh mục."));
+        if (!street.getDistrict().getId().equals(area.getDistrict().getId())) {
+            throw new BusinessRuleException("STREET_DISTRICT_MISMATCH", "Đường " + street.getName() + " thuộc "
+                    + street.getDistrict().getName() + ", không cùng xã/phường với tổ/ấp đã chọn.");
+        }
+        boolean kept = existing != null && existing.getStreetRef() != null
+                && existing.getStreetRef().getId().equals(streetId);
+        if (street.getStatus() != ActiveStatus.ACTIVE && !kept) {
+            throw new BusinessRuleException("STREET_INACTIVE", "Đường " + street.getName() + " đã tạm ngưng trong danh mục.");
+        }
+        return street;
+    }
+
+    private static void applyAddress(ServiceSubject s, SubjectCommand cmd, Street street) {
+        s.setStructuredAddress(blankToNull(cmd.houseNo()), blankToNull(cmd.unitNo()), blankToNull(cmd.locationNote()),
+                street, cmd.street() == null ? null : cmd.street().trim(), cmd.streetPending());
     }
 
     private void apply(ServiceSubject s, SubjectCommand cmd, Area area) {
@@ -329,6 +459,10 @@ public class SubjectService {
         m.put("name", s.getName());
         m.put("houseNo", s.getHouseNo());
         m.put("street", s.getStreet());
+        m.put("streetId", s.getStreetRef() == null ? null : s.getStreetRef().getId());
+        m.put("streetPending", s.isStreetPending());
+        m.put("unitNo", s.getUnitNo());
+        m.put("locationNote", s.getLocationNote());
         m.put("area", s.getArea().getCode());
         m.put("phone", s.getPhone());
         m.put("status", s.getStatus());

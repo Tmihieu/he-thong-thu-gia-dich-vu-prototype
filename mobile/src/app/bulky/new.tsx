@@ -1,31 +1,16 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { ApiError } from '../../api/client';
 import { ADDRESS_MAX, isoDate, nextDays, shortDayLabel, validateBulky, type BulkyErrors } from '../../features/bulky/validate';
 import { useCreateBulky, useProfile } from '../../features/citizen/api';
 import { PhotoPickerField } from '../../features/photos/PhotoPickerField';
 import type { UploadedPhoto } from '../../features/photos/photos';
+import { errorMessage } from '../../shared/errors';
 import { BULKY_ITEM_LABELS, DAY_SLOT_LABELS, type BulkyItemType, type DaySlot } from '../../shared/labels';
-import { colors, radius, spacing } from '../../shared/theme';
-import { Button, Card, CardTitle, ErrorBox, Muted, Screen } from '../../shared/ui';
+import { Button, Callout, Card, CardTitle, Chip, ChoiceGroup, Field, InlineError, Muted, Screen } from '../../shared/ui';
 
 const ITEM_TYPES = Object.keys(BULKY_ITEM_LABELS) as BulkyItemType[];
 const SLOTS = Object.keys(DAY_SLOT_LABELS) as DaySlot[];
-
-function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={[styles.chip, selected && styles.chipSelected]}
-    >
-      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
-    </Pressable>
-  );
-}
 
 /** Form đăng ký như prototype `citizenBulkyNew`: loại, số lượng, địa chỉ (mặc định địa chỉ hộ), ngày, buổi, ảnh. */
 export default function NewBulkyScreen() {
@@ -52,6 +37,7 @@ export default function NewBulkyScreen() {
   const clear = (key: keyof BulkyErrors) => setErrors((e) => ({ ...e, [key]: undefined }));
 
   const onSubmit = () => {
+    if (create.isPending) return;
     const found = validateBulky({ itemType, quantity, address, preferredDate }, today);
     setErrors(found);
     if (Object.keys(found).length > 0 || !itemType || !preferredDate) return;
@@ -70,74 +56,84 @@ export default function NewBulkyScreen() {
   };
 
   return (
-    <Screen>
-      <Card style={styles.notice}>
-        <Text style={styles.noticeText}>
-          Áp dụng cho nệm, tủ, sofa, thiết bị điện lớn, xà bần. {profile.data?.company?.name ?? 'Công ty thu gom'} báo phí trước
-          khi đến; phí trả trực tiếp cho công ty khi thu gom.
-        </Text>
-      </Card>
+    <Screen
+      footer={
+        <>
+          {create.error ? <InlineError message={errorMessage(create.error, 'Gửi không thành công. Vui lòng thử lại.')} /> : null}
+          {photosBusy ? <Muted>Đang tải ảnh lên, chờ xong rồi gửi.</Muted> : null}
+          <Button title="Gửi đăng ký" onPress={onSubmit} loading={create.isPending} disabled={photosBusy} />
+        </>
+      }
+    >
+      <Callout tone="info">
+        Áp dụng cho nệm, tủ, sofa, thiết bị điện lớn, xà bần. {profile.data?.company?.name ?? 'Công ty thu gom'} báo phí trước khi đến; phí trả trực tiếp cho công ty khi thu gom.
+      </Callout>
 
       <Card>
-        <CardTitle>Loại vật dụng *</CardTitle>
-        <View style={styles.chips}>
+        <ChoiceGroup label="Loại vật dụng *" error={errors.itemType}>
           {ITEM_TYPES.map((t) => (
-            <Chip key={t} label={BULKY_ITEM_LABELS[t]} selected={t === itemType} onPress={() => { setItemType(t); clear('itemType'); }} />
+            <Chip
+              key={t}
+              label={BULKY_ITEM_LABELS[t]}
+              selected={t === itemType}
+              onPress={() => {
+                setItemType(t);
+                clear('itemType');
+              }}
+            />
           ))}
-        </View>
-        {errors.itemType ? <Text style={styles.error}>{errors.itemType}</Text> : null}
-        <TextInput
-          accessibilityLabel="Mô tả vật dụng"
-          style={styles.input}
+        </ChoiceGroup>
+        <Field
+          label="Mô tả vật dụng"
           value={description}
           onChangeText={setDescription}
           placeholder="Ví dụ: Nệm cũ 1m6 + 2 ghế hỏng"
-          placeholderTextColor={colors.textMuted}
           maxLength={255}
         />
-      </Card>
-
-      <Card>
-        <CardTitle>Số lượng ước tính *</CardTitle>
-        <TextInput
-          accessibilityLabel="Số lượng"
-          style={styles.input}
+        <Field
+          label="Số lượng ước tính *"
+          error={errors.quantity}
           value={quantity}
-          onChangeText={(v) => { setQuantity(v); clear('quantity'); }}
+          onChangeText={(v) => {
+            setQuantity(v);
+            clear('quantity');
+          }}
           keyboardType="number-pad"
           maxLength={2}
         />
-        {errors.quantity ? <Text style={styles.error}>{errors.quantity}</Text> : null}
       </Card>
 
       <Card>
-        <CardTitle>Địa chỉ thu gom *</CardTitle>
-        <TextInput
-          accessibilityLabel="Địa chỉ thu gom"
-          style={styles.input}
+        <Field
+          label="Địa chỉ thu gom *"
+          hint="Mặc định là địa chỉ hộ của bạn."
+          error={errors.address}
           value={address}
-          onChangeText={(v) => { setAddress(v); setAddressTouched(true); clear('address'); }}
-          placeholderTextColor={colors.textMuted}
+          onChangeText={(v) => {
+            setAddress(v);
+            setAddressTouched(true);
+            clear('address');
+          }}
           maxLength={ADDRESS_MAX}
         />
-        <Muted>Mặc định là địa chỉ hộ của bạn.</Muted>
-        {errors.address ? <Text style={styles.error}>{errors.address}</Text> : null}
-      </Card>
-
-      <Card>
-        <CardTitle>Ngày mong muốn *</CardTitle>
-        <View style={styles.chips}>
+        <ChoiceGroup label="Ngày mong muốn *" error={errors.preferredDate}>
           {days.map((d) => (
-            <Chip key={d} label={shortDayLabel(d)} selected={d === preferredDate} onPress={() => { setPreferredDate(d); clear('preferredDate'); }} />
+            <Chip
+              key={d}
+              label={shortDayLabel(d)}
+              selected={d === preferredDate}
+              onPress={() => {
+                setPreferredDate(d);
+                clear('preferredDate');
+              }}
+            />
           ))}
-        </View>
-        {errors.preferredDate ? <Text style={styles.error}>{errors.preferredDate}</Text> : null}
-        <CardTitle>Buổi</CardTitle>
-        <View style={styles.chips}>
+        </ChoiceGroup>
+        <ChoiceGroup label="Buổi">
           {SLOTS.map((s) => (
             <Chip key={s} label={DAY_SLOT_LABELS[s]} selected={s === slot} onPress={() => setSlot(s === slot ? null : s)} />
           ))}
-        </View>
+        </ChoiceGroup>
       </Card>
 
       <Card>
@@ -145,33 +141,6 @@ export default function NewBulkyScreen() {
         <Muted>Tối đa 5 ảnh, giúp công ty báo phí chính xác.</Muted>
         <PhotoPickerField value={photos} onChange={setPhotos} max={5} onBusyChange={setPhotosBusy} />
       </Card>
-
-      {create.error ? (
-        <ErrorBox message={create.error instanceof ApiError ? create.error.message : 'Gửi không thành công. Vui lòng thử lại.'} />
-      ) : null}
-      {photosBusy ? <Muted>Đang tải ảnh lên, chờ xong rồi gửi.</Muted> : null}
-      <Button title="Gửi đăng ký" onPress={onSubmit} loading={create.isPending} disabled={photosBusy} />
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  chip: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: colors.surface },
-  chipSelected: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
-  chipText: { fontSize: 13, color: colors.text },
-  chipTextSelected: { color: colors.primaryDark, fontWeight: '700' },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm + 2,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: colors.text,
-    backgroundColor: colors.background,
-  },
-  error: { color: colors.danger, fontSize: 13 },
-  notice: { backgroundColor: colors.infoSoft, borderColor: colors.info },
-  noticeText: { fontSize: 14, color: colors.text, lineHeight: 20 },
-});

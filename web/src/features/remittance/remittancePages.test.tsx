@@ -55,7 +55,7 @@ describe('Tiến độ thu', () => {
     expect(await screen.findByText('Nộp một phần')).toBeInTheDocument();
     expect(screen.getByText('Quá hạn nộp')).toBeInTheDocument();
     expect(screen.getByText('1 tổ chưa có công ty thu: KV24')).toBeInTheDocument();
-    expect(screen.getAllByText('150.000 đ', norm)).toHaveLength(2);
+    expect(screen.getAllByText('150.000 đ', norm)).toHaveLength(1);
     await waitFor(() =>
       expect(fetchFn.mock.calls.some(([url]) => String(url) === '/api/remittance/ledger?periodId=10')).toBe(true),
     );
@@ -90,11 +90,13 @@ describe('Đối soát', () => {
     api();
     renderApp('/commune/reconciliation');
 
-    expect(await screen.findByText('Đang nộp')).toBeInTheDocument();
-    expect(screen.getByText('Lệch')).toBeInTheDocument();
-    const dv01Row = screen.getByText('DV01 · Công ty MTĐT Đông Thạnh').closest('tr')!;
+    // Kết quả theo dấu chênh lệch backend: âm = thu rồi chưa nộp (không còn nhãn "Lệch" đỏ).
+    expect(await screen.findAllByText('Thu rồi chưa nộp')).not.toHaveLength(0);
+    expect(screen.queryByText('Lệch')).not.toBeInTheDocument();
+    const dv01Row = (await screen.findByRole('cell', { name: 'DV01 · Công ty MTĐT Đông Thạnh' })).closest('tr')!;
     expect(within(dv01Row).getByText('thu rồi chưa nộp')).toBeInTheDocument();
-    expect(within(dv01Row).getByText('1 biên nhận')).toBeInTheDocument();
+    expect(within(dv01Row).getAllByText('Thu rồi chưa nộp')).toHaveLength(1);
+    expect(within(dv01Row).getByText('1 phiếu thu')).toBeInTheDocument();
     expect(screen.getAllByText('400.000 đ', norm).length).toBeGreaterThan(0);
   });
 });
@@ -173,7 +175,7 @@ describe('Nhắc nộp', () => {
   });
 });
 
-describe('Biên nhận công ty', () => {
+describe('Phiếu thu công ty', () => {
   it('lập phiếu một phần cho DV01 rồi hiện bản in có số tiền bằng chữ và lũy kế', async () => {
     const fetchFn = mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
@@ -189,7 +191,7 @@ describe('Biên nhận công ty', () => {
         }),
     });
     renderApp('/commune/charges');
-    await userEvent.click(await screen.findByRole('tab', { name: 'Biên nhận công ty' }));
+    await userEvent.click(await screen.findByRole('tab', { name: 'Phiếu thu công ty' }));
 
     await userEvent.click(await screen.findByRole('button', { name: 'Lập phiếu DV01' }));
     const dialog = await screen.findByRole('dialog');
@@ -202,8 +204,8 @@ describe('Biên nhận công ty', () => {
     );
     expect(await screen.findByText('Bốn trăm nghìn đồng')).toBeInTheDocument();
     expect(screen.getByText('PHIẾU THU')).toBeInTheDocument();
-    expect(screen.getByText('1.400.000 đ', norm)).toBeInTheDocument();
     const print = screen.getByText('PHIẾU THU').closest('.ant-modal-content') as HTMLElement;
+    expect(within(print).getByText('1.400.000 đ', norm)).toBeInTheDocument();
     expect(within(print).getAllByRole('button').map((b) => b.textContent)).toContain('In');
   });
 });

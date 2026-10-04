@@ -1,10 +1,13 @@
 import { DownloadOutlined } from '@ant-design/icons';
-import { Alert, Button, Card, Select, Space, Table, Tag, Typography } from 'antd';
+import { Button, Card, Select, Space, Table, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 
-import { ApiError } from '../../api/client';
-import { PROGRESS_LABELS, RECONCILIATION_LABELS } from '../../shared/labels';
-import { MoneyText } from '../../shared/MoneyText';
+import { formatPercent } from '../../shared/format';
+import { StatusTag } from '../../shared/StatusTag';
+import { PageHeader } from '../../shared/PageHeader';
+import { ErrorBlock } from '../../shared/StateBlock';
+import { PROGRESS_COLORS, PROGRESS_LABELS, RECONCILIATION_COLORS, RECONCILIATION_LABELS } from '../../shared/labels';
+import { MoneyText, RemainingText } from '../../shared/MoneyText';
 import { PeriodSelect } from '../masterdata/PeriodSelect';
 import { usePeriods } from '../masterdata/api';
 import { type AreaProgress, type LedgerRow, useAreaProgress, useCompanyLedger } from '../remittance/api';
@@ -15,8 +18,10 @@ function downloadCsv(fileName: string, header: string[], rows: (string | number)
   const text = [header, ...rows].map((r) => r.map(cell).join(',')).join('\r\n');
   const url = URL.createObjectURL(new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' }));
   const a = Object.assign(document.createElement('a'), { href: url, download: fileName });
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url));
 }
 
 /**
@@ -65,18 +70,26 @@ export function LeaderReportPage() {
 
   return (
     <>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        Báo cáo tổng hợp
-      </Typography.Title>
+      <PageHeader title="Báo cáo tổng hợp" description="Số liệu từng kỳ theo công ty và tổ; xuất ra file CSV." />
       <Space style={{ marginBottom: 16 }} wrap>
-        <PeriodSelect value={periodId} onChange={setPeriodId} />
+        <PeriodSelect
+          value={periodId}
+          onChange={(id) => {
+            setPeriodId(id);
+            setCompanyId(undefined);
+            setAreaId(undefined);
+          }}
+        />
         <Select
           allowClear
           aria-label="Công ty"
           placeholder="Tất cả công ty"
           style={{ width: 220 }}
           value={companyId}
-          onChange={setCompanyId}
+          onChange={(id) => {
+            setCompanyId(id);
+            setAreaId(undefined);
+          }}
           options={allRows.map((r) => ({ value: r.companyId, label: `${r.companyCode} · ${r.companyName}` }))}
         />
         <Select
@@ -91,7 +104,7 @@ export function LeaderReportPage() {
             .map((a) => ({ value: a.areaId, label: `${a.areaCode} · ${a.areaName}` }))}
         />
       </Space>
-      {error && <Alert type="error" showIcon style={{ marginBottom: 12 }} message={error instanceof ApiError ? error.message : 'Không tải được số liệu'} />}
+      {error && <ErrorBlock error={error} onRetry={() => void Promise.all([ledger.refetch(), areas.refetch()])} />}
       <Card
         size="small"
         className="section-card"
@@ -116,7 +129,7 @@ export function LeaderReportPage() {
                 <Table.Summary.Cell index={0}>{companyId === undefined ? 'Tổng toàn xã' : 'Tổng (đã lọc)'}</Table.Summary.Cell>
                 {(['due', 'payable', 'adjustment', 'collected', 'refunded', 'received', 'remaining', 'previousDebt'] as const).map((k, i) => (
                   <Table.Summary.Cell key={k} index={i + 1} align="right">
-                    <MoneyText value={rows.reduce((t, r) => t + r[k], 0)} />
+                    {k === 'remaining' ? <RemainingText value={rows.reduce((t, r) => t + r[k], 0)} /> : <MoneyText value={rows.reduce((t, r) => t + r[k], 0)} />}
                   </Table.Summary.Cell>
                 ))}
                 <Table.Summary.Cell index={9} align="right">
@@ -149,11 +162,11 @@ export function LeaderReportPage() {
             { title: 'Đã thu', align: 'right', render: (_, r) => <MoneyText value={r.collected} /> },
             { title: 'Đã hoàn', align: 'right', render: (_, r) => (r.refunded ? <MoneyText value={r.refunded} /> : '—') },
             { title: 'Đã nộp về xã', align: 'right', render: (_, r) => <MoneyText value={r.received} /> },
-            { title: 'Còn phải nộp', align: 'right', render: (_, r) => <MoneyText value={r.remaining} strong /> },
+            { title: 'Còn phải nộp', align: 'right', render: (_, r) => <RemainingText value={r.remaining} strong /> },
             { title: 'Nợ kỳ trước', align: 'right', render: (_, r) => (r.previousDebt ? <MoneyText value={r.previousDebt} /> : '—') },
             { title: 'Hộ miễn 100%', align: 'right', render: (_, r) => exemptOf(r.companyId) },
-            { title: 'Tiến độ', render: (_, r) => <Tag>{PROGRESS_LABELS[r.progress]}</Tag> },
-            { title: 'Đối soát', render: (_, r) => RECONCILIATION_LABELS[r.reconciliation] },
+            { title: 'Tiến độ', render: (_, r) => <StatusTag color={PROGRESS_COLORS[r.progress]}>{PROGRESS_LABELS[r.progress]}</StatusTag> },
+            { title: 'Đối soát', render: (_, r) => <StatusTag color={RECONCILIATION_COLORS[r.reconciliation]}>{RECONCILIATION_LABELS[r.reconciliation]}</StatusTag> },
           ]}
         />
       </Card>
@@ -177,12 +190,12 @@ export function LeaderReportPage() {
           columns={[
             { title: 'Tổ', render: (_, a) => `${a.areaCode} · ${a.areaName}` },
             { title: 'Địa bàn', dataIndex: 'districtCode' },
-            { title: 'Công ty', render: (_, a) => a.companyCode ?? <Tag color="orange">Chưa có công ty</Tag> },
+            { title: 'Công ty', render: (_, a) => a.companyCode ?? <StatusTag color="orange">Chưa có công ty</StatusTag> },
             { title: 'Hộ đã thu', align: 'right', render: (_, a) => `${a.paidCount}/${a.chargeCount}` },
             { title: 'Hộ miễn 100%', align: 'right', dataIndex: 'exemptCount' },
             { title: 'Phải thu', align: 'right', render: (_, a) => <MoneyText value={a.due} /> },
             { title: 'Đã thu', align: 'right', render: (_, a) => <MoneyText value={a.collected} /> },
-            { title: 'Tỷ lệ thu', align: 'right', render: (_, a) => `${a.collectionRate.toLocaleString('vi-VN')}%` },
+            { title: 'Tỷ lệ thu', align: 'right', render: (_, a) => formatPercent(a.collectionRate) },
           ]}
         />
       </Card>

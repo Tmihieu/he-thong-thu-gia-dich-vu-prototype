@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing } from '../../shared/theme';
+import { colors, radius, spacing, type as t } from '../../shared/theme';
 import { photoSource } from './photos';
 
 /** Một ảnh đã lưu trên backend; tải lỗi (mất mạng, hết phiên, ảnh bị xóa) thì hiện ô báo thay vì ô trống. */
@@ -20,7 +20,7 @@ export function StoredPhoto({ url, size }: { url: string; size: { width: number;
       style={[styles.frame, size]}
       resizeMode="cover"
       onError={() => setFailed(true)}
-      accessibilityLabel="Ảnh vật dụng"
+      accessibilityLabel="Ảnh đính kèm"
     />
   );
 }
@@ -41,7 +41,7 @@ const PHOTO_SIZE = { width: 240, height: 180 };
 
 const styles = StyleSheet.create({
   row: { gap: spacing.sm },
-  frame: { borderRadius: radius.sm, backgroundColor: colors.border },
+  frame: { borderRadius: radius.sm, backgroundColor: colors.surfaceMuted },
   failed: { alignItems: 'center', justifyContent: 'center', padding: spacing.xs },
-  failedText: { fontSize: 12, color: colors.textMuted, textAlign: 'center' },
+  failedText: { ...t.caption, color: colors.textMuted, textAlign: 'center' },
 });

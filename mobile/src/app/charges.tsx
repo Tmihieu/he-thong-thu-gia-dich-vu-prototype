@@ -1,43 +1,37 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { ApiError } from '../api/client';
 import { summarizeCharges, useCharges, type CitizenCharge } from '../features/citizen/api';
+import { chargeLabel, chargeTone } from '../features/citizen/chargeStatus';
 import { formatDate, formatMoney } from '../shared/format';
-import { CHARGE_STATUS_LABELS } from '../shared/labels';
-import { colors, spacing } from '../shared/theme';
-import { Button, Card, Empty, ErrorBox, Line, Loading, Muted, Screen, SectionTitle, Tag, type Tone } from '../shared/ui';
+import { colors, spacing, type as t } from '../shared/theme';
+import { Amount, Button, Callout, Card, Divider, EmptyState, ErrorState, Line, ListGroup, ListRow, Loading, Muted, Screen, SectionTitle, Tag } from '../shared/ui';
 
-function statusTone(c: CitizenCharge): Tone {
-  if (c.status === 'PAID') return 'success';
-  if (c.status === 'EXEMPT') return 'info';
-  return c.overdue ? 'danger' : 'warning';
-}
-
-function statusLabel(c: CitizenCharge): string {
-  return c.status === 'UNPAID' && c.overdue ? 'Quá hạn' : CHARGE_STATUS_LABELS[c.status];
-}
-
+/** Một khoản chưa đóng: số còn phải đóng và hạn đóng nổi nhất, chi tiết bên dưới, nút thanh toán cuối thẻ. */
 function UnpaidCard({ c }: { c: CitizenCharge }) {
   const partial = c.paidAmount > 0;
   return (
     <Card style={c.overdue ? styles.overdue : undefined}>
       <View style={styles.top}>
         <Text style={styles.period}>{c.periodLabel}</Text>
-        <Tag tone={statusTone(c)}>{statusLabel(c)}</Tag>
+        <Tag tone={chargeTone(c)} icon={c.overdue ? 'alert-circle' : undefined}>
+          {chargeLabel(c)}
+        </Tag>
       </View>
-      <Text style={styles.amount}>{formatMoney(c.remainingAmount)}</Text>
-      <Muted>
-        {c.feeTypeName} · hạn đóng {formatDate(c.dueDate)}
-      </Muted>
-      <View style={styles.lines}>
-        <Line label="Số tiền khoản" value={formatMoney(c.amount)} />
-        {partial ? <Line label="Đã thu tại nhà" value={formatMoney(c.paidAmount)} /> : null}
-        <Line label="Còn phải đóng" value={formatMoney(c.remainingAmount)} bold />
-        <Line label="Mã khoản" value={c.code} />
+      <Muted>{c.feeTypeName}</Muted>
+      <Amount value={c.remainingAmount} size="display" color={c.overdue ? colors.danger : colors.text} />
+      <View style={styles.due}>
+        <Ionicons name="calendar-outline" size={20} color={c.overdue ? colors.danger : colors.textSecondary} />
+        <Text style={[styles.dueText, c.overdue && styles.dueOverdue]}>Hạn đóng {formatDate(c.dueDate)}</Text>
       </View>
+      <Divider />
+      <Line label="Số tiền khoản" value={formatMoney(c.amount)} />
+      {partial ? <Line label="Đã đóng tại nhà" value={formatMoney(c.paidAmount)} /> : null}
+      <Line label="Mã khoản" value={c.code} />
       <Button
         title="Thanh toán (mô phỏng)"
+        icon="wallet-outline"
         onPress={() => router.push({ pathname: '/pay/[chargeId]', params: { chargeId: String(c.id) } })}
       />
     </Card>
@@ -45,20 +39,19 @@ function UnpaidCard({ c }: { c: CitizenCharge }) {
 }
 
 function HistoryRow({ c }: { c: CitizenCharge }) {
+  const settled = c.status === 'PAID';
+  const subtitle = [c.feeTypeName, c.paidAt ? formatDate(c.paidAt, true) : null].filter(Boolean).join(', ');
   return (
-    <View style={styles.historyRow}>
-      <View style={styles.flex}>
-        <Text style={styles.historyPeriod}>{c.periodLabel}</Text>
-        <Muted>
-          {c.feeTypeName}
-          {c.paidAt ? ` · ${formatDate(c.paidAt, true)}` : ''}
-        </Muted>
-      </View>
-      <View style={styles.historyRight}>
-        <Text style={styles.historyAmount}>{formatMoney(c.status === 'EXEMPT' ? 0 : c.amount)}</Text>
-        <Tag tone={statusTone(c)}>{statusLabel(c)}</Tag>
-      </View>
-    </View>
+    <ListRow
+      title={c.periodLabel}
+      subtitle={subtitle}
+      right={
+        <View style={styles.historyRight}>
+          <Amount value={c.status === 'EXEMPT' ? 0 : c.amount} size="body" color={settled ? colors.text : colors.textMuted} />
+          <Tag tone={chargeTone(c)}>{chargeLabel(c)}</Tag>
+        </View>
+      }
+    />
   );
 }
 
@@ -71,9 +64,11 @@ export default function ChargesScreen() {
     <Screen refreshing={charges.isFetching && !charges.isPending} onRefresh={() => void charges.refetch()}>
       {charges.isPending ? <Loading /> : null}
       {charges.error ? (
-        <ErrorBox
-          message={charges.error instanceof ApiError ? charges.error.message : 'Không tải được khoản phí.'}
+        <ErrorState
+          error={charges.error}
+          fallback="Không tải được khoản phí."
           onRetry={() => void charges.refetch()}
+          compact={!!charges.data}
         />
       ) : null}
 
@@ -81,26 +76,32 @@ export default function ChargesScreen() {
         <>
           <SectionTitle>Cần đóng</SectionTitle>
           {summary.unpaid.length === 0 ? (
-            <Card>
-              <Empty>Hộ không có khoản nào cần đóng.</Empty>
-            </Card>
+            <EmptyState icon="checkmark-circle-outline" title="Hộ không có khoản nào cần đóng" message="Khi có khoản mới, bạn sẽ nhận thông báo trong ứng dụng." />
           ) : (
-            summary.unpaid.map((c) => <UnpaidCard key={c.id} c={c} />)
+            <>
+              {summary.unpaid.length > 1 ? (
+                <Callout tone={summary.overdueCount > 0 ? 'danger' : 'warning'} title={`Tổng còn phải đóng ${formatMoney(summary.totalRemaining)}`}>
+                  {summary.overdueCount > 0
+                    ? `${summary.unpaid.length} khoản chưa đóng, trong đó ${summary.overdueCount} khoản quá hạn.`
+                    : `${summary.unpaid.length} khoản chưa đóng.`}
+                </Callout>
+              ) : null}
+              {summary.unpaid.map((c) => (
+                <UnpaidCard key={c.id} c={c} />
+              ))}
+            </>
           )}
-          {summary.unpaid.length > 1 ? (
-            <Card>
-              <Line label="Tổng còn phải đóng" value={formatMoney(summary.totalRemaining)} bold />
-            </Card>
-          ) : null}
 
           <SectionTitle>Lịch sử</SectionTitle>
-          <Card>
-            {summary.history.length === 0 ? (
-              <Empty>Chưa có kỳ nào đã đóng.</Empty>
-            ) : (
-              summary.history.map((c) => <HistoryRow key={c.id} c={c} />)
-            )}
-          </Card>
+          {summary.history.length === 0 ? (
+            <Muted>Chưa có kỳ nào đã đóng.</Muted>
+          ) : (
+            <ListGroup>
+              {summary.history.map((c) => (
+                <HistoryRow key={c.id} c={c} />
+              ))}
+            </ListGroup>
+          )}
         </>
       ) : null}
     </Screen>
@@ -108,14 +109,11 @@ export default function ChargesScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  overdue: { borderColor: colors.danger },
-  top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  period: { fontSize: 16, fontWeight: '700', color: colors.text },
-  amount: { fontSize: 28, fontWeight: '800', color: colors.primaryDark },
-  lines: { marginTop: spacing.xs, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.xs },
-  historyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  historyPeriod: { fontSize: 15, fontWeight: '600', color: colors.text },
-  historyRight: { alignItems: 'flex-end', gap: 4 },
-  historyAmount: { fontSize: 15, fontWeight: '700', color: colors.text },
+  overdue: { borderColor: colors.danger, borderWidth: 2 },
+  top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
+  period: { ...t.heading, color: colors.text, flex: 1 },
+  due: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  dueText: { ...t.bodyStrong, color: colors.textSecondary },
+  dueOverdue: { color: colors.danger },
+  historyRight: { alignItems: 'flex-end', gap: spacing.xs },
 });

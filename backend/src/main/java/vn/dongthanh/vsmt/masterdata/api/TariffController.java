@@ -58,7 +58,7 @@ public class TariffController {
         return TariffVersionDto.of(tariffs.createDraft(req.code(), req.draft().toCommand(), actor));
     }
 
-    @Operation(summary = "Sửa biểu giá (quản trị); bản đã ban hành giữ nguyên ngày hiệu lực")
+    @Operation(summary = "Sửa dự thảo biểu giá (quản trị); bản đã ban hành không sửa được (422 TARIFF_NOT_DRAFT)")
     @PutMapping("/tariffs/{id}")
     public TariffVersionDto updateDraft(@PathVariable Long id, @Valid @RequestBody TariffDraftRequest req,
             @AuthenticationPrincipal CurrentUser actor) {

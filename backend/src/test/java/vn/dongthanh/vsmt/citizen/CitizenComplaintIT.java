@@ -157,6 +157,11 @@ class CitizenComplaintIT extends IntegrationTest {
         CitizenAccount neighbour = accounts.save(CitizenAccount.create("0902000002",
                 subjects.findByCode("DTH-H000002").orElseThrow(), "Hàng xóm"));
         citizen(neighbour, get("/api/citizen/complaints/{id}", idA), null).andExpect(status().isNotFound());
+        // QĐ-L10: tài khoản khác của CÙNG hộ A thấy phản ánh của hộ.
+        CitizenAccount spouse = accounts.save(CitizenAccount.create("0902000009",
+                subjects.findByCode("DTH-H000001").orElseThrow(), "Vợ/chồng chủ hộ A"));
+        citizen(spouse, get("/api/citizen/complaints"), null).andExpect(jsonPath("$[0].id").value(idA));
+        citizen(spouse, get("/api/citizen/complaints/{id}", idA), null).andExpect(status().isOk());
     }
 
     @Test

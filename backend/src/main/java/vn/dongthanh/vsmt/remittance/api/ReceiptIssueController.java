@@ -31,7 +31,7 @@ import vn.dongthanh.vsmt.remittance.domain.ReceiptIssueStatus;
 import vn.dongthanh.vsmt.remittance.domain.ReceiptIssueType;
 import vn.dongthanh.vsmt.remittance.service.ReceiptIssueService;
 
-@Tag(name = "Nộp tiền về xã: sai sót biên nhận")
+@Tag(name = "Nộp tiền về xã: sai sót phiếu thu")
 @RestController
 @RequestMapping("/api/remittance/receipt-issues")
 @RequiredArgsConstructor
@@ -39,14 +39,14 @@ public class ReceiptIssueController {
 
     private final ReceiptIssueService issues;
 
-    @Operation(summary = "Công ty báo sai sót trên biên nhận của mình; thông báo tới cán bộ xã")
+    @Operation(summary = "Công ty báo sai sót trên phiếu thu của mình; thông báo tới cán bộ xã")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public IssueDto report(@Valid @RequestBody ReportIssueRequest req, @AuthenticationPrincipal CurrentUser actor) {
         return IssueDto.of(issues.report(req.receiptId(), req.issueType(), req.correctAmount(), req.description(), actor));
     }
 
-    @Operation(summary = "Sai sót biên nhận; công ty chỉ thấy sai sót trên phiếu của mình")
+    @Operation(summary = "Sai sót phiếu thu; công ty chỉ thấy sai sót trên phiếu của mình")
     @GetMapping
     public List<IssueDto> list(@RequestParam(required = false) ReceiptIssueStatus status,
             @AuthenticationPrincipal CurrentUser actor) {

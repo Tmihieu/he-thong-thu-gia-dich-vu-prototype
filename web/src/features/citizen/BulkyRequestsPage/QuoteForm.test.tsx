@@ -79,7 +79,7 @@ describe('Rác cồng kềnh: màn công ty', () => {
     });
     renderApp('/company/bulky');
 
-    expect(await screen.findByText('Chờ xác nhận (1)')).toBeInTheDocument();
+    expect(await screen.findByText('Chờ công ty báo phí (1)')).toBeInTheDocument();
     expect(screen.getByText('2 × Nệm, chăn ga khối lớn')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Báo phí' }));
     await userEvent.type(await screen.findByLabelText('Phí thu gom'), '200000');
@@ -144,6 +144,6 @@ describe('Rác cồng kềnh: màn công ty', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Gửi báo phí' }));
 
     expect(await screen.findByText(/đang ở trạng thái "Đã hủy"/)).toBeInTheDocument();
-    expect(await screen.findByText('Chờ xác nhận (0)')).toBeInTheDocument();
+    expect(await screen.findByText('Chờ công ty báo phí (0)')).toBeInTheDocument();
   });
 });

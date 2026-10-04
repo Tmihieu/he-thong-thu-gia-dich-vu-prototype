@@ -2,6 +2,7 @@ package vn.dongthanh.vsmt.billing.service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,7 +29,9 @@ public class ChargeEligibility {
         NO_ACTIVE_CONTRACT(false),
         /** Cảnh báo: cán bộ xã cần phân công khu vực rồi lập lại. */
         AREA_WITHOUT_COMPANY(true),
-        DUPLICATE_CHARGE(false);
+        DUPLICATE_CHARGE(false),
+        /** Cảnh báo: hộ theo ký chưa có định mức kg/tháng, bỏ qua hộ này, các hộ khác vẫn lập (QĐ-L14). */
+        QUOTA_KG_REQUIRED(true);
 
         private final boolean warning;
 
@@ -64,10 +67,17 @@ public class ChargeEligibility {
         if (subject.getStatus() != SubjectStatus.ACTIVE) {
             return new Skipped(SkipReason.SUBJECT_NOT_ACTIVE, "Đối tượng không ở trạng thái đang cung cấp dịch vụ.");
         }
-        Optional<ServiceContract> contract = contracts.stream().filter(c -> c.covers(issueDate)).findFirst();
+        // BR-MD-09: chọn đăng ký hiệu lực TRONG KỲ được lập khoản (đổi số người thì đăng ký mới chỉ từ đầu kỳ sau), không
+        // chọn theo ngày phát hành. Đăng ký đã kết thúc trước ngày phát hành thì bỏ; ưu tiên đăng ký đang hiệu lực ngày
+        // phát hành, rồi tới đăng ký bắt đầu sớm nhất.
+        Optional<ServiceContract> contract = contracts.stream()
+                .filter(c -> c.overlaps(period.getStartDate(), period.getEndDate()))
+                .filter(c -> c.getValidTo() == null || !c.getValidTo().isBefore(issueDate))
+                .min(Comparator.comparing((ServiceContract c) -> !c.covers(issueDate))
+                        .thenComparing(ServiceContract::getValidFrom));
         if (contract.isEmpty()) {
             return new Skipped(SkipReason.NO_ACTIVE_CONTRACT,
-                    "Không có hợp đồng hiệu lực vào ngày " + VN_DATE.format(issueDate) + ".");
+                    "Không có đăng ký thu phí hiệu lực vào ngày " + VN_DATE.format(issueDate) + ".");
         }
         if (companyIdOnIssue == null) {
             return new Skipped(SkipReason.AREA_WITHOUT_COMPANY,

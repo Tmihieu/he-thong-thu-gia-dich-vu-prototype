@@ -1,7 +1,9 @@
 package vn.dongthanh.vsmt.billing.api;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,6 +34,7 @@ import vn.dongthanh.vsmt.billing.domain.ChargeScope;
 import vn.dongthanh.vsmt.billing.domain.ChargeStatus;
 import vn.dongthanh.vsmt.billing.service.ChargeEligibility.SkipReason;
 import vn.dongthanh.vsmt.billing.service.ChargeRequestService;
+import vn.dongthanh.vsmt.collection.domain.PaymentRepository;
 import vn.dongthanh.vsmt.billing.service.ChargeRequestService.IssueCommand;
 import vn.dongthanh.vsmt.billing.service.ChargeRequestService.IssueResult;
 import vn.dongthanh.vsmt.billing.service.ChargeRequestService.RequestSummary;
@@ -45,6 +48,7 @@ import vn.dongthanh.vsmt.platform.security.CurrentUser;
 public class BillingController {
 
     private final ChargeRequestService service;
+    private final PaymentRepository payments;
 
     @Operation(summary = "Xem trước phiếu yêu cầu thu: số khoản, tổng tiền, danh sách bỏ qua (không ghi CSDL)")
     @PostMapping("/charge-requests/preview")
@@ -78,7 +82,11 @@ public class BillingController {
         Page<Charge> result = service.searchCharges(periodId, areaId, status, subjectId, companyId,
                 PageRequest.of(page, size, Sort.by("code")), actor);
         LocalDate today = service.today();
-        return new ChargePageDto(result.getContent().stream().map(c -> ChargeDto.of(c, today)).toList(),
+        Map<Long, Long> refunded = new HashMap<>();
+        payments.refundedByChargeIds(result.getContent().stream().map(Charge::getId).toList())
+                .forEach(r -> refunded.put((Long) r[0], (Long) r[1]));
+        return new ChargePageDto(result.getContent().stream()
+                .map(c -> ChargeDto.of(c, today, refunded.getOrDefault(c.getId(), 0L))).toList(),
                 result.getTotalElements(), page, size);
     }
 
@@ -115,12 +123,16 @@ public class BillingController {
             @Schema(requiredMode = RequiredMode.REQUIRED) int exemptCount,
             @Schema(requiredMode = RequiredMode.REQUIRED) long totalAmount,
             @Schema(requiredMode = RequiredMode.REQUIRED) int warningCount,
-            @Schema(requiredMode = RequiredMode.REQUIRED) List<SkippedDto> skipped) {
+            @Schema(requiredMode = RequiredMode.REQUIRED) List<SkippedDto> skipped,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Số hộ bị bỏ qua theo từng lý do (chỉ lý do có hộ)")
+            Map<SkipReason, Long> skippedByReason) {
 
         static IssueResultDto of(IssueResult r) {
             return new IssueResultDto(r.requestCode(), r.chargeCount(), r.exemptCount(), r.totalAmount(),
                     r.warningCount(), r.skipped().stream().map(s -> new SkippedDto(s.subjectId(), s.subjectCode(),
-                            s.subjectName(), s.areaCode(), s.reason(), s.reason().warning(), s.message())).toList());
+                            s.subjectName(), s.areaCode(), s.reason(), s.reason().warning(), s.message())).toList(),
+                    r.skipped().stream().collect(java.util.stream.Collectors.groupingBy(s -> s.reason(),
+                            () -> new java.util.EnumMap<>(SkipReason.class), java.util.stream.Collectors.counting())));
         }
     }
 
@@ -168,14 +180,20 @@ public class BillingController {
             @Schema(requiredMode = RequiredMode.REQUIRED) long amount,
             @Schema(requiredMode = RequiredMode.REQUIRED) LocalDate dueDate,
             @Schema(requiredMode = RequiredMode.REQUIRED) ChargeStatus status,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Chưa thu và đã qua hạn đóng") boolean overdue) {
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Chưa thu và đã qua hạn đóng") boolean overdue,
+            @Schema(requiredMode = RequiredMode.REQUIRED,
+                    description = "Tổng đã hoàn của khoản (số dương); chỉ điền ở GET /api/billing/charges, nơi khác là 0") long refunded) {
 
         public static ChargeDto of(Charge c, LocalDate today) {
+            return of(c, today, 0);
+        }
+
+        public static ChargeDto of(Charge c, LocalDate today, long refunded) {
             return new ChargeDto(c.getId(), c.getCode(), c.getChargeRequest().getCode(), c.getSubject().getId(),
                     c.getSubject().getCode(), c.getSubject().getName(), c.getSubject().getAddress(), c.getArea().getId(),
                     c.getArea().getCode(), c.getCompany().getId(), c.getCompany().getCode(), c.getPeriod().getId(),
                     c.getPeriod().getCode(), c.getFeeType().getCode(), c.getTariffGroup(), c.getUnitPrice(),
-                    c.getMonths(), c.getAmount(), c.getDueDate(), c.getStatus(), c.isOverdue(today));
+                    c.getMonths(), c.getAmount(), c.getDueDate(), c.getStatus(), c.isOverdue(today), refunded);
         }
     }
 

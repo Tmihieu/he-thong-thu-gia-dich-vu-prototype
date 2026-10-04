@@ -6,10 +6,10 @@ export const COMPLAINT_STATUS_LABELS: Record<Complaint['status'], string> = {
   RESOLVED: 'Đã giải quyết',
 };
 
-export const COMPLAINT_STATUS_COLORS: Record<Complaint['status'], string> = {
-  NEW: 'orange',
-  PROCESSING: 'blue',
-  RESOLVED: 'green',
+export const COMPLAINT_STATUS_TONES: Record<Complaint['status'], 'warning' | 'info' | 'success'> = {
+  NEW: 'warning',
+  PROCESSING: 'info',
+  RESOLVED: 'success',
 };
 
 export const COMPLAINT_CHANNEL_LABELS: Record<Complaint['channel'], string> = {
@@ -18,11 +18,14 @@ export const COMPLAINT_CHANNEL_LABELS: Record<Complaint['channel'], string> = {
   IN_PERSON: 'Trực tiếp tại xã',
 };
 
-export const COMPLAINT_CATEGORY_LABELS: Record<Complaint['category'], string> = {
+// FACILITY, COLLECTION_REQUEST: loại mới của backend (BR-CMP-05), liệt kê sẵn để không vỡ type trước khi sinh lại schema.
+export const COMPLAINT_CATEGORY_LABELS: Record<Complaint['category'] | 'FACILITY' | 'COLLECTION_REQUEST', string> = {
   LATE_COLLECTION: 'Thu gom chậm hoặc không đúng lịch',
   OVERCHARGE: 'Thu phí cao hơn định mức',
   POLLUTION_POINT: 'Điểm tập kết gây ô nhiễm',
   STAFF_ATTITUDE: 'Thái độ nhân viên thu gom',
+  FACILITY: 'Cơ sở vật chất',
+  COLLECTION_REQUEST: 'Đề nghị thu gom',
   PAID_NOT_RECORDED: 'Đã đóng nhưng chưa được ghi nhận',
   OTHER: 'Vấn đề khác',
 };

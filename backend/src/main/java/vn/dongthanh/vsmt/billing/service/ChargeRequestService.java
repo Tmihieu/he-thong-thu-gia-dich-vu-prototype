@@ -119,6 +119,9 @@ public class ChargeRequestService {
     }
 
     public IssueResult publish(IssueCommand cmd, CurrentUser actor) {
+        // Phát hành song song cùng kỳ xếp hàng: lượt sau lập kế hoạch lại sau khi lượt trước commit nên thấy khoản trùng
+        // và bỏ qua đúng cách (BR-BIL-06), thay vì đụng ràng buộc ex_charges_overlap / mã phiếu rồi báo 409 chung chung.
+        requests.lockKey("charge-request:" + cmd.periodId());
         Plan plan = plan(cmd, actor, false);
         if (plan.charges().isEmpty()) {
             return plan.result(null);
@@ -177,6 +180,10 @@ public class ChargeRequestService {
         }
         LocalDate issueDate = LocalDate.now(clock);
         Long unitPrice = feeType.getPricingMode() == PricingMode.FIXED ? cmd.unitPrice() : null;
+        if (unitPrice != null && unitPrice <= 0) {
+            // BR-BIL-09: báo ngay, kể cả khi phạm vi chưa có hộ nào đủ điều kiện.
+            throw new BusinessRuleException("CHARGE_PRICE_INVALID", "Đơn giá phải lớn hơn 0.");
+        }
 
         Set<Area> scopeAreas = new LinkedHashSet<>();
         Company scopeCompany = null;
@@ -236,6 +243,13 @@ public class ChargeRequestService {
                 } catch (ArithmeticException overflow) {
                     // Chặn ở kế hoạch nên xem trước cũng báo, và phát hành không ghi gì.
                     throw new BusinessRuleException("CHARGE_AMOUNT_TOO_LARGE", "Tổng tiền vượt giới hạn tính toán.");
+                } catch (BusinessRuleException missingQuota) {
+                    if (!"QUOTA_KG_REQUIRED".equals(missingQuota.getCode())) {
+                        throw missingQuota;
+                    }
+                    // Một hộ thiếu định mức chỉ bị bỏ qua kèm cảnh báo, không làm hỏng cả lượt phát hành.
+                    skipped.add(new SkippedLine(s.getId(), s.getCode(), s.getName(), s.getArea().getCode(),
+                            SkipReason.QUOTA_KG_REQUIRED, missingQuota.getMessage()));
                 }
             } else if (d instanceof Skipped k) {
                 skipped.add(new SkippedLine(s.getId(), s.getCode(), s.getName(), s.getArea().getCode(), k.reason(),

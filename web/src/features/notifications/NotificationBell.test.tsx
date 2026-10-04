@@ -31,7 +31,7 @@ describe('notificationPath', () => {
     expect(notificationPath('COMMUNE_OFFICER', { screen: 'commune.subjects', params: { subjectId: 7 } }))
       .toBe('/commune/subjects');
     expect(notificationPath('COMPANY_MANAGER', { screen: 'company.households', params: { subjectId: 7 } }))
-      .toBe('/company/assigned?tab=households');
+      .toBe('/company/assigned?tab=overview');
     expect(notificationPath('COMPANY_MANAGER', { screen: 'commune.subjects' })).toBeNull();
     expect(notificationPath('COMMUNE_OFFICER', { screen: 'khong.co' })).toBeNull();
     expect(notificationPath('COMMUNE_OFFICER', null)).toBeNull();
@@ -58,7 +58,7 @@ describe('Chuông thông báo', () => {
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
       'GET /api/notifications/unread-count': () => jsonResponse(200, { unreadCount: unread }),
       'GET /api/notifications': () =>
-        jsonResponse(200, { items: [note(1, 'DV01 báo sai sót biên nhận PT-CT-1026-001'), note(2, 'Khác')], total: 2, unreadCount: unread }),
+        jsonResponse(200, { items: [note(1, 'DV01 báo sai sót phiếu thu PT-CT-1026-001'), note(2, 'Khác')], total: 2, unreadCount: unread }),
       'POST /api/notifications/1/read': () => {
         unread = 1;
         return jsonResponse(200, { ...note(1, 'x'), readAt: '2026-10-16T03:00:00Z' });
@@ -71,11 +71,11 @@ describe('Chuông thông báo', () => {
     const bell = await screen.findByRole('button', { name: 'Thông báo, 2 chưa đọc' });
     await userEvent.click(bell);
     const popover = (await screen.findByText('Xem tất cả thông báo')).closest('.ant-popover') as HTMLElement;
-    await userEvent.click(within(popover).getByText('DV01 báo sai sót biên nhận PT-CT-1026-001'));
+    await userEvent.click(within(popover).getByText('DV01 báo sai sót phiếu thu PT-CT-1026-001'));
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/commune/charges'));
     expect(router.state.location.search).toBe('?tab=receipt-issues');
-    expect(await screen.findByRole('tab', { name: 'Sai sót biên nhận', selected: true })).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: 'Sai sót phiếu thu', selected: true })).toBeInTheDocument();
     expect(fetchFn.mock.calls.some(([url, init]) => String(url) === '/api/notifications/1/read'
       && (init as RequestInit | undefined)?.method === 'POST')).toBe(true);
     expect(await screen.findByRole('button', { name: 'Thông báo, 1 chưa đọc' })).toBeInTheDocument();

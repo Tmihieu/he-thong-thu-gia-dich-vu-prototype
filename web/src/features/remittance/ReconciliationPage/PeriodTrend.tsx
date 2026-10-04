@@ -1,8 +1,9 @@
-import { Alert, Card, Col, Empty, Flex, Row, Skeleton, Tag, Typography } from 'antd';
+import { Card, Col, Flex, Row, theme, Typography } from 'antd';
 
-import { brand } from '../../../app/theme';
 import { PERIOD_STATUS_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
+import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../shared/StateBlock';
+import { StatusTag } from '../../../shared/StatusTag';
 import { type Period, usePeriods } from '../../masterdata/api';
 import { type LedgerRow, useCompanyLedgers } from '../api';
 
@@ -11,30 +12,32 @@ const sum = (rows: LedgerRow[], key: 'due' | 'collected') => rows.reduce((t, r) 
 
 /** Thanh ngang: nền nhạt = phải thu, phần đậm = đã thu; cùng thang với các kỳ bên cạnh để so được độ lớn. */
 function ScaleBar({ due, collected, max }: { due: number; collected: number; max: number }) {
+  const { token } = theme.useToken();
   const w = (v: number) => `${max > 0 ? (v * 100) / max : 0}%`;
   return (
-    <div aria-hidden style={{ height: 10, borderRadius: 5, background: '#eef1f4', margin: '10px 0 0' }}>
-      <div style={{ width: w(due), height: '100%', borderRadius: 5, background: brand.primarySoft }}>
-        <div style={{ width: due > 0 ? `${(collected * 100) / due}%` : 0, maxWidth: '100%', height: '100%', borderRadius: 5, background: brand.primary }} />
+    <div aria-hidden style={{ height: 10, borderRadius: 5, background: token.colorFillTertiary, margin: '10px 0 0' }}>
+      <div style={{ width: w(due), height: '100%', borderRadius: 5, background: token.colorPrimaryBorder }}>
+        <div style={{ width: due > 0 ? `${(collected * 100) / due}%` : 0, maxWidth: '100%', height: '100%', borderRadius: 5, background: token.colorPrimary }} />
       </div>
     </div>
   );
 }
 
 function PeriodColumn({ period, rows, max }: { period: Period; rows: LedgerRow[]; max: number }) {
+  const { token } = theme.useToken();
   const due = sum(rows, 'due');
   const collected = sum(rows, 'collected');
   return (
-    <div style={{ boxSizing: 'border-box', height: '100%', padding: 16, borderRadius: 12, border: `1px solid ${brand.border}`, background: '#fff' }}>
+    <div style={{ boxSizing: 'border-box', height: '100%', padding: 16, borderRadius: 12, border: `1px solid ${token.colorBorderSecondary}`, background: token.colorBgContainer }}>
       <Flex justify="space-between" align="center">
         <Typography.Text strong style={{ fontSize: 15 }}>
           {period.label}
         </Typography.Text>
-        <Tag color={period.status === 'LOCKED' ? 'default' : 'green'} style={{ marginInlineEnd: 0 }}>
+        <StatusTag tone={period.status === 'LOCKED' ? 'neutral' : 'success'}>
           {PERIOD_STATUS_LABELS[period.status]}
-        </Tag>
+        </StatusTag>
       </Flex>
-      <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.3, marginTop: 8, color: brand.heading }}>
+      <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.3, marginTop: 8, color: token.colorTextHeading }}>
         <MoneyText value={collected} />
       </div>
       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -67,11 +70,11 @@ export function PeriodTrend() {
       style={{ marginBottom: 16 }}
     >
       {failed ? (
-        <Alert type="error" showIcon message="Không tải được số liệu các tháng" />
+        <ErrorBlock error={failed} />
       ) : loading ? (
-        <Skeleton active paragraph={{ rows: 4 }} />
+        <LoadingBlock rows={3} />
       ) : recent.length === 0 ? (
-        <Empty description="Chưa có kỳ thu theo tháng" />
+        <EmptyBlock title="Chưa có kỳ thu theo tháng" hint="Quản trị mở kỳ thu để xem so sánh 3 tháng gần nhất." />
       ) : (
         <Row gutter={[16, 16]}>
           {recent.map((p, i) => (

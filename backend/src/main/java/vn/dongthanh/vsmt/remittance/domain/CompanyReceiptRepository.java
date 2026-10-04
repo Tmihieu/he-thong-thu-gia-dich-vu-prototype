@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface CompanyReceiptRepository extends JpaRepository<CompanyReceipt, Long> {
 
-    /** Biên nhận theo kỳ và/hoặc công ty, cũ trước (để tính lũy kế đã nộp tới từng phiếu, R30). */
+    /** Phiếu thu theo kỳ và/hoặc công ty, cũ trước (để tính lũy kế đã nộp tới từng phiếu, R30). */
     @Query("select r from CompanyReceipt r join fetch r.company c join fetch r.period p"
             + " where (:periodId is null or p.id = :periodId) and (:companyId is null or c.id = :companyId)"
             + " order by p.startDate, c.code, r.receiptDate, r.id")

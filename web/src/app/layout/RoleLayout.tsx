@@ -5,7 +5,7 @@ import { Link, Outlet, useLocation } from 'react-router';
 
 import { NotificationBell } from '../../features/notifications/NotificationBell';
 import { type Me, useAuth } from '../auth/authContext';
-import { homePath, menuPath, visibleMenu } from './menuConfig';
+import { homePath, MENU, menuPath, ROLE_LABELS } from './menuConfig';
 import './shell.css';
 
 const SYSTEM_NAME = 'Quản lý thu giá dịch vụ vệ sinh môi trường';
@@ -30,7 +30,7 @@ function MobileLayout({ user, onLogout }: { user: Me; onLogout: () => void }) {
         <Outlet />
       </main>
       <nav aria-label="Điều hướng" className="clm-tabbar">
-        {visibleMenu(user.role).map((entry) => {
+        {MENU[user.role].map((entry) => {
           const to = menuPath(user.role, entry);
           return (
             <Link key={entry.path} to={to} className={`clm-tab${pathname.startsWith(to) ? ' active' : ''}`}>
@@ -58,6 +58,7 @@ export function RoleLayout() {
 
   return (
     <div className={`app-shell${collapsed ? ' sidebar-collapsed' : ''}`}>
+      <a className="skip-link" href="#main-content">Bỏ qua menu, tới nội dung</a>
       <header className="topbar">
         <button type="button" className="menu-toggle" onClick={toggleMenu} aria-label="Mở menu" aria-expanded={!collapsed}>
           <MenuOutlined />
@@ -73,6 +74,7 @@ export function RoleLayout() {
           <NotificationBell role={user.role} />
           <span className="top-user">
             <strong>{user.fullName}</strong>
+            <small>{ROLE_LABELS[user.role]}</small>
           </span>
           <span className="avatar" aria-hidden="true">
             {initials(user.fullName)}
@@ -85,7 +87,7 @@ export function RoleLayout() {
 
       <aside className={`sidebar${drawerOpen ? ' open' : ''}`}>
         <nav className="role-nav" aria-label="Menu chính">
-          {visibleMenu(user.role).map((entry) => {
+          {MENU[user.role].map((entry) => {
             const to = menuPath(user.role, entry);
             const active = pathname.startsWith(to);
             return (
@@ -99,7 +101,7 @@ export function RoleLayout() {
       </aside>
       <div className={`sidebar-backdrop${drawerOpen ? ' show' : ''}`} onClick={() => setDrawerOpen(false)} aria-hidden="true" />
 
-      <main className="main-content">
+      <main className="main-content" id="main-content" tabIndex={-1}>
         <Outlet />
       </main>
       <footer className="app-footer">

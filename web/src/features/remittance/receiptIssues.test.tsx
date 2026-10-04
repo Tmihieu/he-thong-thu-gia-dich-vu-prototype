@@ -33,7 +33,7 @@ function lastBody(fetchFn: ReturnType<typeof mockApi>, path: string) {
   return call ? JSON.parse(String((call[1] as RequestInit).body)) : undefined;
 }
 
-describe('Công ty: biên nhận xã lập', () => {
+describe('Công ty: phiếu thu xã lập', () => {
   beforeEach(() => {
     sessionStorage.clear();
     sessionStorage.setItem(TOKEN_KEY, 'tok-dv01');
@@ -53,7 +53,7 @@ describe('Công ty: biên nhận xã lập', () => {
   it('phiếu đã báo hiện "chờ xã kiểm tra" và không báo lại được; form bắt buộc loại và mô tả', async () => {
     const fetchFn = api();
     renderApp('/company/assigned');
-    await userEvent.click(await screen.findByRole('tab', { name: 'Biên nhận xã lập' }));
+    await userEvent.click(await screen.findByRole('tab', { name: 'Phiếu thu xã lập' }));
 
     const [first, reported] = (await screen.findAllByRole('button', { name: 'Báo sai sót' })).map((b) => b.closest('tr')!);
     expect(within(first!).getByText('PT-CT-1026-001')).toBeInTheDocument();
@@ -82,7 +82,7 @@ describe('Công ty: biên nhận xã lập', () => {
   it('loại khác "Sai số tiền" thì không gửi số đúng', async () => {
     const fetchFn = api();
     renderApp('/company/assigned');
-    await userEvent.click(await screen.findByRole('tab', { name: 'Biên nhận xã lập' }));
+    await userEvent.click(await screen.findByRole('tab', { name: 'Phiếu thu xã lập' }));
 
     await userEvent.click((await screen.findAllByRole('button', { name: 'Báo sai sót' }))[0]!);
     const dialog = await screen.findByRole('dialog');
@@ -99,7 +99,7 @@ describe('Công ty: biên nhận xã lập', () => {
   });
 });
 
-describe('Xã: sai sót biên nhận', () => {
+describe('Xã: sai sót phiếu thu', () => {
   beforeEach(() => {
     sessionStorage.clear();
     sessionStorage.setItem(TOKEN_KEY, 'tok-canbo');
@@ -116,7 +116,7 @@ describe('Xã: sai sót biên nhận', () => {
     });
     renderApp('/commune/charges');
 
-    await userEvent.click(await screen.findByRole('tab', { name: 'Sai sót biên nhận' }));
+    await userEvent.click(await screen.findByRole('tab', { name: 'Sai sót phiếu thu' }));
     const row = (await screen.findByText('Chuyển 250.000 đ, phiếu ghi 200.000 đ', { selector: 'td' })).closest('tr')!;
     await waitFor(() =>
       expect(fetchFn.mock.calls.some(([url]) => String(url) === '/api/remittance/receipt-issues?status=PENDING')).toBe(true),

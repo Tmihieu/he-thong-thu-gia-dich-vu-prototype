@@ -72,7 +72,7 @@ describe('Tài khoản (quản trị)', () => {
     const dialog = await screen.findByRole('dialog');
     await pickOption(within(dialog).getByRole('combobox', { name: 'Vai trò' }), 'Cán bộ xã');
     expect(within(dialog).queryByRole('combobox', { name: 'Công ty' })).not.toBeInTheDocument();
-    await pickOption(within(dialog).getByRole('combobox', { name: 'Vai trò' }), 'Người thu tiền');
+    await pickOption(within(dialog).getByRole('combobox', { name: 'Vai trò' }), 'Người đi thu');
     await pickOption(within(dialog).getByRole('combobox', { name: 'Công ty' }), 'DV01 · Công ty MTĐT Đông Thạnh');
     await userEvent.type(within(dialog).getByLabelText('Tên đăng nhập'), 'thu07b');
     await userEvent.type(within(dialog).getByLabelText('Họ và tên'), 'Người thu mới');

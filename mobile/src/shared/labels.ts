@@ -34,7 +34,7 @@ export const TARIFF_GROUP_LABELS: Record<TariffGroup, string> = {
 export const CHARGE_STATUS_LABELS: Record<ChargeStatus, string> = {
   UNPAID: 'Chưa đóng',
   PAID: 'Đã đóng',
-  EXEMPT: 'Miễn',
+  EXEMPT: 'Miễn giảm',
   WRITTEN_OFF: 'Đã xóa nợ',
 };
 
@@ -71,6 +71,8 @@ export const COMPLAINT_CATEGORY_LABELS: Record<ComplaintCategory, string> = {
   OVERCHARGE: 'Thu phí cao hơn định mức',
   POLLUTION_POINT: 'Điểm tập kết gây ô nhiễm',
   STAFF_ATTITUDE: 'Thái độ nhân viên thu gom',
+  FACILITY: 'Cơ sở vật chất',
+  COLLECTION_REQUEST: 'Đề nghị thu gom',
   PAID_NOT_RECORDED: 'Đã đóng nhưng chưa được ghi nhận',
   OTHER: 'Vấn đề khác',
 };

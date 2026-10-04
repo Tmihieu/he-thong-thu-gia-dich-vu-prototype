@@ -12,8 +12,9 @@ public interface BulkyWasteRequestRepository extends JpaRepository<BulkyWasteReq
     String WITH_DETAILS = "select r from BulkyWasteRequest r join fetch r.citizenAccount join fetch r.subject s"
             + " join fetch s.area join fetch r.company c";
 
-    @Query(WITH_DETAILS + " where r.citizenAccount.id = :citizenId order by r.createdAt desc, r.id desc")
-    List<BulkyWasteRequest> findByCitizen(Long citizenId);
+    /** Yêu cầu của hộ (mọi tài khoản của hộ thấy chung, QĐ-L10). */
+    @Query(WITH_DETAILS + " where s.id = :subjectId order by r.createdAt desc, r.id desc")
+    List<BulkyWasteRequest> findBySubject(Long subjectId);
 
     /** {@code companyId} null: mọi công ty (cán bộ xã, quản trị). */
     @Query(WITH_DETAILS + " where (:companyId is null or c.id = :companyId) and (:status is null or r.status = :status)"

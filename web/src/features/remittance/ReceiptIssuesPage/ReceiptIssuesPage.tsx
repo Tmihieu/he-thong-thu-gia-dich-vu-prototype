@@ -1,17 +1,20 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, Descriptions, Form, Input, Modal, Segmented, Space, Table, Tag } from 'antd';
+import { Alert, App, Button, Descriptions, Form, Input, Modal, Segmented, Space, Table } from 'antd';
 import { useState } from 'react';
 
-import { api, ApiError } from '../../../api/client';
+import { api } from '../../../api/client';
 import { DateText } from '../../../shared/DateText';
 import {
-  RECEIPT_ISSUE_STATUS_COLORS,
   RECEIPT_ISSUE_STATUS_LABELS,
   RECEIPT_ISSUE_TYPE_LABELS,
   type ReceiptIssueStatus,
 } from '../../../shared/labels';
+import { errorText } from '../../../shared/errorText';
 import { MoneyText } from '../../../shared/MoneyText';
+import { EmptyBlock, ErrorBlock } from '../../../shared/StateBlock';
+import { StatusTag } from '../../../shared/StatusTag';
 import { type ReceiptIssue, remittanceKeys, useReceiptIssues } from '../api';
+import { ISSUE_TONES } from '../tones';
 
 function ResolveModal({ issue, onClose }: { issue: ReceiptIssue | null; onClose: () => void }) {
   const { message } = App.useApp();
@@ -44,7 +47,7 @@ function ResolveModal({ issue, onClose }: { issue: ReceiptIssue | null; onClose:
           showIcon
           role="alert"
           style={{ marginBottom: 12 }}
-          message={resolve.error instanceof ApiError ? resolve.error.message : 'Không lưu được. Vui lòng thử lại.'}
+          message={errorText(resolve.error, 'Không lưu được. Vui lòng thử lại.')}
         />
       )}
       {issue && (
@@ -81,7 +84,7 @@ function ResolveModal({ issue, onClose }: { issue: ReceiptIssue | null; onClose:
   );
 }
 
-/** Màn mới (prototype chưa có): cán bộ xã xem sai sót biên nhận công ty báo và đóng kèm ghi chú (G6). */
+/** Màn mới (prototype chưa có): cán bộ xã xem sai sót phiếu thu công ty báo và đóng kèm ghi chú (G6). */
 export function ReceiptIssuesPage() {
   const [status, setStatus] = useState<ReceiptIssueStatus | 'ALL'>('PENDING');
   const [resolving, setResolving] = useState<ReceiptIssue | null>(null);
@@ -100,19 +103,20 @@ export function ReceiptIssuesPage() {
           ]}
         />
       </Space>
-      {issues.error && (
-        <Alert
-          type="error"
-          showIcon
-          message={issues.error instanceof ApiError ? issues.error.message : 'Không tải được danh sách sai sót'}
-        />
-      )}
+      {issues.error && <ErrorBlock error={issues.error} onRetry={() => void issues.refetch()} />}
       <Table<ReceiptIssue>
         rowKey="id"
         loading={issues.isLoading}
         dataSource={issues.data ?? []}
         pagination={false}
-        locale={{ emptyText: status === 'PENDING' ? 'Không có sai sót nào chờ xử lý' : 'Không có sai sót' }}
+        locale={{
+          emptyText: (
+            <EmptyBlock
+              title={status === 'PENDING' ? 'Không có sai sót nào chờ xử lý' : 'Không có sai sót'}
+              hint="Khi công ty báo phiếu thu sai, sai sót hiện ở đây để xã kiểm tra."
+            />
+          ),
+        }}
         columns={[
           { title: 'Công ty', dataIndex: 'companyCode' },
           { title: 'Phiếu', render: (_, i) => `${i.receiptCode} · ${i.periodLabel}` },
@@ -123,7 +127,7 @@ export function ReceiptIssuesPage() {
           {
             title: 'Trạng thái',
             dataIndex: 'status',
-            render: (s: ReceiptIssue['status']) => <Tag color={RECEIPT_ISSUE_STATUS_COLORS[s]}>{RECEIPT_ISSUE_STATUS_LABELS[s]}</Tag>,
+            render: (s: ReceiptIssue['status']) => <StatusTag tone={ISSUE_TONES[s]}>{RECEIPT_ISSUE_STATUS_LABELS[s]}</StatusTag>,
           },
           {
             title: '',

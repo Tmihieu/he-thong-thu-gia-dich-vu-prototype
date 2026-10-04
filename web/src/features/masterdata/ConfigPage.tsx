@@ -1,6 +1,7 @@
-import { Tabs, Typography } from 'antd';
+import { Tabs } from 'antd';
 
 import { CompaniesPage } from './CompaniesPage/CompaniesPage';
+import { PageHeader } from '../../shared/PageHeader';
 import { LocationsSettings } from './LocationsSettings';
 import { PeriodsPage } from './PeriodsPage/PeriodsPage';
 import { TariffsPage } from './TariffsPage/TariffsPage';
@@ -9,9 +10,7 @@ import { TariffsPage } from './TariffsPage/TariffsPage';
 export function ConfigPage() {
   return (
     <>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        Cấu hình
-      </Typography.Title>
+      <PageHeader title="Cấu hình" description="Kỳ thu, biểu giá, công ty và địa bàn." />
       <Tabs
         items={[
           { key: 'periods', label: 'Kỳ thu', children: <PeriodsPage /> },

@@ -7,7 +7,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.api.Test;
 
-/** Đọc số tiền bằng chữ trên biên nhận (R29). */
+/** Đọc số tiền bằng chữ trên phiếu thu (R29). */
 class VietnameseMoneyWordsTest {
 
     @ParameterizedTest

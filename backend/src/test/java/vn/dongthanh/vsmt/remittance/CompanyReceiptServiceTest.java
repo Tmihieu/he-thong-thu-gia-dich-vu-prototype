@@ -45,7 +45,7 @@ import vn.dongthanh.vsmt.remittance.service.CompanyLedgerService;
 import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService;
 import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService.IssueReceiptCommand;
 
-/** Viết trước (TDD) cho T26: R15 số tiền biên nhận, cộng dồn, kỳ khóa, phân quyền, mã phiếu. */
+/** Viết trước (TDD) cho T26: R15 số tiền phiếu thu, cộng dồn, kỳ khóa, phân quyền, mã phiếu. */
 class CompanyReceiptServiceTest {
 
     final CompanyReceiptRepository receipts = mock(CompanyReceiptRepository.class);
@@ -92,7 +92,7 @@ class CompanyReceiptServiceTest {
         verify(notifications).publish(sent.capture(), eq(officer.id()));
         assertThat(sent.getValue().type()).isEqualTo(RecipientType.COMPANY);
         assertThat(sent.getValue().kind()).isEqualTo(NotificationKind.RECEIPT);
-        assertThat(sent.getValue().title()).isEqualTo("Xã đã lập biên nhận PT-CT-1026-001");
+        assertThat(sent.getValue().title()).isEqualTo("Xã đã lập phiếu thu PT-CT-1026-001");
     }
 
     @Test

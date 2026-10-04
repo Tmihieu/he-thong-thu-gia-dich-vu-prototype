@@ -22,6 +22,8 @@ interface Props {
   /** null = tạo mới; có tài khoản = sửa (không đổi tên đăng nhập, không nhập mật khẩu). */
   account: Account | null;
   open: boolean;
+  /** Đang sửa chính tài khoản đăng nhập: không đổi được vai trò (BR-PLT-04). */
+  isSelf?: boolean;
   companies: Company[];
   submitting?: boolean;
   error?: string | null;
@@ -30,7 +32,7 @@ interface Props {
 }
 
 /** Popup thêm / sửa tài khoản: vai trò công ty và người đi thu bắt buộc chọn công ty. */
-export function AccountForm({ account, open, companies, submitting, error, onSubmit, onCancel }: Props) {
+export function AccountForm({ account, open, isSelf = false, companies, submitting, error, onSubmit, onCancel }: Props) {
   const [form] = Form.useForm<FormValues>();
   const role = Form.useWatch('role', form);
   const creating = account === null;
@@ -86,6 +88,7 @@ export function AccountForm({ account, open, companies, submitting, error, onSub
         <Form.Item label="Vai trò" name="role" rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}>
           <Select
             aria-label="Vai trò"
+            disabled={isSelf}
             options={(Object.keys(ROLE_LABELS) as Role[]).map((r) => ({ value: r, label: ROLE_LABELS[r] }))}
           />
         </Form.Item>

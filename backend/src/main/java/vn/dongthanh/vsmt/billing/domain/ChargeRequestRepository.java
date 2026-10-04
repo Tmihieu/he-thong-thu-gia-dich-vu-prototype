@@ -10,6 +10,10 @@ public interface ChargeRequestRepository extends JpaRepository<ChargeRequest, Lo
 
     long countByPeriodId(Long periodId);
 
+    /** Khóa theo tiền tố tới hết transaction: hai lượt phát hành cùng kỳ xếp hàng thay vì chạy song song. */
+    @Query(value = "select count(*) from pg_advisory_xact_lock(hashtext(:key))", nativeQuery = true)
+    long lockKey(String key);
+
     @Query("select r from ChargeRequest r join fetch r.period join fetch r.feeType"
             + " where (:periodId is null or r.period.id = :periodId) order by r.id desc")
     List<ChargeRequest> findForList(Long periodId);

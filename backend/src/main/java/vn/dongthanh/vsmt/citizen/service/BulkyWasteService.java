@@ -108,14 +108,14 @@ public class BulkyWasteService {
 
     @Transactional(readOnly = true)
     public List<BulkyWasteRequest> listOfCitizen(CurrentCitizen citizen) {
-        return requests.findByCitizen(citizens.requireActive(citizen).getId());
+        return requests.findBySubject(citizens.requireActive(citizen).getSubject().getId());
     }
 
     @Transactional(readOnly = true)
     public BulkyWasteRequest getOfCitizen(CurrentCitizen citizen, Long id) {
-        Long accountId = citizens.requireActive(citizen).getId();
+        Long subjectId = citizens.requireActive(citizen).getSubject().getId();
         return requests.findByIdWithDetails(id)
-                .filter(r -> r.getCitizenAccount().getId().equals(accountId))
+                .filter(r -> r.getSubject().getId().equals(subjectId))
                 .orElseThrow(BulkyWasteService::notFound);
     }
 

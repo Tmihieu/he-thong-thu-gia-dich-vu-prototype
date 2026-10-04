@@ -174,6 +174,14 @@ class UserAdminIT extends IntegrationTest {
                 .andExpect(jsonPath("$.code").value("PASSWORD_TOO_LONG"));
     }
 
+    @Test
+    void passwordOver72CharactersAlsoGetsBusinessCodeNot400() throws Exception {
+        send(post("/api/platform/users"), """
+                {"username":"dai2","fullName":"A","role":"ADMIN","password":"%s"}""".formatted("a".repeat(80)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("PASSWORD_TOO_LONG"));
+    }
+
     private ResultActions createCollector(String username) throws Exception {
         return send(post("/api/platform/users"), collectorBody(username));
     }

@@ -1,5 +1,8 @@
 import { formatDate } from '../../shared/format';
+import type { semantic } from '../../app/theme';
 import type { CollectorCharge } from './api';
+
+type Tone = keyof typeof semantic;
 
 export type ResultKind = 'CASH' | 'TRANSFER' | 'ABSENT' | 'APPOINTMENT' | 'REFUSED';
 
@@ -23,6 +26,8 @@ export const WORK_CHIPS: { value: WorkChip; label: string }[] = [
   { value: 'ABSENT', label: 'Vắng nhà' },
   { value: 'PAID', label: 'Đã thu' },
 ];
+/** BR-COL-04: giao diện người đi thu không có vắng / hẹn, nên không có nút lọc cho hai nhóm đó. */
+export const COLLECTOR_CHIPS = WORK_CHIPS.filter((c) => c.value !== 'APPOINTMENT' && c.value !== 'ABSENT');
 /** Thứ tự hiển thị: quá hạn trên cùng, đã thu xuống cuối, miễn giảm sau cùng. */
 const CHIP_ORDER: Record<string, number> = { OVERDUE: 0, UNPAID: 1, ABSENT: 2, APPOINTMENT: 3, PAID: 4 };
 
@@ -32,13 +37,18 @@ export function workChip(w: CollectorCharge): WorkChip | null {
   return g === 'UNPAID' && w.charge.overdue ? 'OVERDUE' : g;
 }
 
+/** Hộ có thuộc nút lọc không: "Chưa thu" gồm cả quá hạn, "Quá hạn" là tập con của "Chưa thu". */
+export function matchesChip(w: CollectorCharge, chip: WorkChip): boolean {
+  if (chip === 'ALL') return true;
+  // Khoản chưa thu hết (kể cả đã thu một phần, đã hẹn, vắng nhà) vẫn là "Chưa thu" (BR-COL-03).
+  const unpaid = w.charge.status === 'UNPAID';
+  if (chip === 'UNPAID') return unpaid;
+  if (chip === 'OVERDUE') return unpaid && w.charge.overdue;
+  return workState(w).group === chip;
+}
+
 export function countChips(items: CollectorCharge[]): Record<string, number> {
-  const c: Record<string, number> = { ALL: items.length };
-  items.forEach((w) => {
-    const k = workChip(w);
-    if (k) c[k] = (c[k] ?? 0) + 1;
-  });
-  return c;
+  return Object.fromEntries(WORK_CHIPS.map((c) => [c.value, items.filter((w) => matchesChip(w, c.value)).length]));
 }
 
 export function byChipOrder(a: CollectorCharge, b: CollectorCharge) {
@@ -46,20 +56,20 @@ export function byChipOrder(a: CollectorCharge, b: CollectorCharge) {
 }
 
 /** Trạng thái hiển thị của một hộ: đã thu / miễn giảm / đã xóa nợ theo khoản; chưa thu thì theo lượt ghé gần nhất. */
-export function workState(w: CollectorCharge): { group: WorkGroup | null; label: string; color: string } {
-  if (w.charge.status === 'PAID') return { group: 'PAID', label: 'Đã thu', color: 'green' };
-  if (w.charge.status === 'EXEMPT') return { group: null, label: 'Miễn giảm', color: 'purple' };
-  if (w.charge.status === 'WRITTEN_OFF') return { group: null, label: 'Đã xóa nợ', color: 'default' };
+export function workState(w: CollectorCharge): { group: WorkGroup | null; label: string; tone: Tone } {
+  if (w.charge.status === 'PAID') return { group: 'PAID', label: 'Đã thu', tone: 'success' };
+  if (w.charge.status === 'EXEMPT') return { group: null, label: 'Miễn giảm', tone: 'neutral' };
+  if (w.charge.status === 'WRITTEN_OFF') return { group: null, label: 'Đã xóa nợ', tone: 'neutral' };
   switch (w.lastVisit?.result) {
     case 'APPOINTMENT':
-      return { group: 'APPOINTMENT', label: `Hẹn ${formatDate(w.lastVisit.revisitDate)}`, color: 'blue' };
+      return { group: 'APPOINTMENT', label: `Hẹn ${formatDate(w.lastVisit.revisitDate)}`, tone: 'info' };
     case 'ABSENT':
-      return { group: 'ABSENT', label: 'Vắng nhà', color: 'gold' };
+      return { group: 'ABSENT', label: 'Vắng nhà', tone: 'warning' };
     case 'REFUSED':
-      return { group: 'UNPAID', label: 'Từ chối nộp', color: 'red' };
+      return { group: 'UNPAID', label: 'Từ chối nộp', tone: 'danger' };
     default:
       return w.charge.overdue
-        ? { group: 'UNPAID', label: 'Quá hạn', color: 'red' }
-        : { group: 'UNPAID', label: 'Chưa thu', color: 'orange' };
+        ? { group: 'UNPAID', label: 'Quá hạn', tone: 'danger' }
+        : { group: 'UNPAID', label: 'Chưa thu', tone: 'warning' };
   }
 }

@@ -53,13 +53,13 @@ class ChargeCalculatorTest {
     void envMonthIsGroupMonthlyPriceOfThePeriodTariff() {
         ChargeAmount a = calculator.calculate(env, october, contract(TariffGroup.HH_3_PLUS, false), null);
 
-        assertThat(a).isEqualTo(new ChargeAmount(TariffGroup.HH_3_PLUS, 80_000L, 1, 80_000L, false, 57_000L));
+        assertThat(a).isEqualTo(new ChargeAmount(TariffGroup.HH_3_PLUS, 80_000L, 1, 80_000L, false));
     }
 
     @Test
     void envQuarterIsThreeMonths() {
         assertThat(calculator.calculate(env, q4, contract(TariffGroup.HH_UP_TO_2, false), null))
-                .isEqualTo(new ChargeAmount(TariffGroup.HH_UP_TO_2, 40_000L, 3, 120_000L, false, 87_000L));
+                .isEqualTo(new ChargeAmount(TariffGroup.HH_UP_TO_2, 40_000L, 3, 120_000L, false));
         assertThat(calculator.calculate(env, q4, contract(TariffGroup.SMALL_250_TO_500, false), null).amount())
                 .isEqualTo(714_000L);
     }
@@ -73,17 +73,17 @@ class ChargeCalculatorTest {
     @Test
     void exemptContractGivesZeroButKeepsUnitPrice() {
         assertThat(calculator.calculate(env, q4, contract(TariffGroup.HH_3_PLUS, true), null))
-                .isEqualTo(new ChargeAmount(TariffGroup.HH_3_PLUS, 80_000L, 3, 0L, true, 171_000L));
+                .isEqualTo(new ChargeAmount(TariffGroup.HH_3_PLUS, 80_000L, 3, 0L, true));
         assertThat(calculator.calculate(extra, october, contract(TariffGroup.HH_3_PLUS, true), 150_000L))
-                .isEqualTo(new ChargeAmount(null, 150_000L, 1, 0L, true, 0L));
+                .isEqualTo(new ChargeAmount(null, 150_000L, 1, 0L, true));
     }
 
     @Test
     void fixedFeeUsesEnteredPriceElseDefaultAndAlwaysOneMonth() {
         assertThat(calculator.calculate(extra, q4, contract(TariffGroup.HH_3_PLUS, false), 150_000L))
-                .isEqualTo(new ChargeAmount(null, 150_000L, 1, 150_000L, false, 0L));
+                .isEqualTo(new ChargeAmount(null, 150_000L, 1, 150_000L, false));
         assertThat(calculator.calculate(extra, october, contract(TariffGroup.HH_3_PLUS, false), null))
-                .isEqualTo(new ChargeAmount(null, 50_000L, 1, 50_000L, false, 0L));
+                .isEqualTo(new ChargeAmount(null, 50_000L, 1, 50_000L, false));
     }
 
     @Test
@@ -102,13 +102,18 @@ class ChargeCalculatorTest {
     }
 
     @Test
+    void exemptPerKgGroupWithoutQuotaIsZeroNotRejected() {
+        assertThat(calculator.calculate(env, october, contract(TariffGroup.BY_VOLUME, true), null).amount()).isZero();
+    }
+
+    @Test
     void perKgGroupIsRatePerKgTimesQuotaTimesMonths() {
         ServiceContract c = contract(TariffGroup.BY_VOLUME, false);
         c.setQuotaKg(600);
 
         // 633 đ/kg (453 thu gom + 180 vận chuyển) × 600 kg × 1 tháng.
         assertThat(calculator.calculate(env, october, c, null))
-                .isEqualTo(new ChargeAmount(TariffGroup.BY_VOLUME, 633L, 1, 379_800L, false, 271_800L));
+                .isEqualTo(new ChargeAmount(TariffGroup.BY_VOLUME, 633L, 1, 379_800L, false, 600L));
         assertThat(calculator.calculate(env, q4, c, null).amount()).isEqualTo(1_139_400L);
         // Miễn 100% thì 0 đồng, vẫn chụp đơn giá.
         ServiceContract exempt = contract(TariffGroup.BY_VOLUME, true);

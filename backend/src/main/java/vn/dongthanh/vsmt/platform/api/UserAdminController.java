@@ -91,7 +91,7 @@ public class UserAdminController {
             @Email(message = "không đúng định dạng") @Size(max = 100) String email,
             @Size(max = 100) String organization,
             @Schema(requiredMode = RequiredMode.REQUIRED)
-            @NotBlank(message = "không được để trống") @Size(min = 8, max = 72, message = "từ 8 đến 72 ký tự") String password) {
+            @NotBlank(message = "không được để trống") @Size(min = 8, message = "tối thiểu 8 ký tự") String password) {
 
         UserCommand toCommand() {
             return new UserCommand(fullName, role, companyId, phone, email, organization);
@@ -118,7 +118,7 @@ public class UserAdminController {
 
     public record PasswordRequest(
             @Schema(requiredMode = RequiredMode.REQUIRED)
-            @NotBlank(message = "không được để trống") @Size(min = 8, max = 72, message = "từ 8 đến 72 ký tự") String password) {
+            @NotBlank(message = "không được để trống") @Size(min = 8, message = "tối thiểu 8 ký tự") String password) {
 
         @Override
         public String toString() {

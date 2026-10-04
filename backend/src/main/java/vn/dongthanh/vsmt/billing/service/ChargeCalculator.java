@@ -9,7 +9,6 @@ import vn.dongthanh.vsmt.masterdata.domain.PeriodType;
 import vn.dongthanh.vsmt.masterdata.domain.PricingMode;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceContract;
 import vn.dongthanh.vsmt.masterdata.domain.TariffGroup;
-import vn.dongthanh.vsmt.masterdata.domain.TariffRate;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 
 /**
@@ -30,23 +29,24 @@ public class ChargeCalculator {
         long unitPrice;
         int months;
         long quotaKg = 1;
-        long collectionUnit = 0;
+        Long snapshotKg = null;
         if (feeType.getPricingMode() == PricingMode.TARIFF) {
             group = contract.getTariffGroup();
             TariffGroup g = group;
-            TariffRate rate = period.getTariffVersion().rateFor(g)
+            unitPrice = period.getTariffVersion().rateFor(g)
                     .orElseThrow(() -> new BusinessRuleException("TARIFF_RATE_NOT_FOUND", "Biểu giá "
                             + period.getTariffVersion().getCode() + " của kỳ " + period.getCode()
-                            + " chưa có đơn giá cho nhóm " + g + "."));
-            unitPrice = rate.getMonthlyTotal();
-            collectionUnit = rate.getCollectionFee();
+                            + " chưa có đơn giá cho nhóm " + g + "."))
+                    .getMonthlyTotal();
             months = period.getPeriodType() == PeriodType.QUARTER ? 3 : 1;
             if (group == TariffGroup.BY_VOLUME) {
                 // Nhóm theo ký: đơn giá đ/kg × định mức kg/tháng (cân tháng đầu, góp ý BA 03/10); chưa có định mức thì chưa lập được.
-                if (contract.getQuotaKg() == null) {
-                    throw new BusinessRuleException("QUOTA_KG_REQUIRED", "Hợp đồng nhóm tính theo ký chưa có định mức kg/tháng.");
+                if (contract.getQuotaKg() == null && !contract.isExempt()) {
+                    throw new BusinessRuleException("QUOTA_KG_REQUIRED", "Đăng ký thu phí nhóm tính theo ký chưa có định mức kg/tháng.");
                 }
-                quotaKg = contract.getQuotaKg();
+                // quota null chỉ khi miễn 100% (amount = 0)
+                snapshotKg = contract.getQuotaKg() == null ? null : contract.getQuotaKg().longValue();
+                quotaKg = snapshotKg == null ? 1 : snapshotKg;
             }
         } else {
             if (enteredPrice != null && enteredPrice <= 0) {
@@ -57,7 +57,6 @@ public class ChargeCalculator {
         }
         boolean exempt = contract.isExempt();
         long amount = exempt ? 0L : Math.multiplyExact(Math.multiplyExact(unitPrice, quotaKg), (long) months);
-        long collectionAmount = Math.multiplyExact(Math.multiplyExact(collectionUnit, quotaKg), (long) months);
-        return new ChargeAmount(group, unitPrice, months, amount, exempt, collectionAmount);
+        return new ChargeAmount(group, unitPrice, months, amount, exempt, snapshotKg);
     }
 }
