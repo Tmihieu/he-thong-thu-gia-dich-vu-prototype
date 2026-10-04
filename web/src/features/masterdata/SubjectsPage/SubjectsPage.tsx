@@ -1,4 +1,4 @@
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
 import { Alert, App, Button, DatePicker, Drawer, Form, Input, Modal, Select, Space, Table, Tag, Typography } from 'antd';
 import type { Dayjs } from 'dayjs';
 import { useState } from 'react';
@@ -23,6 +23,7 @@ import {
   useUpdateContract,
   useUpdateSubject,
 } from '../api';
+import { ImportSubjectsModal } from './ImportSubjectsModal';
 import { type ProfileSubmit, SubjectProfileForm } from './SubjectProfileForm';
 
 function errorMessage(err: unknown): string {
@@ -79,6 +80,7 @@ export function SubjectsPage() {
   const endSubject = useEndSubject();
 
   const [editing, setEditing] = useState<Editing>(null);
+  const [importing, setImporting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [ending, setEnding] = useState<Subject | null>(null);
   const [endForm] = Form.useForm<{ endDate: Dayjs; reason?: string }>();
@@ -157,6 +159,9 @@ export function SubjectsPage() {
         />
         <Button type="primary" icon={<PlusOutlined />} onClick={() => openEditor({ mode: 'create' })}>
           Thêm hộ
+        </Button>
+        <Button icon={<UploadOutlined />} onClick={() => setImporting(true)}>
+          Nhập từ Excel
         </Button>
       </Space>
       <Table<Subject>
@@ -279,6 +284,7 @@ export function SubjectsPage() {
           </Form.Item>
         </Form>
       </Modal>
+      <ImportSubjectsModal open={importing} onClose={() => setImporting(false)} />
     </>
   );
 }

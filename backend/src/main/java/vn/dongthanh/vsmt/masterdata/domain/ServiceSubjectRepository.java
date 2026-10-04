@@ -49,4 +49,10 @@ public interface ServiceSubjectRepository extends JpaRepository<ServiceSubject, 
     /** Số đối tượng theo khu vực (không tính đã chấm dứt), dùng cho màn khu vực. */
     @Query("select s.area.id, count(s) from ServiceSubject s where s.status <> 'ENDED' group by s.area.id")
     List<Object[]> countActiveByArea();
+
+    /** Hồ sơ còn hiệu lực trùng tên + địa chỉ trong cùng khu vực (dùng khi import để chặn nhập trùng). */
+    @Query("select count(s) from ServiceSubject s where s.area.id = :areaId and s.status <> 'ENDED'"
+            + " and lower(s.name) = lower(:name) and lower(s.street) = lower(:street)"
+            + " and lower(coalesce(s.houseNo, '')) = lower(:houseNo)")
+    long countSameAddress(Long areaId, String name, String street, String houseNo);
 }

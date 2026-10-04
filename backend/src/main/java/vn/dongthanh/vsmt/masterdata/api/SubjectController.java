@@ -1,5 +1,7 @@
 package vn.dongthanh.vsmt.masterdata.api;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -7,7 +9,12 @@ import java.util.Map;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,6 +45,8 @@ import vn.dongthanh.vsmt.masterdata.domain.ServiceSubject;
 import vn.dongthanh.vsmt.masterdata.domain.SubjectStatus;
 import vn.dongthanh.vsmt.masterdata.domain.SubjectType;
 import vn.dongthanh.vsmt.masterdata.service.SubjectMemberHistory;
+import vn.dongthanh.vsmt.masterdata.service.SubjectImportService;
+import vn.dongthanh.vsmt.masterdata.service.SubjectImportService.ImportPreview;
 import vn.dongthanh.vsmt.masterdata.service.SubjectService;
 import vn.dongthanh.vsmt.masterdata.service.SubjectService.SubjectFilter;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
@@ -50,6 +59,7 @@ public class SubjectController {
 
     private final SubjectService subjects;
     private final SubjectMemberHistory memberHistory;
+    private final SubjectImportService importer;
 
     @Operation(summary = "Tìm hồ sơ hộ (mã, tên, SĐT, địa chỉ); công ty chỉ thấy hộ thuộc khu vực của mình")
     @GetMapping("/subjects")
@@ -84,6 +94,59 @@ public class SubjectController {
     public List<MemberChangeDto> memberHistory(@PathVariable Long id, @AuthenticationPrincipal CurrentUser actor) {
         ServiceSubject s = subjects.get(id, actor);
         return memberHistory.of(s.getCode()).stream().map(c -> new MemberChangeDto(c.at(), c.by(), c.from(), c.to())).toList();
+    }
+
+    public record ImportRowDto(
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Số dòng trong file Excel") int rowNo,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String type,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String name,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String houseNo,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String street,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String areaCode,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String phone,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) Integer memberCount,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Rỗng khi dòng hợp lệ") List<String> errors) {
+    }
+
+    public record ImportPreviewDto(
+            @Schema(requiredMode = RequiredMode.REQUIRED) List<ImportRowDto> rows,
+            @Schema(requiredMode = RequiredMode.REQUIRED) int valid,
+            @Schema(requiredMode = RequiredMode.REQUIRED) int invalid) {
+
+        static ImportPreviewDto of(ImportPreview p) {
+            return new ImportPreviewDto(p.rows().stream().map(r -> new ImportRowDto(r.rowNo(), r.type(), r.name(),
+                    r.houseNo(), r.street(), r.areaCode(), r.phone(), r.memberCount(), r.errors())).toList(),
+                    p.valid(), p.invalid());
+        }
+    }
+
+    public record ImportResultDto(@Schema(requiredMode = RequiredMode.REQUIRED) int created) {
+    }
+
+    @Operation(summary = "Tải file Excel mẫu để nhập hộ hàng loạt (cán bộ xã)")
+    @GetMapping("/subjects/import-template")
+    public ResponseEntity<byte[]> importTemplate(@AuthenticationPrincipal CurrentUser actor) {
+        actor.requireRole(vn.dongthanh.vsmt.platform.domain.Role.COMMUNE_OFFICER);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                        .filename("mau-nhap-ho.xlsx", StandardCharsets.UTF_8).build().toString())
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(importer.template());
+    }
+
+    @Operation(summary = "Xem trước file Excel nhập hộ: từng dòng kèm lỗi, chưa ghi gì (cán bộ xã)")
+    @PostMapping(value = "/subjects/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ImportPreviewDto previewImport(@RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal CurrentUser actor) throws IOException {
+        return ImportPreviewDto.of(importer.preview(file.getInputStream(), actor));
+    }
+
+    @Operation(summary = "Nhập hộ từ file Excel: ghi tất cả hoặc không gì; còn dòng lỗi thì từ chối (cán bộ xã)")
+    @PostMapping(value = "/subjects/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public ImportResultDto importSubjects(@RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal CurrentUser actor) throws IOException {
+        return new ImportResultDto(importer.commit(file.getInputStream(), actor));
     }
 
     @Operation(summary = "Tạo hồ sơ hộ, kèm hợp đồng đầu tiên nếu có (cán bộ xã)")

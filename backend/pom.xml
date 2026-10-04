@@ -63,6 +63,12 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <!-- Import hộ hàng loạt từ Excel (.xlsx) -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.3.0</version>
+        </dependency>
         <!-- G10 (duyệt 24/09/2026): Lombok cho mẫu code SPEC §6 -->
         <dependency>
             <groupId>org.projectlombok</groupId>

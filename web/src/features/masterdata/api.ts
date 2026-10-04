@@ -192,6 +192,43 @@ export function useEndSubject() {
   );
 }
 
+/** Khớp ImportPreviewDto của backend (chưa có trong schema.d.ts cho tới lần `npm run gen:api` kế tiếp). */
+export interface ImportRow {
+  rowNo: number;
+  type: string;
+  name: string;
+  houseNo: string | null;
+  street: string;
+  areaCode: string;
+  phone: string;
+  memberCount: number | null;
+  errors: string[];
+}
+
+export interface ImportPreview {
+  rows: ImportRow[];
+  valid: number;
+  invalid: number;
+}
+
+function fileForm(file: File): FormData {
+  const form = new FormData();
+  form.append('file', file);
+  return form;
+}
+
+export function usePreviewSubjectImport() {
+  return useMutation({
+    mutationFn: (file: File) => api.post<ImportPreview>('/api/masterdata/subjects/import/preview', fileForm(file)),
+  });
+}
+
+export function useImportSubjects() {
+  return useSubjectMutation((file: File) =>
+    api.post<{ created: number }>('/api/masterdata/subjects/import', fileForm(file)),
+  );
+}
+
 export function useAddContract() {
   return useSubjectMutation(({ subjectId, body }: { subjectId: number; body: ContractRequest }) =>
     api.post<Contract>(`/api/masterdata/subjects/${subjectId}/contracts`, body),
