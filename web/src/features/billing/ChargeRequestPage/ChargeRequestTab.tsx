@@ -66,7 +66,7 @@ export function ChargeRequestTab() {
         locale={{ emptyText: requests.error ? errorTextOrNull(requests.error) : 'Chưa có phiếu nào' }}
         columns={[
           { title: 'Mã phiếu', dataIndex: 'code' },
-          { title: 'Kỳ', dataIndex: 'periodCode' },
+          { title: 'Kỳ', dataIndex: 'periodCode', className: 'cell-nowrap', render: (code: string) => periods.data?.find((p) => p.code === code)?.label ?? code },
           { title: 'Loại phí', dataIndex: 'feeTypeName' },
           { title: 'Phạm vi', dataIndex: 'scopeType', render: (s: ChargeRequestSummary['scopeType']) => CHARGE_SCOPE_LABELS[s] },
           { title: 'Ngày lập', dataIndex: 'issueDate', render: (d: string) => <DateText value={d} /> },
