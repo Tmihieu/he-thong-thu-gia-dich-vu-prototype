@@ -107,7 +107,7 @@ export function LoginPage() {
           <Divider plain style={{ fontSize: 13 }}>
             Dành cho hộ dân
           </Divider>
-          {/* App người dân (Expo) bản web, phục vụ cùng origin ở /citizen. */}
+          {/* App người dân (Flutter) bản web, phục vụ cùng origin ở /citizen. */}
           <Button block icon={<MobileOutlined />} href="/citizen/" target="_blank" rel="noreferrer">
             Mở ứng dụng người dân
           </Button>

@@ -2,7 +2,7 @@
 
 Dùng khi chạy tay kịch bản §10. Cách chạy và điều kiện seed: `docs/demo-runbook.md`. Tài khoản: `docs/demo-accounts.md` (web mật khẩu `Demo@2026`, app OTP `123456`).
 
-- Chạy **2 lần liên tiếp từ CSDL sạch**: mỗi lần `docker compose down -v`, build lại lần lượt, `docker compose up`, rồi `cd mobile && npx expo start`.
+- Chạy **2 lần liên tiếp từ CSDL sạch**: mỗi lần `docker compose down -v`, build lại lần lượt, `docker compose up`, rồi chạy app Flutter (`cd mobile-flutter && flutter run --dart-define=API_URL=http://<IP LAN>:8080`).
 - Tick cột Lần 1 / Lần 2 khi thấy đúng cột "Phải thấy". Sai thì ghi vào `tasks/demo-issues.md` (mẫu cuối file), không sửa giữa chừng.
 - Mỗi vai trò web mở một cửa sổ ẩn danh riêng. Mở F12 (Console) ở mọi cửa sổ từ đầu.
 
@@ -31,7 +31,7 @@ Dùng khi chạy tay kịch bản §10. Cách chạy và điều kiện seed: `d
 | 8 | `canbo_xa` | Đối soát → **Khóa kỳ** 10/2026 | **Bị chặn**, lý do nêu công ty còn nợ và số tiền (không phải "chỉ khóa được kỳ đang thu") | ☐ | ☐ |
 | + | `admin` | Nhật ký: lọc người `canbo_xa`, hành động "Lập phiếu thu cho công ty" | Có dòng phiếu vừa lập, mở ra thấy trước/sau | ☐ | ☐ |
 
-## App người dân (Expo Go, `0902000128`)
+## App người dân (Flutter, `0902000128`)
 
 | # | Làm | Phải thấy | Lần 1 | Lần 2 |
 |---|---|---|---|---|
@@ -46,7 +46,7 @@ Dùng khi chạy tay kịch bản §10. Cách chạy và điều kiện seed: `d
 | 7c | Tab Chợ đồ cũ → **Đăng bài** (ảnh tùy chọn) | Bài mới đầu danh sách, hiện "tên · tổ", không lộ SĐT | ☐ | ☐ |
 | 7d | Máy thứ hai đăng nhập `0902000161` → bài vừa đăng → bình luận → **Gửi**; để nguyên màn chi tiết | Bình luận hiện dưới bài | ☐ | ☐ |
 | 7e | Quay lại `0902000128` → bài của mình → **Đóng bài** → xác nhận | Bài biến khỏi danh sách mặc định, không có nút mở lại; máy `0902000161` (≤ 30 giây) ô bình luận ẩn, hiện câu bài đã đóng | ☐ | ☐ |
-| 9 | Suốt kịch bản | Console web (F12) và log `npx expo start` không có lỗi đỏ | ☐ | ☐ |
+| 9 | Suốt kịch bản | Console web (F12) và log `flutter run` không có lỗi đỏ | ☐ | ☐ |
 
 ## Ghi lỗi (`tasks/demo-issues.md`)
 

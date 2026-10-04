@@ -18,5 +18,4 @@ node_modules/
 dist/
 # App người dân bản web: sinh bằng `npm run build:citizen` trong web/
 web/public/citizen/
-.expo/
 *.tsbuildinfo
