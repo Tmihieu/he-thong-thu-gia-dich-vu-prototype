@@ -370,6 +370,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/payments/sepay/webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Webhook SePay: giao dịch tiền vào tài khoản công ty; header Authorization: Apikey <khóa> */
+        post: operations["webhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/notifications/{id}/read": {
         parameters: {
             query?: never;
@@ -1777,6 +1794,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/collection/charges/{id}/transfer-info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Thông tin chuyển khoản của một khoản: tài khoản công ty, số tiền còn thiếu, mã nội dung */
+        get: operations["transferInfo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/collection/charges/{id}/history": {
         parameters: {
             query?: never;
@@ -1820,6 +1854,23 @@ export interface paths {
         };
         /** Tiền mặt đang giữ. Người đi thu: của mình; quản lý công ty: một người (collectorId) hoặc cả công ty */
         get: operations["held"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/collection/bank-transfers/unmatched": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chuyển khoản chờ đối chiếu (không tự khớp được với khoản thu); công ty chỉ thấy của mình */
+        get: operations["unmatched"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2695,6 +2746,19 @@ export interface components {
              * @description Chỉ có với COMPANY_MANAGER, COLLECTOR
              */
             companyId: number | null;
+        };
+        SepayTransaction: {
+            /** Format: int64 */
+            id?: number;
+            gateway?: string;
+            transactionDate?: string;
+            accountNumber?: string;
+            code?: string;
+            content?: string;
+            transferType?: string;
+            /** Format: int64 */
+            transferAmount?: number;
+            referenceCode?: string;
         };
         NotificationDto: {
             /** Format: int64 */
@@ -3860,6 +3924,20 @@ export interface components {
             phone: string | null;
             active: boolean;
         };
+        TransferInfoDto: {
+            /** @description Công ty đã khai tài khoản ngân hàng */
+            configured: boolean;
+            bankName: string | null;
+            bankAccount: string | null;
+            accountHolder: string;
+            /**
+             * Format: int64
+             * @description Số còn thiếu của khoản
+             */
+            amount: number;
+            /** @description Mã ghi trong nội dung chuyển khoản */
+            code: string;
+        };
         HistoryEntryDto: {
             /** Format: date-time */
             at: string;
@@ -3892,6 +3970,25 @@ export interface components {
              * @description Đang giữ
              */
             held: number;
+        };
+        BankTransferDto: {
+            /** Format: int64 */
+            id: number;
+            gateway: string | null;
+            accountNumber: string | null;
+            transactionDate: string | null;
+            /** Format: int64 */
+            amount: number;
+            content: string | null;
+            referenceCode: string | null;
+            /** @enum {string|null} */
+            reason: "NO_CODE" | "CHARGE_NOT_FOUND" | "WRONG_ACCOUNT" | "AMOUNT_MISMATCH" | "CHARGE_NOT_COLLECTABLE" | null;
+            /** Format: int64 */
+            chargeId: number | null;
+            /** Format: int64 */
+            companyId: number | null;
+            /** Format: date-time */
+            createdAt: string;
         };
         CitizenScheduleDto: {
             /** @example KV07 */
@@ -4796,6 +4893,34 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["LoginResponse"];
+                };
+            };
+        };
+    };
+    webhook: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SepayTransaction"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
@@ -7019,6 +7144,28 @@ export interface operations {
             };
         };
     };
+    transferInfo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TransferInfoDto"];
+                };
+            };
+        };
+    };
     history_1: {
         parameters: {
             query?: never;
@@ -7081,6 +7228,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CashHeldDto"][];
+                };
+            };
+        };
+    };
+    unmatched: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BankTransferDto"][];
                 };
             };
         };

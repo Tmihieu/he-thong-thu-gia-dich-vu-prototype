@@ -38,6 +38,10 @@ services:
         generateValue: true
       - key: CITIZEN_DEMO_OTP
         value: "123456"
+      # Khóa webhook SePay (my.sepay.vn → Webhooks → Bảo mật → API Key): điền tay trong Render, không ghi vào repo.
+      # Để trống thì /api/payments/sepay/webhook trả 503, không nhận chuyển khoản tự động.
+      - key: SEPAY_WEBHOOK_API_KEY
+        sync: false
       - key: UPLOAD_DIR
         value: /app/uploads
       - key: TZ
@@ -86,8 +90,9 @@ services:
     runtime: docker
     region: singapore
     plan: starter
-    rootDir: web
-    dockerfilePath: ./Dockerfile.render
+    # Context là gốc repo: ảnh web build cả app người dân (mobile-flutter) để phục vụ ở /citizen.
+    dockerContext: .
+    dockerfilePath: ./web/Dockerfile.render
     healthCheckPath: /healthz
     envVars:
       - key: PORT

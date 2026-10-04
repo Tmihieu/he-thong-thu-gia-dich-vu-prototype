@@ -54,6 +54,9 @@ function api(overrides: Record<string, (url: string, init: RequestInit) => Respo
     'GET /api/platform/auth/me': () => jsonResponse(200, collector),
     'GET /api/masterdata/periods': () => jsonResponse(200, periods),
     'GET /api/collection/my-work': () => jsonResponse(200, items),
+    'GET /api/collection/charges/4/transfer-info': () =>
+      jsonResponse(200, { configured: true, bankName: 'Vietcombank', bankAccount: '0071000888888',
+        accountHolder: 'Công ty MTĐT Đông Thạnh', amount: 50_000, code: 'VSMT000004' }),
     'GET /api/collection/cash/held': () =>
       jsonResponse(200, [{ collectorId: 21, collectorUsername: 'thu07', collectorName: 'Nguyễn Thành Mẫu', collectedCash: 240_000,
         handedOver: 80_000, held: 160_000 }]),
@@ -187,8 +190,11 @@ describe('Người đi thu: danh sách thu', () => {
     expect(within(dialog).queryByText('Đã hẹn')).not.toBeInTheDocument();
     expect(within(dialog).queryByText('Vắng nhà')).not.toBeInTheDocument();
     expect(within(dialog).queryByLabelText('Số tiền thực thu')).not.toBeInTheDocument();
-    expect(within(dialog).getByText('Nội dung: KT-1026-DTH-H000124')).toBeInTheDocument();
-    expect(within(dialog).getByRole('status')).toHaveTextContent('Đang chờ hộ thanh toán');
+    expect(await within(dialog).findByText('Nội dung: VSMT000004')).toBeInTheDocument();
+    expect(within(dialog).getByText('Vietcombank · 0071000888888')).toBeInTheDocument();
+    expect(within(dialog).getByRole('img', { name: 'Mã QR chuyển khoản' })).toHaveAttribute(
+      'src', 'https://qr.sepay.vn/img?acc=0071000888888&bank=Vietcombank&amount=50000&des=VSMT000004');
+    expect(within(dialog).getByRole('status')).toHaveTextContent('Đang chờ hộ chuyển khoản');
     expect(within(dialog).queryByRole('button', { name: /^Xác nhận đã thu/ })).not.toBeInTheDocument();
 
     await userEvent.click(within(dialog).getByRole('button', { name: 'Mô phỏng hộ đã chuyển khoản' }));

@@ -1,0 +1,60 @@
+import { useQuery } from '@tanstack/react-query';
+import { Table, Typography } from 'antd';
+
+import { api } from '../../api/client';
+import type { components } from '../../api/schema';
+import { formatDate } from '../../shared/format';
+import { MoneyText } from '../../shared/MoneyText';
+import { ErrorBlock } from '../../shared/StateBlock';
+import { StatusTag } from '../../shared/StatusTag';
+
+type BankTransfer = components['schemas']['BankTransferDto'];
+
+const REASON_LABELS: Record<NonNullable<BankTransfer['reason']>, string> = {
+  NO_CODE: 'Nội dung không có mã khoản thu',
+  CHARGE_NOT_FOUND: 'Mã khoản thu không tồn tại',
+  WRONG_ACCOUNT: 'Tiền vào tài khoản không phải của công ty phụ trách khoản',
+  AMOUNT_MISMATCH: 'Số tiền khác số phải thu',
+  CHARGE_NOT_COLLECTABLE: 'Khoản đã thu, được miễn hoặc kỳ đã khóa',
+};
+
+/**
+ * Chuyển khoản chờ đối chiếu của công ty: giao dịch SePay báo về nhưng hệ thống không tự ghi được vào khoản thu nào
+ * (sai số tiền, thiếu mã...). Chỉ để xem; công ty liên hệ hộ để thu thêm hoặc trả lại.
+ */
+// ponytail: chưa có nút gắn giao dịch vào khoản / đánh dấu đã xử lý; thêm khi thực tế có phát sinh.
+export function BankTransfersTab() {
+  const transfers = useQuery({
+    queryKey: ['collection', 'bank-transfers', 'unmatched'],
+    queryFn: () => api.get<BankTransfer[]>('/api/collection/bank-transfers/unmatched'),
+  });
+  if (transfers.error) return <ErrorBlock error={transfers.error} onRetry={() => void transfers.refetch()} />;
+  return (
+    <>
+      <Typography.Paragraph type="secondary">
+        Tiền đã vào tài khoản công ty nhưng hệ thống không tự ghi nhận được. Khoản thu của hộ chưa đổi trạng thái; liên hệ hộ để
+        thu thêm hoặc trả lại.
+      </Typography.Paragraph>
+      <Table<BankTransfer>
+        rowKey="id"
+        size="small"
+        loading={transfers.isLoading}
+        dataSource={transfers.data ?? []}
+        pagination={{ pageSize: 20, hideOnSinglePage: true }}
+        locale={{ emptyText: 'Không có chuyển khoản nào chờ đối chiếu' }}
+        columns={[
+          { title: 'Thời gian', className: 'cell-nowrap', render: (_, t) => t.transactionDate ?? formatDate(t.createdAt, true) },
+          { title: 'Số tiền', dataIndex: 'amount', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Nội dung chuyển khoản', dataIndex: 'content' },
+          { title: 'Ngân hàng', render: (_, t) => [t.gateway, t.accountNumber].filter(Boolean).join(' · ') || '—' },
+          { title: 'Mã giao dịch', dataIndex: 'referenceCode', render: (v: string | null) => v ?? '—' },
+          {
+            title: 'Lý do chưa ghi nhận',
+            dataIndex: 'reason',
+            render: (r: BankTransfer['reason']) => <StatusTag tone="warning">{r ? REASON_LABELS[r] : '—'}</StatusTag>,
+          },
+        ]}
+      />
+    </>
+  );
+}

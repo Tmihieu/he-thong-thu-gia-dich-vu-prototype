@@ -1,0 +1,9 @@
+# Context là gốc repo: chỉ gửi web/ và mobile-flutter/, bỏ phần đã build / phụ thuộc trên máy.
+*
+!web
+!mobile-flutter
+**/node_modules
+web/dist
+web/public/citizen
+mobile-flutter/build
+mobile-flutter/.dart_tool

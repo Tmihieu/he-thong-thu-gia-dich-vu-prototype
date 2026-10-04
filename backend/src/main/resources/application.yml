@@ -57,6 +57,9 @@ vsmt:
   goong:
     # Khóa Goong chỉ đọc ở backend (gợi ý đường khi nhập hồ sơ hộ). Để trống thì tắt gợi ý Goong, danh mục nội bộ vẫn dùng được.
     api-key: ${GOONG_API_KEY:}
+  sepay:
+    # Khóa SePay gửi kèm webhook (header "Authorization: Apikey <khóa>"). Để trống thì webhook trả 503, không ghi gì.
+    webhook-api-key: ${SEPAY_WEBHOOK_API_KEY:}
 
 ---
 # Profile demo: nạp thêm seed dữ liệu giả (db/seed). Mặc định khi ./mvnw spring-boot:run.

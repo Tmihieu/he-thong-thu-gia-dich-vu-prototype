@@ -226,6 +226,42 @@ class CitizenCharge {
   final String? paidAt;
 }
 
+/// Thông tin chuyển khoản của một khoản: tài khoản công ty thu gom, số còn thiếu, mã ghi trong nội dung.
+class TransferInfo {
+  const TransferInfo({
+    required this.configured,
+    required this.bankName,
+    required this.bankAccount,
+    required this.accountHolder,
+    required this.amount,
+    required this.code,
+  });
+
+  factory TransferInfo.fromJson(Json j) => TransferInfo(
+        configured: j['configured'] == true,
+        bankName: _str(j['bankName']),
+        bankAccount: _str(j['bankAccount']),
+        accountHolder: _str(j['accountHolder']),
+        amount: _int(j['amount'] ?? 0),
+        code: _str(j['code']),
+      );
+
+  final bool configured;
+  final String bankName;
+  final String bankAccount;
+  final String accountHolder;
+  final int amount;
+  final String code;
+
+  /// Ảnh VietQR của SePay: quét bằng app ngân hàng bất kỳ là có sẵn tài khoản, số tiền và nội dung.
+  String get qrImageUrl => Uri.https('qr.sepay.vn', '/img', {
+        'acc': bankAccount,
+        'bank': bankName,
+        'amount': '$amount',
+        'des': code,
+      }).toString();
+}
+
 class PaymentConfirmation {
   const PaymentConfirmation({
     required this.id,

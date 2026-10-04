@@ -143,7 +143,11 @@ class PayScreen extends StatefulWidget {
 }
 
 class _PayScreenState extends State<PayScreen> {
-  late final _charge = Query(() => citizenApi.charge(widget.chargeId), topics: const [Topics.charges]);
+  // Hỏi lại 3 giây một lần: hộ chuyển khoản bằng app ngân hàng, SePay báo về máy chủ thì màn này tự thấy khoản đã đóng.
+  late final _charge = Query(() => citizenApi.charge(widget.chargeId),
+      topics: const [Topics.charges], poll: const Duration(seconds: 3));
+  late final _transfer = Query(() => citizenApi.transferInfo(widget.chargeId));
+  bool _wasPayable = false;
   int _method = 0;
   bool _busy = false;
   String? _error;
@@ -155,10 +159,61 @@ class _PayScreenState extends State<PayScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _charge.addListener(_onCharge);
+    _transfer.addListener(_onTransfer);
+  }
+
+  @override
   void dispose() {
+    _charge.removeListener(_onCharge);
+    _transfer.removeListener(_onTransfer);
     _charge.dispose();
+    _transfer.dispose();
     super.dispose();
   }
+
+  void _onTransfer() {
+    if (mounted) setState(() {});
+  }
+
+  /// Khoản vừa chuyển từ chưa đóng sang đã đóng khi đang mở màn (ngân hàng báo về): sang danh sách xác nhận thanh toán.
+  void _onCharge() {
+    final c = _charge.data;
+    if (c == null || !mounted) return;
+    final payable = c.status == 'UNPAID' && c.remainingAmount > 0;
+    if (_wasPayable && c.status == 'PAID' && !_busy) {
+      _wasPayable = false;
+      refreshBus.bump(const [Topics.confirmations, Topics.notifications]);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã nhận chuyển khoản. Khoản phí đã đóng.')));
+      context.pushReplacement('/confirmations');
+      return;
+    }
+    _wasPayable = payable;
+  }
+
+  Widget _qrCard(TransferInfo t) => AppCard(children: [
+        const Bold('Quét mã để chuyển khoản'),
+        Center(
+          child: Image.network(
+            t.qrImageUrl,
+            width: 240,
+            height: 240,
+            fit: BoxFit.contain,
+            semanticLabel: 'Mã QR chuyển khoản',
+            errorBuilder: (_, _, _) => const Padding(
+              padding: EdgeInsets.all(Gap.lg),
+              child: Muted('Không tải được mã QR. Bạn vẫn chuyển khoản được theo thông tin bên dưới.'),
+            ),
+          ),
+        ),
+        _InfoRow('Ngân hàng', t.bankName),
+        _InfoRow('Số tài khoản', t.bankAccount),
+        _InfoRow('Chủ tài khoản', t.accountHolder),
+        _InfoRow('Số tiền', formatMoney(t.amount)),
+        _InfoRow('Nội dung', t.code),
+      ]);
 
   Future<void> _pay(CitizenCharge c) async {
     setState(() {
@@ -185,6 +240,32 @@ class _PayScreenState extends State<PayScreen> {
           query: _charge,
           builder: (context, c) {
             final payable = c.status == 'UNPAID' && c.remainingAmount > 0;
+            final transfer = _transfer.data;
+            // Công ty đã khai tài khoản ngân hàng: chuyển khoản thật qua VietQR, hệ thống tự xác nhận.
+            if (payable && transfer != null && transfer.configured) {
+              return PageList(
+                children: [
+                  AppCard(children: [
+                    Row(children: [Expanded(child: Bold(c.periodLabel)), chargeTag(c)]),
+                    Muted('${c.feeTypeName} · ${c.code}', size: 13),
+                    const Muted('Cần thanh toán'),
+                    Text(
+                      formatMoney(c.remainingAmount),
+                      style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.primaryDark),
+                    ),
+                  ]),
+                  _qrCard(transfer),
+                  const Notice(
+                    tone: Tone.info,
+                    icon: Icons.hourglass_top,
+                    title: 'Đang chờ chuyển khoản',
+                    body: 'Mở app ngân hàng, quét mã và giữ nguyên số tiền, nội dung. Ngân hàng báo về là khoản tự chuyển '
+                        'sang đã đóng, bạn không cần bấm gì thêm. Tiền vào tài khoản của công ty thu gom.',
+                  ),
+                ],
+              );
+            }
+            // Chưa có tài khoản công ty (hoặc chưa tải xong): giữ luồng thanh toán mô phỏng cũ.
             return PageList(
               bottom: payable
                   ? WideButton(
@@ -248,6 +329,25 @@ class _PayScreenState extends State<PayScreen> {
               ],
             );
           },
+        ),
+      );
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow(this.label, this.value);
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(width: 110, child: Muted(label)),
+            Expanded(child: SelectableText(value, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14))),
+          ],
         ),
       );
 }
