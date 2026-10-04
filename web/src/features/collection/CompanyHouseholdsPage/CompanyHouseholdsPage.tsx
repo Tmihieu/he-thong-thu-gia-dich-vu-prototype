@@ -144,18 +144,7 @@ export function CompanyHouseholdsPage({
           {
             title: 'Số tiền',
             align: 'right',
-            render: (_, w) => (
-              <>
-                <div>
-                  <MoneyText value={w.charge.amount} />
-                </div>
-                {w.paidAmount > 0 && w.paidAmount < w.charge.amount && (
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    đã thu <MoneyText value={w.paidAmount} />
-                  </Typography.Text>
-                )}
-              </>
-            ),
+            render: (_, w) => <MoneyText value={w.charge.amount} />,
           },
           {
             title: 'Kết quả',

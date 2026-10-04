@@ -38,10 +38,10 @@ class CashApiIT extends IntegrationTest {
     @BeforeEach
     void seed() {
         fx.build();
-        // thu07 thu tiền mặt 2 hộ KV07; thu09 chuyển khoản 1 hộ KV09 (không tính vào tiền mặt đang giữ).
-        pay("DTH-H000001", PaymentMethod.CASH, fx.thu07, "p-1");
-        pay("DTH-H000002", PaymentMethod.CASH, fx.thu07, "p-2");
-        pay("DTH-H000003", PaymentMethod.TRANSFER, fx.thu09, "p-3");
+        // thu07 thu tiền mặt 2 hộ KV07; 1 hộ KV09 chuyển khoản VietQR (không ai giữ tiền mặt).
+        pay("DTH-H000001", fx.thu07, "p-1");
+        pay("DTH-H000002", fx.thu07, "p-2");
+        collection.recordBankTransfer(fx.chargeId("DTH-H000003"), 80_000, "FT26100003", "sepay-3");
     }
 
     @Test
@@ -81,8 +81,9 @@ class CashApiIT extends IntegrationTest {
         held(fx.bearer(fx.dv07Manager), fx.thu07.getId()).andExpect(status().isForbidden());
     }
 
-    private void pay(String subject, PaymentMethod method, User collector, String requestId) {
-        collection.recordPayment(new PaymentCommand(fx.chargeId(subject), 80_000, method, requestId, null, null, null),
+    private void pay(String subject, User collector, String requestId) {
+        collection.recordPayment(new PaymentCommand(fx.chargeId(subject), 80_000, PaymentMethod.CASH, requestId, null,
+                null, null),
                 fx.actor(collector));
     }
 

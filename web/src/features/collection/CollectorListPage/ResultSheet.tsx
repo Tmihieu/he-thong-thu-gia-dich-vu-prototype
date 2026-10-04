@@ -1,11 +1,8 @@
-import { BankOutlined, WalletOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, Drawer, Form, Radio, Select, Spin, Typography } from 'antd';
-import type { ReactNode } from 'react';
+import { Alert, App, Button, Drawer, Form, Select, Spin, Typography } from 'antd';
 import { useEffect } from 'react';
 
 import { api } from '../../../api/client';
-import { DEMO_LOGIN_ENABLED } from '../../../app/auth/demoAccounts';
 import { errorText } from '../../../shared/errorText';
 import { formatMoney } from '../../../shared/format';
 import { MoneyText } from '../../../shared/MoneyText';
@@ -18,19 +15,10 @@ type TransferInfo = components['schemas']['TransferInfoDto'];
 const qrImage = (t: TransferInfo) =>
   `https://qr.sepay.vn/img?${new URLSearchParams({ acc: t.bankAccount ?? '', bank: t.bankName ?? '', amount: String(t.amount), des: t.code })}`;
 
+/** Hộ chỉ đóng tiền mặt cho người đi thu, hoặc chuyển khoản qua mã VietQR của công ty (ngân hàng báo về tự ghi nhận). */
 export type Method = 'CASH' | 'TRANSFER';
 
-/**
- * Góp ý BA 03/10: người đi thu chỉ đánh dấu đã thu và chọn hình thức, thu đủ số còn thiếu. Vắng nhà / hẹn / từ chối /
- * thu một phần chỉ ẩn trên giao diện; API lượt ghé và thu một phần vẫn giữ.
- */
-const TILES: { value: Method; label: string; icon: ReactNode }[] = [
-  { value: 'CASH', label: 'Đã thu tiền mặt', icon: <WalletOutlined /> },
-  { value: 'TRANSFER', label: 'Đã thu chuyển khoản', icon: <BankOutlined /> },
-];
-
 interface Values {
-  result: Method;
   collectorId?: number;
 }
 
@@ -56,15 +44,15 @@ interface Props {
   /** Quản lý công ty ghi thay (T28): chọn người đi thu đã nhận tiền, mặc định người phụ trách tổ. */
   collectors?: Collector[];
   defaultCollectorId?: number;
-  /** Người đi thu bấm thẳng nút "Đã thu tiền mặt / chuyển khoản" trên thẻ hộ: chỉ còn bước xác nhận số tiền. */
+  /** Người đi thu bấm thẳng nút trên thẻ hộ: tiền mặt thì xác nhận số tiền, chuyển khoản thì hiện mã VietQR. */
   initialMethod?: Method;
 }
 
 /**
- * Bottom sheet ghi nhận đã thu một hộ: tiền mặt / chuyển khoản, thu đủ số còn thiếu.
- * Người đi thu chọn chuyển khoản (góp ý 04/10): hiện mã VietQR của tài khoản công ty, đúng số tiền và mã khoản trong
- * nội dung; hộ chuyển khoản bằng app ngân hàng, SePay báo về backend (webhook) ghi nhận, màn này tự hỏi lại máy chủ và
- * tự đóng khi khoản đã thu — người đi thu không tự bấm "đã thu".
+ * Bottom sheet thu một hộ, đúng số cần đóng. Tiền mặt: người đi thu (hoặc quản lý ghi thay) xác nhận đã nhận tiền.
+ * Chuyển khoản (góp ý 04/10): chỉ hiện mã VietQR của tài khoản công ty, đúng số tiền và mã khoản trong nội dung; hộ
+ * chuyển bằng app ngân hàng, SePay báo về backend (webhook) ghi nhận, màn này tự hỏi lại máy chủ và tự đóng khi khoản
+ * đã thu. Không ai tự bấm "đã chuyển khoản" và không có thanh toán mô phỏng.
  */
 export function ResultSheet({ item, onClose, collectors, defaultCollectorId, initialMethod }: Props) {
   const { message } = App.useApp();
@@ -77,7 +65,7 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
       const r = await api.post<PaymentResult>('/api/collection/payments', {
         chargeId: charge.id,
         amount: item!.remainingAmount,
-        method: v.result,
+        method: 'CASH',
         clientRequestId: requestIdFor(key),
         collectorId: v.collectorId,
       });
@@ -93,7 +81,7 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
     },
   });
 
-  const qr = !collectors && initialMethod === 'TRANSFER';
+  const qr = initialMethod === 'TRANSFER';
   const chargeId = item?.charge.id;
   const watch = useQuery({
     queryKey: [...collectionKeys.myWork, 'qr', chargeId],
@@ -124,7 +112,7 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
       height="auto"
       open={item !== null}
       onClose={onClose}
-      title={qr ? 'Quét mã để chuyển khoản' : initialMethod ? TILES.find((t) => t.value === initialMethod)!.label : 'Ghi nhận đã thu'}
+      title={qr ? 'Quét mã để chuyển khoản' : 'Đã thu tiền mặt'}
       className="clm-sheet"
       destroyOnHidden
       styles={{ body: { paddingBottom: 24 } }}
@@ -148,23 +136,13 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
         layout="vertical"
         // Ngăn kéo hủy nội dung khi đóng nên form dựng lại mỗi lần mở: đặt giá trị đầu ở đây. Đặt bằng setFieldsValue trong
         // effect thì trên máy tắt hiệu ứng động form chưa dựng xong, ô ẩn "result" rỗng và bấm xác nhận không gửi được.
-        initialValues={{ result: initialMethod ?? 'CASH', collectorId: defaultCollectorId }}
+        initialValues={{ collectorId: defaultCollectorId }}
         onFinish={(v) => {
           if (!submit.isPending) submit.mutate(v);
         }}
         preserve={false}
       >
-        <Form.Item name="result" label="Kết quả" hidden={initialMethod !== undefined} rules={[{ required: true, message: 'Vui lòng chọn kết quả' }]}>
-          <Radio.Group className="clm-tiles">
-            {TILES.map((t) => (
-              <Radio.Button key={t.value} value={t.value}>
-                {t.icon}
-                <span>{t.label}</span>
-              </Radio.Button>
-            ))}
-          </Radio.Group>
-        </Form.Item>
-        {collectors && (
+        {collectors && !qr && (
           <Form.Item
             name="collectorId"
             label="Người đi thu đã nhận tiền"
@@ -214,17 +192,13 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
               <Button size="large" onClick={onClose}>
                 Đóng
               </Button>
-              {DEMO_LOGIN_ENABLED && (
-                <Button size="large" htmlType="submit" loading={submit.isPending}>
-                  Mô phỏng hộ đã chuyển khoản
-                </Button>
-              )}
             </div>
           </>
         ) : (
           <>
             <p className="clm-tip">
-              <strong>Đã thu:</strong> hệ thống ghi nhận và sinh mã thanh toán; hộ chưa nộp thì cứ để chưa thu.
+              <strong>Đã thu tiền mặt:</strong> hệ thống ghi nhận và sinh mã thanh toán; hộ chuyển khoản thì dùng mã VietQR,
+              ngân hàng báo về là tự ghi nhận.
             </p>
             <div className="clm-sheet-actions">
               <Button size="large" onClick={onClose}>

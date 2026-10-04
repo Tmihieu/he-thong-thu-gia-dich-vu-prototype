@@ -9,10 +9,7 @@ import java.util.List;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
 import vn.dongthanh.vsmt.billing.domain.Charge;
 import vn.dongthanh.vsmt.billing.domain.ChargeStatus;
 import vn.dongthanh.vsmt.citizen.domain.CitizenAccount;
@@ -178,13 +175,6 @@ public final class CitizenDtos {
         }
     }
 
-    public record CitizenPaymentRequest(
-            @NotNull(message = "không được để trống") Long chargeId,
-            @Schema(description = "Phải bằng đúng số còn thiếu của khoản") @Positive(message = "phải lớn hơn 0") long amount,
-            @Schema(description = "Mã do app sinh cho mỗi lần bấm thanh toán; gửi lại cùng mã không tạo thanh toán thứ hai")
-            @NotBlank(message = "không được để trống") @Size(max = 40) String clientRequestId) {
-    }
-
     /** "Xác nhận thanh toán" (O1): không phải biên lai pháp lý. */
     public record PaymentConfirmationDto(
             @Schema(requiredMode = RequiredMode.REQUIRED) Long id,
@@ -212,12 +202,6 @@ public final class CitizenDtos {
                     c.getPeriod().getLabel(), c.getFeeType().getName(), s.getCode(), s.getName(), s.getAddress(),
                     c.getCompany().getName());
         }
-    }
-
-    public record CitizenPaymentResponse(
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "true: yêu cầu gửi lại, trả thanh toán đã có")
-            boolean replayed,
-            @Schema(requiredMode = RequiredMode.REQUIRED) PaymentConfirmationDto confirmation) {
     }
 
     public record ScheduleLineDto(

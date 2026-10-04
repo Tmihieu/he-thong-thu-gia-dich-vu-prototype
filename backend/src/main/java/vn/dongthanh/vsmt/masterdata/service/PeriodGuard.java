@@ -9,7 +9,7 @@ import vn.dongthanh.vsmt.masterdata.domain.PeriodStatus;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 
 /**
- * Chặn mọi thay đổi số liệu của kỳ đã khóa (T32) hoặc chưa mở (Dự thảo): phát hành khoản, ghi thu, lượt ghé gọi
+ * Chặn mọi thay đổi số liệu của kỳ đã khóa (T32) hoặc chưa mở (Dự thảo): phát hành khoản, ghi thu gọi
  * {@link #requireOpen} trước khi ghi.
  */
 @Component

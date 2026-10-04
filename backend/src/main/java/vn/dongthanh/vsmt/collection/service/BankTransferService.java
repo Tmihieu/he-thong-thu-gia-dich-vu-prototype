@@ -26,7 +26,7 @@ import vn.dongthanh.vsmt.platform.security.CurrentUser;
 
 /**
  * Chuyển khoản qua SePay (04/10). Tiền vào tài khoản của công ty thu gom; SePay gọi webhook cho mỗi giao dịch tiền vào.
- * Đúng mã khoản ({@code VSMT} + id khoản), đúng tài khoản công ty phụ trách và đúng số còn thiếu thì tự ghi thanh toán
+ * Đúng mã khoản ({@code VSMT} + id khoản), đúng tài khoản công ty phụ trách và đúng số cần đóng thì tự ghi thanh toán
  * chuyển khoản; mọi trường hợp khác không đụng tới khoản thu, lưu lại cho công ty đối chiếu.
  *
  * <p>Không bọc cả lượt xử lý trong một transaction: ghi thanh toán thất bại (số tiền lệch, khoản đã thu...) phải rollback

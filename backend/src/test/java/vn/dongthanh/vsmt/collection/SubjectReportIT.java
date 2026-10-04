@@ -2,7 +2,6 @@ package vn.dongthanh.vsmt.collection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -54,26 +53,19 @@ class SubjectReportIT extends IntegrationTest {
     }
 
     @Test
-    void historyMergesPaymentsAndVisitsInTimeOrder() throws Exception {
+    void historyListsThePaymentOfTheCharge() throws Exception {
         long charge = fx.chargeId("DTH-H000002");
-        visit(charge, "ABSENT", null, "v-1");
+        mvc.perform(get("/api/collection/charges/" + charge + "/history").header(HttpHeaders.AUTHORIZATION, collector))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
         at(1);
-        pay(charge, 30_000, "p-1");
-        at(2);
-        visit(charge, "APPOINTMENT", "\"2026-10-05\"", "v-2");
-        at(3);
-        pay(charge, 50_000, "p-2");
+        pay(charge, 80_000, "p-1");
 
         mvc.perform(get("/api/collection/charges/" + charge + "/history").header(HttpHeaders.AUTHORIZATION, collector))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(4))
-                .andExpect(jsonPath("$[0].visit.result").value("ABSENT"))
-                .andExpect(jsonPath("$[0].payment").value(nullValue()))
-                .andExpect(jsonPath("$[1].payment.amount").value(30_000))
-                .andExpect(jsonPath("$[1].visit").value(nullValue()))
-                .andExpect(jsonPath("$[2].visit.revisitDate").value("2026-10-05"))
-                .andExpect(jsonPath("$[3].payment.amount").value(50_000))
-                .andExpect(jsonPath("$[3].payment.code").value("TT-1026-000002"));
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].payment.amount").value(80_000))
+                .andExpect(jsonPath("$[0].payment.code").value("TT-1026-000001"));
     }
 
     @Test
@@ -163,14 +155,6 @@ class SubjectReportIT extends IntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"chargeId\":%d,\"amount\":%d,\"method\":\"CASH\",\"clientRequestId\":\"%s\"}"
                                 .formatted(chargeId, amount, requestId)))
-                .andExpect(status().isCreated());
-    }
-
-    private void visit(long chargeId, String result, String revisitDateJson, String requestId) throws Exception {
-        mvc.perform(post("/api/collection/visits").header(HttpHeaders.AUTHORIZATION, collector)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"chargeId\":%d,\"result\":\"%s\",\"revisitDate\":%s,\"clientRequestId\":\"%s\"}"
-                                .formatted(chargeId, result, revisitDateJson, requestId)))
                 .andExpect(status().isCreated());
     }
 

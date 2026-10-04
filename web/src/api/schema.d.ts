@@ -940,23 +940,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/collection/visits": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Ghi lượt ghé không thu được (vắng / hẹn / từ chối); không đổi trạng thái khoản */
-        post: operations["visit"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/collection/subject-reports": {
         parameters: {
             query?: never;
@@ -983,7 +966,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Ghi nhận thanh toán (tiền mặt / chuyển khoản); gửi lại cùng clientRequestId trả kết quả cũ (200) */
+        /** Ghi nhận hộ đã đóng tiền mặt (đúng số cần đóng); chuyển khoản chỉ ghi tự động khi ngân hàng báo về qua VietQR. Gửi lại cùng clientRequestId trả kết quả cũ (200) */
         post: operations["pay"];
         delete?: never;
         options?: never;
@@ -1055,24 +1038,6 @@ export interface paths {
         put?: never;
         /** Tải một ảnh JPEG/PNG/WebP (tối đa 5 MB), nhận tên để gắn vào bài đăng */
         post: operations["upload"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/citizen/payments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Các xác nhận thanh toán của hộ (mọi hình thức), mới nhất trước */
-        get: operations["confirmations"];
-        put?: never;
-        /** Thanh toán mô phỏng một khoản của hộ (trả đúng số còn thiếu) */
-        post: operations["pay_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1819,7 +1784,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Danh sách thu của người đi thu: khoản trong tổ được giao, kèm đã thu và lượt ghé mới nhất */
+        /** Danh sách thu của người đi thu: khoản trong tổ được giao, kèm đã thu */
         get: operations["myWork"];
         put?: never;
         post?: never;
@@ -1870,7 +1835,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Hộ được giao của công ty: khoản các tổ công ty phụ trách, kèm đã thu và lượt ghé mới nhất */
+        /** Hộ được giao của công ty: khoản các tổ công ty phụ trách, kèm đã thu */
         get: operations["companyWork"];
         put?: never;
         post?: never;
@@ -1904,7 +1869,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Thông tin chuyển khoản của một khoản: tài khoản công ty, số tiền còn thiếu, mã nội dung */
+        /** Thông tin chuyển khoản của một khoản: tài khoản công ty, số tiền cần đóng, mã nội dung */
         get: operations["transferInfo"];
         put?: never;
         post?: never;
@@ -1921,7 +1886,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Lịch sử hộ trên một khoản: thanh toán và lượt ghé gộp một dòng thời gian, cũ trước */
+        /** Lịch sử hộ trên một khoản: các lần thanh toán, cũ trước */
         get: operations["history_1"];
         put?: never;
         post?: never;
@@ -1938,7 +1903,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Lịch sử thu của một khoản: thanh toán và lượt ghé */
+        /** Lịch sử thu của một khoản: các lần thanh toán */
         get: operations["activity"];
         put?: never;
         post?: never;
@@ -2008,6 +1973,23 @@ export interface paths {
         };
         /** Tải về một ảnh đã lưu */
         get: operations["download"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/citizen/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Các xác nhận thanh toán của hộ (mọi hình thức), mới nhất trước */
+        get: operations["confirmations"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2244,7 +2226,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Thông tin chuyển khoản (VietQR) cho một khoản của hộ: tài khoản công ty, số còn thiếu, mã nội dung */
+        /** Thông tin chuyển khoản (VietQR) cho một khoản của hộ: tài khoản công ty, số cần đóng, mã nội dung */
         get: operations["transferInfo_1"];
         put?: never;
         post?: never;
@@ -3266,32 +3248,6 @@ export interface components {
         CloseRequest: {
             resolution: string;
         };
-        VisitRequest: {
-            /** Format: int64 */
-            chargeId: number;
-            /** @enum {string} */
-            result: "ABSENT" | "APPOINTMENT" | "REFUSED";
-            /**
-             * Format: date
-             * @description Bắt buộc khi hẹn lại
-             */
-            revisitDate?: string;
-            note?: string;
-            clientRequestId: string;
-        };
-        VisitDto: {
-            /** Format: int64 */
-            id: number;
-            /** Format: int64 */
-            chargeId: number;
-            /** @enum {string} */
-            result: "ABSENT" | "APPOINTMENT" | "REFUSED";
-            /** Format: date-time */
-            visitedAt: string;
-            /** Format: date */
-            revisitDate: string | null;
-            note: string | null;
-        };
         SubjectReportRequest: {
             /** Format: int64 */
             chargeId: number;
@@ -3304,7 +3260,10 @@ export interface components {
             chargeId: number;
             /** Format: int64 */
             amount: number;
-            /** @enum {string} */
+            /**
+             * @description Chỉ CASH; chuyển khoản do ngân hàng báo về qua VietQR
+             * @enum {string}
+             */
             method: "CASH" | "TRANSFER" | "APP_SIMULATED" | "REFUND";
             /** @description UUID do client sinh, chống gửi trùng */
             clientRequestId: string;
@@ -3405,49 +3364,6 @@ export interface components {
             name: string;
             /** @description Đường dẫn tương đối, cần token người dân */
             url: string;
-        };
-        CitizenPaymentRequest: {
-            /** Format: int64 */
-            chargeId: number;
-            /**
-             * Format: int64
-             * @description Phải bằng đúng số còn thiếu của khoản
-             */
-            amount?: number;
-            /** @description Mã do app sinh cho mỗi lần bấm thanh toán; gửi lại cùng mã không tạo thanh toán thứ hai */
-            clientRequestId: string;
-        };
-        CitizenPaymentResponse: {
-            /** @description true: yêu cầu gửi lại, trả thanh toán đã có */
-            replayed: boolean;
-            confirmation: components["schemas"]["PaymentConfirmationDto"];
-        };
-        PaymentConfirmationDto: {
-            /** Format: int64 */
-            id: number;
-            /** @example TT-1026-000123 */
-            code: string;
-            /** Format: date-time */
-            paidAt: string;
-            /** Format: int64 */
-            amount: number;
-            /** @enum {string} */
-            method: "CASH" | "TRANSFER" | "APP_SIMULATED" | "REFUND";
-            /** Format: int64 */
-            chargeId: number;
-            chargeCode: string;
-            /** @enum {string} */
-            chargeStatus: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
-            /** Format: int64 */
-            chargeAmount: number;
-            periodCode: string;
-            periodLabel: string;
-            feeTypeName: string;
-            subjectCode: string;
-            subjectName: string;
-            subjectAddress: string;
-            /** @description Công ty phụ trách khoản */
-            companyName: string;
         };
         CitizenNotificationDto: {
             /** Format: int64 */
@@ -4056,7 +3972,6 @@ export interface components {
              * @description Lần thu tiền gần nhất
              */
             lastPaidAt: string | null;
-            lastVisit: components["schemas"]["VisitDto"];
         };
         ChargePageDto: {
             items: components["schemas"]["ChargeDto"][];
@@ -4083,7 +3998,7 @@ export interface components {
             accountHolder: string;
             /**
              * Format: int64
-             * @description Số còn thiếu của khoản
+             * @description Số cần đóng của khoản
              */
             amount: number;
             /** @description Mã ghi trong nội dung chuyển khoản */
@@ -4093,7 +4008,6 @@ export interface components {
             /** Format: date-time */
             at: string;
             payment: components["schemas"]["PaymentDto"];
-            visit: components["schemas"]["VisitDto"];
         };
         ActivityDto: {
             charge: components["schemas"]["ChargeDto"];
@@ -4102,7 +4016,6 @@ export interface components {
             /** Format: int64 */
             remainingAmount: number;
             payments: components["schemas"]["PaymentDto"][];
-            visits: components["schemas"]["VisitDto"][];
         };
         CashHeldDto: {
             /** Format: int64 */
@@ -4176,6 +4089,33 @@ export interface components {
             name: string;
             contactName: string;
             contactPhone: string;
+        };
+        PaymentConfirmationDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example TT-1026-000123 */
+            code: string;
+            /** Format: date-time */
+            paidAt: string;
+            /** Format: int64 */
+            amount: number;
+            /** @enum {string} */
+            method: "CASH" | "TRANSFER" | "APP_SIMULATED" | "REFUND";
+            /** Format: int64 */
+            chargeId: number;
+            chargeCode: string;
+            /** @enum {string} */
+            chargeStatus: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
+            /** Format: int64 */
+            chargeAmount: number;
+            periodCode: string;
+            periodLabel: string;
+            feeTypeName: string;
+            subjectCode: string;
+            subjectName: string;
+            subjectAddress: string;
+            /** @description Công ty phụ trách khoản */
+            companyName: string;
         };
         CitizenNotificationPageDto: {
             items: components["schemas"]["CitizenNotificationDto"][];
@@ -6051,30 +5991,6 @@ export interface operations {
             };
         };
     };
-    visit: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VisitRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["VisitDto"];
-                };
-            };
-        };
-    };
     reportSubject: {
         parameters: {
             query?: never;
@@ -6262,50 +6178,6 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PhotoDto"];
-                };
-            };
-        };
-    };
-    confirmations: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["PaymentConfirmationDto"][];
-                };
-            };
-        };
-    };
-    pay_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CitizenPaymentRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["CitizenPaymentResponse"];
                 };
             };
         };
@@ -7607,6 +7479,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": string;
+                };
+            };
+        };
+    };
+    confirmations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PaymentConfirmationDto"][];
                 };
             };
         };

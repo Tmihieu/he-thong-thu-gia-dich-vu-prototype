@@ -69,10 +69,6 @@ class PeriodLockIT extends IntegrationTest {
                 {"chargeId":%d,"amount":80000,"method":"CASH","clientRequestId":"after-lock"}"""
                 .formatted(fx.chargeId("DTH-H000001")))
                 .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("PERIOD_LOCKED"));
-        post("/api/collection/visits", fx.bearer(fx.thu07), """
-                {"chargeId":%d,"result":"ABSENT","clientRequestId":"visit-after-lock"}"""
-                .formatted(fx.chargeId("DTH-H000002")))
-                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("PERIOD_LOCKED"));
         post("/api/remittance/receipts", officer, """
                 {"companyId":%d,"periodId":%d,"amount":1000,"method":"CASH"}"""
                 .formatted(fx.dv01.getId(), fx.october.getId()))

@@ -35,16 +35,16 @@ Bản rút gọn ngày 30/09/2026, dùng để chỉnh sơ đồ swimlane. Mỗi
 
 **End condition:** Cán bộ xã khóa kỳ sau khi không còn công ty có số còn phải nộp lớn hơn 0.
 
-Thu trực tiếp và thanh toán app là hai cách thay thế cho một khoản. Thu, bàn giao và nộp tiền có thể lặp nhiều lần trong kỳ; không cần chờ thu hết các hộ mới nộp về xã.
+Tiền mặt cho người đi thu và chuyển khoản VietQR (ngân hàng báo về tự ghi nhận) là hai cách thay thế cho một khoản. Thu, bàn giao và nộp tiền có thể lặp nhiều lần trong kỳ; không cần chờ thu hết các hộ mới nộp về xã.
 
 | Bước | Làn | Hành động | Nhánh / bước tiếp theo |
 |---|---|---|---|
-| B1 | Công ty môi trường | Phân công khu vực cho người đi thu | Thu trực tiếp → B2; người dân tự thanh toán app → B5 |
-| B2 | Người đi thu | Xem danh sách được giao và đến hộ thu tiền | Thu được → B3; chưa thu được → B4 |
-| B3 | Người đi thu | Ghi nhận thanh toán tiền mặt hoặc chuyển khoản | → B6 |
-| B4 | Người đi thu | Ghi nhận vắng, hẹn lại hoặc từ chối | Lần ghé sau → B2; người dân chuyển sang app → B5 |
-| B5 | Người dân | Chọn khoản phải đóng và thanh toán trên app (mô phỏng) | → B6; nhánh này không cần chờ phân công người đi thu |
-| B6 | Hệ thống | Ghi nhận thanh toán, cập nhật khoản thu và xác nhận thanh toán | Tiền mặt do người đi thu giữ → B7; chuyển khoản/app → B9 |
+| B1 | Công ty môi trường | Phân công khu vực cho người đi thu | Thu tiền mặt → B2; người dân chuyển khoản VietQR → B5 |
+| B2 | Người đi thu | Xem danh sách được giao và đến hộ thu tiền | Hộ đóng tiền mặt → B3; hộ muốn chuyển khoản → B4; chưa đóng thì để Chưa đóng |
+| B3 | Người đi thu | Ghi nhận hộ đã đóng tiền mặt, đúng số cần đóng | → B6 |
+| B4 | Người đi thu | Mở mã VietQR của công ty cho hộ quét (không tự bấm "đã chuyển khoản") | → B5 |
+| B5 | Người dân | Quét mã VietQR (trên app hoặc máy người đi thu) và chuyển khoản bằng app ngân hàng; ngân hàng báo về | → B6; nhánh này không cần chờ phân công người đi thu |
+| B6 | Hệ thống | Ghi nhận thanh toán, cập nhật khoản thu và xác nhận thanh toán | Tiền mặt do người đi thu giữ → B7; chuyển khoản VietQR vào thẳng tài khoản công ty → B9 |
 | B7 | Người đi thu | Bàn giao tiền mặt cho công ty | → B8 |
 | B8 | Công ty môi trường | Ghi nhận tiền đã nhận từ người đi thu | → B9 |
 | B9 | Công ty môi trường | Kiểm tra số phải nộp và nộp tiền về xã | → B10 |

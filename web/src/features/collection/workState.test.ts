@@ -4,14 +4,14 @@ import type { CollectorCharge } from './api';
 import { countChips } from './workState';
 
 const work = (status: string, extra: Record<string, unknown> = {}, overdue = true) =>
-  ({ charge: { status, overdue }, paidAmount: 0, remainingAmount: 0, lastVisit: null, ...extra }) as unknown as CollectorCharge;
+  ({ charge: { status, overdue }, paidAmount: 0, remainingAmount: 0, ...extra }) as unknown as CollectorCharge;
 
 describe('countChips', () => {
-  it('Chưa thu gồm cả khoản thu một phần / vắng nhà và cả quá hạn; Quá hạn là tập con', () => {
+  it('Chưa thu gồm cả quá hạn; Quá hạn là tập con; miễn giảm không vào nhóm nào', () => {
     const items = [
       work('PAID'),
       work('UNPAID'),
-      work('UNPAID', { paidAmount: 50_000, lastVisit: { result: 'ABSENT' } }),
+      work('UNPAID'),
       work('UNPAID', {}, false),
       work('EXEMPT'),
     ];

@@ -79,17 +79,17 @@ Cột "Kiểm" để các lane điền khi rà: ✔ khớp · ✘ lệch (ghi s�
 |---|---|---|---|---|
 | BR-COL-01 | Công ty phân tổ cho người đi thu; một người nhiều tổ, mỗi tổ tạm 1 người | DD O4 | Chốt | |
 | BR-COL-02 | Người đi thu chỉ thấy hộ trong tổ được giao; công ty chỉ thấy hộ/khoản của mình | SPEC §9.5 | Chốt | |
-| BR-COL-03 | API cho thu một phần; khoản còn Chưa thu tới khi Σ thanh toán ≥ số tiền; thu vượt số còn thiếu → 422. "Đã thu" = Σ `Payment.amount` | DD G4 | Chốt | |
-| BR-COL-04 | **Giao diện người đi thu** chỉ có 2 nút: Đã thu tiền mặt / Đã thu chuyển khoản, thu đủ số của hộ. Ẩn vắng, hẹn, từ chối, thu một phần (API giữ nguyên) | 03/10 | Chốt | |
+| BR-COL-03 | Hộ chỉ có 2 trạng thái **Đã đóng / Chưa đóng**: chỉ 2 cách đóng: **tiền mặt** cho người đi thu, hoặc **chuyển khoản VietQR** (ngân hàng báo về tự ghi, không ai tự bấm "đã chuyển khoản"); mỗi lần thu phải đúng bằng số cần đóng, khoản chuyển Đã thu ngay; không thu một phần, sai số → 422. "Đã thu" = Σ `Payment.amount` | 04/10 (thay DD G4) | Chốt | |
+| BR-COL-04 | Người đi thu chỉ có 2 nút: Đã thu tiền mặt / Đã thu chuyển khoản. Không ghi lượt ghé vắng / hẹn / từ chối: đã bỏ cả API và bảng `collection_visits` (V41, 04/10) | 03/10, 04/10 | Chốt | |
 | BR-COL-05 | Gửi trùng (cùng mã yêu cầu) không tạo 2 thanh toán | SPEC §9.5 | Chốt | |
-| BR-COL-06 | Hình thức: tiền mặt / chuyển khoản / app người dân (mô phỏng) / hoàn (chỉ qua duyệt, API thu thường chặn `REFUND`). Mã xác nhận `TT-MMYY-nnnnnn`, gọi "Xác nhận thanh toán", không gọi biên lai pháp lý | DD D4, O1 | Chốt (O1 chờ kế toán xã) | |
+| BR-COL-06 | Hình thức: tiền mặt (API thu chỉ nhận `CASH`) / chuyển khoản (chỉ do ngân hàng báo về qua VietQR) / hoàn (chỉ qua duyệt). `APP_SIMULATED` đã bỏ 04/10, chỉ còn ở dữ liệu cũ. Mã xác nhận `TT-MMYY-nnnnnn`, gọi "Xác nhận thanh toán", không gọi biên lai pháp lý | DD D4, O1 | Chốt (O1 chờ kế toán xã) | |
 | BR-COL-07 | Tiền mặt đang giữ của người đi thu = Σ thu tiền mặt − Σ đã bàn giao, tính trên mọi kỳ | DD D5 | Chốt | |
 | BR-COL-08 | Bàn giao tiền mặt: quản lý công ty ghi khi nhận (một bên), 0 < số tiền ≤ đang giữ; người đi thu chỉ xem | DD G5 | Chốt | |
 | BR-COL-09 | Khoản đã xóa nợ: người đi thu vẫn thấy, nhãn "Đã xóa nợ", không có nút cập nhật | 29/09 T57 | Chốt | |
 | BR-COL-10 | Lịch sử hộ của người đi thu theo một kỳ, đổi kỳ bằng ô chọn kỳ | DD T53 | Chốt | |
 | BR-COL-11 | Báo sai thông tin hộ: chỉ phát thông báo INFO cho xã + công ty | DD G7 | Chốt | |
 | BR-COL-12 | Kỳ đã khóa: không sửa khoản / thanh toán của kỳ | SPEC §9.6 | Chốt | |
-| BR-COL-13 | Dân thanh toán trên app (mô phỏng) → khoản Đã thu, công ty và xã thấy ngay; không cần chờ phân tổ | SPEC §9.9 | Chốt | |
+| BR-COL-13 | Dân chuyển khoản qua mã VietQR trên app → ngân hàng báo về, khoản Đã thu, công ty và xã thấy ngay; không cần chờ phân tổ. App không tự ghi thanh toán | SPEC §9.9, 04/10 | Chốt | |
 
 ## 5. Nộp về xã, đối soát, khóa kỳ (`remittance`)
 
@@ -151,7 +151,7 @@ Sổ công ty–kỳ là nguồn số duy nhất cho: Tiến độ, Đối soát
 |---|---|---|---|---|
 | BR-CIT-01 | Đăng nhập SĐT + OTP cố định (mô phỏng); 1 SĐT ↔ 1 hộ, 1 hộ nhiều tài khoản | DD O7, D11 | Demo | |
 | BR-CIT-02 | Dân chỉ thấy dữ liệu của hộ mình: thông tin hộ, khoản phải đóng + lịch sử, xác nhận thanh toán, lịch thu gom theo khu vực | SPEC §9.9 | Chốt | |
-| BR-CIT-03 | Thanh toán mô phỏng: chỉ khoản Chưa thu của hộ mình, chống gửi trùng, ghi rõ là mô phỏng | SPEC §9.9 | Chốt | |
+| BR-CIT-03 | ~~Thanh toán mô phỏng~~ → bỏ 04/10: app chỉ hiện mã VietQR cho khoản Chưa thu của hộ mình và chờ ngân hàng báo về; công ty chưa khai tài khoản thì báo đóng tiền mặt | SPEC §9.9, 04/10 | Chốt | |
 | BR-CIT-04 | Rác cồng kềnh: Chờ xác nhận → Đã báo phí → Đã thu gom / Hủy; công ty phụ trách theo khu vực báo phí; phí không thành khoản thu | SPEC §9.9, O5 | Chốt | |
 | BR-CIT-05 | Chợ đồ cũ v2: caption + 1–4 tag (Tìm/Bán/Cho tặng/Đổi) + danh mục + ≤ 5 ảnh (≤ 5 MB, JPEG/PNG/WebP, không bắt buộc), không có giá; đóng/mở lại, ẩn/hiện; bình luận + SĐT tự nguyện; lưu bài; chặn hai chiều; thông báo bình luận; không kiểm duyệt. Vai trò nội bộ chỉ đọc. Chi tiết: `docs/cho-do-cu-spec.md` (thay quy tắc T47 cũ) | 30/09 | Chốt | |
 
@@ -159,6 +159,6 @@ Sổ công ty–kỳ là nguồn số duy nhất cho: Tiến độ, Đối soát
 
 - `SPEC.md` §1 "công ty nộp **toàn bộ**" và DD O2 → thay bởi BR-REM-02 (03/10).
 - `SPEC.md` §9.3 trạng thái kỳ "Đã mở → Đang thu" → thay bởi BR-MD-13 (P1).
-- `SPEC.md` §9.5 màn người đi thu có vắng/hẹn/từ chối → giao diện ẩn theo BR-COL-04 (03/10); API còn.
+- `SPEC.md` §9.5 lượt ghé vắng/hẹn/từ chối và DD G4 thu một phần → bỏ hẳn theo BR-COL-03/04 (04/10).
 - DD T47 chợ đồ cũ "đóng không mở lại" → thay bởi BR-CIT-05.
 - DD G9 gọi thành phần giá là "xử lý" → nay là "vận chuyển" (BR-MD-12).

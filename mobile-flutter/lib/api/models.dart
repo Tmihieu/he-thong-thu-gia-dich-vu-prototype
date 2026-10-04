@@ -226,7 +226,7 @@ class CitizenCharge {
   final String? paidAt;
 }
 
-/// Thông tin chuyển khoản của một khoản: tài khoản công ty thu gom, số còn thiếu, mã ghi trong nội dung.
+/// Thông tin chuyển khoản của một khoản: tài khoản công ty thu gom, số cần đóng, mã ghi trong nội dung.
 class TransferInfo {
   const TransferInfo({
     required this.configured,

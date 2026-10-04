@@ -6,8 +6,6 @@ import type { components } from '../../api/schema';
 export type CollectorCharge = components['schemas']['CollectorChargeDto'];
 export type PaymentRequest = components['schemas']['PaymentRequest'];
 export type PaymentResult = components['schemas']['PaymentResultDto'];
-export type VisitRequest = components['schemas']['VisitRequest'];
-export type Visit = components['schemas']['VisitDto'];
 export type CashHeld = components['schemas']['CashHeldDto'];
 export type Handover = components['schemas']['HandoverDto'];
 export type Collector = components['schemas']['CollectorDto'];
@@ -27,7 +25,7 @@ export const collectionKeys = {
   history: ['collection', 'history'] as const,
 };
 
-/** Danh sách thu của người đi thu: khoản trong tổ được giao kèm đã thu và lượt ghé gần nhất. */
+/** Danh sách thu của người đi thu: khoản trong tổ được giao kèm đã thu. */
 export function useMyWork(periodId: number | undefined) {
   return useQuery({
     queryKey: [...collectionKeys.myWork, periodId],
@@ -60,7 +58,7 @@ export function useHandovers() {
   });
 }
 
-/** Hộ được giao của công ty: khoản các tổ công ty phụ trách trong kỳ, kèm đã thu và lượt ghé gần nhất. */
+/** Hộ được giao của công ty: khoản các tổ công ty phụ trách trong kỳ, kèm đã thu. */
 export function useCompanyWork(periodId: number | undefined) {
   return useQuery({
     queryKey: [...collectionKeys.companyWork, periodId],
@@ -98,7 +96,7 @@ export function useEndCollectorAssignment() {
   });
 }
 
-/** Lịch sử hộ trên một khoản: thanh toán và lượt ghé, cũ trước. */
+/** Lịch sử hộ trên một khoản: các lần thanh toán, cũ trước. */
 export function useChargeHistory(chargeId: number | undefined) {
   return useQuery({
     queryKey: [...collectionKeys.history, chargeId],

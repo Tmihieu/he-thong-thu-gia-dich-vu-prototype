@@ -24,16 +24,6 @@ class CitizenApi {
   Future<TransferInfo> transferInfo(int chargeId) async =>
       TransferInfo.fromJson(await _api.get('/api/citizen/charges/$chargeId/transfer-info') as Json);
 
-  /// Trả về xác nhận thanh toán (backend trả lại bản cũ nếu `clientRequestId` đã dùng).
-  Future<PaymentConfirmation> pay(int chargeId, int amount, String clientRequestId) async {
-    final res = await _api.post('/api/citizen/payments', {
-      'chargeId': chargeId,
-      'amount': amount,
-      'clientRequestId': clientRequestId,
-    }) as Json;
-    return PaymentConfirmation.fromJson(res['confirmation'] as Json);
-  }
-
   Future<List<PaymentConfirmation>> confirmations() async =>
       [for (final p in await _api.get('/api/citizen/payments') as List) PaymentConfirmation.fromJson(p as Json)];
 

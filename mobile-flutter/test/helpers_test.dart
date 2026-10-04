@@ -58,10 +58,6 @@ void main() {
       expect(re.hasMatch(a), isTrue, reason: a);
       expect(uuidV4(), isNot(a));
     });
-
-    test('paymentRequestId tối đa 40 ký tự', () {
-      expect(paymentRequestId().length, lessThanOrEqualTo(40));
-    });
   });
 
   group('notificationRoute', () {

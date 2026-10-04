@@ -99,7 +99,7 @@ Lịch sử trước/sau của thao tác tạo/sửa tiền **không** nằm ở
 | 13  | ChargeRequest       | `charge_requests`       | billing       | A    |
 | 14  | Charge              | `charges`               | billing       | A    |
 | 15  | CollectorAssignment | `collector_assignments` | collection    | A    |
-| 16  | CollectionVisit     | `collection_visits`     | collection    | A    |
+| 16  | ~~CollectionVisit~~ | ~~`collection_visits`~~ | collection    | bỏ (V41) |
 | 17  | Payment             | `payments`              | collection    | A    |
 | 18  | CashHandover        | `cash_handovers`        | collection    | A    |
 | 19  | CompanyReceipt      | `company_receipts`      | remittance    | A    |
@@ -437,7 +437,7 @@ Nguồn duy nhất cho "phải thu" của hộ.
 | Tháng bắt đầu        | `coverage_from`     | `date`                | Có           | Hệ thống | 2026-10-01        | Demo | = `start_date` của kỳ; dùng chặn trùng tháng/quý                         |
 | Tháng kết thúc       | `coverage_to`       | `date`                | Có           | Hệ thống | 2026-10-31        | Demo | = `end_date` của kỳ                                                      |
 | Hạn đóng | `due_date` | `date` | Có | Hệ thống | 2026-10-25 | Demo | Chép từ phiếu YCT (G16) |
-| Trạng thái | `status` | `enum ChargeStatus` | Có | Hệ thống | `UNPAID` | Demo | Còn `UNPAID` khi mới thu một phần (G4). "Quá hạn" không lưu: `UNPAID` và `due_date < hôm nay` |
+| Trạng thái | `status` | `enum ChargeStatus` | Có | Hệ thống | `UNPAID` | Demo | Chỉ `UNPAID` → `PAID` khi thu đúng số cần đóng (BR-COL-03). "Quá hạn" không lưu: `UNPAID` và `due_date < hôm nay` |
 | Đã thu lúc           | `paid_at`           | `timestamp`           | Không        | Hệ thống |                   | Demo | Gán khi chuyển `PAID`                                                    |
 
 
@@ -464,23 +464,9 @@ Do công ty lập. Schema nhiều–nhiều: một người đi thu được ph�
 
 **Khóa/ràng buộc:** không trùng lặp cùng `(collector_id, area_id)` chồng hiệu lực. Seed demo 1 người/tổ.
 
-### CollectionVisit — Lượt ghé hộ không thu được · `collection_visits` · Phần A
+### ~~CollectionVisit~~ — đã bỏ (V41, 04/10)
 
-Kết quả "vắng / hẹn / từ chối". Kết quả "đã thu" là `Payment`, không nằm ở đây.
-
-
-| Tên hiển thị (VI)    | Tên kỹ thuật        | Kiểu               | Bắt buộc     | Nguồn    | Ví dụ                     | Mức  | Ghi chú                                           |
-| -------------------- | ------------------- | ------------------ | ------------ | -------- | ------------------------- | ---- | ------------------------------------------------- |
-| Khoản                | `charge_id`         | `FK→Charge`        | Có           | Hệ thống | 900                       | Demo |                                                   |
-| Kết quả              | `result`            | `enum VisitResult` | Có           | Công ty  | `ABSENT`                  | Demo |                                                   |
-| Thời điểm ghé        | `visited_at`        | `timestamp`        | Có           | Hệ thống | 2026-10-12T17:30:00+07:00 | Demo |                                                   |
-| Ngày hẹn lại         | `revisit_date`      | `date`             | Có điều kiện | Công ty  | 2026-10-15                | Demo | Bắt buộc khi `APPOINTMENT`; tùy chọn khi `ABSENT` |
-| Ghi chú              | `note`              | `text(500)`        | Không        | Công ty  | Nhà khóa cửa              | Demo |                                                   |
-| Người ghi            | `recorded_by`       | `FK→User`          | Có           | Hệ thống | 21                        | Demo | Người đi thu hoặc quản lý công ty ghi thay        |
-| Khóa chống gửi trùng | `client_request_id` | `text(40)`         | Có           | Hệ thống | uuid từ client            | Demo | Duy nhất; gửi lại cùng khóa trả về bản ghi cũ     |
-
-
-**Enum `VisitResult`:** `ABSENT` Vắng nhà · `APPOINTMENT` Đã hẹn · `REFUSED` Từ chối nộp
+Bảng `collection_visits` (lượt ghé vắng / hẹn / từ chối) đã xóa: hộ chỉ Đã đóng / Chưa đóng (BR-COL-04).
 
 ### Payment — Thanh toán · `payments` · Phần A
 
@@ -489,18 +475,18 @@ Kết quả "vắng / hẹn / từ chối". Kết quả "đã thu" là `Payment`
 | -------------------------- | -------------------- | -------------------- | ------------ | ------------------- | ------------------------- | ---- | -------------------------------------------------------------------------------------------- |
 | Mã xác nhận thanh toán | `code` | `text(30)` | Có | Hệ thống | `TT-1026-000123` | Demo | Duy nhất, **ổn định**. `TT-MMYY-nnnnnn` đếm theo kỳ; kỳ quý `TT-Q426-nnnnnn` (D4, G11). Không gọi là biên lai pháp lý ⚠ O1 |
 | Khoản                      | `charge_id`          | `FK→Charge`          | Có           | Hệ thống            | 900                       | Demo |                                                                                              |
-| Số tiền | `amount` | `money` | Có | Công ty / Người dân | 80000 | Demo | 0 < số tiền ≤ số còn thiếu của khoản (`Charge.amount` − Σ thanh toán trước); vượt thì 422. Được thu nhiều lần (G4) |
+| Số tiền | `amount` | `money` | Có | Công ty / Người dân | 80000 | Demo | Đúng bằng số cần đóng của khoản (`Charge.amount` − Σ thanh toán trước); khác thì 422. Thu xong khoản Đã thu ngay (BR-COL-03) |
 | Hình thức                  | `method`             | `enum PaymentMethod` | Có           | Công ty / Người dân | `CASH`                    | Demo |                                                                                              |
 | Thời điểm thu              | `paid_at`            | `timestamp`          | Có           | Hệ thống            | 2026-10-12T17:40:00+07:00 | Demo |                                                                                              |
-| Người thu                  | `collector_id`       | `FK→User`            | Có điều kiện | Hệ thống            | 21                        | Demo | Bắt buộc với `CASH`, `TRANSFER`; null với `APP_SIMULATED`. Dùng tính tiền mặt đang giữ (R21) |
+| Người thu                  | `collector_id`       | `FK→User`            | Có điều kiện | Hệ thống            | 21                        | Demo | Bắt buộc với `CASH`; null với `TRANSFER` (ngân hàng báo về) và `APP_SIMULATED` cũ. Dùng tính tiền mặt đang giữ (R21) |
 | Người xác nhận             | `confirmed_by`       | `FK→User`            | Không        | Hệ thống            | 21                        | Demo | Người bấm ghi nhận (có thể là quản lý công ty ghi thay)                                      |
-| Tài khoản người dân        | `citizen_account_id` | `FK→CitizenAccount`  | Có điều kiện | Hệ thống            | 1                         | Demo | Có khi `APP_SIMULATED`. FK thêm ở V18 (Phần B)                                               |
+| Tài khoản người dân        | `citizen_account_id` | `FK→CitizenAccount`  | Có điều kiện | Hệ thống            | 1                         | Demo | Chỉ có ở `APP_SIMULATED` cũ. FK thêm ở V18 (Phần B)                                          |
 | Số tham chiếu chuyển khoản | `bank_ref`           | `text(50)`           | Không        | Công ty             |                           | Thật |                                                                                              |
 | Ghi chú                    | `note`               | `text(500)`          | Không        | Công ty             |                           | Demo |                                                                                              |
 | Khóa chống gửi trùng       | `client_request_id`  | `text(40)`           | Có           | Hệ thống            | uuid từ client            | Demo | Duy nhất; gửi 2 lần không tạo 2 thanh toán (SPEC §9.5)                                       |
 
 
-**Enum `PaymentMethod`:** `CASH` Tiền mặt · `TRANSFER` Chuyển khoản · `APP_SIMULATED` App người dân (mô phỏng)
+**Enum `PaymentMethod`:** `CASH` Tiền mặt (người đi thu) · `TRANSFER` Chuyển khoản VietQR (chỉ ghi khi ngân hàng báo về) · `APP_SIMULATED` App người dân (mô phỏng, đã bỏ 04/10, chỉ còn ở dữ liệu cũ)
 
 **Quy tắc:** khoản chuyển `PAID` khi tổng thanh toán = `Charge.amount` (không thể vượt vì bị chặn). "Công ty đã thu" = Σ `Payment.amount` (G4). Hoàn/hủy thanh toán ngoài phạm vi.
 
@@ -897,12 +883,12 @@ Chợ đồ cũ v2 (V25, [spec](cho-do-cu-spec.md)): thay tiêu đề/mô tả/l
 | subject                          | → `Charge.subject_id` (+ `contract_id`, `area_id` chụp)              |
 | period                           | → `Charge.period_id` (+ `coverage_from/to`)                          |
 | due                              | → `Charge.due_date`                                                  |
-| amount (người thu có thể ghi đè) | → `Charge.amount` cố định; số thực thu (được thu một phần) nằm ở `Payment.amount` (G4) |
+| amount (người thu có thể ghi đè) | → `Charge.amount` cố định; số thực thu nằm ở `Payment.amount`, đúng bằng số cần đóng (BR-COL-03) |
 | status unpaid/paid/exempt        | → `Charge.status`                                                    |
 | status overdue                   | bỏ — không lưu, tính từ `due_date`                                   |
 | paidAt                           | → `Charge.paid_at` (+ `Payment.paid_at`)                             |
 | method                           | → `Payment.method`                                                   |
-| note                             | → `Payment.note` / `CollectionVisit.note`                            |
+| note                             | → `Payment.note`                            |
 
 
 ### 4.10 Phiếu thu xã lập — `CS_COMPANY_RECEIPTS`
@@ -975,8 +961,8 @@ Chợ đồ cũ v2 (V25, [spec](cho-do-cu-spec.md)): thay tiêu đề/mô tả/l
 
 | Trường prototype                         | Đối chiếu                                                                             |
 | ---------------------------------------- | ------------------------------------------------------------------------------------- |
-| (phép chiếu của `CS_CHARGES`)            | bỏ — không phải entity; API trả view tính từ `Charge` + `Payment` + `CollectionVisit` |
-| status thăm hộ (appointment/absent)      | → `CollectionVisit.result` (lượt gần nhất)                                            |
+| (phép chiếu của `CS_CHARGES`)            | bỏ — không phải entity; API trả view tính từ `Charge` + `Payment` |
+| status thăm hộ (appointment/absent)      | bỏ — hộ chỉ Đã đóng / Chưa đóng (BR-COL-04)                                            |
 | collector                                | → `CollectorAssignment` (người được phân) / `Payment.collector_id` (người đã thu)     |
 | confirmedBy                              | → `Payment.confirmed_by`                                                              |
 | receipt `BL-MMYY-nnnn` (sinh khi render) | → `Payment.code` ổn định `TT-MMYY-nnnnnn` (D4); tính pháp lý ⚠ O1 |
@@ -1104,7 +1090,7 @@ Người duyệt trả lời trực tiếp trong mục 5.1–5.3; ba chỗ trả
 | G1 | Quản trị mở kỳ, cán bộ xã khóa kỳ | `CollectionPeriod.status` |
 | G2 | Làm notifications core (T23) trước T34/T35 | thứ tự task |
 | G3 | Chụp `company_id` lên `Charge` theo phân công hiệu lực tại **ngày phát hành** | `Charge.company_id`, `ChargeRequest.scope_company_id` |
-| G4 | Cho thu một phần; khoản còn `UNPAID` tới khi đủ; "đã thu" = Σ `Payment.amount`. **Hỏi lại:** thu vượt số còn thiếu → chặn (422) | `Payment.amount`, `Charge.status` |
+| G4 | ~~Cho thu một phần~~ → **thay 04/10 bởi BR-COL-03**: thu đúng bằng số cần đóng, không thu một phần; "đã thu" = Σ `Payment.amount` | `Payment.amount`, `Charge.status` |
 | G5 | Quản lý công ty ghi bàn giao khi nhận tiền (một bên) | `CashHandover.received_by` |
 | G6 | "Đã xử lý" = đóng kèm ghi chú; phiếu sai thì lập phiếu mới, không sửa/hủy | `ReceiptIssue`, `CompanyReceipt.status` |
 | G7 | Báo sai thông tin hộ chỉ phát thông báo `INFO`, không có entity | T53 |

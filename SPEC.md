@@ -15,10 +15,10 @@ Dựng lại prototype HTML/JS v3.1 thành ứng dụng demo có backend và cơ
 |---|---|---|
 | Cán bộ xã (gộp kế toán) | Web desktop | Đối tượng & hợp đồng, kỳ thu, phiếu yêu cầu thu, khu vực & phân công công ty, lập phiếu thu khi công ty nộp tiền, nhắc nộp, báo cáo tiến độ, đối soát, khóa kỳ, khiếu nại |
 | Công ty môi trường | Web desktop | Hộ được giao, phân tổ cho người đi thu, nhận tiền mặt từ người đi thu, xem phiếu thu xã lập và báo sai sót, xử lý khiếu nại, nhận/báo phí rác cồng kềnh |
-| Người đi thu | Web giao diện mobile | Danh sách hộ của tổ được giao, cập nhật kết quả thu (tiền mặt / chuyển khoản / vắng / hẹn / từ chối), tiền mặt đang giữ, báo sai thông tin hộ |
+| Người đi thu | Web giao diện mobile | Danh sách hộ của tổ được giao, ghi nhận hộ đã đóng (tiền mặt / chuyển khoản), tiền mặt đang giữ, báo sai thông tin hộ |
 | Lãnh đạo (thêm 29/09/2026, §9.10) | Web desktop | Dashboard điều hành (thu / nợ / tỷ lệ nộp theo công ty và địa bàn, cảnh báo), xem + xuất báo cáo tổng hợp, duyệt / từ chối miễn giảm – hoàn – xóa nợ. Chỉ giám sát: không chốt kỳ, không cấu hình, không phân quyền |
 | Quản trị | Web desktop | Tài khoản & vai trò, địa bàn, biểu giá, mở kỳ thu (ai mở kỳ: xem G1), nhật ký. **Khóa kỳ do cán bộ xã** (quyết định 23/09) |
-| Người dân | App Flutter (cài qua store) | Thông tin hộ, khoản phải đóng, thanh toán **mô phỏng**, biên lai, lịch thu gom, khiếu nại, chợ đồ cũ, thông báo |
+| Người dân | App Flutter (cài qua store) | Thông tin hộ, khoản phải đóng, chuyển khoản **VietQR**, xác nhận thanh toán, lịch thu gom, khiếu nại, chợ đồ cũ, thông báo |
 
 **Luồng tiền đã chốt (tạm):** hộ → công ty (người đi thu hoặc app dân) → công ty nộp **toàn bộ** tiền đã thu về xã → xã lập phiếu thu cho công ty → xã đối soát `phải thu / công ty đã thu / đã nộp về xã` → xã khóa kỳ.
 
@@ -34,7 +34,7 @@ Dựng lại prototype HTML/JS v3.1 thành ứng dụng demo có backend và cơ
 | `platform` | Monorepo, docker-compose, đăng nhập JWT, User/Role, phạm vi dữ liệu theo công ty, audit log, màn quản trị tài khoản | data-dictionary |
 | `master-data` | Địa bàn, khu vực/tổ, công ty, phân công khu vực có hiệu lực, đối tượng + hợp đồng, biểu giá theo phiên bản, loại phí, kỳ thu tháng/quý, lịch thu gom | platform |
 | `billing` | Phiếu yêu cầu thu → sinh khoản phải thu từng hộ–kỳ–loại phí | master-data |
-| `collection` | Công ty phân tổ cho người đi thu; ghi nhận kết quả thu / lượt ghé; bàn giao tiền mặt; thanh toán mô phỏng từ app dân | billing |
+| `collection` | Công ty phân tổ cho người đi thu; ghi nhận hộ đã đóng; bàn giao tiền mặt; ghi chuyển khoản VietQR khi ngân hàng báo về | billing |
 | `remittance` | Phiếu thu xã lập khi công ty nộp, báo sai sót phiếu thu, nhắc nộp, báo cáo tiến độ, đối soát, khóa kỳ | collection |
 | `notifications` | Thông báo theo vai trò / công ty / người dùng / người dân; đã đọc | platform |
 | `complaints` | Khiếu nại liên thông: dân/xã ghi nhận → xã xử lý hoặc chuyển công ty → công ty phản hồi → xã đóng; timeline | master-data, notifications |
@@ -250,8 +250,7 @@ Mục tiêu: service layer của `billing`, `collection`, `remittance` có cover
 
 ### 9.5 `collection`
 - `CollectorAssignment` (người đi thu, khu vực, từ ngày, đến ngày) do công ty lập — **cấu trúc cho phép nhiều tổ/người**; demo seed 1 người/tổ như prototype.
-- `CollectionVisit` (khoản, kết quả: vắng / hẹn / từ chối, ngày hẹn lại, ghi chú, người ghi).
-- `Payment` (khoản, số tiền, hình thức: tiền mặt / chuyển khoản / app người dân (mô phỏng), thời điểm, người xác nhận) — khoản chuyển "Đã thu" khi tổng thanh toán ≥ số tiền.
+- `Payment` (khoản, số tiền, hình thức: tiền mặt cho người đi thu / chuyển khoản VietQR do ngân hàng báo về, thời điểm, người xác nhận) — thu đúng bằng số cần đóng, khoản chuyển "Đã thu" ngay; hộ chỉ Đã đóng / Chưa đóng (không thu một phần, không ghi vắng / hẹn / từ chối).
 - `CashHandover` (người đi thu → công ty: số tiền ≤ tiền mặt đang giữ, ngày, ghi chú).
 - Web người đi thu (mobile): danh sách hộ, lọc, bottom sheet cập nhật kết quả, lịch sử hộ, tiền đang giữ, báo sai thông tin hộ.
 - Web công ty: vòng tiến độ, bảng người đi thu, danh sách hộ, cập nhật thay người thu, nhận tiền mặt, phân tổ.
@@ -277,10 +276,10 @@ Mục tiêu: service layer của `billing`, `collection`, `remittance` có cover
 
 ### 9.9 `citizen-app`
 - `CitizenAccount` gắn với một `ServiceSubject`; đăng nhập demo bằng SĐT + mã OTP cố định (mô phỏng).
-- Màn: trang chủ, thông tin hộ, khoản phải đóng & lịch sử (từ `Charge`), thanh toán **mô phỏng** (tạo `Payment` hình thức app → khoản thành Đã thu, công ty và xã thấy ngay), biên lai, lịch thu gom, khiếu nại, thông báo, tài khoản.
+- Màn: trang chủ, thông tin hộ, khoản phải đóng & lịch sử (từ `Charge`), chuyển khoản **VietQR** (mã QR tài khoản công ty, đúng số tiền và mã khoản; ngân hàng báo về thì tạo `Payment` chuyển khoản → khoản thành Đã thu, công ty và xã thấy ngay), xác nhận thanh toán, lịch thu gom, khiếu nại, thông báo, tài khoản.
 - **Chợ đồ cũ** (thay bởi [chợ đồ cũ v2](docs/cho-do-cu-spec.md), V25, 30/09/2026): `MarketPost` caption + 1–4 tag (Tìm/Bán/Cho tặng/Đổi) + danh mục + tối đa 5 ảnh, không trường giá; đóng/mở lại, ẩn/hiện; liên hệ bằng bình luận và SĐT tự nguyện; lưu bài, chặn hai chiều, thông báo bình luận. Người dân tương tác; 5 vai trò nội bộ chỉ đọc qua `/api/market`. Quy tắc cũ tiêu đề/mô tả/loại/nơi nhận và "đóng không mở lại" (D9/T47) không còn áp dụng.
 - **Rác cồng kềnh:** `BulkyWasteRequest` (loại vật dụng, số lượng, địa chỉ, ngày mong muốn, ảnh, công ty phụ trách theo khu vực, phí công ty báo, trạng thái Chờ xác nhận → Đã báo phí → Đã thu gom / Hủy). Công ty có màn nhận và báo phí.
-- **Nghiệm thu:** dân thanh toán mô phỏng → số liệu công ty/xã cập nhật; dân gửi khiếu nại và nhận thông báo khi được xử lý; đăng bài chợ đồ cũ, đăng ký rác cồng kềnh và thấy công ty báo phí.
+- **Nghiệm thu:** dân chuyển khoản VietQR → ngân hàng báo về, số liệu công ty/xã cập nhật; dân gửi khiếu nại và nhận thông báo khi được xử lý; đăng bài chợ đồ cũ, đăng ký rác cồng kềnh và thấy công ty báo phí.
 
 ### 9.10 `leadership` — vai trò Lãnh đạo (thêm 29/09/2026, làm sau T53)
 
@@ -309,8 +308,8 @@ Mục tiêu: service layer của `billing`, `collection`, `remittance` có cover
 
 1. Quản trị mở kỳ 10/2026 (tháng) theo QĐ 65/2026.
 2. Cán bộ xã phân công một tổ chưa có công ty bằng popup; tạo phiếu yêu cầu thu toàn xã → xem trước → phát hành.
-3. Công ty DV01 phân tổ cho người đi thu; người đi thu (điện thoại) ghi nhận 2 hộ tiền mặt, 1 hộ vắng; bàn giao tiền mặt cho công ty.
-4. Người dân hộ DTH-H000128 thanh toán mô phỏng trên app → công ty thấy "Đã thu".
+3. Công ty DV01 phân tổ cho người đi thu; người đi thu (điện thoại) ghi nhận 2 hộ tiền mặt; bàn giao tiền mặt cho công ty.
+4. Người dân hộ DTH-H000128 quét mã VietQR trên app và chuyển khoản → ngân hàng báo về, công ty thấy "Đã thu".
 5. Xã lập phiếu thu khi DV01 nộp một phần; báo cáo tiến độ và đối soát hiển thị "Đang nộp"; xã nhắc nộp → DV01 nhận thông báo; DV01 báo sai sót phiếu thu → xã xử lý.
 6. Người dân gửi khiếu nại → xã chuyển DV01 → DV01 phản hồi → xã đóng → dân thấy timeline và thông báo.
 7. Người dân đăng ký rác cồng kềnh → DV01 báo phí; đăng một bài chợ đồ cũ.
