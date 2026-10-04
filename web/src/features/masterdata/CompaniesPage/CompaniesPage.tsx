@@ -77,7 +77,17 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
 
   return (
     <>
-      {!admin && <PageHeader title="Công ty môi trường" description="Công ty thu gom, khu vực phụ trách và tiến độ nộp tiền về xã." />}
+      {!admin && (
+        <PageHeader
+          title="Công ty môi trường"
+          description="Công ty thu gom, khu vực phụ trách và tiến độ nộp tiền về xã."
+          extra={
+            <Button type="primary" onClick={() => openForm(null)}>
+              + Thêm công ty
+            </Button>
+          }
+        />
+      )}
       <Flex wrap gap={8} justify="space-between" style={{ marginBottom: 16 }}>
         <Space wrap>
           <Input.Search allowClear placeholder="Tên, mã, đầu mối, điện thoại" style={{ width: 280 }} onChange={(e) => setQ(e.target.value)} />
@@ -91,9 +101,11 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
             ]}
           />
         </Space>
-        <Button type="primary" onClick={() => openForm(null)}>
-          + Thêm công ty
-        </Button>
+        {admin && (
+          <Button type="primary" onClick={() => openForm(null)}>
+            + Thêm công ty
+          </Button>
+        )}
       </Flex>
       <Table<Company>
         rowKey="id"

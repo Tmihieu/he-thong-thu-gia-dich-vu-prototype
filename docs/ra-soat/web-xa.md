@@ -79,3 +79,17 @@ Tổng: 18 mục. Test đỏ của lane đã xanh: ChargesHubPage 3, AreasPage 1
 | 27 | Chờ duyệt có mô tả và trạng thái trống bằng `EmptyBlock` | 1dd19d4 |
 
 Kiểm sau commit `d3e54e3`: `tsc --noEmit` sạch, `eslint src` sạch; vitest chạy từng thư mục (máy 7,3 GB, chỉ một việc nặng một lúc): masterdata 49 test, billing 9, platform 5, leadership 7, app + shared 27, đều xanh.
+
+## Đợt 4 (cập nhật)
+| # | Việc | Commit |
+|---|---|---|
+| 28 | Bảng vừa màn 1366: Hồ sơ hộ chia lại độ rộng (tổng 970px), Khoản thu gộp Nhóm giá vào dòng phụ của Đối tượng, bỏ cột thao tác cố định; thanh bên 240px | 7cacb8b, b29ae7c |
+| 29 | Nút chính nằm ở `extra` của PageHeader: Hồ sơ hộ (Thêm hộ), Công ty (Thêm công ty, cán bộ xã), Khu vực (Phân công), Tài khoản | 7cacb8b |
+| 30 | Hạn mức đề nghị hoàn = số tiền khoản − đã hoàn (`ChargeDto` chưa có `paidAmount`; backend vẫn kiểm lại), hiện "đã hoàn X đ"; thêm test | 7cacb8b |
+| 31 | Xem trước và kết quả phiếu YCT dùng `skippedByReason` của schema, nhãn QUOTA_KG_REQUIRED | 7cacb8b |
+| 32 | Báo cáo lãnh đạo: dòng tổng lộ mã code ra giao diện do thiếu ngoặc JSX (lỗi của đợt 3); thêm kiểm trong test | b29ae7c |
+| 33 | Phiếu YCT: cột Kỳ ghi "Tháng MM/YYYY" | commit sau b29ae7c |
+
+Đã chụp và soát bằng Edge (1366×900): Hồ sơ hộ, Khoản thu, Khu vực, Công ty, Tài khoản, Nhật ký, Dashboard, Chờ duyệt, Báo cáo, form hồ sơ hộ, form lập phiếu YCT, tab Biểu giá. Chưa chụp form soạn biểu giá (nút không bấm được bằng script) và popup phân công.
+
+Kiểm cuối: `tsc --noEmit` sạch, `eslint src` sạch. vitest từng thư mục: masterdata 49, billing 9, platform 5, leadership 8, app + shared 27, đều xanh. Đã tắt Vite.

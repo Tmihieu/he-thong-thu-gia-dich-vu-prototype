@@ -129,7 +129,7 @@ export function LeaderReportPage() {
                 <Table.Summary.Cell index={0}>{companyId === undefined ? 'Tổng toàn xã' : 'Tổng (đã lọc)'}</Table.Summary.Cell>
                 {(['due', 'payable', 'adjustment', 'collected', 'refunded', 'received', 'remaining', 'previousDebt'] as const).map((k, i) => (
                   <Table.Summary.Cell key={k} index={i + 1} align="right">
-                    k === 'remaining' ? <RemainingText value={rows.reduce((t, r) => t + r[k], 0)} /> : <MoneyText value={rows.reduce((t, r) => t + r[k], 0)} />
+                    {k === 'remaining' ? <RemainingText value={rows.reduce((t, r) => t + r[k], 0)} /> : <MoneyText value={rows.reduce((t, r) => t + r[k], 0)} />}
                   </Table.Summary.Cell>
                 ))}
                 <Table.Summary.Cell index={9} align="right">

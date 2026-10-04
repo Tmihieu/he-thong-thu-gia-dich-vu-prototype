@@ -132,7 +132,15 @@ export function SubjectsPage() {
 
   return (
     <>
-      <PageHeader title="Hồ sơ hộ" description="Tìm, thêm, sửa hồ sơ và đăng ký thu phí của hộ, hộ kinh doanh, doanh nghiệp." />
+      <PageHeader
+        title="Hồ sơ hộ"
+        description="Tìm, thêm, sửa hồ sơ và đăng ký thu phí của hộ, hộ kinh doanh, doanh nghiệp."
+        extra={
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => openEditor({ mode: 'create' })}>
+            Thêm hộ
+          </Button>
+        }
+      />
       <Space wrap style={{ marginBottom: 16 }}>
         <Input.Search
           aria-label="Tìm hồ sơ"
@@ -170,15 +178,12 @@ export function SubjectsPage() {
         <Checkbox checked={unnormalizedOnly} onChange={(e) => setUnnormalizedOnly(e.target.checked)}>
           Địa chỉ chưa chuẩn hóa ({unnormalizedCount} trên trang)
         </Checkbox>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => openEditor({ mode: 'create' })}>
-          Thêm hộ
-        </Button>
       </Space>
       <Table<Subject>
         rowKey="id"
         loading={subjects.isFetching}
         dataSource={shownItems}
-        scroll={{ x: 1280 }}
+        scroll={{ x: 970 }}
         locale={{ emptyText: subjects.error ? errorTextOrNull(subjects.error) : 'Không có hồ sơ phù hợp' }}
         pagination={{
           current: query.page + 1,
@@ -193,7 +198,7 @@ export function SubjectsPage() {
             title: 'Mã',
             dataIndex: 'code',
             className: 'cell-nowrap',
-            width: 150,
+            width: 120,
             fixed: 'left',
             render: (code: string, s) => (
               <Button type="link" style={{ padding: 0 }} onClick={() => openEditor({ mode: 'edit', subject: s })}>
@@ -201,14 +206,14 @@ export function SubjectsPage() {
               </Button>
             ),
           },
-          { title: 'Tên', dataIndex: 'name', width: 220, ellipsis: true },
-          { title: 'Loại', dataIndex: 'subjectType', className: 'cell-nowrap', width: 130, render: (t: Subject['subjectType']) => SUBJECT_TYPE_LABELS[t] },
-          { title: 'Tổ/Ấp/Thôn', dataIndex: 'areaCode', className: 'cell-nowrap', width: 120 },
+          { title: 'Tên', dataIndex: 'name', width: 150, ellipsis: true },
+          { title: 'Loại', dataIndex: 'subjectType', className: 'cell-nowrap', width: 110, render: (t: Subject['subjectType']) => SUBJECT_TYPE_LABELS[t] },
+          { title: 'Tổ', dataIndex: 'areaCode', className: 'cell-nowrap', width: 80 },
           {
             title: 'Địa chỉ',
             dataIndex: 'address',
             ellipsis: true,
-            width: 260,
+            width: 150,
             render: (address: string, s) => (
               <>
                 {address}
@@ -220,10 +225,11 @@ export function SubjectsPage() {
               </>
             ),
           },
-          { title: 'SĐT', dataIndex: 'phone', className: 'cell-nowrap', width: 130, render: (p: string | null) => p ?? '—' },
+          { title: 'SĐT', dataIndex: 'phone', className: 'cell-nowrap', width: 110, render: (p: string | null) => p ?? '—' },
           {
             title: 'Nhóm giá',
-            width: 190,
+            width: 140,
+            ellipsis: true,
             render: (_, s) =>
               s.currentContract ? (
                 <>
@@ -237,7 +243,7 @@ export function SubjectsPage() {
           {
             title: 'Trạng thái',
             dataIndex: 'status',
-            width: 150,
+            width: 120,
             className: 'cell-nowrap',
             render: (st: Subject['status']) => <StatusTag color={SUBJECT_STATUS_COLORS[st]}>{SUBJECT_STATUS_LABELS[st]}</StatusTag>,
           },
