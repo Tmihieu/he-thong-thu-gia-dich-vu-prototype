@@ -3,7 +3,6 @@ import {
   ApartmentOutlined,
   AuditOutlined,
   BarChartOutlined,
-  CheckSquareOutlined,
   DashboardOutlined,
   DatabaseOutlined,
   BankOutlined,
@@ -56,7 +55,6 @@ export const MENU: Record<Role, MenuEntry[]> = {
     { path: 'progress', label: 'Tiến độ thu', icon: FundOutlined },
     { path: 'reconciliation', label: 'Đối soát', icon: AuditOutlined },
     { path: 'complaints', label: 'Khiếu nại', icon: CommentOutlined },
-    { path: 'approvals', label: 'Đề nghị', icon: CheckSquareOutlined },
     { path: 'market', label: 'Chợ cộng đồng', icon: ShopOutlined },
   ],
   COMPANY_MANAGER: [

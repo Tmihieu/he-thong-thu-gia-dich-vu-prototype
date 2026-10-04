@@ -1,4 +1,4 @@
-import { Button, Segmented, Select, Space, Table } from 'antd';
+import { Segmented, Select, Space, Table } from 'antd';
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
@@ -6,7 +6,6 @@ import { StatusTag } from '../../../shared/StatusTag';
 import { brand } from '../../../app/theme';
 import { CHARGE_STATUS_COLORS, CHARGE_STATUS_LABELS, TARIFF_GROUP_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
-import { CreateApprovalModal } from '../../leadership/CreateApprovalModal';
 import { useAreas, useCompanies, usePeriods } from '../../masterdata/api';
 import { type Charge, type ChargeQuery, useCharges } from '../api';
 
@@ -23,7 +22,6 @@ export function ChargesPage() {
   const companies = useCompanies();
   const [query, setQuery] = useState<ChargeQuery>({ page: 0, size: 50 });
   const charges = useCharges(query);
-  const [proposing, setProposing] = useState<{ charge: Charge; type: 'REFUND' | 'WRITE_OFF' } | null>(null);
   const periodLabel = new Map((periods.data ?? []).map((p) => [p.id, p.label]));
 
   return (
@@ -115,23 +113,8 @@ export function ChargesPage() {
           { title: 'Số tiền', dataIndex: 'amount', align: 'right', className: 'cell-money', render: (v: number) => <MoneyText value={v} /> },
           { title: 'Công ty', dataIndex: 'companyCode', className: 'cell-nowrap' },
           { title: 'Trạng thái', render: (_, c) => <ChargeStatusTag charge={c} /> },
-          {
-            title: '',
-            className: 'row-actions cell-nowrap',
-            render: (_, c) =>
-              c.status === 'UNPAID' ? (
-                <Button size="small" type="link" onClick={() => setProposing({ charge: c, type: 'WRITE_OFF' })} aria-label={`Đề nghị xóa nợ ${c.code}`}>
-                  Đề nghị xóa nợ
-                </Button>
-              ) : c.status === 'PAID' ? (
-                <Button size="small" type="link" onClick={() => setProposing({ charge: c, type: 'REFUND' })} aria-label={`Đề nghị hoàn ${c.code}`}>
-                  Đề nghị hoàn
-                </Button>
-              ) : null,
-          },
         ]}
       />
-      <CreateApprovalModal target={proposing} onClose={() => setProposing(null)} />
     </>
   );
 }

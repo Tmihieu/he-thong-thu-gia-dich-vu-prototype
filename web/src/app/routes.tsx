@@ -11,7 +11,6 @@ import { CommuneComplaintsPage } from '../features/complaints/CommuneComplaintsP
 import { CompanyComplaintsPage } from '../features/complaints/CompanyComplaintsPage';
 import { MarketModerationPage, MarketModerationPostPage } from '../features/market/MarketPages';
 import { AreasPage } from '../features/masterdata/AreasPage/AreasPage';
-import { ApprovalsPage } from '../features/leadership/ApprovalsPage';
 import { LeaderDashboardPage } from '../features/leadership/LeaderDashboardPage';
 import { LeaderReportPage } from '../features/leadership/LeaderReportPage';
 import { CompaniesPage } from '../features/masterdata/CompaniesPage/CompaniesPage';
@@ -43,7 +42,6 @@ const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'COMMUNE_OFFICER:progress': <ProgressPage />,
   'COMMUNE_OFFICER:reconciliation': <ReconciliationPage />,
   'COMMUNE_OFFICER:complaints': <CommuneComplaintsPage />,
-  'COMMUNE_OFFICER:approvals': <ApprovalsPage />,
   'COMMUNE_OFFICER:market': <MarketModerationPage />,
   'LEADER:dashboard': <LeaderDashboardPage />,
   'LEADER:report': <LeaderReportPage />,

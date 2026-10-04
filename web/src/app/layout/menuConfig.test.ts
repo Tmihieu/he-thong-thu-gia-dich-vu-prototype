@@ -16,7 +16,6 @@ describe('menuConfig', () => {
       'Tiến độ thu',
       'Đối soát',
       'Khiếu nại',
-      'Đề nghị',
       'Chợ cộng đồng',
     ]);
     expect(labels('COMPANY_MANAGER')).toEqual(['Khu vực được giao', 'Người đi thu', 'Khiếu nại']);
