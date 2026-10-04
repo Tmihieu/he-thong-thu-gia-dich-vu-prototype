@@ -24,7 +24,7 @@ const feeTypes: FeeType[] = [
   { id: 2, code: 'EXTRA', name: 'Phụ phí dịch vụ phát sinh', pricingMode: 'FIXED', defaultPrice: 50000, active: true },
 ];
 const areas: Area[] = [
-  { id: 7, code: 'KV07', name: 'Tổ dân phố 07', districtId: 1, districtCode: 'DTH', status: 'ACTIVE', subjectCount: 9 },
+  { id: 7, code: 'KV07', name: 'Tổ dân phố 07', districtId: 1, districtCode: 'DTH', status: 'ACTIVE', subjectCount: 9, latitude: null, longitude: null },
 ];
 
 function renderForm() {

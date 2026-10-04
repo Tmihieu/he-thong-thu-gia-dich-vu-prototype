@@ -66,11 +66,14 @@ class DemoSeedIT extends IntegrationTest {
     void demoProfileSeedsDistrictsAreasCompaniesAndCompanyAccounts() {
         assertThat(demoDb.queryForList("select code from districts order by sort_order", String.class))
                 .containsExactly("DTH", "TTT", "NB");
-        assertThat(demoDb.queryForObject("select count(*) from areas", Integer.class)).isEqualTo(24);
+        assertThat(demoDb.queryForObject("select count(*) from areas", Integer.class)).isEqualTo(52);
         assertThat(demoDb.queryForList(
                 "select d.code from areas a join districts d on d.id = a.district_id"
-                        + " where a.code in ('KV01', 'KV08', 'KV09', 'KV16', 'KV17', 'KV24') order by a.code",
-                String.class)).containsExactly("DTH", "DTH", "TTT", "TTT", "NB", "NB");
+                        + " where a.code in ('AP02', 'AP22', 'AP27', 'AP42', 'AP47', 'AP48') order by a.code",
+                String.class)).containsExactly("TTT", "TTT", "DTH", "DTH", "DTH", "NB");
+        // Mọi ấp đều có vị trí để vẽ ghim trên bản đồ Khu vực.
+        assertThat(demoDb.queryForObject("select count(*) from areas where latitude is null or longitude is null",
+                Integer.class)).isZero();
         assertThat(demoDb.queryForList("select code from companies order by code", String.class))
                 .hasSize(11).startsWith("DV01").endsWith("DV11");
 
@@ -106,15 +109,15 @@ class DemoSeedIT extends IntegrationTest {
     }
 
     @Test
-    void demoProfileSeedsAreaAssignmentsWithKv24Unassigned() {
+    void demoProfileSeedsAreaAssignmentsWithAp47Unassigned() {
         assertThat(demoDb.queryForObject("select count(*) from area_assignments", Integer.class)).isEqualTo(23);
         assertThat(demoDb.queryForObject("""
-                select count(*) from area_assignments aa join areas a on a.id = aa.area_id where a.code = 'KV24'""",
+                select count(*) from area_assignments aa join areas a on a.id = aa.area_id where a.code = 'AP47'""",
                 Integer.class)).isZero();
         assertThat(demoDb.queryForList("""
                 select a.code from area_assignments aa join areas a on a.id = aa.area_id
                 join companies c on c.id = aa.company_id where c.code = 'DV03' order by a.code""", String.class))
-                .containsExactly("KV03", "KV13", "KV14");
+                .containsExactly("AP11", "AP13", "AP31");
     }
 
     @Test
@@ -124,7 +127,7 @@ class DemoSeedIT extends IntegrationTest {
         assertThat(demoDb.queryForList("""
                 select a.code || ':' || s.status || ':' || c.tariff_group from service_subjects s
                 join areas a on a.id = s.area_id join service_contracts c on c.subject_id = s.id
-                where s.code = 'DTH-H000128'""", String.class)).containsExactly("KV07:ACTIVE:HH_3_PLUS");
+                where s.code = 'DTH-H000128'""", String.class)).containsExactly("AP39:ACTIVE:HH_3_PLUS");
         assertThat(demoDb.queryForObject("select count(*) from service_contracts where exempt", Integer.class)).isPositive();
         assertThat(demoDb.queryForObject("""
                 select count(*) from service_subjects s where s.status = 'PENDING'
@@ -147,22 +150,23 @@ class DemoSeedIT extends IntegrationTest {
                 select u.username || ':' || a.code || ':' || c.code from collector_assignments ca
                 join users u on u.id = ca.collector_id join areas a on a.id = ca.area_id
                 join companies c on c.id = ca.company_id where u.username = 'thu07'""", String.class))
-                .isEqualTo("thu07:KV07:DV01");
+                .isEqualTo("thu07:AP39:DV01");
         assertThat(demoDb.queryForObject("select count(*) from users where username = 'thu24'", Integer.class)).isZero();
     }
 
     @Test
-    void demoProfileSeedsCollectionSchedulesForEveryArea() {
+    void demoProfileSeedsCollectionSchedulesForEveryAssignedArea() {
         assertThat(demoDb.queryForObject("""
                 select count(*) from areas a
-                where not exists (select 1 from collection_schedules s where s.area_id = a.id)""", Integer.class))
+                where exists (select 1 from area_assignments aa where aa.area_id = a.id)
+                and not exists (select 1 from collection_schedules s where s.area_id = a.id)""", Integer.class))
                 .isZero();
-        // KV07 (DTH) theo lịch prototype: thứ 3 – 5 – 7 buổi chiều, Chủ nhật đầu tháng rác cồng kềnh.
+        // Ấp 39 (DTH, tổ KV07 cũ) theo lịch prototype: thứ 3 – 5 – 7 buổi chiều, Chủ nhật đầu tháng rác cồng kềnh.
         assertThat(demoDb.queryForList("""
                 select s.weekday || ':' || coalesce(s.week_of_month::text, '-') || ':' || to_char(s.start_time, 'HH24:MI')
                        || ':' || s.waste_type
                 from collection_schedules s join areas a on a.id = s.area_id
-                where a.code = 'KV07' order by s.weekday""", String.class))
+                where a.code = 'AP39' order by s.weekday""", String.class))
                 .containsExactly("2:-:17:00:HOUSEHOLD", "4:-:17:00:HOUSEHOLD", "6:-:17:00:HOUSEHOLD_RECYCLABLE",
                         "7:1:08:00:BULKY");
     }
@@ -178,7 +182,7 @@ class DemoSeedIT extends IntegrationTest {
                 order by s.code, c.phone""", String.class))
                 .containsExactly("DTH-H000128", "DTH-H000128", "DTH-H000149", "NB-H000341", "TTT-H000161",
                         "TTT-H000221");
-        // DTH-H000149 là hộ miễn 100% (tổ KV08, j = 9 trong V7_1).
+        // DTH-H000149 là hộ miễn 100% (tổ KV08 cũ = Ấp 42, j = 9 trong V7_1).
         assertThat(demoDb.queryForObject("""
                 select c.exempt from service_contracts c join service_subjects s on s.id = c.subject_id
                 where s.code = 'DTH-H000149'""", Boolean.class)).isTrue();

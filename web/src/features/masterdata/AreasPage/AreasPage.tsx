@@ -1,6 +1,6 @@
-import { App, Button, Checkbox, Select, Space, Table } from 'antd';
+import { App, Button, Card, Checkbox, Select, Skeleton, Space, Table } from 'antd';
 import dayjs from 'dayjs';
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 
 import { errorTextOrNull } from '../../../shared/errorText';
 import { StatusTag } from '../../../shared/StatusTag';
@@ -22,23 +22,10 @@ interface Row extends Area {
   assignment?: AreaAssignment;
 }
 
-/** Bản đồ địa bàn đang lọc (hoặc cả xã). */
-// ponytail: nhúng Google Maps theo tên địa bàn vì hệ thống chưa có ranh giới / tọa độ từng tổ; có dữ liệu ranh tổ từ xã
-// thì đổi sang lớp bản đồ vẽ từng tổ.
-function AreaMap({ district }: { district?: string }) {
-  const q = `${district ? `${district}, ` : 'Xã Đông Thạnh, '}Hóc Môn, Thành phố Hồ Chí Minh`;
-  return (
-    <iframe
-      title="Bản đồ khu vực"
-      src={`https://www.google.com/maps?q=${encodeURIComponent(q)}&z=14&output=embed`}
-      loading="lazy"
-      referrerPolicy="no-referrer-when-downgrade"
-      style={{ width: '100%', height: 320, border: 0, borderRadius: 8, marginBottom: 16 }}
-    />
-  );
-}
+// Leaflet nặng và chỉ màn này dùng: tách chunk riêng.
+const AreasMap = lazy(() => import('./AreasMap').then((m) => ({ default: m.AreasMap })));
 
-/** Khu vực của cán bộ xã: bản đồ địa bàn, 24 tổ, công ty đang phụ trách, lọc chưa có công ty, phân công tổ chưa có công ty, lịch sử. */
+/** Khu vực của cán bộ xã: bản đồ + bảng các ấp, công ty đang phụ trách, lọc chưa có công ty, phân công ấp chưa có công ty, lịch sử. */
 export function AreasPage() {
   const { message } = App.useApp();
   const today = dayjs().format('YYYY-MM-DD');
@@ -54,13 +41,14 @@ export function AreasPage() {
   const [modalAreas, setModalAreas] = useState<number[] | null>(null);
   const [historyArea, setHistoryArea] = useState<Area | null>(null);
 
-  const rows = useMemo<Row[]>(() => {
+  const allRows = useMemo<Row[]>(() => {
     const byArea = new Map((active.data ?? []).map((a) => [a.areaId, a]));
-    return (areas.data ?? [])
-      .map((a) => ({ ...a, assignment: byArea.get(a.id) }))
-      .filter((r) => districtId === undefined || r.districtId === districtId)
-      .filter((r) => !unassignedOnly || !r.assignment);
-  }, [areas.data, active.data, districtId, unassignedOnly]);
+    return (areas.data ?? []).map((a) => ({ ...a, assignment: byArea.get(a.id) }));
+  }, [areas.data, active.data]);
+  const matches = (r: Row) =>
+    (districtId === undefined || r.districtId === districtId) && (!unassignedOnly || !r.assignment);
+  const rows = allRows.filter(matches);
+  const districtNames = useMemo(() => new Map((districts.data ?? []).map((d) => [d.code, d.name])), [districts.data]);
 
   const unassigned = (areas.data ?? []).filter((a) => !(active.data ?? []).some((x) => x.areaId === a.id));
   const unassignedCount = unassigned.length;
@@ -76,8 +64,8 @@ export function AreasPage() {
         title="Khu vực"
         description={
           <>
-            Mỗi tổ có một công ty phụ trách trong cùng thời gian hiệu lực. Chỉ phân công được tổ chưa có công ty phụ
-        trách. {unassignedCount > 0 && <StatusTag color="orange">{unassignedCount} tổ chưa có công ty</StatusTag>}
+            Mỗi ấp có một công ty phụ trách trong cùng thời gian hiệu lực. Chỉ phân công được ấp chưa có công ty phụ
+            trách. {unassignedCount > 0 && <StatusTag color="orange">{unassignedCount} ấp chưa có công ty</StatusTag>}
           </>
         }
       />
@@ -92,10 +80,20 @@ export function AreasPage() {
           options={(districts.data ?? []).map((d) => ({ value: d.id, label: d.name }))}
         />
         <Checkbox checked={unassignedOnly} onChange={(e) => setUnassignedOnly(e.target.checked)}>
-          Chỉ tổ chưa có công ty
+          Chỉ ấp chưa có công ty
         </Checkbox>
       </Space>
-      <AreaMap district={districts.data?.find((d) => d.id === districtId)?.name} />
+      <Card size="small" style={{ marginBottom: 16 }}>
+        <Suspense fallback={<Skeleton.Node active style={{ width: '100%', height: 480 }} />}>
+          <AreasMap
+            areas={allRows}
+            districtNames={districtNames}
+            isDimmed={(a) => !matches(a)}
+            onAssign={(id) => openModal([id])}
+            onHistory={setHistoryArea}
+          />
+        </Suspense>
+      </Card>
       <Table<Row>
         rowKey="id"
         loading={areas.isLoading || active.isLoading}
@@ -157,7 +155,7 @@ export function AreasPage() {
         onSubmit={(req) =>
           assign.mutate(req, {
             onSuccess: (created) => {
-              message.success(`Đã phân công ${created.length} tổ cho ${created[0]?.companyCode ?? ''}`);
+              message.success(`Đã phân công ${created.length} ấp cho ${created[0]?.companyCode ?? ''}`);
               setModalAreas(null);
               setSelected([]);
             },

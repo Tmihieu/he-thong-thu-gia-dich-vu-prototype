@@ -17,19 +17,21 @@ Màn đăng nhập điền sẵn tài khoản demo để người trình diễn 
 | `canbo_xa` | Cán bộ xã (`COMMUNE_OFFICER`) | Nguyễn Thị Mẫu | — | T05 · `V1_1__seed_users.sql` |
 | `lanhdao` | Lãnh đạo (`LEADER`) | Trần Văn Mẫu (lãnh đạo) | — | T54 · `V24_1__seed_leader.sql` |
 | `dv01` … `dv11` | Công ty môi trường (`COMPANY_MANAGER`) | Người đầu mối của công ty (giả) | DV01 … DV11 | T09 · `V3_2__seed_company_users.sql` |
-| `thu01` … `thu23` | Người đi thu (`COLLECTOR`) | Tên giả kèm "(người thu KVxx)" | Công ty đang phụ trách tổ | T20 · `V9_1__seed_collectors.sql` — mỗi tổ đã có công ty một người, số theo tổ (vd. `thu07` ở KV07 của DV01); KV24 chưa có |
+| `thu01` … `thu23` | Người đi thu (`COLLECTOR`) | Tên giả kèm "(người thu Ấp N)" | Công ty đang phụ trách ấp | T20 · `V9_1__seed_collectors.sql` — mỗi tổ cũ đã có công ty một người, số theo tổ cũ KV01–24 (vd. `thu07` ở Ấp 39 của DV01); `V40_1` đổi tên theo ấp |
 
 ## App người dân
 
 Người dân không có tài khoản ở bảng `users` mà ở `citizen_accounts` (G8). App đăng nhập bằng số điện thoại + **OTP cố định mô phỏng `123456`** (O7, không gửi SMS; đổi bằng biến môi trường `CITIZEN_DEMO_OTP`). Seed ở T39 · `V18_1__seed_citizens.sql`.
 
-| Số điện thoại | Hộ | Tổ · công ty | Ghi chú |
+| Số điện thoại | Hộ | Ấp · công ty | Ghi chú |
 |---|---|---|---|
-| `0902000128` | `DTH-H000128` | KV07 · DV01 | Hộ của kịch bản demo §10 |
-| `0903000128` | `DTH-H000128` | KV07 · DV01 | Tài khoản thành viên thứ hai cùng hộ (D11) |
-| `0902000161` | `TTT-H000161` | KV09 · DV01 | Tổ khác của DV01 |
-| `0902000221` | `TTT-H000221` | KV12 · DV07 | Công ty khác |
-| `0902000341` | `NB-H000341` | KV18 · DV07 | Địa bàn Nhị Bình |
-| `0902000149` | `DTH-H000149` | KV08 · DV08 | Hộ miễn 100% |
+| `0902000128` | `DTH-H000128` | Ấp 39 · DV01 | Hộ của kịch bản demo §10 |
+| `0903000128` | `DTH-H000128` | Ấp 39 · DV01 | Tài khoản thành viên thứ hai cùng hộ (D11) |
+| `0902000161` | `TTT-H000161` | Ấp 2 · DV01 | Ấp khác của DV01 |
+| `0902000221` | `TTT-H000221` | Ấp 9 · DV07 | Công ty khác |
+| `0902000341` | `NB-H000341` | Ấp 49 · DV07 | Địa bàn Nhị Bình |
+| `0902000149` | `DTH-H000149` | Ấp 42 · DV08 | Hộ miễn 100% |
+
+Khu vực là 52 ấp thật của xã Đông Thạnh sau sáp nhập (ranh giới và số ấp từ OpenStreetMap, ODbL) — `V40_1__seed_dong_thanh_hamlets.sql` đổi 24 tổ giả KV01–24 sang mã `AP01`…`AP52`, giữ nguyên hộ/phân công đã seed. Địa bàn là xã cũ: Thới Tam Thôn = Ấp 1–23, Đông Thạnh = Ấp 24–47, Nhị Bình = Ấp 48–52.
 
 Reset CSDL demo về seed ban đầu: `docker compose down -v && docker compose up -d db`, rồi chạy lại backend.

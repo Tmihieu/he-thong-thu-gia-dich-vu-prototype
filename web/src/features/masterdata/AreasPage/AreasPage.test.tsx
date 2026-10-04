@@ -32,6 +32,9 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
+// Leaflet cần canvas/kích thước thật; bản đồ có test riêng (AreasMap.test.tsx).
+vi.mock('./AreasMap', () => ({ AreasMap: () => <div data-testid="areas-map" /> }));
+
 function baseApi(active: () => unknown[], extra: Parameters<typeof mockApi>[0] = {}) {
   return mockApi({
     'GET /api/platform/auth/me': () => jsonResponse(200, officer),
@@ -50,15 +53,15 @@ async function fillAndSubmit(dialog: HTMLElement) {
 }
 
 describe('Khu vực (cán bộ xã)', () => {
-  it('hiện công ty phụ trách, đánh dấu tổ chưa có công ty và lọc được', async () => {
+  it('hiện công ty phụ trách, đánh dấu ấp chưa có công ty và lọc được', async () => {
     baseApi(() => [kv07]);
     renderApp('/commune/areas');
 
     expect(await screen.findByText('KV07 · Tổ dân phố 07')).toBeInTheDocument();
     expect(screen.getByText('DV01 · Công ty MTĐT Đông Thạnh')).toBeInTheDocument();
-    expect(screen.getByText('1 tổ chưa có công ty')).toBeInTheDocument();
+    expect(screen.getByText('1 ấp chưa có công ty')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Chỉ tổ chưa có công ty' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Chỉ ấp chưa có công ty' }));
     await waitFor(() => expect(screen.queryByText('KV07 · Tổ dân phố 07')).not.toBeInTheDocument());
     expect(screen.getByText('KV24 · Tổ dân phố 24')).toBeInTheDocument();
   });
@@ -103,13 +106,13 @@ describe('Khu vực (cán bộ xã)', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Phân công KV24' }));
     await fillAndSubmit(await screen.findByRole('dialog'));
 
-    await waitFor(() => expect(screen.queryByText('1 tổ chưa có công ty')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('1 ấp chưa có công ty')).not.toBeInTheDocument());
     expect(screen.queryByRole('button', { name: 'Phân công KV24' })).not.toBeInTheDocument();
     const post = fetchFn.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === 'POST');
     expect(JSON.parse(String((post![1] as RequestInit).body))).toEqual({ areaIds: [24], companyId: 1, fromDate: '2026-10-01' });
   });
 
-  it('bấm tên tổ mở lịch sử phân công', async () => {
+  it('bấm tên ấp mở lịch sử phân công', async () => {
     baseApi(() => [kv07], {
       'GET /api/masterdata/areas/7/assignments': () =>
         jsonResponse(200, [kv07, { ...kv07, id: 90, companyCode: 'DV03', companyName: 'Công ty Ba', validFrom: '2026-06-01', validTo: '2026-08-31' }]),

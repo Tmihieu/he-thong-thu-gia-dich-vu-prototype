@@ -204,6 +204,8 @@ Ba địa bàn sau sáp nhập của xã Đông Thạnh.
 | Địa bàn | `district_id` | `FK→District` | Có | Xã | 1 (DTH) | Demo | Prototype không có liên kết. Seed tạm: KV01–08 → DTH, KV09–16 → TTT, KV17–24 → NB, mã hộ seed sinh lại cho khớp tiền tố địa bàn (D2). Dữ liệu thật xin xã (X2) |
 | Trạng thái        | `status`      | `enum ActiveStatus` | Có       | Hệ thống | `ACTIVE`      | Thật | Demo mặc định `ACTIVE`               |
 | Ghi chú           | `note`        | `text`              | Không    | Xã       |               | Thật |                                      |
+| Vĩ độ             | `latitude`    | `double`            | Không    | OSM / cán bộ xã | 10.9117 | Demo | Điểm đại diện trên bản đồ Khu vực (WGS84); cán bộ xã kéo thả để sửa (`PUT /areas/{id}/location`, audit `MOVE_AREA`). V40 |
+| Kinh độ           | `longitude`   | `double`            | Không    | OSM / cán bộ xã | 106.6399 | Demo | Cùng `latitude`: hoặc cùng null hoặc cùng có giá trị |
 
 
 **Enum `ActiveStatus`** (dùng chung): `ACTIVE` Hoạt động · `INACTIVE` Tạm ngưng

@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.AreaDto;
+import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.AreaLocationRequest;
 import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.AreaRequest;
 import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.DistrictRequest;
 import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.CollectionScheduleDto;
@@ -52,6 +53,14 @@ public class MasterDataController {
     public AreaDto updateArea(@PathVariable Long id, @Valid @RequestBody AreaRequest req,
             @AuthenticationPrincipal CurrentUser actor) {
         var area = locations.updateArea(id, req.name(), req.status(), actor);
+        return AreaDto.of(area, query.subjectCountByArea().getOrDefault(id, 0L));
+    }
+
+    @Operation(summary = "Đặt vị trí khu vực trên bản đồ (cán bộ xã, quản trị)")
+    @PutMapping("/areas/{id}/location")
+    public AreaDto moveArea(@PathVariable Long id, @Valid @RequestBody AreaLocationRequest req,
+            @AuthenticationPrincipal CurrentUser actor) {
+        var area = locations.moveArea(id, req.latitude(), req.longitude(), actor);
         return AreaDto.of(area, query.subjectCountByArea().getOrDefault(id, 0L));
     }
 

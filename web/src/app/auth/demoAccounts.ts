@@ -16,5 +16,5 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
   { username: 'canbo_xa', label: 'Cán bộ xã' },
   { username: 'lanhdao', label: 'Lãnh đạo' },
   { username: 'dv01', label: 'Công ty DV01' },
-  { username: 'thu07', label: 'Người thu KV07' },
+  { username: 'thu07', label: 'Người thu Ấp 39' },
 ];

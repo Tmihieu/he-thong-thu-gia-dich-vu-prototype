@@ -160,6 +160,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/masterdata/areas/{id}/location": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Đặt vị trí khu vực trên bản đồ (cán bộ xã, quản trị) */
+        put: operations["moveArea"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/citizen/market/saved/{postId}": {
         parameters: {
             query?: never;
@@ -2590,6 +2607,22 @@ export interface components {
              * @description Số đối tượng chưa chấm dứt
              */
             subjectCount: number;
+            /**
+             * Format: double
+             * @description Vĩ độ điểm đại diện
+             */
+            latitude: number | null;
+            /**
+             * Format: double
+             * @description Kinh độ điểm đại diện
+             */
+            longitude: number | null;
+        };
+        AreaLocationRequest: {
+            /** Format: double */
+            latitude: number;
+            /** Format: double */
+            longitude: number;
         };
         SavedStateDto: {
             saved: boolean;
@@ -4592,6 +4625,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AreaRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AreaDto"];
+                };
+            };
+        };
+    };
+    moveArea: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AreaLocationRequest"];
             };
         };
         responses: {
