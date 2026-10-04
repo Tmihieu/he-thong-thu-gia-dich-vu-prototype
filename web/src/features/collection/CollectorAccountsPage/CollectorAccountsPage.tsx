@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { DateText } from '../../../shared/DateText';
 import { errorTextOrNull } from '../../../shared/errorText';
+import { PageHeader } from '../../../shared/PageHeader';
 import { StatusTag } from '../../../shared/StatusTag';
 import {
   type Account,
@@ -36,11 +37,15 @@ export function CollectorAccountsPage() {
 
   return (
     <>
-      <Space style={{ marginBottom: 16 }}>
-        <Button type="primary" onClick={() => openForm(null)}>
-          + Thêm người đi thu
-        </Button>
-      </Space>
+      <PageHeader
+        title="Người đi thu"
+        description="Cấp, khóa tài khoản và đặt lại mật khẩu người đi thu của công ty."
+        extra={
+          <Button type="primary" onClick={() => openForm(null)}>
+            + Thêm người đi thu
+          </Button>
+        }
+      />
       <Table<Account>
         rowKey="id"
         loading={accounts.isLoading}

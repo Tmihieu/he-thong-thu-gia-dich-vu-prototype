@@ -4,6 +4,7 @@ import { Navigate, type RouteObject } from 'react-router';
 import { ChargesHubPage } from '../features/billing/ChargesHubPage';
 import { CollectorAccountPage } from '../features/collection/CollectorAccountPage';
 import { CollectorCashPage } from '../features/collection/CollectorCashPage';
+import { CollectorAccountsPage } from '../features/collection/CollectorAccountsPage/CollectorAccountsPage';
 import { CollectorListPage } from '../features/collection/CollectorListPage/CollectorListPage';
 import { CompanyHubPage } from '../features/collection/CompanyHubPage';
 import { CommuneComplaintsPage } from '../features/complaints/CommuneComplaintsPage';
@@ -50,6 +51,7 @@ const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'LEADER:reconciliation': <ReconciliationPage />,
   'COMPANY_MANAGER:complaints': <CompanyComplaintsPage />,
   'COMPANY_MANAGER:assigned': <CompanyHubPage />,
+  'COMPANY_MANAGER:collectors': <CollectorAccountsPage />,
   'COLLECTOR:list': <CollectorListPage />,
   'COLLECTOR:cash': <CollectorCashPage />,
   'COLLECTOR:account': <CollectorAccountPage />,

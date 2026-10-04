@@ -31,7 +31,7 @@ const callsOf = (fetchFn: ReturnType<typeof mockApi>, method: string) =>
 describe('Người đi thu (công ty)', () => {
   it('liệt kê người đi thu của công ty kèm trạng thái khóa', async () => {
     baseApi();
-    renderApp('/company/assigned?tab=accounts');
+    renderApp('/company/collectors');
 
     expect(await screen.findByText('Người thu KV07')).toBeInTheDocument();
     expect(screen.getByText('Người thu KV09')).toBeInTheDocument();
@@ -42,7 +42,7 @@ describe('Người đi thu (công ty)', () => {
 
   it('không có ô chọn vai trò hay công ty; mật khẩu < 8 ký tự thì không gửi', async () => {
     const fetchFn = baseApi();
-    renderApp('/company/assigned?tab=accounts');
+    renderApp('/company/collectors');
 
     await userEvent.click(await screen.findByRole('button', { name: '+ Thêm người đi thu' }));
     const dialog = await screen.findByRole('dialog');
@@ -60,7 +60,7 @@ describe('Người đi thu (công ty)', () => {
     const fetchFn = baseApi({
       'POST /api/platform/collector-accounts': () => jsonResponse(201, account({ id: 32, username: 'thu07b' })),
     });
-    renderApp('/company/assigned?tab=accounts');
+    renderApp('/company/collectors');
 
     await userEvent.click(await screen.findByRole('button', { name: '+ Thêm người đi thu' }));
     const dialog = await screen.findByRole('dialog');
@@ -80,7 +80,7 @@ describe('Người đi thu (công ty)', () => {
     baseApi({
       'POST /api/platform/collector-accounts': () => jsonResponse(409, { code: 'USERNAME_TAKEN', message: 'Tên đăng nhập thu07 đã có.' }),
     });
-    renderApp('/company/assigned?tab=accounts');
+    renderApp('/company/collectors');
 
     await userEvent.click(await screen.findByRole('button', { name: '+ Thêm người đi thu' }));
     const dialog = await screen.findByRole('dialog');
@@ -97,7 +97,7 @@ describe('Người đi thu (công ty)', () => {
       'PUT /api/platform/collector-accounts/30': () => jsonResponse(200, account({ fullName: 'Tên mới' })),
       'POST /api/platform/collector-accounts/30/password': () => jsonResponse(200, account({})),
     });
-    renderApp('/company/assigned?tab=accounts');
+    renderApp('/company/collectors');
 
     await userEvent.click(await screen.findByRole('button', { name: 'Sửa thu07' }));
     const dialog = await screen.findByRole('dialog');

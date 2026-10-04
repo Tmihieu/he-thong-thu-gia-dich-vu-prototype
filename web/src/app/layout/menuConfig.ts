@@ -61,6 +61,7 @@ export const MENU: Record<Role, MenuEntry[]> = {
   ],
   COMPANY_MANAGER: [
     { path: 'assigned', label: 'Khu vực được giao', icon: ApartmentOutlined },
+    { path: 'collectors', label: 'Người đi thu', icon: TeamOutlined },
     { path: 'complaints', label: 'Khiếu nại', icon: CommentOutlined },
   ],
   COLLECTOR: [
