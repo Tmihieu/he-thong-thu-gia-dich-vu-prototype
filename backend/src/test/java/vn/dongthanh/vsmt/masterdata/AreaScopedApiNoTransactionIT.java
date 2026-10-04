@@ -60,11 +60,13 @@ class AreaScopedApiNoTransactionIT extends IntegrationTest {
 
     @Test
     void companyStaffSubjectSearchReadsDistrictOutsideTransaction() throws Exception {
-        for (User user : new User[] {fx.dv01Manager, fx.thu07}) {
-            ok("/api/masterdata/subjects", user)
-                    .andExpect(jsonPath("$.total").value(4))
-                    .andExpect(jsonPath("$.items[*].districtCode", everyItem(is("DTH"))));
-        }
+        // Quản lý công ty thấy hộ của mọi tổ công ty phụ trách; người đi thu chỉ thấy hộ trong tổ mình (BR-GEN-04).
+        ok("/api/masterdata/subjects", fx.dv01Manager)
+                .andExpect(jsonPath("$.total").value(4))
+                .andExpect(jsonPath("$.items[*].districtCode", everyItem(is("DTH"))));
+        ok("/api/masterdata/subjects", fx.thu07)
+                .andExpect(jsonPath("$.total").value(2))
+                .andExpect(jsonPath("$.items[*].districtCode", everyItem(is("DTH"))));
     }
 
     private ResultActions ok(String path, User user) throws Exception {
