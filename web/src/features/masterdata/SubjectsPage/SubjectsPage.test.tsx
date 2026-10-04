@@ -129,8 +129,8 @@ describe('Hồ sơ hộ (cán bộ xã)', () => {
       { rowNo: 3, type: 'Hộ gia đình', name: 'B', houseNo: null, street: 'Hẻm 1', areaCode: 'KV99', phone: '', memberCount: 3,
         errors: ["Mã khu vực 'KV99' không có trong hệ thống"] },
     ] };
-    const good = { valid: 1, invalid: 0, rows: [bad.rows[0]] };
-    let preview = bad;
+    const good = { valid: 1, invalid: 0, rows: bad.rows.slice(0, 1) };
+    let preview: { valid: number; invalid: number; rows: unknown[] } = bad;
     const fetchFn = mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
       'GET /api/masterdata/areas': () => jsonResponse(200, areas),

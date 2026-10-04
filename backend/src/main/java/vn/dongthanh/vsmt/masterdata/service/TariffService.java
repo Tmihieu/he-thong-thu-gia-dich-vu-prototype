@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository;
 import vn.dongthanh.vsmt.masterdata.domain.FeeType;
 import vn.dongthanh.vsmt.masterdata.domain.FeeTypeRepository;
+import vn.dongthanh.vsmt.masterdata.domain.PeriodStatus;
 import vn.dongthanh.vsmt.masterdata.domain.TariffGroup;
 import vn.dongthanh.vsmt.masterdata.domain.TariffRate;
 import vn.dongthanh.vsmt.masterdata.domain.TariffStatus;
@@ -123,7 +124,7 @@ public class TariffService {
         actor.requireRole(Role.ADMIN);
         TariffVersion v = draft(id);
         LocalDate from = v.getValidFrom();
-        periods.findFirstByStartDateGreaterThanEqualOrderByStartDateAsc(from).ifPresent(p -> {
+        periods.findFirstByStartDateGreaterThanEqualAndStatusNotOrderByStartDateAsc(from, PeriodStatus.DRAFT).ifPresent(p -> {
             throw new BusinessRuleException("TARIFF_PERIOD_ALREADY_OPEN", "Đã mở " + p.getLabel()
                     + " theo biểu giá cũ; ngày hiệu lực của biểu giá mới phải sau ngày đầu kỳ đó.");
         });

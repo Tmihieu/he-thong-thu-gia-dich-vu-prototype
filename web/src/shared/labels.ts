@@ -46,6 +46,7 @@ export const PERIOD_TYPE_LABELS: Record<PeriodType, string> = {
 };
 
 export const PERIOD_STATUS_LABELS: Record<PeriodStatus, string> = {
+  DRAFT: 'Dự thảo',
   COLLECTING: 'Đang thu',
   LOCKED: 'Đã khóa',
 };

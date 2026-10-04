@@ -16,7 +16,7 @@ import vn.dongthanh.vsmt.masterdata.domain.SubjectStatus;
 /**
  * Quy tắc R2, đối tượng nào được lập khoản (không đụng CSDL). Xét lần lượt: đang cung cấp dịch vụ →
  * có hợp đồng hiệu lực tại ngày phát hành → khu vực đã có công ty tại ngày phát hành (G3) → chưa có khoản
- * cùng loại phí ở kỳ chồng lấn (tháng nằm trong quý và ngược lại). Chỉ lập khoản cho kỳ chưa khóa.
+ * cùng loại phí ở kỳ chồng lấn (tháng nằm trong quý và ngược lại). Chỉ lập khoản cho kỳ đã mở và chưa khóa.
  */
 @Component
 public class ChargeEligibility {
@@ -82,7 +82,7 @@ public class ChargeEligibility {
         return new Eligible(contract.get(), companyIdOnIssue);
     }
 
-    /** Chặn lập khoản cho kỳ đã khóa (theo kỳ đã nạp; phát hành còn khóa dòng kỳ qua {@link PeriodGuard}). */
+    /** Chặn lập khoản cho kỳ đã khóa hoặc còn dự thảo (theo kỳ đã nạp; phát hành còn khóa dòng kỳ qua {@link PeriodGuard}). */
     public static void requireBillable(CollectionPeriod period) {
         PeriodGuard.requireOpenAsLoaded(period);
     }

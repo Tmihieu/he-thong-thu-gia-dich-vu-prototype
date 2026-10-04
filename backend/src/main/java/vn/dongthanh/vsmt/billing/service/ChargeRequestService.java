@@ -39,6 +39,7 @@ import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.masterdata.domain.CompanyRepository;
 import vn.dongthanh.vsmt.masterdata.domain.FeeType;
 import vn.dongthanh.vsmt.masterdata.domain.FeeTypeRepository;
+import vn.dongthanh.vsmt.masterdata.domain.PeriodStatus;
 import vn.dongthanh.vsmt.masterdata.domain.PricingMode;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceContract;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceContractRepository;
@@ -105,11 +106,20 @@ public class ChargeRequestService {
 
     @Transactional(readOnly = true)
     public IssueResult preview(IssueCommand cmd, CurrentUser actor) {
-        return plan(cmd, actor).result(null);
+        return plan(cmd, actor, false).result(null);
+    }
+
+    /**
+     * Xem trước cho kỳ dự thảo (chưa mở): cùng kế hoạch như phát hành nên số khoản và tổng tiền khớp với lúc mở kỳ.
+     * Kỳ đã mở thì dùng {@link #preview}.
+     */
+    @Transactional(readOnly = true)
+    public IssueResult previewDraft(IssueCommand cmd, CurrentUser actor) {
+        return plan(cmd, actor, true).result(null);
     }
 
     public IssueResult publish(IssueCommand cmd, CurrentUser actor) {
-        Plan plan = plan(cmd, actor);
+        Plan plan = plan(cmd, actor, false);
         if (plan.charges().isEmpty()) {
             return plan.result(null);
         }
@@ -143,11 +153,17 @@ public class ChargeRequestService {
         return result;
     }
 
-    private Plan plan(IssueCommand cmd, CurrentUser actor) {
+    private Plan plan(IssueCommand cmd, CurrentUser actor, boolean draftPreview) {
         actor.requireRole(Role.COMMUNE_OFFICER);
         CollectionPeriod period = periods.findByIdWithTariff(cmd.periodId())
                 .orElseThrow(() -> new NotFoundException("PERIOD_NOT_FOUND", "Không tìm thấy kỳ thu."));
-        ChargeEligibility.requireBillable(period);
+        if (draftPreview) {
+            if (period.getStatus() != PeriodStatus.DRAFT) {
+                throw new BusinessRuleException("PERIOD_NOT_DRAFT", "Kỳ " + period.getCode() + " không phải kỳ dự thảo.");
+            }
+        } else {
+            ChargeEligibility.requireBillable(period);
+        }
         FeeType feeType = feeTypes.findById(cmd.feeTypeId())
                 .filter(FeeType::isActive)
                 .orElseThrow(() -> new NotFoundException("FEE_TYPE_NOT_FOUND", "Không tìm thấy loại phí đang dùng."));

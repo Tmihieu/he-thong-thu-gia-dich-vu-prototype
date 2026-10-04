@@ -13,11 +13,10 @@ interface Props {
   onBack: () => void;
 }
 
-/** Kết quả xem trước: số khoản sẽ sinh, tổng tiền, danh sách bỏ qua kèm lý do; nút Phát hành. */
-export function PreviewPanel({ result, publishing = false, error, onPublish, onBack }: Props) {
+/** Phần số liệu của xem trước: cảnh báo, số khoản, tổng tiền, danh sách hộ bị bỏ qua kèm lý do. */
+export function PreviewSummary({ result }: { result: IssueResult }) {
   return (
-    <Card title="Xem trước phiếu yêu cầu thu" style={{ maxWidth: 960 }}>
-      {error && <Alert type="error" showIcon message={error} role="alert" style={{ marginBottom: 16 }} />}
+    <>
       {result.warningCount > 0 && (
         <Alert
           type="warning"
@@ -51,6 +50,16 @@ export function PreviewPanel({ result, publishing = false, error, onPublish, onB
           ]}
         />
       )}
+    </>
+  );
+}
+
+/** Kết quả xem trước: số khoản sẽ sinh, tổng tiền, danh sách bỏ qua kèm lý do; nút Phát hành. */
+export function PreviewPanel({ result, publishing = false, error, onPublish, onBack }: Props) {
+  return (
+    <Card title="Xem trước phiếu yêu cầu thu" style={{ maxWidth: 960 }}>
+      {error && <Alert type="error" showIcon message={error} role="alert" style={{ marginBottom: 16 }} />}
+      <PreviewSummary result={result} />
       <Space style={{ marginTop: 16 }}>
         <Button type="primary" onClick={onPublish} loading={publishing} disabled={result.chargeCount === 0}>
           Phát hành {result.chargeCount} khoản

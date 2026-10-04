@@ -56,6 +56,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/masterdata/period-rule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Quy tắc tự tạo kỳ thu dự thảo (quản trị) */
+        get: operations["get_1"];
+        /** Sửa quy tắc tự tạo kỳ thu: bật/tắt, chu kỳ, ngày tạo, số ngày hạn (quản trị) */
+        put: operations["update_1"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/masterdata/districts/{id}": {
         parameters: {
             query?: never;
@@ -490,6 +508,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/masterdata/subjects/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Nhập hộ từ file Excel: ghi tất cả hoặc không gì; còn dòng lỗi thì từ chối (cán bộ xã) */
+        post: operations["importSubjects"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/subjects/import/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Xem trước file Excel nhập hộ: từng dòng kèm lỗi, chưa ghi gì (cán bộ xã) */
+        post: operations["previewImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/masterdata/periods": {
         parameters: {
             query?: never;
@@ -497,11 +549,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Danh sách kỳ thu, mới nhất trước; có date thì chỉ các kỳ chứa ngày đó */
+        /** Danh sách kỳ thu đã mở, mới nhất trước (không gồm kỳ dự thảo); có date thì chỉ các kỳ chứa ngày đó */
         get: operations["list_3"];
         put?: never;
         /** Mở kỳ thu tháng/quý (quản trị), vào thẳng Đang thu; gắn biểu giá có hiệu lực tại ngày đầu kỳ */
         post: operations["open"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/period-rule/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Chạy ngay quy tắc để thử (quản trị): tạo kỳ dự thảo nếu đã tới ngày, không thì cho biết lý do */
+        post: operations["run_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1044,6 +1113,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/billing/periods/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mở kỳ dự thảo và phát hành phiếu yêu cầu thu cho toàn xã (cán bộ xã), trong một bước */
+        post: operations["publish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/periods/{id}/draft-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Xem trước các khoản sẽ lập khi mở kỳ dự thảo (cán bộ xã, không ghi khoản) */
+        post: operations["preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/billing/charge-requests": {
         parameters: {
             query?: never;
@@ -1055,7 +1158,7 @@ export interface paths {
         get: operations["requests"];
         put?: never;
         /** Phát hành phiếu yêu cầu thu; 201 khi có khoản mới, 200 khi không có khoản mới (không lưu phiếu) */
-        post: operations["publish"];
+        post: operations["publish_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1072,7 +1175,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Xem trước phiếu yêu cầu thu: số khoản, tổng tiền, danh sách bỏ qua (không ghi CSDL) */
-        post: operations["preview"];
+        post: operations["preview_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1121,7 +1224,7 @@ export interface paths {
             cookie?: never;
         };
         /** Một biên nhận (để in: số tiền bằng chữ, lũy kế, còn phải nộp) */
-        get: operations["get_1"];
+        get: operations["get_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1249,6 +1352,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/masterdata/subjects/import-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tải file Excel mẫu để nhập hộ hàng loạt (cán bộ xã) */
+        get: operations["importTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/masterdata/periods/{id}": {
         parameters: {
             query?: never;
@@ -1257,7 +1377,24 @@ export interface paths {
             cookie?: never;
         };
         /** Chi tiết kỳ thu */
-        get: operations["get_2"];
+        get: operations["get_3"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/periods/drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Kỳ dự thảo hệ thống tự tạo, chờ cán bộ xã mở (cán bộ xã, quản trị) */
+        get: operations["drafts"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1444,7 +1581,7 @@ export interface paths {
             cookie?: never;
         };
         /** Chi tiết khiếu nại kèm timeline */
-        get: operations["get_3"];
+        get: operations["get_4"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1767,7 +1904,7 @@ export interface paths {
             cookie?: never;
         };
         /** Xem ảnh vừa tải (người tải) hoặc ảnh đã gắn (theo quyền bài) */
-        get: operations["preview_1"];
+        get: operations["preview_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1801,7 +1938,7 @@ export interface paths {
             cookie?: never;
         };
         /** Chi tiết phản ánh kèm timeline (của hộ khác trả 404) */
-        get: operations["get_4"];
+        get: operations["get_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1852,7 +1989,7 @@ export interface paths {
             cookie?: never;
         };
         /** Chi tiết yêu cầu (của hộ khác trả 404) */
-        get: operations["get_5"];
+        get: operations["get_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2083,6 +2220,42 @@ export interface components {
             note: string | null;
             currentContract: components["schemas"]["ContractDto"];
             contracts: components["schemas"]["ContractDto"][];
+        };
+        PeriodRuleRequest: {
+            enabled: boolean;
+            /** @enum {string} */
+            periodType: "MONTH" | "QUARTER";
+            /**
+             * Format: int32
+             * @description Từ ngày này trong tháng thì tạo kỳ kế tiếp (kỳ quý: tháng cuối quý)
+             * @example 25
+             */
+            createDay: number;
+            /**
+             * Format: int32
+             * @description Hạn hộ đóng mặc định = ngày phát hành + số ngày này
+             * @example 15
+             */
+            householdDueDays: number;
+            /**
+             * Format: int32
+             * @description Hạn công ty nộp xã = ngày cuối kỳ + số ngày này
+             * @example 10
+             */
+            remitDueDays: number;
+        };
+        PeriodRuleDto: {
+            enabled: boolean;
+            /** @enum {string} */
+            periodType: "MONTH" | "QUARTER";
+            /** Format: int32 */
+            createDay: number;
+            /** Format: int32 */
+            householdDueDays: number;
+            /** Format: int32 */
+            remitDueDays: number;
+            /** Format: date-time */
+            updatedAt: string;
         };
         DistrictRequest: {
             name: string;
@@ -2380,7 +2553,7 @@ export interface components {
             /** @example BG-65-2026 */
             tariffVersionCode: string;
             /** @enum {string} */
-            status: "COLLECTING" | "LOCKED";
+            status: "DRAFT" | "COLLECTING" | "LOCKED";
             /** Format: date-time */
             lockedAt: string | null;
             note: string | null;
@@ -2469,6 +2642,34 @@ export interface components {
             endDate: string;
             reason?: string;
         };
+        ImportResultDto: {
+            /** Format: int32 */
+            created: number;
+        };
+        ImportPreviewDto: {
+            rows: components["schemas"]["ImportRowDto"][];
+            /** Format: int32 */
+            valid: number;
+            /** Format: int32 */
+            invalid: number;
+        };
+        ImportRowDto: {
+            /**
+             * Format: int32
+             * @description Số dòng trong file Excel
+             */
+            rowNo: number;
+            type: string;
+            name: string;
+            houseNo: string | null;
+            street: string;
+            areaCode: string;
+            phone: string;
+            /** Format: int32 */
+            memberCount: number | null;
+            /** @description Rỗng khi dòng hợp lệ */
+            errors: string[];
+        };
         OpenPeriodRequest: {
             /** @enum {string} */
             type: "MONTH" | "QUARTER";
@@ -2494,6 +2695,11 @@ export interface components {
              */
             dueDate: string;
             note?: string;
+        };
+        DraftRunDto: {
+            created: boolean;
+            message: string;
+            period: components["schemas"]["PeriodDto"];
         };
         AssignRequest: {
             areaIds: number[];
@@ -3064,6 +3270,58 @@ export interface components {
              */
             scheduledDate?: string;
         };
+        PublishPeriodRequest: {
+            /**
+             * Format: date
+             * @description Hạn hộ đóng; trống thì theo quy tắc của quản trị
+             */
+            householdDueDate?: string;
+            note?: string;
+        };
+        IssueResultDto: {
+            /** @description Null khi không có khoản mới */
+            requestCode: string | null;
+            /** Format: int32 */
+            chargeCount: number;
+            /** Format: int32 */
+            exemptCount: number;
+            /** Format: int64 */
+            totalAmount: number;
+            /** Format: int32 */
+            warningCount: number;
+            skipped: components["schemas"]["SkippedDto"][];
+        };
+        PublishPeriodDto: {
+            period: components["schemas"]["PeriodDto"];
+            result: components["schemas"]["IssueResultDto"];
+        };
+        SkippedDto: {
+            /** Format: int64 */
+            subjectId: number;
+            subjectCode: string;
+            subjectName: string;
+            areaCode: string;
+            /** @enum {string} */
+            reason: "SUBJECT_NOT_ACTIVE" | "NO_ACTIVE_CONTRACT" | "AREA_WITHOUT_COMPANY" | "DUPLICATE_CHARGE";
+            warning: boolean;
+            message: string;
+        };
+        DraftPreviewRequest: {
+            /**
+             * Format: date
+             * @description Hạn hộ đóng; trống thì theo quy tắc của quản trị
+             */
+            householdDueDate?: string;
+        };
+        DraftPreviewDto: {
+            period: components["schemas"]["PeriodDto"];
+            /**
+             * Format: date
+             * @description Hạn hộ đóng đã dùng để tính xem trước
+             */
+            dueDate: string;
+            result: components["schemas"]["IssueResultDto"];
+        };
         IssueRequest: {
             /** Format: int64 */
             periodId: number;
@@ -3089,30 +3347,6 @@ export interface components {
              */
             unitPrice?: number;
             note?: string;
-        };
-        IssueResultDto: {
-            /** @description Null khi không có khoản mới */
-            requestCode: string | null;
-            /** Format: int32 */
-            chargeCount: number;
-            /** Format: int32 */
-            exemptCount: number;
-            /** Format: int64 */
-            totalAmount: number;
-            /** Format: int32 */
-            warningCount: number;
-            skipped: components["schemas"]["SkippedDto"][];
-        };
-        SkippedDto: {
-            /** Format: int64 */
-            subjectId: number;
-            subjectCode: string;
-            subjectName: string;
-            areaCode: string;
-            /** @enum {string} */
-            reason: "SUBJECT_NOT_ACTIVE" | "NO_ACTIVE_CONTRACT" | "AREA_WITHOUT_COMPANY" | "DUPLICATE_CHARGE";
-            warning: boolean;
-            message: string;
         };
         UpdateMarketPostRequest: {
             caption: string;
@@ -3184,7 +3418,7 @@ export interface components {
             receiptCount: number;
             /**
              * Format: int64
-             * @description Còn phải nộp = phải thu − điều chỉnh − đã nộp
+             * @description Còn phải nộp xã = phải nộp − đã nộp
              */
             remaining: number;
             /**
@@ -3218,12 +3452,12 @@ export interface components {
             reconciliation: "MATCHED" | "PENDING" | "MISMATCH";
             /**
              * Format: int64
-             * @description Phần công ty giữ lại theo tỷ lệ cấu hình
+             * @description Phần thu gom công ty giữ lại, tính trên tiền hộ đã đóng (theo biểu giá chụp trên khoản)
              */
             retained: number;
             /**
              * Format: int64
-             * @description Phải nộp xã = phải thu − điều chỉnh − phần giữ lại
+             * @description Phải nộp xã = đã thu − phần giữ lại (phần vận chuyển của tiền hộ đã đóng)
              */
             payable: number;
         };
@@ -3772,6 +4006,50 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["SubjectDto"];
+                };
+            };
+        };
+    };
+    get_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodRuleDto"];
+                };
+            };
+        };
+    };
+    update_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PeriodRuleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodRuleDto"];
                 };
             };
         };
@@ -4569,6 +4847,60 @@ export interface operations {
             };
         };
     };
+    importSubjects: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ImportResultDto"];
+                };
+            };
+        };
+    };
+    previewImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ImportPreviewDto"];
+                };
+            };
+        };
+    };
     list_3: {
         parameters: {
             query?: {
@@ -4611,6 +4943,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PeriodDto"];
+                };
+            };
+        };
+    };
+    run_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DraftRunDto"];
                 };
             };
         };
@@ -5568,6 +5920,58 @@ export interface operations {
             };
         };
     };
+    publish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublishPeriodRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PublishPeriodDto"];
+                };
+            };
+        };
+    };
+    preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DraftPreviewDto"];
+                };
+            };
+        };
+    };
     requests: {
         parameters: {
             query?: {
@@ -5590,7 +5994,7 @@ export interface operations {
             };
         };
     };
-    publish: {
+    publish_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -5614,7 +6018,7 @@ export interface operations {
             };
         };
     };
-    preview: {
+    preview_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -5686,7 +6090,7 @@ export interface operations {
             };
         };
     };
-    get_1: {
+    get_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -5866,7 +6270,27 @@ export interface operations {
             };
         };
     };
-    get_2: {
+    importTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    get_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -5884,6 +6308,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PeriodDto"];
+                };
+            };
+        };
+    };
+    drafts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodDto"][];
                 };
             };
         };
@@ -6111,7 +6555,7 @@ export interface operations {
             };
         };
     };
-    get_3: {
+    get_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -6538,7 +6982,7 @@ export interface operations {
             };
         };
     };
-    preview_1: {
+    preview_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -6583,7 +7027,7 @@ export interface operations {
             };
         };
     };
-    get_4: {
+    get_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -6647,7 +7091,7 @@ export interface operations {
             };
         };
     };
-    get_5: {
+    get_6: {
         parameters: {
             query?: never;
             header?: never;

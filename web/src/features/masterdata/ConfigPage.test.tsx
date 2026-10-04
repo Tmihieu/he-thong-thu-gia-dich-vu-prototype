@@ -177,3 +177,62 @@ describe('Cấu hình · soạn và ban hành biểu giá', () => {
     ] });
   });
 });
+
+describe('Cấu hình · tự tạo kỳ thu', () => {
+  const rule = {
+    enabled: false, periodType: 'MONTH', createDay: 25, householdDueDays: 15, remitDueDays: 10,
+    updatedAt: '2026-10-01T00:00:00+07:00',
+  };
+
+  it('quản trị bật quy tắc, đổi ngày tạo kỳ và lưu; chạy thử báo lý do chưa tạo', async () => {
+    let current = rule;
+    const fetchFn = mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, admin),
+      'GET /api/masterdata/periods': () => jsonResponse(200, [period]),
+      'GET /api/masterdata/periods/drafts': () => jsonResponse(200, []),
+      'GET /api/masterdata/tariffs': () => jsonResponse(200, tariffs),
+      'GET /api/masterdata/period-rule': () => jsonResponse(200, current),
+      'PUT /api/masterdata/period-rule': (_url, init) => {
+        current = { ...JSON.parse(String(init.body)), updatedAt: '2026-10-04T10:00:00+07:00' };
+        return jsonResponse(200, current);
+      },
+      'POST /api/masterdata/period-rule/run': () =>
+        jsonResponse(200, { created: false, message: 'Chưa tới ngày tạo kỳ: từ ngày 1 hằng tháng.', period: null }),
+    });
+    renderApp('/admin/config');
+
+    const day = await screen.findByLabelText('Ngày tạo kỳ (hằng tháng)');
+    expect(day).toHaveValue('25');
+    await userEvent.click(screen.getByRole('switch'));
+    await userEvent.clear(day);
+    await userEvent.type(day, '1');
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu quy tắc' }));
+
+    await waitFor(() => {
+      const put = fetchFn.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === 'PUT');
+      expect(JSON.parse(String((put![1] as RequestInit).body))).toEqual({
+        enabled: true, periodType: 'MONTH', createDay: 1, householdDueDays: 15, remitDueDays: 10,
+      });
+    });
+    expect(await screen.findByText('Đã lưu quy tắc tự tạo kỳ')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Chạy thử ngay' }));
+    expect(await screen.findByText('Chưa tới ngày tạo kỳ: từ ngày 1 hằng tháng.')).toBeInTheDocument();
+  });
+
+  it('sửa quy tắc chưa lưu thì khóa nút Chạy thử để không chạy theo giá trị cũ', async () => {
+    mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, admin),
+      'GET /api/masterdata/periods': () => jsonResponse(200, [period]),
+      'GET /api/masterdata/periods/drafts': () => jsonResponse(200, []),
+      'GET /api/masterdata/tariffs': () => jsonResponse(200, tariffs),
+      'GET /api/masterdata/period-rule': () => jsonResponse(200, rule),
+    });
+    renderApp('/admin/config');
+
+    const run = await screen.findByRole('button', { name: 'Chạy thử ngay' });
+    expect(run).toBeEnabled();
+    await userEvent.click(screen.getByText('Quý'));
+    expect(run).toBeDisabled();
+  });
+});

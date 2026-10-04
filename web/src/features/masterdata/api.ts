@@ -10,6 +10,9 @@ export type TariffDraftRequest = components['schemas']['TariffDraftRequest'];
 export type CreateTariffRequest = components['schemas']['CreateTariffRequest'];
 export type Period = components['schemas']['PeriodDto'];
 export type OpenPeriodRequest = components['schemas']['OpenPeriodRequest'];
+export type PeriodRule = components['schemas']['PeriodRuleDto'];
+export type PeriodRuleRequest = components['schemas']['PeriodRuleRequest'];
+export type DraftRun = components['schemas']['DraftRunDto'];
 export type District = components['schemas']['DistrictDto'];
 export type Area = components['schemas']['AreaDto'];
 export type Company = components['schemas']['CompanyDto'];
@@ -34,6 +37,8 @@ export interface SubjectQuery {
 export const masterdataKeys = {
   tariffs: ['masterdata', 'tariffs'] as const,
   periods: ['masterdata', 'periods'] as const,
+  periodDrafts: ['masterdata', 'periods', 'drafts'] as const,
+  periodRule: ['masterdata', 'period-rule'] as const,
   districts: ['masterdata', 'districts'] as const,
   areas: ['masterdata', 'areas'] as const,
   companies: ['masterdata', 'companies'] as const,
@@ -71,6 +76,39 @@ export function usePeriods() {
   return useQuery({
     queryKey: masterdataKeys.periods,
     queryFn: () => api.get<Period[]>('/api/masterdata/periods'),
+  });
+}
+
+/** Kỳ dự thảo hệ thống đã tự tạo, đang chờ cán bộ xã mở (không nằm trong danh sách kỳ thu). */
+export function useDraftPeriods() {
+  return useQuery({
+    queryKey: masterdataKeys.periodDrafts,
+    queryFn: () => api.get<Period[]>('/api/masterdata/periods/drafts'),
+  });
+}
+
+/** Quy tắc tự tạo kỳ (quản trị): chu kỳ, ngày tạo, số ngày hạn. */
+export function usePeriodRule() {
+  return useQuery({
+    queryKey: masterdataKeys.periodRule,
+    queryFn: () => api.get<PeriodRule>('/api/masterdata/period-rule'),
+  });
+}
+
+export function useUpdatePeriodRule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: PeriodRuleRequest) => api.put<PeriodRule>('/api/masterdata/period-rule', body),
+    onSuccess: (rule) => qc.setQueryData(masterdataKeys.periodRule, rule),
+  });
+}
+
+/** Chạy quy tắc ngay (quản trị) để thử: tạo kỳ dự thảo nếu đã tới ngày, không thì trả lý do. */
+export function useRunPeriodRule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<DraftRun>('/api/masterdata/period-rule/run'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: masterdataKeys.periodDrafts }),
   });
 }
 

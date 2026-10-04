@@ -9,8 +9,8 @@ import vn.dongthanh.vsmt.masterdata.domain.PeriodStatus;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 
 /**
- * Chặn mọi thay đổi số liệu của kỳ đã khóa (T32): phát hành khoản, ghi thu, lượt ghé gọi {@link #requireOpen}
- * trước khi ghi.
+ * Chặn mọi thay đổi số liệu của kỳ đã khóa (T32) hoặc chưa mở (Dự thảo): phát hành khoản, ghi thu, lượt ghé gọi
+ * {@link #requireOpen} trước khi ghi.
  */
 @Component
 @RequiredArgsConstructor
@@ -24,8 +24,12 @@ public class PeriodGuard {
      * nhau. Không tin entity đã nạp: nó có thể cũ hơn CSDL.
      */
     public void requireOpen(CollectionPeriod period) {
-        if (PeriodStatus.LOCKED.name().equals(periods.lockStatusForShare(period.getId()))) {
+        String status = periods.lockStatusForShare(period.getId());
+        if (PeriodStatus.LOCKED.name().equals(status)) {
             throw locked(period);
+        }
+        if (PeriodStatus.DRAFT.name().equals(status)) {
+            throw draft(period);
         }
     }
 
@@ -37,6 +41,14 @@ public class PeriodGuard {
         if (period.getStatus() == PeriodStatus.LOCKED) {
             throw locked(period);
         }
+        if (period.getStatus() == PeriodStatus.DRAFT) {
+            throw draft(period);
+        }
+    }
+
+    private static BusinessRuleException draft(CollectionPeriod period) {
+        return new BusinessRuleException("PERIOD_DRAFT",
+                "Kỳ " + period.getCode() + " mới ở dạng dự thảo, cần mở kỳ trước.");
     }
 
     private static BusinessRuleException locked(CollectionPeriod period) {

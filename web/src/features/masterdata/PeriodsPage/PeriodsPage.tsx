@@ -7,13 +7,17 @@ import { DateText } from '../../../shared/DateText';
 import { PERIOD_STATUS_LABELS, PERIOD_TYPE_LABELS, STATUS_COLORS } from '../../../shared/labels';
 import { type Period, useOpenPeriod, usePeriods, useTariffs } from '../api';
 import { OpenPeriodForm } from './OpenPeriodForm';
+import { PeriodRuleCard } from './PeriodRuleCard';
 
 function errorMessage(err: unknown): string | null {
   if (!err) return null;
   return err instanceof ApiError ? err.message : 'Thao tác không thành công. Vui lòng thử lại.';
 }
 
-/** Danh sách kỳ thu và mở kỳ (quản trị, §10 bước 1); mở kỳ là Đang thu luôn. */
+/**
+ * Quy tắc tự tạo kỳ, danh sách kỳ thu và mở kỳ thủ công (quản trị, §10 bước 1).
+ * Kỳ do hệ thống tự tạo ở dạng Dự thảo cho cán bộ xã mở; mở thủ công ở đây vào thẳng Đang thu.
+ */
 export function PeriodsPage() {
   const { message } = App.useApp();
   const periods = usePeriods();
@@ -28,9 +32,10 @@ export function PeriodsPage() {
 
   return (
     <>
+      <PeriodRuleCard />
       <Space style={{ marginBottom: 16 }}>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
-          Mở kỳ
+          Mở kỳ thủ công
         </Button>
       </Space>
       <Table<Period>

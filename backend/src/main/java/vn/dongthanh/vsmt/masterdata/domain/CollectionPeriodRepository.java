@@ -14,8 +14,9 @@ public interface CollectionPeriodRepository extends JpaRepository<CollectionPeri
 
     boolean existsByCode(String code);
 
-    /** Kỳ đầu tiên (sớm nhất) bắt đầu từ ngày {@code date} trở đi. */
-    Optional<CollectionPeriod> findFirstByStartDateGreaterThanEqualOrderByStartDateAsc(LocalDate date);
+    /** Kỳ đã mở đầu tiên (sớm nhất) bắt đầu từ ngày {@code date} trở đi; kỳ dự thảo chưa gắn giá nên không tính. */
+    Optional<CollectionPeriod> findFirstByStartDateGreaterThanEqualAndStatusNotOrderByStartDateAsc(LocalDate date,
+            PeriodStatus excluded);
 
     Optional<CollectionPeriod> findByCode(String code);
 
@@ -31,14 +32,23 @@ public interface CollectionPeriodRepository extends JpaRepository<CollectionPeri
     @Query("select p from CollectionPeriod p join fetch p.tariffVersion where p.id = :id")
     Optional<CollectionPeriod> findByIdWithTariff(Long id);
 
-    @Query("select p from CollectionPeriod p join fetch p.tariffVersion order by p.startDate desc, p.periodType")
+    /** Kỳ đã mở (Đang thu, Đã khóa), mới nhất trước; kỳ dự thảo xem ở {@link #findDraftsWithTariff()}. */
+    @Query("select p from CollectionPeriod p join fetch p.tariffVersion"
+            + " where p.status <> vn.dongthanh.vsmt.masterdata.domain.PeriodStatus.DRAFT"
+            + " order by p.startDate desc, p.periodType")
     List<CollectionPeriod> findAllWithTariff();
+
+    @Query("select p from CollectionPeriod p join fetch p.tariffVersion"
+            + " where p.status = vn.dongthanh.vsmt.masterdata.domain.PeriodStatus.DRAFT"
+            + " order by p.startDate, p.periodType")
+    List<CollectionPeriod> findDraftsWithTariff();
 
     /** Kỳ theo trạng thái, mới nhất trước (kỳ đang thu để ghi nhận hoàn / xóa nợ của kỳ đã khóa, O10). */
     List<CollectionPeriod> findByStatusOrderByStartDateDesc(PeriodStatus status);
 
-    /** Các kỳ (tháng và/hoặc quý) chứa ngày {@code date}. */
+    /** Các kỳ đã mở (tháng và/hoặc quý) chứa ngày {@code date}. */
     @Query("select p from CollectionPeriod p join fetch p.tariffVersion"
-            + " where p.startDate <= :date and p.endDate >= :date order by p.periodType")
+            + " where p.startDate <= :date and p.endDate >= :date"
+            + " and p.status <> vn.dongthanh.vsmt.masterdata.domain.PeriodStatus.DRAFT order by p.periodType")
     List<CollectionPeriod> findCovering(LocalDate date);
 }
