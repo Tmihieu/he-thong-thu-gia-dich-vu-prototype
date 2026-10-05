@@ -3,7 +3,6 @@ import dayjs, { type Dayjs } from 'dayjs';
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
-import { DateText } from '../../../shared/DateText';
 import { MoneyText } from '../../../shared/MoneyText';
 import type { Period } from '../../masterdata/api';
 import { type PublishPeriodResult, useDraftPreview, usePublishPeriod } from '../api';
@@ -81,15 +80,20 @@ export function OpenDraftPanel({ period, initial, onClose }: Props) {
         <Alert type="error" showIcon message={errorMessage(publish.error)} role="alert" style={{ marginBottom: 16 }} />
       )}
       <Descriptions column={{ xs: 1, md: 2 }} size="small" style={{ marginBottom: 16 }}>
-        <Descriptions.Item label="Thời gian">
-          <span style={{ whiteSpace: 'nowrap' }}>
-            <DateText value={period.startDate} /> – <DateText value={period.endDate} />
-          </span>
-        </Descriptions.Item>
         <Descriptions.Item label="Biểu giá áp dụng">{preview.data.period.tariffVersionCode}</Descriptions.Item>
       </Descriptions>
       <Form layout="vertical" requiredMark={false} disabled={publishing}>
         <Space size="middle" wrap align="start">
+          <Form.Item label="Hạn hộ đóng">
+            <DatePicker
+              aria-label="Hạn hộ đóng"
+              format={DATE_FORMAT}
+              allowClear={false}
+              value={dueDate}
+              disabledDate={(d) => d.isBefore(openDate, 'day') || d.isAfter(companyDue, 'day')}
+              onChange={(d) => setPicked(d)}
+            />
+          </Form.Item>
           <Form.Item label="Hạn công ty nộp xã">
             <DatePicker
               aria-label="Hạn công ty nộp xã"
@@ -101,16 +105,6 @@ export function OpenDraftPanel({ period, initial, onClose }: Props) {
                 setDuePicked(d);
                 setPicked(null);
               }}
-            />
-          </Form.Item>
-          <Form.Item label="Hạn hộ đóng">
-            <DatePicker
-              aria-label="Hạn hộ đóng"
-              format={DATE_FORMAT}
-              allowClear={false}
-              value={dueDate}
-              disabledDate={(d) => d.isBefore(openDate, 'day') || d.isAfter(companyDue, 'day')}
-              onChange={(d) => setPicked(d)}
             />
           </Form.Item>
         </Space>
