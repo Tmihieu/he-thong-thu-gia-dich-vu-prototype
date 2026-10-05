@@ -8,7 +8,7 @@ import { errorTextOrNull } from '../../../shared/errorText';
 import { DateText } from '../../../shared/DateText';
 import { CHARGE_SCOPE_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
-import { type Period, useAreas, useCompanies, useDraftPeriods, usePeriods } from '../../masterdata/api';
+import { newestFirst, type Period, useAreas, useCompanies, useDraftPeriods, usePeriods } from '../../masterdata/api';
 import { OpenDraftPanel } from '../PeriodDraftsPage/OpenDraftPanel';
 import {
   type ChargeRequestSummary,
@@ -87,7 +87,7 @@ export function ChargeRequestTab() {
         />
         {step.kind === 'form' && (
           <ChargeRequestForm
-            periods={[...(periods.data ?? []), ...(drafts.data ?? [])]}
+            periods={newestFirst(periods.data, drafts.data)}
             feeTypes={feeTypes.data ?? []}
             areas={areas.data ?? []}
             companies={companies.data ?? []}

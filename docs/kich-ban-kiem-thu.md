@@ -42,7 +42,7 @@ Mật khẩu chung `Demo@2026`. Mở F12 ở mọi cửa sổ: chạy hết kị
 |---|---|---|---|---|
 | 2.1 | `admin` → Cấu hình → Biểu giá | Xem bản `BG-65-2026` | Đang áp dụng, có giá thu gom + vận chuyển từng nhóm, không có phí xử lý | |
 | 2.2 ✗ | `admin` → Biểu giá | Soạn bản dự thảo bỏ trống một nhóm → **Ban hành** | "Biểu giá phải có đơn giá cho đủ các nhóm giá." | |
-| 2.3 | `admin` → Cấu hình → Kỳ thu | **Tạo kỳ dự thảo** tháng **10/2026**, hạn công ty nộp xã **31/10/2026** | Kỳ 10/2026 ở trạng thái **Dự thảo**, gắn `BG-65-2026`; `canbo_xa` có thông báo kỳ chờ mở | |
+| 2.3 | `admin` → Cấu hình → Kỳ thu | **Tạo kỳ dự thảo** tháng **10/2026** (chỉ chọn loại, năm, tháng) | Kỳ 10/2026 hiện ngay **đầu** bảng, trạng thái **Dự thảo**, gắn `BG-65-2026`, cột Ngày mở và Hạn công ty nộp để trống; `canbo_xa` có thông báo kỳ chờ mở | |
 | 2.4 ✗ | `admin` | Tạo lại kỳ 10/2026 lần nữa | "Kỳ … đã được tạo trước đó." | |
 | 2.5 | `admin` → Kỳ thu → thẻ **Tự tạo kỳ thu** | Bật quy tắc tháng, ngày tạo 1, hộ đóng 15 ngày, nộp xã 10 ngày → **Lưu quy tắc** | Lưu được; không tạo kỳ trùng với kỳ 10 vừa tạo | |
 | 2.6 | `admin` → Công ty & địa bàn | Xem 11 công ty DV01–DV11 | Trạng thái Đang hợp tác; có tài khoản ngân hàng tạm | |
@@ -53,7 +53,7 @@ Mật khẩu chung `Demo@2026`. Mở F12 ở mọi cửa sổ: chạy hết kị
 |---|---|---|---|---|
 | 3.1 | `canbo_xa` → Khu vực | Mở **Ấp 47** → **Phân công** cho **DV01** | Ấp 47 hiện DV01 trên bảng và bản đồ; **Lịch sử** có dòng mới | |
 | 3.2 ✗ | `canbo_xa` → Khu vực | Phân công Ấp 39 (đang là DV01) cho DV02 cùng khoảng ngày | Báo "Khu vực … đang do … phụ trách." hoặc tự đóng phân công cũ theo BR-MD-01 — ghi lại hành vi thật | |
-| 3.3 | `canbo_xa` → Khoản thu → kỳ chờ mở | Kỳ 10/2026 → **Xem trước & mở kỳ** | Danh sách khoản + tổng tiền; hộ miễn 100% (`DTH-H000149`) là 0 đ | |
+| 3.3 | `canbo_xa` → Khoản thu → Phiếu YCT → **Lập phiếu YCT** | Ô Kỳ thu: **Tháng 10/2026** nằm trên cùng; chọn nó, đặt hạn công ty nộp xã **31/10/2026** → **Xem trước** | Danh sách khoản + tổng tiền; hộ miễn 100% (`DTH-H000149`) là 0 đ | |
 | 3.4 ✗ | `canbo_xa` (màn xem trước) | Đặt hạn hộ đóng **sau** 31/10/2026 | "Hạn hộ đóng không được sau hạn công ty nộp xã của kỳ …" | |
 | 3.5 | `canbo_xa` | Hạn hộ đóng hợp lệ (vd. 20/10) → **Mở kỳ & phát hành** → xác nhận | Kỳ 10/2026 thành **Đang thu**; có phiếu `YCT-1026-01`; khoản sinh cho các hộ có đăng ký hiệu lực | |
 | 3.6 | `canbo_xa` → Khoản thu → Phiếu YCT | **Lập phiếu YCT** cùng kỳ, toàn xã → **Xem trước** | Các hộ đã có khoản bị bỏ qua kèm cảnh báo trùng, không sinh khoản thứ 2 | |

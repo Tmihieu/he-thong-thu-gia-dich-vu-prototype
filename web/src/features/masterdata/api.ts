@@ -90,6 +90,11 @@ export function useDraftPeriods() {
   });
 }
 
+/** Gộp kỳ thu và kỳ dự thảo, kỳ mới nhất lên đầu. */
+export function newestFirst(...lists: (Period[] | undefined)[]): Period[] {
+  return lists.flatMap((l) => l ?? []).sort((a, b) => b.startDate.localeCompare(a.startDate));
+}
+
 /** Quy tắc tự tạo kỳ (quản trị): chu kỳ, ngày tạo, số ngày hạn. */
 export function usePeriodRule() {
   return useQuery({
@@ -315,7 +320,11 @@ export function useOpenPeriod() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: OpenPeriodRequest) => api.post<Period>('/api/masterdata/periods', body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: masterdataKeys.periods }),
+    onSuccess: () =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: masterdataKeys.periods }),
+        qc.invalidateQueries({ queryKey: masterdataKeys.periodDrafts }),
+      ]),
   });
 }
 
