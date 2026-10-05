@@ -1,95 +1,120 @@
-﻿# Danh sách use case
+# Danh sách use case
 
-Mỗi use case (UC) mô tả sự tương tác giữa một tác nhân bên ngoài và hệ thống để đạt được một kết quả có giá trị. Tên UC được viết theo dạng **động từ + đối tượng**. Mô tả nêu người thực hiện, công việc thực hiện và kết quả nhận được; các thao tác liên quan được trình bày như những tình huống của cùng mục tiêu.
+Use case (UC) mô tả chuỗi tương tác giữa hệ thống và một tác nhân bên ngoài, kết thúc khi tác nhân đạt được một kết quả có giá trị. Tên UC luôn viết theo dạng **động từ + đối tượng**, chọn từ ngữ rõ nghĩa để chỉ đọc tên đã biết UC mang lại kết quả gì cho người dùng nào.
 
-## Phạm vi và thuật ngữ
+Khi xác định UC, nhóm đặt các câu hỏi sau cho từng tác nhân:
 
-- **Hộ/cơ sở sử dụng dịch vụ:** hộ gia đình, hộ kinh doanh hoặc doanh nghiệp có đăng ký dịch vụ. “Hộ dân” được dùng riêng cho các nghiệp vụ về nhân khẩu và tài khoản người dân.
-- **Đăng ký dịch vụ:** thông tin ghi nhận việc hộ/cơ sở sử dụng dịch vụ, bao gồm các căn cứ để tính tiền như loại đối tượng, quy mô nguồn thải, miễn giảm và định mức khối lượng.
-- **Khoản phải thu:** số tiền được xác định cho một hộ/cơ sở trong kỳ thu. Đối với người thanh toán, đây là khoản phải trả.
-- **Thu tiền:** nhận tiền thanh toán của hộ/cơ sở. **Nộp tiền về xã:** đơn vị thu gom chuyển phần tiền phải nộp cho xã. Tiền hộ/cơ sở còn nợ và tiền đơn vị thu gom còn phải nộp là hai số liệu khác nhau.
-- **Biên nhận thanh toán:** chứng từ ghi nhận hộ/cơ sở đã thanh toán. **Phiếu nộp tiền:** chứng từ ghi nhận đơn vị thu gom nộp tiền về xã.
-- **Cán bộ phụ trách:** cán bộ được giao thực hiện nghiệp vụ tương ứng trong phạm vi được phân quyền. Tên gọi này không xác định một vai trò phân quyền mới.
+- Tác nhân dùng hệ thống để làm gì?
+- Tác nhân có tạo, lưu, thay đổi, xóa hoặc đọc dữ liệu trong hệ thống không?
+- Tác nhân có cần báo cho hệ thống về sự kiện hoặc thay đổi bên ngoài không?
+- Tác nhân có cần được hệ thống báo khi có sự việc nhất định không?
 
-Luồng nghiệp vụ chính: cập nhật hồ sơ và đăng ký dịch vụ → thiết lập biểu giá → chuẩn bị kỳ thu và kiểm tra dữ liệu → phát hành khoản phải thu → ghi nhận thanh toán → đối soát và xác định tiền phải nộp về xã → xác nhận nộp tiền → khóa kỳ thu. Một đơn vị có thể nộp tiền theo nhiều đợt.
+Bảng dưới liệt kê các UC **đã có trong bản demo**, đối chiếu theo mã nguồn ngày 06/10/2026.
+
+## Tác nhân và thuật ngữ
+
+- **Quản trị viên:** quản lý tài khoản, biểu giá, kỳ thu, danh mục địa bàn và hồ sơ công ty.
+- **Cán bộ xã:** quản lý hồ sơ hộ/cơ sở, phát hành khoản phải thu, thu tiền công ty nộp về xã, xử lý phản ánh, kiểm duyệt chợ đồ cũ.
+- **Lãnh đạo xã:** xem tiến độ, đối soát, dashboard và báo cáo. Không ghi nghiệp vụ.
+- **Công ty môi trường:** đơn vị thu gom được xã giao khu vực. Quản lý người đi thu và nhận tiền mặt từ họ.
+- **Người đi thu:** nhân viên của công ty, thu tiền tại hộ trong các tổ được giao.
+- **Người dân:** dùng ứng dụng di động bằng tài khoản gắn với hộ.
+- **SePay:** dịch vụ báo giao dịch ngân hàng. **Bộ hẹn giờ:** tác vụ tự chạy theo lịch của hệ thống.
+- **Hộ/cơ sở:** hộ gia đình, hộ kinh doanh hoặc cơ sở có đăng ký thu phí.
+- **Khu vực:** ấp hoặc tổ dân phố, là đơn vị phân công cho công ty và người đi thu.
+- **Khoản phải thu:** số tiền một hộ/cơ sở phải đóng trong một kỳ. Với người dân, đây là khoản phải trả.
+- **Phiếu yêu cầu thu (YCT):** đợt phát hành khoản phải thu của một kỳ cho công ty.
+- **Phiếu thu:** chứng từ cán bộ xã lập khi nhận tiền công ty nộp về xã. Mỗi kỳ công ty có thể nộp nhiều lần.
+- **Phải nộp xã** = phải thu − điều chỉnh kỳ trước − phần phí thu gom công ty giữ lại (tính theo biểu giá).
+
+Luồng nghiệp vụ chính gồm các bước:
+
+1. Lập biểu giá và tạo kỳ thu.
+2. Cập nhật hồ sơ hộ và đăng ký thu phí.
+3. Phân công khu vực cho công ty, phân tổ cho người đi thu.
+4. Phát hành khoản phải thu.
+5. Thu tiền bằng tiền mặt hoặc VietQR.
+6. Công ty nộp tiền về xã, xã lập phiếu thu.
+7. Xem đối soát.
+8. Khóa kỳ.
 
 ## Bảng use case
 
 | ID | Tên use case | Nhóm chức năng | Mô tả use case |
 | --- | --- | --- | --- |
-| UC-01 | Đăng nhập hệ thống | Tài khoản và xác thực | Người dùng cung cấp thông tin đăng nhập để truy cập hệ thống. Hệ thống xác thực tài khoản và cho phép người dùng sử dụng các chức năng thuộc quyền của mình. |
-| UC-02 | Đăng xuất hệ thống | Tài khoản và xác thực | Người dùng yêu cầu kết thúc phiên làm việc. Hệ thống kết thúc phiên đăng nhập để các chức năng cần xác thực không tiếp tục được truy cập bằng phiên đó. |
-| UC-03 | Đổi mật khẩu | Tài khoản và xác thực | Người dùng thay đổi mật khẩu của tài khoản đang sử dụng. Hệ thống kiểm tra yêu cầu và lưu mật khẩu mới để người dùng sử dụng cho các lần đăng nhập tiếp theo. |
-| UC-04 | Đặt lại mật khẩu bị quên | Tài khoản và xác thực | Người dùng không nhớ mật khẩu yêu cầu lấy lại quyền truy cập tài khoản. Sau khi xác minh theo cơ chế được hỗ trợ, hệ thống cho phép đặt mật khẩu mới. |
-| UC-05 | Khóa hoặc mở khóa tài khoản | Tài khoản và xác thực | Quản trị viên khóa tài khoản cần ngăn truy cập hoặc mở khóa tài khoản được phép sử dụng trở lại, bao gồm tài khoản bị khóa do đăng nhập sai. Hệ thống cập nhật trạng thái khóa để kiểm soát việc đăng nhập. |
-| UC-06 | Liên kết tài khoản với hồ sơ hộ dân | Tài khoản và xác thực | Người dân thực hiện xác minh số điện thoại để liên kết tài khoản với hồ sơ hộ tương ứng. Hệ thống ghi nhận liên kết để người dân tra cứu thông tin và các khoản phải trả của hộ được liên kết. |
-| UC-07 | Nhập danh sách hộ/cơ sở ban đầu | Hồ sơ và đăng ký dịch vụ | Cán bộ phụ trách đưa danh sách hộ/cơ sở từ nguồn dữ liệu địa phương vào hệ thống. Hệ thống kiểm tra dữ liệu và phát hiện hồ sơ trùng để cán bộ xử lý trước khi sử dụng danh sách làm dữ liệu quản lý ban đầu. |
-| UC-08 | Tra cứu hồ sơ hộ/cơ sở | Hồ sơ và đăng ký dịch vụ | Người dùng tìm kiếm và xem thông tin chi tiết của hộ/cơ sở để phục vụ công việc hoặc kiểm tra thông tin của mình. Hệ thống chỉ hiển thị hồ sơ trong phạm vi được phép; người dân chỉ xem hồ sơ hộ đã liên kết với tài khoản. |
-| UC-09 | Cập nhật thông tin hộ/cơ sở | Hồ sơ và đăng ký dịch vụ | Cán bộ phụ trách sửa thông tin địa chỉ, chủ hộ hoặc người đại diện và số điện thoại của hộ/cơ sở. Hệ thống lưu thông tin cập nhật để sử dụng trong quản lý và liên hệ; thay đổi về đăng ký dịch vụ và nhân khẩu được thực hiện tại UC-10 và UC-11. |
-| UC-10 | Đăng ký hoặc thay đổi dịch vụ cho hộ/cơ sở | Hồ sơ và đăng ký dịch vụ | Cán bộ phụ trách tạo đăng ký dịch vụ cho hộ/cơ sở, ghi nhận loại đối tượng, quy mô nguồn thải nhỏ hoặc lớn, thông tin miễn giảm và định mức khối lượng rác tính bằng kg đối với nguồn thải lớn. Khi nhu cầu sử dụng thay đổi, cán bộ cập nhật, tạm ngừng, khôi phục hoặc kết thúc đăng ký và tra cứu lịch sử đăng ký. Hệ thống lưu các thông tin này làm căn cứ xác định dịch vụ và tính tiền theo kỳ. |
-| UC-11 | Cập nhật nhân khẩu và biến động cư trú | Hồ sơ và đăng ký dịch vụ | Trước khi mở kỳ thu hằng tháng, cán bộ phụ trách tổ cập nhật nhân khẩu và ghi nhận hộ chuyển đến hoặc chuyển đi trong tổ được giao. Hệ thống lưu dữ liệu để phục vụ tính phí theo nhân khẩu; nếu biến động làm thay đổi việc sử dụng dịch vụ, cán bộ cập nhật đăng ký tại UC-10. |
-| UC-12 | Tra cứu lịch sử thay đổi hồ sơ hộ/cơ sở | Hồ sơ và đăng ký dịch vụ | Người dùng có quyền tra cứu chọn hồ sơ hộ/cơ sở để xem các thay đổi đã ghi nhận và thời điểm có hiệu lực. Hệ thống cung cấp lịch sử để người dùng kiểm tra thông tin đã được áp dụng tại từng thời điểm. |
-| UC-13 | Thiết lập danh mục địa bàn quản lý | Địa bàn và đơn vị thu gom | Cán bộ phụ trách khai báo và cập nhật các địa bàn như ấp, khu phố và tổ dùng trong quản lý. Hệ thống lưu danh mục để phân nhóm hộ/cơ sở và phân công đơn vị thu gom theo địa bàn. |
-| UC-14 | Cập nhật hồ sơ đơn vị thu gom | Địa bàn và đơn vị thu gom | Cán bộ phụ trách tạo hồ sơ đơn vị thu gom, cập nhật thông tin và trạng thái hoạt động của đơn vị. Hệ thống lưu hồ sơ làm cơ sở quản lý hợp đồng và phân công địa bàn. |
-| UC-15 | Cấu hình tài khoản ngân hàng nhận tiền | Địa bàn và đơn vị thu gom | Người được phân quyền khai báo hoặc cập nhật tài khoản ngân hàng nhận tiền theo mô hình thu đang áp dụng. Hệ thống sử dụng thông tin đã cấu hình để cung cấp thông tin chuyển khoản cho các khoản thanh toán tương ứng. |
-| UC-16 | Thiết lập và cập nhật hợp đồng thu gom | Địa bàn và đơn vị thu gom | Cán bộ phụ trách ghi nhận hợp đồng giữa xã và đơn vị thu gom, cập nhật nội dung, gia hạn hoặc chấm dứt hợp đồng. Hệ thống lưu tình trạng hợp đồng để xác định căn cứ giao địa bàn cho đơn vị thu gom. |
-| UC-17 | Phân công địa bàn cho đơn vị thu gom | Địa bàn và đơn vị thu gom | Cán bộ phụ trách chọn đơn vị thu gom và địa bàn thuộc trách nhiệm của đơn vị theo hợp đồng. Hệ thống lưu phân công để xác định đơn vị phụ trách các hộ/cơ sở và nhận danh sách khoản phải thu tại địa bàn đó. |
-| UC-18 | Phân công hộ/cơ sở cho người thu tiền | Địa bàn và đơn vị thu gom | Đơn vị thu gom cập nhật danh sách người thu tiền và giao các hộ/cơ sở cần thu cho từng người. Hệ thống lưu phân công để xác định phạm vi thu tiền của mỗi người; tài khoản người thu tiền do quản trị viên tạo tại UC-58. |
-| UC-19 | Cập nhật vị trí hộ/cơ sở trên bản đồ | Địa bàn và đơn vị thu gom | Cán bộ phụ trách chọn vị trí hộ/cơ sở trên bản đồ hoặc người thu tiền ghi nhận vị trí GPS khi đến địa chỉ thực tế. Hệ thống lưu tọa độ để hỗ trợ tìm địa chỉ và theo dõi việc thu tiền trên bản đồ. |
-| UC-20 | Tra cứu tình trạng thu tiền trên bản đồ | Địa bàn và đơn vị thu gom | Đơn vị thu gom và người thu tiền sử dụng bản đồ của hệ thống để xem vị trí các hộ/cơ sở trong phạm vi của mình và nhận biết các khoản đã thu, chưa thu hoặc quá hạn trong kỳ. Thông tin này giúp họ xác định các địa chỉ cần tiếp tục thu tiền, phục vụ đơn vị chưa có phần mềm riêng. |
-| UC-21 | Thiết lập danh mục loại phí dịch vụ | Biểu giá và kỳ thu | Cán bộ phụ trách khai báo và cập nhật các loại phí dịch vụ công được quản lý trong hệ thống. Danh mục được sử dụng để xác định loại phí khi thiết lập biểu giá và lập khoản phải thu. |
-| UC-22 | Tạo biểu giá dịch vụ | Biểu giá và kỳ thu | Cán bộ phụ trách khai báo mức thu, căn cứ pháp lý và tiêu chí tính tiền như loại đối tượng, số nhân khẩu hoặc khối lượng rác. Hệ thống lưu biểu giá để làm căn cứ tính các khoản phải thu khi biểu giá có hiệu lực. |
-| UC-23 | Thiết lập thời điểm áp dụng biểu giá | Biểu giá và kỳ thu | Cán bộ phụ trách chọn biểu giá và khai báo ngày bắt đầu áp dụng. Hệ thống lưu thời điểm hiệu lực để xác định biểu giá sử dụng khi tính tiền; thao tác này có thể được thực hiện trong quá trình tạo hoặc thay thế biểu giá. |
-| UC-24 | Thay thế biểu giá đang áp dụng | Biểu giá và kỳ thu | Khi mức thu thay đổi, cán bộ phụ trách tạo biểu giá mới để thay thế biểu giá hiện tại và xác định thời điểm áp dụng. Hệ thống lưu biểu giá mới đồng thời giữ lịch sử biểu giá cũ để tra cứu căn cứ tính tiền của các kỳ trước. |
-| UC-25 | Tra cứu lịch sử biểu giá | Biểu giá và kỳ thu | Người dùng có quyền tra cứu xem các phiên bản biểu giá, thời điểm áp dụng và căn cứ pháp lý tương ứng. Hệ thống cung cấp thông tin để kiểm tra mức thu đã được sử dụng tại từng thời điểm. |
-| UC-26 | Chuẩn bị kỳ thu và danh sách khoản thu dự kiến | Biểu giá và kỳ thu | Cán bộ phụ trách thiết lập và mở kỳ thu theo chu kỳ, yêu cầu hệ thống lập danh sách khoản thu dự kiến từ dữ liệu đã được kiểm tra tại UC-27, rồi rà soát kết quả tính tiền. Danh sách dự kiến là cơ sở để phát hành khoản phải thu chính thức tại UC-28. |
-| UC-27 | Kiểm tra và bổ sung dữ liệu tính phí | Biểu giá và kỳ thu | Cán bộ phụ trách yêu cầu hệ thống kiểm tra hồ sơ hộ/cơ sở, đăng ký dịch vụ, hợp đồng và biểu giá trước khi tính phí. Hệ thống liệt kê dữ liệu thiếu hoặc không hợp lệ để cán bộ sửa, bổ sung và kiểm tra lại trước khi lập khoản thu dự kiến. |
-| UC-28 | Phát hành khoản phải thu cho đơn vị thu gom | Khoản phải thu | Cán bộ phụ trách xác nhận danh sách khoản thu dự kiến để hệ thống chuyển thành khoản phải thu chính thức và giao theo tổ cho đơn vị thu gom phụ trách. Hệ thống theo dõi các trạng thái chưa thu, đã thu, quá hạn hoặc miễn; khoản chưa thu được chuyển sang quá hạn khi qua hạn thanh toán của hộ/cơ sở. |
-| UC-29 | Điều chỉnh danh sách khoản phải thu | Khoản phải thu | Cán bộ phụ trách tra cứu danh sách khoản phải thu theo đơn vị thu gom và thực hiện điều chỉnh khi có căn cứ, gồm sửa khoản chưa thanh toán, tạo khoản bổ sung hoặc hủy khoản thu. Hệ thống cập nhật danh sách để đơn vị thu gom sử dụng số liệu phải thu đã được điều chỉnh. |
-| UC-30 | Tra cứu khoản phải trả và tiền còn nợ | Khoản phải thu | Người dân xem các khoản phải trả hiện tại và tiền còn nợ của hộ đã liên kết với tài khoản. Hệ thống cung cấp thông tin để người dân biết những khoản cần thanh toán. |
-| UC-31 | Ghi nhận tiền đã thu từ hộ/cơ sở | Thanh toán và biên nhận | Người thu tiền chọn khoản phải thu của hộ/cơ sở và xác nhận đã nhận đủ tiền bằng tiền mặt hoặc chuyển khoản. Hệ thống ghi nhận thanh toán và tự phát hành biên nhận; không hỗ trợ thu một phần hoặc ghi trạng thái vắng nhà, hẹn lại trong UC này. Giao dịch VietQR đã được xác nhận tự động tại UC-33 không cần ghi nhận thủ công. |
-| UC-32 | Thanh toán khoản phải trả bằng VietQR | Thanh toán và biên nhận | Người dân chọn khoản cần thanh toán và yêu cầu hệ thống cung cấp mã VietQR cùng thông tin chuyển khoản. Người dân thực hiện chuyển khoản qua ứng dụng ngân hàng; kết quả giao dịch được hệ thống tiếp nhận và xác nhận theo UC-33. |
-| UC-33 | Xác nhận thanh toán từ giao dịch ngân hàng | Thanh toán và biên nhận | Dịch vụ SePay gửi thông tin giao dịch ngân hàng đến hệ thống. Hệ thống kiểm tra giao dịch trùng, đối chiếu mã tham chiếu và số tiền với khoản phải thu để tự động xác nhận thanh toán khi khớp. Kết quả đối chiếu được lưu để tra cứu; giao dịch chưa khớp được chuyển sang xử lý tại UC-34. |
-| UC-34 | Xác định khoản thu cho giao dịch chưa khớp | Thanh toán và biên nhận | Cán bộ phụ trách xem các giao dịch chưa khớp do sai nội dung hoặc thiếu thông tin, kiểm tra và chọn hộ/cơ sở cùng khoản phải thu tương ứng. Hệ thống lưu kết quả gán thủ công để giao dịch được ghi nhận đúng đối tượng thanh toán. |
-| UC-35 | Tra cứu và xử lý biên nhận thanh toán | Thanh toán và biên nhận | Người dùng có quyền tương ứng tra cứu, phát hành hoặc in biên nhận để cung cấp chứng từ thanh toán; người được quyền xử lý sai sót có thể hủy biên nhận lập sai. Hệ thống lưu lịch sử gốc và việc hủy để vẫn tra cứu được chứng từ đã phát sinh. |
-| UC-36 | Tra cứu lịch sử thanh toán | Thanh toán và biên nhận | Người dùng xem các giao dịch thanh toán và biên nhận đã phát sinh trong phạm vi được phép. Hệ thống cung cấp lịch sử để kiểm tra các khoản đã thanh toán và chứng từ tương ứng. |
-| UC-37 | Nhập kết quả thu tiền từ Excel | Kết quả thu và nộp tiền về xã | Đơn vị thu gom chưa kết nối API tải mẫu Excel, điền kết quả thu và gửi tệp lên hệ thống. Hệ thống kiểm tra cấu trúc và dữ liệu, thông báo lỗi để đơn vị sửa trước khi xác nhận ghi nhận kết quả. Đơn vị có thể hủy đợt nhập chưa xác nhận và tra cứu lịch sử các đợt nhập. |
-| UC-38 | Gửi kết quả thu tiền từ phần mềm đơn vị thu gom | Kết quả thu và nộp tiền về xã | Phần mềm của đơn vị thu gom gửi kết quả thu qua API, gồm hộ/cơ sở đã thanh toán, hình thức và thời điểm thu. Hệ thống kiểm tra dữ liệu, ghi nhận kết quả hợp lệ và phát hành biên nhận để cập nhật tình trạng thanh toán mà đơn vị không phải nhập lại thủ công. |
-| UC-39 | Theo dõi tiến độ thu và nộp tiền trong kỳ | Kết quả thu và nộp tiền về xã | Đơn vị thu gom xem tổng số hộ/cơ sở được giao, số hộ/cơ sở đã thanh toán, số tiền đã thu và số tiền đã nộp về xã trong kỳ. Hệ thống cho phép xem chi tiết theo địa bàn, tổ, hộ/cơ sở và các phiếu nộp tiền để đơn vị theo dõi công việc còn lại. |
-| UC-40 | Ghi nhận và xác nhận tiền nộp về xã | Kết quả thu và nộp tiền về xã | Đơn vị thu gom lập phiếu nộp tiền cho từng đợt nộp và cán bộ xã xác nhận tiền đã nhận. Hệ thống tổng hợp các phiếu đã xác nhận để xác định số tiền đơn vị còn phải nộp, bằng số phải nộp trừ tổng số tiền đã được xác nhận. |
-| UC-41 | Đối soát khoản thu với chứng từ thanh toán | Đối soát và khóa kỳ | Cán bộ phụ trách yêu cầu hệ thống đối chiếu khoản phải thu đã phát hành với biên nhận thanh toán, đồng thời kiểm tra biên nhận chuyển khoản với giao dịch ngân hàng thực tế. Kết quả giúp phát hiện các số liệu hoặc chứng từ chưa khớp để xử lý trước khi chốt số liệu. |
-| UC-42 | Chốt kết quả thu và số tiền phải nộp về xã | Đối soát và khóa kỳ | Cán bộ phụ trách đối chiếu kết quả đơn vị thu gom báo cáo với dữ liệu của hệ thống và chốt kết quả trong thời gian đối soát của kỳ. Hệ thống xác định số tiền đơn vị phải nộp về xã bằng số tiền đã thu nhân với một trừ tỷ lệ được giữ lại. |
-| UC-43 | Xử lý chênh lệch đối soát | Đối soát và khóa kỳ | Cán bộ có thẩm quyền kiểm tra các khoản thừa, thiếu hoặc sai lệch được phát hiện khi đối soát và thực hiện xử lý để thống nhất số liệu. Nếu phát hiện sai sót trong phiên đã chốt, cán bộ thực hiện quy trình mở lại phiên đối soát để điều chỉnh và chốt lại kết quả. |
-| UC-44 | Phân bổ tiền đã nộp vào khoản còn phải nộp | Đối soát và khóa kỳ | Cán bộ phụ trách xác định các khoản còn phải nộp của đơn vị thu gom được thanh toán bằng số tiền đơn vị đã nộp. Hệ thống lưu phân bổ và xác định số tiền còn thiếu sau phân bổ; phần còn phải nộp được chuyển sang kỳ sau khi khóa kỳ tại UC-45. |
-| UC-45 | Khóa số liệu kỳ thu | Đối soát và khóa kỳ | Cán bộ phụ trách yêu cầu khóa kỳ thu sau khi đã qua hạn đơn vị thu gom nộp tiền và kết quả đối soát đã được chốt. Hệ thống kiểm tra điều kiện, khóa số liệu của kỳ và chuyển công nợ còn lại sang kỳ sau để tiếp tục theo dõi. |
-| UC-46 | Thiết lập lựa chọn nhận thông báo | Thông báo và phản ánh | Người dân lựa chọn đồng ý hoặc không đồng ý nhận thông báo qua các kênh được hỗ trợ. Hệ thống lưu lựa chọn để sử dụng khi gửi thông tin cho người dân. |
-| UC-47 | Gửi thông báo dịch vụ và thanh toán | Thông báo và phản ánh | Cán bộ phụ trách thiết lập gửi thông báo khoản phải trả, nhắc thanh toán, xác nhận thanh toán và kết quả xử lý phản ánh; có thể in thông báo giấy, kiểm tra lịch sử gửi và gửi lại thông báo lỗi. Khi cán bộ bật lịch nhắc cho kỳ thu, hệ thống gửi qua Zalo hoặc SMS khi mở kỳ, trước hạn ba ngày và khi quá hạn. Riêng thông báo khoản phải trả và nhắc thanh toán chỉ gửi đến các hộ/cơ sở chưa thanh toán tại thời điểm gửi. |
-| UC-48 | Gửi và theo dõi phản ánh về dịch vụ | Thông báo và phản ánh | Người dân gửi phản ánh hoặc kiến nghị liên quan đến dịch vụ, khoản phải trả hay thanh toán, kèm hình ảnh hoặc bằng chứng nếu có. Hệ thống ghi nhận phản ánh và cho phép người dân theo dõi tiến độ cùng kết quả xử lý. |
-| UC-49 | Xử lý phản ánh của người dân | Thông báo và phản ánh | Cán bộ phụ trách tiếp nhận và phân loại phản ánh, chuyển cho đơn vị thu gom khi cần hoặc yêu cầu người dân bổ sung thông tin. Người xử lý cập nhật tiến độ, kết quả giải quyết hoặc lý do từ chối; phản ánh có thể được mở lại để tiếp tục xử lý. Hệ thống lưu diễn biến để các bên theo dõi. |
-| UC-50 | Xem báo cáo tổng hợp thu tiền | Báo cáo | Cán bộ phụ trách xem số liệu thu tiền theo kỳ, tổ, đơn vị thu gom hoặc toàn xã. Hệ thống tổng hợp số hộ/cơ sở, số tiền và số hộ/cơ sở được miễn toàn bộ, đồng thời cho phép lọc các trường hợp chưa thanh toán hoặc quá hạn để theo dõi tình hình thu. |
-| UC-51 | Xem báo cáo tiền hộ/cơ sở còn nợ | Báo cáo | Cán bộ phụ trách xem các khoản tiền hộ/cơ sở chưa thanh toán theo từng đối tượng, địa bàn và kỳ thu. Hệ thống tổng hợp số tiền còn nợ và cung cấp chi tiết để phục vụ theo dõi, nhắc thanh toán. |
-| UC-52 | Xem báo cáo thu và nộp tiền của đơn vị theo tháng | Báo cáo | Cán bộ phụ trách xem số tiền phải thu, đã thu, phải nộp về xã, đã nộp và còn phải nộp của từng đơn vị thu gom theo tháng. Hệ thống cho phép tra cứu các hộ/cơ sở liên quan và thông tin nhân khẩu của hộ dân để kiểm tra căn cứ của số liệu báo cáo. |
-| UC-53 | Xem báo cáo kết quả đối soát | Báo cáo | Cán bộ phụ trách xem tình trạng và kết quả đối soát theo đơn vị thu gom và kỳ thu. Hệ thống tổng hợp thông tin để xác định các đơn vị, kỳ thu đã hoàn tất đối soát và các trường hợp còn cần xử lý. |
-| UC-54 | Xuất báo cáo ra Excel hoặc PDF | Báo cáo | Người dùng có quyền xem báo cáo chọn xuất dữ liệu sang Excel hoặc PDF. Hệ thống tạo tệp báo cáo để người dùng lưu trữ, chia sẻ hoặc sử dụng ngoài hệ thống. |
-| UC-55 | Đăng và tìm kiếm tin cho, tặng hoặc trao đổi đồ cũ | Tin trao đổi đồ cũ | Người dân tạo tin cho, tặng hoặc trao đổi đồ cũ, cập nhật nội dung và gia hạn tin của mình khi hết hạn. Người có nhu cầu tìm kiếm, lọc các tin đã đăng để tìm đồ phù hợp; hệ thống lưu và cung cấp thông tin tin đăng cho người xem. |
-| UC-56 | Báo cáo tin đăng vi phạm | Tin trao đổi đồ cũ | Người dân chọn tin đăng đồ cũ không phù hợp và gửi báo cáo vi phạm. Hệ thống ghi nhận báo cáo để cán bộ xã xem xét và xử lý. |
-| UC-57 | Kiểm duyệt tin đăng và báo cáo vi phạm | Tin trao đổi đồ cũ | Cán bộ xã xem nội dung tin đăng và các báo cáo vi phạm liên quan để quyết định xử lý. Hệ thống cho phép ẩn tin không phù hợp, chấp nhận hoặc bác bỏ báo cáo và lưu kết quả kiểm duyệt. |
-| UC-58 | Cấp và cập nhật quyền truy cập tài khoản | Quản trị và tích hợp | Người có quyền quản trị tài khoản tạo tài khoản, cập nhật thông tin, phân quyền, kích hoạt hoặc vô hiệu hóa tài khoản người dùng và quản trị viên trong phạm vi được phép. Hệ thống áp dụng các thay đổi để người dùng được cấp đúng quyền thực hiện công việc; việc khóa hoặc mở khóa đăng nhập được mô tả tại UC-05. |
-| UC-59 | Cấu hình hệ thống và kết nối dịch vụ ngoài | Quản trị và tích hợp | Quản trị viên cập nhật các tham số vận hành và thông tin kết nối với dịch vụ như SePay, Zalo ZNS. Hệ thống lưu cấu hình để sử dụng cho các chức năng liên quan; khi tác vụ tích hợp thất bại, quản trị viên có thể xử lý nguyên nhân và yêu cầu thực hiện lại tác vụ. |
-| UC-60 | Kiểm tra tình trạng kết nối dịch vụ ngoài | Quản trị và tích hợp | Quản trị viên xem tình trạng tiếp nhận giao dịch, trao đổi dữ liệu qua API và các lỗi kết nối với dịch vụ bên ngoài. Hệ thống cung cấp thông tin theo dõi để quản trị viên phát hiện gián đoạn và xác định trường hợp cần xử lý tại UC-59. |
-| UC-61 | Tra cứu nhật ký thao tác và thay đổi dữ liệu | Quản trị và tích hợp | Người được phân quyền tra cứu nhật ký thao tác và xem dữ liệu trước, sau của các thay đổi quan trọng. Hệ thống cung cấp lịch sử để kiểm tra diễn biến xử lý và truy tìm nguyên nhân khi phát hiện sai sót. |
+| UC-01 | Đăng nhập hệ thống | Tài khoản và xác thực | Quản trị viên, cán bộ xã, lãnh đạo xã, công ty môi trường và người đi thu đăng nhập trang web bằng tên đăng nhập và mật khẩu. Người dân đăng nhập ứng dụng bằng số điện thoại đã đăng ký của hộ và mã OTP (bản demo dùng mã OTP mô phỏng). Hệ thống xác thực rồi mở các màn hình theo vai trò của người dùng. |
+| UC-02 | Đăng xuất hệ thống | Tài khoản và xác thực | Người dùng kết thúc phiên làm việc trên thiết bị đang dùng. Hệ thống xóa phiên đăng nhập trên thiết bị, các màn hình cần xác thực không mở được cho đến khi đăng nhập lại. |
+| UC-03 | Cấp và cập nhật tài khoản người dùng | Tài khoản và xác thực | Quản trị viên tạo tài khoản nội bộ, gán vai trò và công ty, sửa thông tin, khóa hoặc mở khóa và đặt lại mật khẩu. Hệ thống áp dụng thay đổi ngay; tài khoản bị khóa không đăng nhập được. |
+| UC-04 | Cấp và cập nhật tài khoản người đi thu | Tài khoản và xác thực | Công ty môi trường tạo tài khoản cho người đi thu của mình, sửa thông tin, khóa hoặc mở khóa và đặt lại mật khẩu. Hệ thống chỉ cho thao tác trên tài khoản người đi thu thuộc công ty đó. |
+| UC-05 | Nhập danh sách hộ/cơ sở từ Excel | Hồ sơ hộ/cơ sở | Cán bộ xã chọn tệp .xlsx chứa danh sách hộ/cơ sở. Hệ thống kiểm tra từng dòng và hiện bản xem trước kèm lỗi, kể cả hồ sơ nghi trùng với hồ sơ đã có. Cán bộ sửa tệp cho hết lỗi rồi xác nhận, hệ thống tạo các hồ sơ mới. |
+| UC-06 | Tạo hồ sơ hộ/cơ sở | Hồ sơ hộ/cơ sở | Cán bộ xã nhập loại đối tượng, chủ hộ hoặc người đại diện, số điện thoại, địa chỉ (khu vực, đường, số nhà), số nhân khẩu và đăng ký thu phí ban đầu. Hệ thống gợi ý đường theo danh mục và theo Goong, cho thêm đường mới vào danh mục, cảnh báo hồ sơ nghi trùng rồi lưu hồ sơ. |
+| UC-07 | Tra cứu hồ sơ hộ/cơ sở | Hồ sơ hộ/cơ sở | Cán bộ xã tìm kiếm và lọc hồ sơ hộ/cơ sở, rồi xem chi tiết thông tin hộ, đăng ký thu phí và lịch sử số nhân khẩu. Kết quả dùng để kiểm tra trước khi cập nhật hoặc phát hành khoản thu. |
+| UC-08 | Cập nhật thông tin hộ/cơ sở | Hồ sơ hộ/cơ sở | Cán bộ xã sửa thông tin hộ, địa chỉ, số điện thoại và số nhân khẩu. Hệ thống lưu thay đổi. Riêng số nhân khẩu được ghi lịch sử (ngày đổi, người sửa) để tra cứu căn cứ tính tiền. |
+| UC-09 | Cập nhật đăng ký thu phí | Hồ sơ hộ/cơ sở | Cán bộ xã thêm, sửa hoặc kết thúc đăng ký thu phí của hộ/cơ sở. Đăng ký gồm nhóm giá và ngày hiệu lực; nếu tính theo khối lượng thì có thêm định mức kg/tháng. Hệ thống dùng đăng ký đang hiệu lực làm căn cứ tính tiền. Cờ miễn 100% chỉ hiển thị, không sửa trên màn này. |
+| UC-10 | Ngừng cung cấp dịch vụ cho hộ/cơ sở | Hồ sơ hộ/cơ sở | Cán bộ xã chọn ngày ngừng và nhập lý do khi hộ/cơ sở thôi dùng dịch vụ. Hệ thống chuyển hồ sơ sang Đã chấm dứt và kết thúc đăng ký thu phí đang hiệu lực; hộ không còn được lập khoản phải thu ở các kỳ sau. |
+| UC-11 | Báo hộ chuyển đi hoặc sai thông tin | Hồ sơ hộ/cơ sở | Người đi thu chọn một hộ trong danh sách thu, chọn loại vấn đề (đã chuyển đi, sai số nhà, sai số thành viên hoặc nhóm giá, sai số tiền) và mô tả. Hệ thống gửi thông báo cho cán bộ xã và công ty để kiểm tra, cập nhật hồ sơ. |
+| UC-12 | Xem thông tin hộ và lịch thu gom | Hồ sơ hộ/cơ sở | Người dân xem thông tin hộ gắn với tài khoản và lịch thu gom rác của khu vực mình. |
+| UC-13 | Cập nhật danh mục địa bàn | Khu vực và công ty | Quản trị viên sửa thông tin địa bàn và khu vực (ấp, tổ dân phố). Hệ thống dùng danh mục này để nhóm hộ/cơ sở, phân công công ty và lập báo cáo. |
+| UC-14 | Đặt vị trí khu vực trên bản đồ | Khu vực và công ty | Cán bộ xã chọn vị trí của khu vực trên bản đồ. Hệ thống lưu tọa độ để hiển thị các khu vực và công ty phụ trách trên bản đồ phân công. |
+| UC-15 | Cập nhật hồ sơ công ty môi trường | Khu vực và công ty | Quản trị viên thêm hoặc sửa công ty: tên, loại, số hợp đồng và thời hạn, tài khoản ngân hàng nhận chuyển khoản (dùng để tạo VietQR), trạng thái Đang hoặc Ngừng hợp tác. Khi công ty chuyển sang Ngừng hợp tác, hệ thống kết thúc mọi phân công khu vực của công ty đó. |
+| UC-16 | Tra cứu thông tin công ty môi trường | Khu vực và công ty | Cán bộ xã xem danh sách công ty theo trạng thái hợp tác, xem thông tin chi tiết và tiến độ thu, nộp tiền trong kỳ của từng công ty. |
+| UC-17 | Phân công khu vực cho công ty môi trường | Khu vực và công ty | Cán bộ xã chọn khu vực, công ty phụ trách và ngày hiệu lực. Hệ thống lưu phân công cùng lịch sử. Khoản phải thu của hộ trong khu vực được giao cho công ty đang phụ trách. |
+| UC-18 | Phân tổ cho người đi thu | Khu vực và công ty | Công ty môi trường giao tổ trong khu vực của mình cho từng người đi thu, hoặc kết thúc phân tổ. Hệ thống xác định danh sách hộ mà mỗi người đi thu được xem và thu tiền. |
+| UC-19 | Lập và ban hành biểu giá | Biểu giá và kỳ thu | Quản trị viên lập dự thảo biểu giá gồm căn cứ pháp lý, ngày hiệu lực, đơn giá và phần phí thu gom cho từng nhóm giá (hộ có từ 2 người trở xuống, hộ từ 3 người, chủ nguồn thải nhỏ, tính theo kg), rồi ban hành. Bản trước tự kết thúc khi bản mới có hiệu lực. Các phiên bản cũ được giữ để tra cứu mức thu đã áp dụng. Loại phí là danh mục có sẵn. |
+| UC-20 | Tạo kỳ thu | Biểu giá và kỳ thu | Quản trị viên tạo kỳ thu tháng ở trạng thái dự thảo, kèm hạn nộp và biểu giá áp dụng, hoặc đặt quy tắc tự tạo kỳ kế tiếp. Kỳ dự thảo chờ cán bộ xã mở tại UC-21. |
+| UC-21 | Phát hành khoản phải thu | Biểu giá và kỳ thu | Cán bộ xã lập phiếu yêu cầu thu cho kỳ, rồi xem trước danh sách khoản phải thu theo công ty. Hệ thống liệt kê hộ bị bỏ qua kèm lý do: hộ không hoạt động, không có đăng ký, khu vực chưa giao công ty, đã có khoản trong kỳ, thiếu định mức kg. Cán bộ sửa dữ liệu nếu cần rồi phát hành. Lần phát hành đầu tiên cũng mở kỳ sang Đang thu. Cán bộ có thể lập phiếu bổ sung cho hộ chưa có khoản trong kỳ. |
+| UC-22 | Tra cứu khoản phải thu | Biểu giá và kỳ thu | Cán bộ xã xem danh sách khoản phải thu, lọc theo kỳ, công ty, khu vực và trạng thái (chưa thu, đã thu, miễn, đã xóa nợ). Khoản chưa thu đã qua hạn được hiển thị là quá hạn. |
+| UC-23 | Ghi nhận tiền mặt đã thu | Thu tiền | Người đi thu chọn khoản phải thu trong tổ được giao và xác nhận đã thu đủ tiền mặt. Công ty có thể ghi thay, khi đó phải chọn người đi thu. Hệ thống không ghi nhận thu một phần. Hệ thống lưu thanh toán, tạo mã thanh toán và gửi xác nhận đến ứng dụng của người dân. |
+| UC-24 | Hiển thị mã VietQR để hộ chuyển khoản | Thu tiền | Người đi thu mở mã VietQR của khoản phải thu cho hộ quét tại nhà. Mã có tài khoản của công ty, số tiền và mã tham chiếu. Kết quả chuyển khoản được xác nhận tại UC-26. |
+| UC-25 | Thanh toán khoản phải trả bằng VietQR | Thu tiền | Người dân chọn khoản cần đóng trên ứng dụng để nhận mã VietQR và thông tin chuyển khoản, rồi chuyển khoản qua ứng dụng ngân hàng. Kết quả giao dịch được xác nhận tại UC-26. |
+| UC-26 | Xác nhận thanh toán từ giao dịch ngân hàng | Thu tiền | SePay gửi thông tin giao dịch đến hệ thống. Hệ thống loại giao dịch trùng, rồi đối chiếu mã tham chiếu, tài khoản nhận và số tiền với khoản phải thu. Giao dịch khớp thì khoản được ghi đã thu và người dân được báo. Giao dịch không khớp được lưu kèm lý do để chờ đối chiếu. |
+| UC-27 | Xem giao dịch chuyển khoản chờ đối chiếu | Thu tiền | Công ty môi trường xem các giao dịch chuyển khoản vào tài khoản của mình mà hệ thống chưa khớp được với khoản phải thu, kèm lý do, để liên hệ hộ xử lý. |
+| UC-28 | Nhận bàn giao tiền mặt từ người đi thu | Thu tiền | Công ty môi trường ghi nhận số tiền mặt nhận từ người đi thu. Số tiền không được vượt số người đó đang giữ, ngày không được sau hôm nay. Hệ thống cập nhật tiền mặt đang giữ và lưu lịch sử bàn giao. |
+| UC-29 | Theo dõi tiền mặt đang giữ | Thu tiền | Người đi thu xem tổng tiền mặt đã thu, đã bàn giao cho công ty và còn đang giữ, cùng lịch sử bàn giao. |
+| UC-30 | Xem lịch sử thu của hộ | Thu tiền | Người đi thu xem các khoản phải thu và thanh toán qua các kỳ của một hộ trong tổ được giao, để trả lời hộ khi có thắc mắc. |
+| UC-31 | Tra cứu khoản phải trả và xác nhận thanh toán | Thu tiền | Người dân xem các khoản cần đóng và tiền còn nợ của hộ, cùng các khoản đã thanh toán. Mỗi khoản đã thanh toán có xác nhận thanh toán; đây không phải biên lai pháp lý. |
+| UC-32 | Theo dõi tiến độ thu và nộp tiền của xã | Nộp tiền về xã và khóa kỳ | Cán bộ xã và lãnh đạo xã xem tiến độ theo công ty và theo tổ. Theo công ty: đã nộp so với phải thu, trạng thái nộp, nợ kỳ trước, cờ dưới 45%. Theo tổ: đã thu so với phải thu. Có thể mở danh sách hộ còn phải thu của từng tổ. |
+| UC-33 | Theo dõi tiến độ thu của công ty | Nộp tiền về xã và khóa kỳ | Công ty môi trường xem tổng quan kỳ của mình gồm phải thu, đã thu, đã nộp và còn phải nộp xã. Công ty xem thêm tiến độ của từng người đi thu và danh sách hộ được giao, có thể lọc theo tình trạng thu. |
+| UC-34 | Nhắc công ty nộp tiền | Nộp tiền về xã và khóa kỳ | Cán bộ xã soạn lời nhắc nộp tiền cho công ty còn phải nộp. Hệ thống gửi thông báo đến công ty và lưu lịch sử nhắc. |
+| UC-35 | Lập phiếu thu tiền công ty nộp về xã | Nộp tiền về xã và khóa kỳ | Khi nhận tiền, cán bộ xã chọn công ty, kỳ, số tiền và ngày nộp để lập phiếu thu, rồi in phiếu. Số tiền mỗi phiếu không được vượt số còn phải nộp. Công ty có thể nộp nhiều lần trong một kỳ. Hệ thống cập nhật lũy kế đã nộp, số còn phải nộp và báo cho công ty. |
+| UC-36 | Báo sai sót phiếu thu | Nộp tiền về xã và khóa kỳ | Công ty môi trường xem các phiếu thu xã lập cho mình, kèm lũy kế đã nộp. Khi phát hiện phiếu sai, công ty gửi báo sai sót trên phiếu đó và theo dõi kết quả xã xử lý. |
+| UC-37 | Xử lý sai sót phiếu thu | Nộp tiền về xã và khóa kỳ | Cán bộ xã xem các báo sai sót của công ty, kiểm tra rồi đánh dấu đã xử lý kèm ghi chú. Hệ thống không sửa phiếu đã lập và báo kết quả cho công ty. |
+| UC-38 | Xem đối soát công ty theo kỳ | Nộp tiền về xã và khóa kỳ | Cán bộ xã và lãnh đạo xã xem số liệu từng công ty trong kỳ: phải thu, đã thu, phần thu gom công ty giữ lại, phải nộp xã, đã nộp, còn nợ và chênh lệch. Hệ thống tự xác định trạng thái Khớp, Đang nộp hoặc Lệch từ số đã thu và số đã nộp. |
+| UC-39 | Khóa kỳ thu | Nộp tiền về xã và khóa kỳ | Cán bộ xã yêu cầu khóa kỳ đang thu. Hệ thống chỉ cho khóa khi mọi công ty đã nộp đủ tiền của kỳ. Sau khi khóa, số liệu của kỳ được giữ nguyên; điều chỉnh phát sinh sau đó được ghi vào kỳ đang thu. |
+| UC-40 | Gửi và theo dõi phản ánh | Phản ánh và thông báo | Người dân chọn loại phản ánh, nhập nội dung và nơi xảy ra sự việc. Mặc định nơi xảy ra là địa chỉ hộ. Hệ thống ghi nhận và báo cán bộ xã; người dân theo dõi trạng thái và kết quả xử lý của các phản ánh của hộ. |
+| UC-41 | Ghi nhận phản ánh thay người dân | Phản ánh và thông báo | Cán bộ xã ghi vào hệ thống các phản ánh nhận qua điện thoại hoặc trực tiếp tại xã. Phản ánh được xử lý theo cùng quy trình với phản ánh gửi từ ứng dụng. |
+| UC-42 | Xử lý phản ánh | Phản ánh và thông báo | Cán bộ xã tiếp nhận phản ánh và chuyển cho công ty phụ trách khi cần. Khi có kết quả, cán bộ đóng phản ánh kèm kết quả giải quyết. Trạng thái đi theo thứ tự Mới → Đang xử lý → Đã giải quyết. Hệ thống báo kết quả cho người dân. |
+| UC-43 | Phản hồi phản ánh được chuyển | Phản ánh và thông báo | Công ty môi trường xem các phản ánh xã chuyển cho mình và gửi phản hồi về cách xử lý. Hệ thống báo cán bộ xã để đóng phản ánh tại UC-42. |
+| UC-44 | Gửi nhắc thanh toán cho hộ | Phản ánh và thông báo | Bộ hẹn giờ chạy lúc 08:00 hằng ngày và gửi thông báo trong ứng dụng ở 3 mốc: khi mở kỳ, trước hạn 3 ngày và sau hạn 1 ngày. Thông báo chỉ gửi đến hộ có tài khoản ứng dụng và còn khoản chưa thanh toán. |
+| UC-45 | Xem thông báo | Phản ánh và thông báo | Người dùng web và người dân trên ứng dụng xem các thông báo gửi đến mình, như nhắc nộp tiền, phản ánh, phiếu thu, xác nhận thanh toán. Người dùng đánh dấu từng thông báo hoặc tất cả là đã đọc. |
+| UC-46 | Xem dashboard điều hành | Báo cáo | Lãnh đạo xã xem tổng thu, nộp và nợ của kỳ, tỷ lệ thu và nộp theo công ty, theo tổ. Dashboard có các cảnh báo nộp chậm, nợ kỳ trước, tỷ lệ thu thấp để chỉ đạo kịp thời. |
+| UC-47 | Xem và xuất báo cáo tổng hợp kỳ thu | Báo cáo | Lãnh đạo xã xem báo cáo tổng hợp kỳ thu, lọc theo công ty và tổ. Báo cáo gồm số hộ đã thu, số hộ miễn 100%, phải thu, đã thu, phải nộp và đã nộp xã. Lãnh đạo có thể xuất báo cáo ra tệp CSV. |
+| UC-48 | Đăng tin đồ cũ | Chợ đồ cũ | Người dân đăng tin cho, tặng hoặc trao đổi đồ cũ, kèm ảnh, danh mục, nhãn và khu vực. Người đăng có thể sửa, đóng hoặc mở lại, ẩn hoặc hiện tin của mình. Tin chứa từ khóa trong bộ lọc phải chờ cán bộ xã duyệt mới hiển thị. |
+| UC-49 | Tìm kiếm và xem tin đồ cũ | Chợ đồ cũ | Người dân tìm và lọc tin theo từ khóa, danh mục, nhãn, khu vực, rồi xem chi tiết tin, bình luận và xem thông tin liên hệ. Người dân có thể lưu tin quan tâm và chặn người đăng không muốn thấy. |
+| UC-50 | Báo cáo tin đăng vi phạm | Chợ đồ cũ | Người dân chọn tin không phù hợp và gửi báo cáo kèm lý do. Hệ thống ghi nhận cho cán bộ xã xem xét. Tin bị 3 báo cáo được tạm gỡ để chờ xử lý. |
+| UC-51 | Kiểm duyệt tin đăng | Chợ đồ cũ | Cán bộ xã duyệt hoặc từ chối tin đang chờ, xem các báo cáo vi phạm rồi giữ bài, gỡ bài hoặc cho bài hiển thị lại, và quản lý danh sách từ khóa lọc. Hệ thống báo kết quả cho người đăng. |
+| UC-52 | Tra cứu nhật ký thao tác | Quản trị | Quản trị viên tra cứu nhật ký thao tác, gồm người thực hiện, thời điểm và dữ liệu trước, sau khi thay đổi, để kiểm tra diễn biến và tìm nguyên nhân sai sót. |
+| UC-53 | Quản trị dữ liệu nền | Quản trị | Quản trị viên mở công cụ quản trị dữ liệu (Jmix) để xem và sửa trực tiếp dữ liệu nền như danh mục địa bàn, công ty, loại phí. |
 
-## Các điểm cần làm rõ khi đặc tả chi tiết
+## Có ở backend, chưa có màn hình
 
-Bảng trên giữ mã UC-01 đến UC-61 để đối chiếu với danh sách ban đầu. Các nội dung dưới đây chưa được xác định đầy đủ trong bản gốc, cần được thống nhất khi viết luồng tương tác và quy tắc chi tiết:
+Các chức năng dưới đây đã có API và kiểm thử, nhưng bản demo chưa có màn hình nên không đưa vào bảng UC:
 
-- **UC-05, UC-06, UC-58:** phân biệt khóa đăng nhập với vô hiệu hóa tài khoản; xác định người được liên kết với hộ và liệu liên kết đó có đại diện cho quan hệ chủ hộ hay không.
-- **UC-10:** xác định định mức kg tính theo ngày, tháng hay kỳ thu; cách tính và thời hạn miễn giảm; ngày hiệu lực và ảnh hưởng đến khoản phải thu khi thay đổi, tạm ngừng hoặc kết thúc dịch vụ.
-- **UC-14, UC-16:** bản gốc có ghi chú gộp hai UC. Bản này giữ riêng mục tiêu cập nhật hồ sơ đơn vị và mục tiêu quản lý hợp đồng; việc gộp màn hình không quyết định việc gộp UC.
-- **UC-15:** xác định chủ tài khoản nhận tiền và tài khoản được dùng cho tiền người dân thanh toán hay tiền đơn vị thu gom nộp về xã trong từng mô hình thu.
-- **UC-23:** xác định có tình huống thiết lập thời điểm áp dụng độc lập hay không. Nếu chỉ là một bước khi tạo hoặc thay thế biểu giá, đưa nội dung này vào UC-22 và UC-24 khi chốt danh sách UC chi tiết.
-- **UC-31, UC-33, UC-35, UC-37, UC-38:** xác định cách tránh ghi nhận trùng giữa các nguồn kết quả thu và ảnh hưởng đến tình trạng thanh toán khi hủy biên nhận.
-- **UC-40, UC-42, UC-44, UC-45:** xác định cách tính số còn phải nộp trước khi chốt đối soát, cách phân bổ tiền giữa các kỳ và những loại công nợ được chuyển khi khóa kỳ.
-- **UC-47:** xác định thời điểm gửi thông báo mở kỳ so với thời điểm phát hành khoản phải thu chính thức.
-- **UC-55:** đăng tin và tìm kiếm tin phục vụ hai mục tiêu người dùng khác nhau; nên tách thành các UC riêng khi điều chỉnh hệ thống mã UC.
-- **Phân quyền:** các tác nhân ghi trong bảng mô tả trách nhiệm nghiệp vụ, cần đối chiếu với ma trận phân quyền khi đặc tả chi tiết.
+- **Đề nghị miễn giảm, hoàn tiền, xóa nợ:** cán bộ xã lập đề nghị, lãnh đạo xã duyệt hoặc từ chối. Đề nghị miễn giảm được tạo tự động khi bật cờ miễn 100% trên đăng ký thu phí; nếu lãnh đạo từ chối, hệ thống gỡ miễn.
+- **Chạy nhắc thanh toán ngay:** cán bộ xã hoặc quản trị viên chạy UC-44 ngay, không cần chờ lịch 08:00.
+
+## Chưa có trong demo
+
+Danh sách UC trước đây có các mục sau, nhưng bản demo chưa làm:
+
+- Tài khoản: tự đổi mật khẩu, lấy lại mật khẩu khi quên, tự khóa khi đăng nhập sai. Người dân chưa tự liên kết tài khoản với hộ; tài khoản người dân được nạp sẵn.
+- Bản đồ: vị trí từng hộ, ghi GPS và bản đồ tình trạng thu tiền.
+- Kết quả thu: nhập từ Excel hoặc nhận qua API từ phần mềm của công ty.
+- Biên nhận cho hộ: in và hủy biên nhận.
+- Giao dịch chưa khớp: gán thủ công vào khoản phải thu.
+- Khoản phải thu: sửa hoặc hủy từng khoản.
+- Đối soát: phiên đối soát, chốt, mở lại và phân bổ tiền nộp.
+- Thông báo: gửi qua Zalo hoặc SMS, in thông báo giấy, gửi lại, lựa chọn đồng ý nhận thông báo.
+- Phản ánh: đính kèm ảnh, yêu cầu bổ sung thông tin, từ chối, mở lại.
+- Báo cáo: báo cáo cho cán bộ xã và công ty, xuất ra Excel hoặc PDF.
+- Hệ thống: cấu hình tích hợp, theo dõi kết nối dịch vụ ngoài.
