@@ -22,7 +22,7 @@ import {
 import { ChargeRequestForm } from './ChargeRequestForm';
 import { PreviewPanel, SkippedList } from './PreviewPanel';
 
-type Step = { kind: 'form' } | { kind: 'start'; period: Period; householdDueDate: string; companyDueDate?: string } | { kind: 'preview'; req: IssueRequest; result: IssueResult } | { kind: 'done'; result: IssueResult };
+type Step = { kind: 'form' } | { kind: 'start'; period: Period; req: IssueRequest; companyDueDate?: string } | { kind: 'preview'; req: IssueRequest; result: IssueResult } | { kind: 'done'; result: IssueResult };
 
 /** Phiếu YCT: danh sách phiếu đã phát hành; lập phiếu mới trong ngăn kéo theo bước form → xem trước → phát hành. */
 export function ChargeRequestTab() {
@@ -96,10 +96,10 @@ export function ChargeRequestTab() {
             initial={draft}
             onPreview={(req, companyDueDate) => {
               setDraft(req);
-              // Kỳ do quản trị tạo, chưa bắt đầu: cán bộ xã đặt ngày, xem trước và bắt đầu kỳ (kèm phát hành phiếu toàn xã).
+              // Kỳ do quản trị tạo, chưa bắt đầu: cán bộ xã đặt ngày, xem trước và bắt đầu kỳ (kèm phát hành phiếu theo phạm vi đã chọn).
               const toStart = drafts.data?.find((d) => d.id === req.periodId);
               if (toStart) {
-                setStep({ kind: 'start', period: toStart, householdDueDate: req.dueDate, companyDueDate });
+                setStep({ kind: 'start', period: toStart, req, companyDueDate });
                 return;
               }
               preview.mutate(req, { onSuccess: (result) => setStep({ kind: 'preview', req, result }) });
@@ -113,7 +113,14 @@ export function ChargeRequestTab() {
             </Button>
             <OpenDraftPanel
               period={step.period}
-              initial={{ householdDueDate: step.householdDueDate, companyDueDate: step.companyDueDate }}
+              initial={{ householdDueDate: step.req.dueDate, companyDueDate: step.companyDueDate }}
+              scope={{
+                feeTypeId: step.req.feeTypeId,
+                scopeType: step.req.scopeType,
+                areaIds: step.req.areaIds,
+                companyId: step.req.companyId,
+                unitPrice: step.req.unitPrice,
+              }}
               onClose={() => setOpen(false)}
             />
           </>

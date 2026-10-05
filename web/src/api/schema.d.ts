@@ -1241,7 +1241,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Mở kỳ dự thảo và phát hành phiếu yêu cầu thu cho toàn xã (cán bộ xã), trong một bước */
+        /** Mở kỳ dự thảo và phát hành phiếu yêu cầu thu theo phạm vi chọn, mặc định toàn xã (cán bộ xã), trong một bước */
         post: operations["publish"];
         delete?: never;
         options?: never;
@@ -3535,6 +3535,28 @@ export interface components {
              * @description Hạn hộ đóng; trống thì theo quy tắc của quản trị
              */
             householdDueDate?: string;
+            /**
+             * Format: int64
+             * @description Loại phí; trống thì phí vệ sinh môi trường
+             */
+            feeTypeId?: number;
+            /**
+             * @description Phạm vi; trống thì toàn xã
+             * @enum {string}
+             */
+            scopeType?: "ALL" | "AREAS" | "COMPANY";
+            /** @description Bắt buộc khi scopeType = AREAS */
+            areaIds?: number[];
+            /**
+             * Format: int64
+             * @description Bắt buộc khi scopeType = COMPANY
+             */
+            companyId?: number;
+            /**
+             * Format: int64
+             * @description Chỉ với loại phí giá cố định
+             */
+            unitPrice?: number;
             note?: string;
         };
         IssueResultDto: {
@@ -3585,6 +3607,28 @@ export interface components {
              * @description Hạn hộ đóng; trống thì theo quy tắc của quản trị
              */
             householdDueDate?: string;
+            /**
+             * Format: int64
+             * @description Loại phí; trống thì phí vệ sinh môi trường
+             */
+            feeTypeId?: number;
+            /**
+             * @description Phạm vi; trống thì toàn xã
+             * @enum {string}
+             */
+            scopeType?: "ALL" | "AREAS" | "COMPANY";
+            /** @description Bắt buộc khi scopeType = AREAS */
+            areaIds?: number[];
+            /**
+             * Format: int64
+             * @description Bắt buộc khi scopeType = COMPANY
+             */
+            companyId?: number;
+            /**
+             * Format: int64
+             * @description Chỉ với loại phí giá cố định
+             */
+            unitPrice?: number;
         };
         DraftPreviewDto: {
             period: components["schemas"]["PeriodDto"];

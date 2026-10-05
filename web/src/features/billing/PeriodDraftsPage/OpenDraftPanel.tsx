@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { ApiError } from '../../../api/client';
 import { MoneyText } from '../../../shared/MoneyText';
 import type { Period } from '../../masterdata/api';
-import { type PublishPeriodResult, useDraftPreview, usePublishPeriod } from '../api';
+import { type DraftScope, type PublishPeriodResult, useDraftPreview, usePublishPeriod } from '../api';
 import { PreviewSummary } from '../ChargeRequestPage/PreviewPanel';
 
 const DATE_FORMAT = 'DD/MM/YYYY';
@@ -20,17 +20,19 @@ interface Props {
   period: Period;
   /** Hạn đã chọn ở bước lập phiếu (ISO), dùng làm giá trị đầu. */
   initial?: { householdDueDate?: string; companyDueDate?: string };
+  /** Phạm vi đã chọn ở bước lập phiếu; trống thì toàn xã. */
+  scope?: DraftScope;
   onClose: () => void;
 }
 
 /** Xem trước khoản của một kỳ dự thảo, chọn hạn hộ đóng rồi "Mở kỳ & phát hành" trong một bước. */
-export function OpenDraftPanel({ period, initial, onClose }: Props) {
+export function OpenDraftPanel({ period, initial, scope, onClose }: Props) {
   const [picked, setPicked] = useState<Dayjs | null>(initial?.householdDueDate ? dayjs(initial.householdDueDate) : null);
   const [duePicked, setDuePicked] = useState<Dayjs | null>(initial?.companyDueDate ? dayjs(initial.companyDueDate) : null);
   const [done, setDone] = useState<PublishPeriodResult | null>(null);
   // Kỳ mở ngay khi cán bộ xã bấm: ngày mở là hôm nay.
   const openDate = dayjs();
-  const schedule = { openDate: openDate.format(ISO), companyDueDate: duePicked?.format(ISO) };
+  const schedule = { ...scope, openDate: openDate.format(ISO), companyDueDate: duePicked?.format(ISO) };
   const preview = useDraftPreview(period.id, { ...schedule, householdDueDate: picked?.format(ISO) });
   const publish = usePublishPeriod();
 
@@ -122,9 +124,6 @@ export function OpenDraftPanel({ period, initial, onClose }: Props) {
             Mở kỳ & phát hành {result.chargeCount} khoản
           </Button>
         </Popconfirm>
-        <Button onClick={onClose} disabled={publishing}>
-          Để sau
-        </Button>
       </Space>
     </>
   );
