@@ -28,7 +28,7 @@
 | Kỳ thu                       | Khóa                                 | No                       | Full                | No | No                                 | No                        | No           |
 | Khoản thu                    | Phát hành & giao cho công ty         | No                       | Full                | No | No                                 | No                        | No           |
 | Khoản thu                    | Điều chỉnh / Bổ sung / Hủy           | No                       | Full                | No | No                                 | No                        | No           |
-| Khoản thu                    | Xem yêu cầu thu                      | No                       | Full                | Full | Restricted ¹ ⁵                     | No                        | No           |
+| Khoản thu                    | Xem yêu cầu thu                      | No                       | Full                | Full | Restricted ¹ ⁵                     | Restricted ²             | No           |
 | Khoản thu                    | Tra cứu nghĩa vụ                     | No                       | Full                | Full | No                                 | No                        | Restricted ³ |
 | Đề nghị miễn giảm / hoàn / xóa nợ | Tạo đề nghị | No | Full | No | No | No | No |
 | Đề nghị miễn giảm / hoàn / xóa nợ | Duyệt / Từ chối | No | No | Full | No | No | No |
@@ -43,6 +43,7 @@
 | Phiếu nộp tiền về xã         | Lập phiếu                            | No                       | No                  | No | Restricted ¹                       | No                        | No           |
 | Phiếu nộp tiền về xã         | Xác nhận                             | No                       | Full                | No | No                                 | No                        | No           |
 | Phiếu nộp tiền về xã         | Xem                                  | No                       | Full                | Full | Restricted ¹                       | No                        | No           |
+| Đối soát | Xem | No | Full | Full | Restricted ¹ | No | No |
 | Đối soát                     | Đối soát nội bộ                      | No                       | Full                | No | No                                 | No                        | No           |
 | Đối soát                     | Đối soát với đơn vị thu gom          | No                       | Full                | No | Restricted ¹                       | No                        | No           |
 | Đối soát                     | Xử lý chênh lệch / Mở lại            | No                       | Full                | No | No                                 | No                        | No           |
@@ -50,6 +51,7 @@
 | Đồng ý nhận thông báo        | Cập nhật                             | No                       | Full                | No | No                                 | No                        | Restricted ³ |
 | Thông báo                    | Phát hành / Bật lịch nhắc            | No                       | Full                | No | No                                 | No                        | No           |
 | Phản ánh                     | Gửi & theo dõi                       | No                       | No                  | No | No                                 | No                        | Restricted ³ |
+| Phản ánh | Xem | No | Full | Full | Restricted ³ | No | No |
 | Phản ánh                     | Tiếp nhận & xử lý                    | No                       | Full                | No | Restricted ³                       | No                        | No           |
 | Dashboard điều hành | Xem | No | No | Full | No | No | No |
 | Báo cáo thu                  | Xem / Xuất                           | No                       | Full                | Full | Restricted ¹                       | No                        | No           |
