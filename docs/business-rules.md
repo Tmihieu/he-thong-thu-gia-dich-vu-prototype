@@ -12,7 +12,7 @@ Cột "Kiểm" để các lane điền khi rà: ✔ khớp · ✘ lệch (ghi s�
 | BR-GEN-01 | Tiền là số nguyên VND (`long`/`bigint`), không số thực; hiển thị có dấu chấm nghìn + "đ" | SPEC §3 | Chốt | |
 | BR-GEN-02 | Ngày trong API `yyyy-MM-dd`, hiển thị `dd/MM/yyyy`; múi giờ `Asia/Ho_Chi_Minh` | SPEC §3 | Chốt | |
 | BR-GEN-03 | Mọi thao tác tạo/sửa tiền ghi audit (ai, lúc nào, trước/sau) | SPEC §8 | Chốt | |
-| BR-GEN-04 | Vai trò + phạm vi dữ liệu kiểm ở backend, không dựa vào ẩn nút. Công ty A gọi dữ liệu công ty B → 403/404; người đi thu gọi hộ ngoài tổ → 403/404 | SPEC §6, §7 | Chốt | |
+| BR-GEN-04 | Vai trò + phạm vi dữ liệu kiểm ở backend, không dựa vào ẩn nút. Công ty A gọi dữ liệu công ty B → 403/404 | SPEC §6, §7 | Chốt | |
 | BR-GEN-05 | Lỗi nghiệp vụ trả 409/422 kèm `code` + `message` tiếng Việt; giao diện hiện đúng `message` | SPEC §6 | Chốt | |
 | BR-GEN-06 | Mã chứng từ: kỳ tháng `MMYY`, kỳ quý `Q{quý}{YY}` (vd. `YCT-Q426-01`) | DD G11 | Chốt | |
 | BR-GEN-07 | Nhãn giao diện tiếng Việt có dấu; enum hiển thị qua `labels.ts`, không lộ mã tiếng Anh | SPEC §6 | Chốt | |
@@ -26,7 +26,7 @@ Cột "Kiểm" để các lane điền khi rà: ✔ khớp · ✘ lệch (ghi s�
 | BR-PLT-02 | Đăng nhập ra đúng menu theo vai trò; API sai vai trò → 403 | SPEC §9.2 | Chốt | |
 | BR-PLT-03 | Mật khẩu 8–72 ký tự, quá 72 byte → 422 `PASSWORD_TOO_LONG`; quản trị (hoặc quản lý công ty với người đi thu của mình, BR-PLT-08) đặt / đặt lại | DD T51 | Chốt | |
 | BR-PLT-04 | Quản trị không tự khóa, không tự đổi vai trò mình (`CANNOT_LOCK_SELF`, `CANNOT_CHANGE_OWN_ROLE`) | DD T51 | Chốt | |
-| BR-PLT-05 | Người đi thu còn phân tổ (kể cả tương lai) hoặc còn giữ tiền mặt → không đổi vai trò / công ty (`COLLECTOR_HAS_ASSIGNMENTS`, `COLLECTOR_HOLDS_CASH`) | DD T51 | Chốt | |
+| BR-PLT-05 | Người đi thu còn giữ tiền mặt → không đổi vai trò / công ty (`COLLECTOR_HOLDS_CASH`). Đã bỏ phân tổ nên không còn điều kiện `COLLECTOR_HAS_ASSIGNMENTS` | DD T51, góp ý BA 05/10 | Chốt | |
 | BR-PLT-06 | Khóa tài khoản chỉ chặn từ lần đăng nhập sau (token cũ còn tới hết hạn) | DD T51 | Demo | |
 | BR-PLT-07 | Lãnh đạo: chỉ GET, trừ `/api/leadership/**` và `/api/notifications/**`. Không khóa kỳ, không cấu hình, không tài khoản | SPEC §9.10 | Chốt | |
 | BR-PLT-08 | Quản lý công ty tự tạo, sửa họ tên / liên hệ, khóa / mở khóa, đặt lại mật khẩu **chỉ tài khoản `COLLECTOR` của công ty mình** (`/api/platform/collector-accounts`). Vai trò và công ty do máy chủ ép, không nhận từ client; tài khoản ngoài phạm vi → 404 `USER_NOT_FOUND`. Quản trị vẫn quản mọi tài khoản; ghi nhật ký như BR-PLT-03..06 | Quyết định 04/10 (mở rộng T51) | Chốt | |
@@ -36,7 +36,7 @@ Cột "Kiểm" để các lane điền khi rà: ✔ khớp · ✘ lệch (ghi s�
 | Mã | Rule | Nguồn | Trạng thái | Kiểm |
 |---|---|---|---|---|
 | BR-MD-01 | Mỗi khu vực (tổ/ấp/thôn) tối đa 1 công ty trong cùng khoảng hiệu lực; đổi công ty tạo bản ghi mới, giữ lịch sử, backend tự đóng phân công cũ | SPEC §9.3 | Chốt | |
-| BR-MD-02 | Khu vực đổi công ty → tự kết thúc phân tổ người đi thu của công ty cũ | DD G14 | Chốt | |
+| BR-MD-02 | Đã bỏ (góp ý BA 05/10): không còn phân tổ người đi thu nên đổi công ty của khu vực không còn kết thúc phân tổ | DD G14, góp ý BA 05/10 | Đã bỏ | |
 | BR-MD-03 | Công ty mã `DVnn` tự sinh; **chỉ quản trị thêm/sửa được** (ở `/admin/config`; cán bộ xã chỉ xem và phân công khu vực, từ 04/10 theo góp ý người dùng, thay QĐ-L1); vai trò khác 403; trạng thái **Đang hợp tác / Ngừng hợp tác** | DD T51, 29/09, QĐ-L1 04/10 | Chốt | |
 | BR-MD-04 | Công ty Ngừng hợp tác không nhận phân công khu vực mới (`COMPANY_INACTIVE`) | DD T51 | Chốt | |
 | BR-MD-05 | Công ty Ngừng hợp tác: khu vực đang phụ trách xử lý thế nào | DD T51 | **Chờ xã** (hiện giữ nguyên) | |
@@ -77,8 +77,8 @@ Cột "Kiểm" để các lane điền khi rà: ✔ khớp · ✘ lệch (ghi s�
 
 | Mã | Rule | Nguồn | Trạng thái | Kiểm |
 |---|---|---|---|---|
-| BR-COL-01 | Công ty phân tổ cho người đi thu; một người nhiều tổ, mỗi tổ tạm 1 người | DD O4 | Chốt | |
-| BR-COL-02 | Người đi thu chỉ thấy hộ trong tổ được giao; công ty chỉ thấy hộ/khoản của mình | SPEC §9.5 | Chốt | |
+| BR-COL-01 | Đã bỏ (góp ý BA 05/10): không còn phân tổ cho người đi thu | DD O4, góp ý BA 05/10 | Đã bỏ | |
+| BR-COL-02 | Người đi thu thu được mọi hộ có khoản của công ty mình; công ty chỉ thấy hộ/khoản của mình. Hệ thống ghi người nào đã thu khoản nào | SPEC §9.5, góp ý BA 05/10 | Chốt | |
 | BR-COL-03 | Hộ chỉ có 2 trạng thái **Đã đóng / Chưa đóng**: chỉ 2 cách đóng: **tiền mặt** cho người đi thu, hoặc **chuyển khoản VietQR** (ngân hàng báo về tự ghi, không ai tự bấm "đã chuyển khoản"); mỗi lần thu phải đúng bằng số cần đóng, khoản chuyển Đã thu ngay; không thu một phần, sai số → 422. "Đã thu" = Σ `Payment.amount` | 04/10 (thay DD G4) | Chốt | |
 | BR-COL-04 | Người đi thu chỉ có 2 nút: Đã thu tiền mặt / Đã thu chuyển khoản. Không ghi lượt ghé vắng / hẹn / từ chối: đã bỏ cả API và bảng `collection_visits` (V41, 04/10) | 03/10, 04/10 | Chốt | |
 | BR-COL-05 | Gửi trùng (cùng mã yêu cầu) không tạo 2 thanh toán | SPEC §9.5 | Chốt | |
@@ -89,7 +89,7 @@ Cột "Kiểm" để các lane điền khi rà: ✔ khớp · ✘ lệch (ghi s�
 | BR-COL-10 | Lịch sử hộ của người đi thu theo một kỳ, đổi kỳ bằng ô chọn kỳ | DD T53 | Chốt | |
 | BR-COL-11 | Báo sai thông tin hộ: chỉ phát thông báo INFO cho xã + công ty | DD G7 | Chốt | |
 | BR-COL-12 | Kỳ đã khóa: không sửa khoản / thanh toán của kỳ | SPEC §9.6 | Chốt | |
-| BR-COL-13 | Dân chuyển khoản qua mã VietQR trên app → ngân hàng báo về, khoản Đã thu, công ty và xã thấy ngay; không cần chờ phân tổ. App không tự ghi thanh toán | SPEC §9.9, 04/10 | Chốt | |
+| BR-COL-13 | Dân chuyển khoản qua mã VietQR trên app → tiền vào **tài khoản chung của xã** (quản trị khai báo), ngân hàng báo về, khoản Đã thu, công ty và xã thấy ngay. App không tự ghi thanh toán. Công ty không có tài khoản nhận | SPEC §9.9, 04/10, góp ý BA 05/10 | Chốt | |
 
 ## 5. Nộp về xã, đối soát, khóa kỳ (`remittance`)
 
@@ -99,12 +99,12 @@ Sổ công ty–kỳ là nguồn số duy nhất cho: Tiến độ, Đối soát
 |---|---|---|---|---|
 | BR-REM-01 | Phải thu (`due`) của công ty–kỳ = Σ khoản theo `company_id` chụp trên khoản, không tính khoản xóa nợ trong chính kỳ | DD G3, T57 | Chốt | |
 | BR-REM-02 | **Công ty cầm lại phần thu gom, chỉ nộp phần vận chuyển.** `retained` = Σ từng khoản `amount × collection_fee / monthly_total` (làm tròn đồng); khoản phí cố định không có phần cầm lại | 03/10 (thay O2 "nộp toàn bộ") | Chốt | |
-| BR-REM-03 | Phải nộp xã `payable = due − adjustment − retained`; còn phải nộp `remaining = payable − received`. Nợ kỳ trước và nhắc nộp theo `payable` | 03/10 | Chốt | |
+| BR-REM-03 | Phải nộp xã `payable = tiền mặt công ty đã thu − adjustment − retained`, trong đó `retained` tính trên **toàn bộ số đã thu** (cả chuyển khoản vào tài khoản xã), không tính trên phải thu. `payable` âm → xã trả lại công ty phần chênh. Còn phải nộp `remaining = payable − received`. Nợ kỳ trước và nhắc nộp theo `payable` | 03/10, góp ý BA 05/10 | Chốt | |
 | BR-REM-04 | Phiếu thu xã lập khi công ty nộp: 1 phiếu 1 kỳ, 1 kỳ nhiều phiếu; 0 < số tiền ≤ còn phải nộp; mã `PT-CT-MMYY-nnn`; in có số tiền bằng chữ | SPEC §9.6 | Chốt | |
 | BR-REM-05 | Phiếu sai: không sửa, không hủy; lập phiếu mới. Sai sót "Đã xử lý" = đóng kèm ghi chú. Kỳ đã khóa: chỉ đóng kèm ghi chú | DD G6, P2 | Demo | |
 | BR-REM-06 | Nhắc nộp: chỉ công ty có nợ quá hạn; giữ lịch sử | SPEC §9.6, DD D6 | Chốt | |
 | BR-REM-07 | Đối soát: chênh lệch = đã nộp − công ty đã thu; trạng thái Khớp / Đang nộp / Lệch. Trạng thái đối soát không phải điều kiện khóa kỳ | SPEC §9.6, flows | Chốt | |
-| BR-REM-08 | Khóa kỳ bị chặn khi bất kỳ công ty còn phải nộp > 0 (không cần quá hạn; gồm cả nghĩa vụ từ khoản hộ chưa đóng), báo lý do rõ | DD G15, flows | Chốt | |
+| BR-REM-08 | Khóa kỳ chỉ được khi **mọi công ty đã nộp đủ** số phải nộp xã (tính trên đã thu), **và** kỳ đã thu đủ mọi khoản **hoặc** đã đến hạn nộp; không thì chặn, báo lý do rõ. Khoản hộ chưa đóng khi khóa thành **công nợ của hộ**: hộ nộp được ở kỳ sau, tiền tính vào kỳ đang thu | DD G15, flows, góp ý BA 05/10 | Chốt | |
 | BR-REM-09 | Sau khóa: không sửa khoản / thanh toán / phiếu thu của kỳ | SPEC §9.6 | Chốt | |
 | BR-REM-10 | Cờ dưới 45%: cấp công ty theo đã nộp / phải thu; cấp tổ theo đã thu / phải thu; so số nguyên | DD P4 | Chốt | |
 | BR-REM-11 | Vòng tỷ lệ thu ở Đối soát: < 25% đỏ, 25–< 50% vàng, 50–< 75% cam, ≥ 75% xanh lá; "Thu 3 tháng gần nhất" chỉ kỳ tháng | 29/09 | Chốt | |
@@ -150,7 +150,7 @@ Sổ công ty–kỳ là nguồn số duy nhất cho: Tiến độ, Đối soát
 | Mã | Rule | Nguồn | Trạng thái | Kiểm |
 |---|---|---|---|---|
 | BR-CIT-01 | Đăng nhập SĐT + OTP cố định (mô phỏng); 1 SĐT ↔ 1 hộ, 1 hộ nhiều tài khoản | DD O7, D11 | Demo | |
-| BR-CIT-02 | Dân chỉ thấy dữ liệu của hộ mình: thông tin hộ, khoản phải đóng + lịch sử, xác nhận thanh toán, lịch thu gom theo khu vực | SPEC §9.9 | Chốt | |
+| BR-CIT-02 | Dân chỉ thấy dữ liệu của hộ mình: thông tin hộ, khoản phải đóng + lịch sử, xác nhận thanh toán. Đã bỏ lịch thu gom (góp ý BA 05/10) | SPEC §9.9, góp ý BA 05/10 | Chốt | |
 | BR-CIT-03 | ~~Thanh toán mô phỏng~~ → bỏ 04/10: app chỉ hiện mã VietQR cho khoản Chưa thu của hộ mình và chờ ngân hàng báo về; công ty chưa khai tài khoản thì báo đóng tiền mặt | SPEC §9.9, 04/10 | Chốt | |
 | BR-CIT-04 | Rác cồng kềnh: Chờ xác nhận → Đã báo phí → Đã thu gom / Hủy; công ty phụ trách theo khu vực báo phí; phí không thành khoản thu | SPEC §9.9, O5 | Chốt | |
 | BR-CIT-05 | Chợ đồ cũ v2: caption + 1–4 tag (Tìm/Bán/Cho tặng/Đổi) + danh mục + ≤ 5 ảnh (≤ 5 MB, JPEG/PNG/WebP, không bắt buộc), không có giá; đóng/mở lại, ẩn/hiện; bình luận + SĐT tự nguyện; lưu bài; chặn hai chiều; thông báo bình luận; không kiểm duyệt. Vai trò nội bộ chỉ đọc. Chi tiết: `docs/cho-do-cu-spec.md` (thay quy tắc T47 cũ) | 30/09 | Chốt | |

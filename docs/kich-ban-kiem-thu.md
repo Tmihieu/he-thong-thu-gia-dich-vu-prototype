@@ -2,6 +2,8 @@
 
 Bản 05/10/2026, viết theo code hiện tại (nhánh `fix/gop-y-ba-0510`) và `docs/business-rules.md`. Thay phần §10 của `docs/demo-runbook.md` ở những chỗ đã cũ: người đi thu không còn ghi vắng/hẹn/thu một phần, rác cồng kềnh đã bỏ, lãnh đạo không còn màn duyệt đề nghị trên web.
 
+**Lưu ý 06/10:** `docs/use-cases.md` đã sửa theo góp ý BA 05/10 (xem `docs/thay-doi-gop-y-0510.md`), code demo chưa đổi theo. Dòng nào ghi **(chưa có trong bản demo)** thì cột Kết quả nêu theo nghiệp vụ chuẩn; chạy trên demo hiện tại sẽ ra hành vi cũ ghi sau chữ "Demo hiện:", không tính là lỗi.
+
 Đi theo thứ tự từ trên xuống: mỗi phần dùng dữ liệu phần trước tạo ra. Cột **Đạt** để đánh dấu khi chạy; dòng **✗** là case lỗi, phải bị chặn đúng thông báo.
 
 ## 0. Chuẩn bị
@@ -45,30 +47,32 @@ Mật khẩu chung `Demo@2026`. Mở F12 ở mọi cửa sổ: chạy hết kị
 | 2.3 | `admin` → Cấu hình → Kỳ thu | **Tạo kỳ dự thảo** tháng **10/2026** (chỉ chọn loại, năm, tháng) | Kỳ 10/2026 hiện ngay **đầu** bảng, trạng thái **Dự thảo**, gắn `BG-65-2026`, cột Ngày mở và Hạn công ty nộp để trống; `canbo_xa` có thông báo kỳ chờ mở | |
 | 2.4 ✗ | `admin` | Tạo lại kỳ 10/2026 lần nữa | "Kỳ … đã được tạo trước đó." | |
 | 2.5 | `admin` → Kỳ thu → thẻ **Tự tạo kỳ thu** | Bật quy tắc tháng, ngày tạo 1, hộ đóng 15 ngày, nộp xã 10 ngày → **Lưu quy tắc** | Lưu được; không tạo kỳ trùng với kỳ 10 vừa tạo | |
-| 2.6 | `admin` → Công ty & địa bàn | Xem 11 công ty DV01–DV11 | Trạng thái Đang hợp tác; có tài khoản ngân hàng tạm | |
+| 2.6 | `admin` → Công ty & địa bàn | Xem 11 công ty DV01–DV11 | Trạng thái Đang hợp tác. Chuẩn: hồ sơ công ty không có tài khoản ngân hàng (tài khoản nhận chuyển khoản là của xã, do quản trị khai báo, UC-54) **(chưa có trong bản demo)**. Demo hiện: còn tài khoản ngân hàng tạm của từng công ty, chưa có chỗ khai báo tài khoản của xã | |
 
 ## 3. Luồng 1 — Mở kỳ và phát hành khoản thu (BF-01)
 
 | # | Vai trò | Thao tác | Kết quả mong đợi | Đạt |
 |---|---|---|---|---|
-| 3.1 | `canbo_xa` → Khu vực | Mở **Ấp 47** → **Phân công** cho **DV01** | Ấp 47 hiện DV01 trên bảng và bản đồ; **Lịch sử** có dòng mới | |
+| 3.1 | `canbo_xa` → Khu vực | Mở **Ấp 47** → **Phân công** cho **DV01** | Ấp 47 hiện DV01 trên bảng; **Lịch sử** có dòng mới. Chuẩn: không còn bản đồ khu vực (UC-14 bỏ) **(chưa có trong bản demo)**. Demo hiện: còn hiện trên bản đồ và kéo thả vị trí | |
 | 3.2 ✗ | `canbo_xa` → Khu vực | Phân công Ấp 39 (đang là DV01) cho DV02 cùng khoảng ngày | Báo "Khu vực … đang do … phụ trách." hoặc tự đóng phân công cũ theo BR-MD-01 — ghi lại hành vi thật | |
 | 3.3 | `canbo_xa` → Khoản thu → Phiếu YCT → **Lập phiếu YCT** | Ô Kỳ thu: **Tháng 10/2026** nằm trên cùng; chọn nó, đặt hạn công ty nộp xã **31/10/2026** → **Xem trước** | Danh sách khoản + tổng tiền; hộ miễn 100% (`DTH-H000149`) là 0 đ | |
-| 3.4 ✗ | `canbo_xa` (màn xem trước) | Đặt hạn hộ đóng **sau** 31/10/2026 | "Hạn hộ đóng không được sau hạn công ty nộp xã của kỳ …" | |
-| 3.5 | `canbo_xa` | Hạn hộ đóng hợp lệ (vd. 20/10) → **Mở kỳ & phát hành** → xác nhận | Kỳ 10/2026 thành **Đang thu**; có phiếu `YCT-1026-01`; khoản sinh cho các hộ có đăng ký hiệu lực | |
+| 3.4 ✗ | `canbo_xa` (màn xem trước) | Đặt hạn hộ đóng **sau** 31/10/2026 | Chuẩn: kỳ chỉ có một hạn nộp (hạn công ty nộp xã, hộ đóng trong hạn này), không có ô hạn hộ đóng riêng nên không có case này **(chưa có trong bản demo)**. Demo hiện: còn ô hạn hộ đóng, báo "Hạn hộ đóng không được sau hạn công ty nộp xã của kỳ …" | |
+| 3.5 | `canbo_xa` | Chuẩn: không nhập hạn hộ đóng; Demo hiện: nhập hạn hộ đóng hợp lệ (vd. 20/10). Rồi **Mở kỳ & phát hành** → xác nhận | Kỳ 10/2026 thành **Đang thu**; có phiếu `YCT-1026-01`; khoản sinh cho các hộ có đăng ký hiệu lực | |
 | 3.6 | `canbo_xa` → Khoản thu → Phiếu YCT | **Lập phiếu YCT** cùng kỳ, toàn xã → **Xem trước** | Các hộ đã có khoản bị bỏ qua kèm cảnh báo trùng, không sinh khoản thứ 2 | |
 | 3.7 | `dv01` → Khu vực được giao → Tổng quan | Chọn kỳ 10/2026 | Thấy tổng phải thu kỳ 10, gồm cả hộ Ấp 47 vừa nhận | |
 | 3.8 | Người dân `0902000128` | Trang chủ | Có thông báo khoản mới; **Khoản phí phải đóng** có khoản kỳ 10/2026 | |
 
 ## 4. Luồng 2 — Thu tiền, nộp về xã, khóa kỳ (BF-02)
 
-### 4a. Phân tổ và thu tiền mặt
+### 4a. Thu tiền mặt (phân tổ đã bỏ)
+
+Chuẩn (UC-18 bỏ): không phân tổ; người đi thu thu được mọi hộ có khoản của công ty, hệ thống ghi ai đã thu khoản nào. Bản demo còn phân tổ nên 4.1 và 4.3 chạy theo hành vi cũ.
 
 | # | Vai trò | Thao tác | Kết quả mong đợi | Đạt |
 |---|---|---|---|---|
-| 4.1 | `dv01` → Khu vực được giao → Phân tổ | **Phân tổ cho người đi thu**: Ấp 47 → `thu07` | Dòng mới; `thu07` thấy thêm hộ Ấp 47 | |
-| 4.2 | `dv01` → Người đi thu | **Thêm** một người đi thu mới, rồi **Đặt lại mật khẩu**, **Khóa** | Làm được, chỉ với người của DV01 | |
-| 4.3 | `thu07` → Danh sách thu | Kỳ 10/2026 | Chỉ thấy hộ Ấp 39 + Ấp 47; mỗi hộ **Đã đóng / Chưa đóng** | |
+| 4.1 | `dv01` → Khu vực được giao → Phân tổ | **Phân tổ cho người đi thu**: Ấp 47 → `thu07` | Chuẩn: bỏ bước này, `thu07` thấy sẵn mọi hộ của DV01 gồm Ấp 47 **(chưa có trong bản demo)**. Demo hiện: dòng mới; `thu07` thấy thêm hộ Ấp 47 | |
+| 4.2 | `dv01` → Người đi thu | **Thêm** một người đi thu mới, rồi **Đặt lại mật khẩu**, **Khóa** | Chuẩn: quản trị viên tạo tài khoản người đi thu cho từng công ty (UC-04), công ty không tự thêm **(chưa có trong bản demo)**. Demo hiện: làm được, chỉ với người của DV01 | |
+| 4.3 | `thu07` → Danh sách thu | Kỳ 10/2026 | Chuẩn: thấy mọi hộ có khoản của DV01 **(chưa có trong bản demo)**. Demo hiện: chỉ thấy hộ Ấp 39 + Ấp 47 (tổ được giao). Mỗi hộ **Đã đóng / Chưa đóng** | |
 | 4.4 | `thu07` | Hộ thứ nhất → **Đã thu tiền mặt** → **Xác nhận đã thu** | Hộ thành **Đã đóng**; có mã xác nhận `TT-1026-…` | |
 | 4.5 | `thu07` | Làm tiếp một hộ thứ hai | Như trên | |
 | 4.6 ✗ | `thu07` | Bấm lại hộ đã đóng | Không còn nút thu; nếu gọi được thì "Khoản … đã thu đủ." | |
@@ -84,7 +88,7 @@ Mật khẩu chung `Demo@2026`. Mở F12 ở mọi cửa sổ: chạy hết kị
 | 4.11 ✗ | Máy | Chạy lại lệnh trên lần nữa | Không tạo thanh toán thứ 2; giao dịch vào **Chuyển khoản chờ đối chiếu** (khoản đã đóng) | |
 | 4.12 ✗ | Máy | Gửi sai số tiền (vd. thiếu 1.000) cho một khoản Chưa đóng khác | Khoản vẫn Chưa đóng; dòng lý do "sai số tiền" ở **Chuyển khoản chờ đối chiếu** | |
 | 4.13 | `thu07` | Hộ Chưa đóng → mở QR "Quét mã để chuyển khoản" → **Mô phỏng chuyển khoản** | "Giao dịch thành công"; hộ Đã đóng, không cộng vào tiền mặt đang giữ | |
-| 4.14 | `dv01` → Chuyển khoản chờ đối chiếu | Xem | Có 5 dòng seed (không mã, sai tiền, sai tài khoản, đã đóng) + các dòng ở 4.11–4.12 | |
+| 4.14 | `canbo_xa` → Chuyển khoản chờ đối chiếu | Xem | Chuẩn: **cán bộ xã** xem (UC-27), công ty không xem **(chưa có trong bản demo)**. Demo hiện: màn này hiện cho `dv01`. Có 5 dòng seed (không mã, sai tiền, sai tài khoản, đã đóng) + các dòng ở 4.11–4.12 | |
 
 ### 4c. Bàn giao tiền mặt
 
@@ -104,7 +108,7 @@ Mật khẩu chung `Demo@2026`. Mở F12 ở mọi cửa sổ: chạy hết kị
 | 4.21 ✗ | `canbo_xa` → Khoản thu → Phiếu thu công ty → kỳ 09 → **Lập phiếu** DV01 | Số tiền **lớn hơn** "còn phải nộp" | "Số tiền phải lớn hơn 0 và không vượt số còn phải nộp …" | |
 | 4.22 | `canbo_xa` | Lập phiếu DV01 kỳ 09 đúng bằng còn phải nộp | Phiếu `PT-CT-0926-…`; **Bản in phiếu thu** có số tiền bằng chữ; kỳ 09 DV01 đã nộp đủ; Tiến độ kỳ 10 hết "Nợ kỳ trước" | |
 | 4.23 | `canbo_xa` | Kỳ 10 → Lập phiếu DV01 số **nhỏ hơn** còn phải nộp | Tiến độ thu: **Nộp một phần**; Đối soát: **Đang nộp** | |
-| 4.24 | `canbo_xa` → Tiến độ thu | So số DV01 kỳ 10 với `dv01` → Tổng quan và Đối soát | Phải thu / đã thu / đã nộp **khớp nhau** ở cả 3 màn (BR-REM-12). Phải nộp xã = phải thu − phần thu gom công ty giữ | |
+| 4.24 | `canbo_xa` → Tiến độ thu | So số DV01 kỳ 10 với `dv01` → Tổng quan và Đối soát | Phải thu / đã thu / đã nộp **khớp nhau** ở cả 3 màn (BR-REM-12). Chuẩn: phải nộp xã = tiền mặt công ty đã thu − điều chỉnh kỳ trước − phí thu gom của toàn bộ số đã thu (cả chuyển khoản); âm thì xã trả lại công ty phần chênh **(chưa có trong bản demo)**. Demo hiện: phải nộp xã = phải thu − điều chỉnh − phần thu gom công ty giữ (tính trên phải thu) | |
 
 ### 4e. Sai sót phiếu thu
 
@@ -118,9 +122,9 @@ Mật khẩu chung `Demo@2026`. Mở F12 ở mọi cửa sổ: chạy hết kị
 
 | # | Vai trò | Thao tác | Kết quả mong đợi | Đạt |
 |---|---|---|---|---|
-| 4.28 ✗ | `canbo_xa` → Đối soát → kỳ 10/2026 → **Khóa kỳ** | DV01 mới nộp một phần | "Chưa khóa được kỳ … vì còn … công ty chưa nộp đủ: …" nêu tên công ty | |
+| 4.28 ✗ | `canbo_xa` → Đối soát → kỳ 10/2026 → **Khóa kỳ** | DV01 mới nộp một phần | "Chưa khóa được kỳ … vì còn … công ty chưa nộp đủ: …" nêu tên công ty. Chuẩn: chỉ khóa được khi mọi công ty nộp đủ (tính trên đã thu) **và** kỳ đã thu đủ mọi khoản hoặc đã đến hạn nộp; demo chưa xét điều kiện hạn nộp | |
 | 4.29 ✗ | `lanhdao` → Đối soát | Tìm nút Khóa kỳ | Không có (chỉ xem) | |
-| 4.30 | (tùy chọn) `canbo_xa` | Kỳ 09: lập phiếu cho mọi công ty còn nợ tới khi hết → **Khóa kỳ** 09 | Khóa được; `dv01` → Hộ được giao kỳ 09: nút **Ghi thu** mờ, tooltip "Kỳ đã khóa" | |
+| 4.30 | (tùy chọn) `canbo_xa` | Kỳ 09: lập phiếu cho mọi công ty còn nợ tới khi hết → **Khóa kỳ** 09 | Khóa được; `dv01` → Hộ được giao kỳ 09: nút **Ghi thu** mờ, tooltip "Kỳ đã khóa". Chuẩn: hộ chưa đóng thành **công nợ của hộ**, hộ nộp được ở kỳ sau và tiền tính vào kỳ đang thu **(chưa có trong bản demo)**; demo hiện chặn thu luôn, không chuyển nợ | |
 
 ## 5. Quy trình con F — Miễn giảm, hoàn, xóa nợ (lãnh đạo duyệt)
 

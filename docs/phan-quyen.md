@@ -2,7 +2,7 @@
 | ------------------------------ | ------------------------------------------------------------ | -------------------- | ------------------------ | ------------------- | ------------------ | ---------------------------- | ------------------------- | ------------ |
 | Phiên đăng nhập                | Đăng nhập / Đăng xuất                                        | UC-01, UC-02         | Full                     | Full                | Full               | Full                         | Full                      | Full         |
 | Tài khoản nội bộ               | Tạo / Sửa / Gán vai trò / Khóa / Mở khóa / Đặt lại mật khẩu  | UC-03                | Full                     | No                  | No                 | No                           | No                        | No           |
-| Tài khoản người đi thu         | Tạo / Sửa / Khóa / Mở khóa / Đặt lại mật khẩu                | UC-04                | Full                     | No                  | No                 | Restricted ¹                 | No                        | No           |
+| Tài khoản người đi thu         | Tạo / Sửa / Khóa / Mở khóa / Đặt lại mật khẩu                | UC-04                | Full                     | No                  | No                 | No                           | No                        | No           |
 | Hồ sơ hộ/cơ sở                 | Nhập từ Excel                                                | UC-05                | No                       | Full                | No                 | No                           | No                        | No           |
 | Hồ sơ hộ/cơ sở                 | Tạo / Sửa (kèm số nhân khẩu)                                 | UC-06, UC-08         | No                       | Full                | No                 | No                           | No                        | No           |
 | Hồ sơ hộ/cơ sở                 | Xem / Tra cứu                                                | UC-07, UC-12, UC-33  | No                       | Full                | No                 | Restricted ¹                 | Restricted ²              | Restricted ³ |
@@ -10,13 +10,10 @@
 | Hồ sơ hộ/cơ sở                 | Báo chuyển đi / sai thông tin                                | UC-11                | No                       | No                  | No                 | No                           | Restricted ²              | No           |
 | Đăng ký thu phí                | Thêm / Sửa / Kết thúc                                        | UC-06, UC-09         | No                       | Full                | No                 | No                           | No                        | No           |
 | Danh mục đường                 | Thêm                                                         | UC-06                | No                       | Full                | No                 | No                           | No                        | No           |
-| Lịch thu gom                   | Xem                                                          | UC-12                | No                       | No                  | No                 | No                           | No                        | Restricted ³ |
 | Địa bàn, khu vực               | Sửa                                                          | UC-13                | Full                     | No                  | No                 | No                           | No                        | No           |
-| Vị trí khu vực trên bản đồ     | Cập nhật                                                     | UC-14                | No                       | Full                | No                 | No                           | No                        | No           |
 | Công ty môi trường             | Tạo / Sửa / Đổi trạng thái hợp tác                           | UC-15                | Full                     | No                  | No                 | No                           | No                        | No           |
 | Công ty môi trường             | Xem                                                          | UC-15, UC-16         | Full                     | Full                | No                 | No                           | No                        | No           |
 | Phân công khu vực              | Phân công cho công ty                                        | UC-17                | No                       | Full                | No                 | No                           | No                        | No           |
-| Phân tổ người đi thu           | Phân tổ / Kết thúc                                           | UC-18                | No                       | No                  | No                 | Restricted ¹                 | No                        | No           |
 | Biểu giá                       | Lập dự thảo / Ban hành / Xem lịch sử                         | UC-19                | Full                     | No                  | No                 | No                           | No                        | No           |
 | Kỳ thu                         | Tạo dự thảo / Đặt quy tắc tự tạo                             | UC-20                | Full                     | No                  | No                 | No                           | No                        | No           |
 | Khoản phải thu                 | Lập phiếu yêu cầu thu và phát hành (mở kỳ)                   | UC-21                | No                       | Full                | No                 | No                           | No                        | No           |
@@ -25,7 +22,7 @@
 | Thanh toán                     | Hiển thị mã VietQR cho hộ                                    | UC-24                | No                       | No                  | No                 | No                           | Restricted ²              | No           |
 | Thanh toán                     | Chuyển khoản bằng VietQR                                     | UC-25                | No                       | No                  | No                 | No                           | No                        | Restricted ³ |
 | Thanh toán                     | Xem lịch sử / xác nhận thanh toán                            | UC-22, UC-30, UC-31  | No                       | Full                | No                 | No                           | Restricted ²              | Restricted ³ |
-| Giao dịch chuyển khoản         | Xem giao dịch chờ đối chiếu                                  | UC-27                | No                       | No                  | No                 | Restricted ¹                 | No                        | No           |
+| Giao dịch chuyển khoản         | Xem giao dịch chờ đối chiếu                                  | UC-27                | No                       | Full                | No                 | No                           | No                        | No           |
 | Tiền mặt người đi thu          | Nhận bàn giao                                                | UC-28                | No                       | No                  | No                 | Restricted ¹                 | No                        | No           |
 | Tiền mặt người đi thu          | Xem số đang giữ / lịch sử bàn giao                           | UC-29, UC-33         | No                       | No                  | No                 | Restricted ¹                 | Restricted ³              | No           |
 | Tiến độ thu và nộp             | Xem                                                          | UC-16, UC-32, UC-33  | No                       | Full                | Full               | Restricted ¹                 | No                        | No           |
@@ -50,6 +47,7 @@
 | Tin đăng                       | Duyệt / Gỡ / Cho hiển thị lại / Quản lý từ khóa lọc          | UC-51                | No                       | Full                | No                 | No                           | No                        | No           |
 | Nhật ký thao tác               | Xem                                                          | UC-52                | Full                     | No                  | No                 | No                           | No                        | No           |
 | Dữ liệu nền (Jmix)             | Xem / Sửa                                                    | UC-53                | Full                     | No                  | No                 | No                           | No                        | No           |
+| Tài khoản nhận chuyển khoản    | Khai báo                                                     | UC-54                | Full                     | No                  | No                 | No                           | No                        | No           |
 
 **Ý nghĩa giá trị trong ô:**
 
@@ -60,7 +58,7 @@
 **Chú thích cho Restricted:**
 
 - ¹ Chỉ dữ liệu của công ty mình: các khu vực được giao, hộ/cơ sở trong các khu vực đó, người đi thu và phiếu thu của công ty.
-- ² Chỉ các tổ được giao cho người đi thu đó và hộ/cơ sở trong các tổ đó.
+- ² Chỉ hộ/cơ sở có khoản phải thu của công ty người đi thu đó, không giới hạn theo tổ.
 - ³ Chỉ dữ liệu của chính mình. Người dân: hộ đã liên kết với tài khoản, tin đăng của mình, phản ánh của hộ. Người đi thu: tiền mặt mình đang giữ. Thông báo: thông báo gửi đến mình.
 - ⁴ Chỉ các phản ánh cán bộ xã đã chuyển cho công ty.
 - ⁵ Chỉ được xem, không được sửa.
