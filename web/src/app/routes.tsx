@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Navigate, type RouteObject } from 'react-router';
 
 import { ChargesHubPage } from '../features/billing/ChargesHubPage';
+import { BankTransfersPage } from '../features/collection/BankTransfersTab';
 import { CollectorAccountPage } from '../features/collection/CollectorAccountPage';
 import { CollectorCashPage } from '../features/collection/CollectorCashPage';
 import { CollectorAccountsPage } from '../features/collection/CollectorAccountsPage/CollectorAccountsPage';
@@ -41,6 +42,7 @@ const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'COMMUNE_OFFICER:charges': <ChargesHubPage />,
   'COMMUNE_OFFICER:progress': <ProgressPage />,
   'COMMUNE_OFFICER:reconciliation': <ReconciliationPage />,
+  'COMMUNE_OFFICER:transfers': <BankTransfersPage />,
   'COMMUNE_OFFICER:complaints': <CommuneComplaintsPage />,
   'COMMUNE_OFFICER:market': <MarketModerationPage />,
   'LEADER:dashboard': <LeaderDashboardPage />,

@@ -13,7 +13,6 @@ const draft = {
 };
 const preview = {
   period: draft,
-  dueDate: '2026-11-16',
   result: {
     requestCode: null, chargeCount: 211, exemptCount: 5, totalAmount: 14_394_000, warningCount: 9,
     skipped: [{ subjectId: 300, subjectCode: 'NB-H000461', subjectName: 'Hộ Mẫu', areaCode: 'KV24', reason: 'AREA_WITHOUT_COMPANY',
@@ -35,7 +34,7 @@ function bodyOf(fetchFn: ReturnType<typeof mockApi>, url: string) {
 
 describe('Khoản thu · kỳ chờ mở', () => {
   // Tạm tắt: mục Kỳ chờ mở không còn hiển thị ở màn Khoản thu.
-  it.skip('liệt kê kỳ dự thảo, xem trước số khoản với hạn hộ đóng mặc định, xác nhận rồi mở kỳ & phát hành', async () => {
+  it.skip('liệt kê kỳ dự thảo, xem trước số khoản xác nhận rồi mở kỳ & phát hành', async () => {
     let drafts = [draft];
     const fetchFn = mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
@@ -60,8 +59,7 @@ describe('Khoản thu · kỳ chờ mở', () => {
     expect(await within(drawer).findByText('211')).toBeInTheDocument();
     expect(within(drawer).getByText(/14\.394\.000/)).toBeInTheDocument();
     expect(within(drawer).getByText('Tổ chưa có công ty phụ trách: 9 hộ')).toBeInTheDocument();
-    expect(within(drawer).getByLabelText('Hạn hộ đóng')).toHaveValue('16/11/2026');
-    // Chưa chọn ngày thì xem trước theo quy tắc của quản trị.
+    expect(within(drawer).getByLabelText('Hạn nộp')).toHaveValue('10/12/2026');
     expect(bodyOf(fetchFn, '/api/billing/periods/9/draft-preview')).toEqual({});
 
     await userEvent.click(within(drawer).getByRole('button', { name: /Mở kỳ & phát hành 211 khoản/ }));
@@ -69,7 +67,7 @@ describe('Khoản thu · kỳ chờ mở', () => {
 
     expect(await within(drawer).findByText('Đã mở kỳ Tháng 11/2026')).toBeInTheDocument();
     expect(within(drawer).getByText(/YCT-1126-01/)).toBeInTheDocument();
-    expect(bodyOf(fetchFn, '/api/billing/periods/9/publish')).toEqual({ householdDueDate: '2026-11-16' });
+    expect(bodyOf(fetchFn, '/api/billing/periods/9/publish')).not.toHaveProperty('householdDueDate');
   });
 
   it('chưa có kỳ nào chờ mở thì ẩn mục kỳ chờ mở', async () => {

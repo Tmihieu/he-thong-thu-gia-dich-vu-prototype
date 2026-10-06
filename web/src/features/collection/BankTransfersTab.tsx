@@ -5,6 +5,7 @@ import { api } from '../../api/client';
 import type { components } from '../../api/schema';
 import { formatDate } from '../../shared/format';
 import { MoneyText } from '../../shared/MoneyText';
+import { PageHeader } from '../../shared/PageHeader';
 import { ErrorBlock } from '../../shared/StateBlock';
 import { StatusTag } from '../../shared/StatusTag';
 
@@ -13,14 +14,14 @@ type BankTransfer = components['schemas']['BankTransferDto'];
 const REASON_LABELS: Record<NonNullable<BankTransfer['reason']>, string> = {
   NO_CODE: 'Nội dung không có mã khoản thu',
   CHARGE_NOT_FOUND: 'Mã khoản thu không tồn tại',
-  WRONG_ACCOUNT: 'Tiền vào tài khoản không phải của công ty phụ trách khoản',
+  WRONG_ACCOUNT: 'Tiền vào tài khoản không phải của xã (hoặc xã chưa khai tài khoản)',
   AMOUNT_MISMATCH: 'Số tiền khác số phải thu',
   CHARGE_NOT_COLLECTABLE: 'Khoản đã thu, được miễn hoặc kỳ đã khóa',
 };
 
 /**
- * Chuyển khoản chờ đối chiếu của công ty: giao dịch SePay báo về nhưng hệ thống không tự ghi được vào khoản thu nào
- * (sai số tiền, thiếu mã...). Chỉ để xem; công ty liên hệ hộ để thu thêm hoặc trả lại.
+ * Chuyển khoản chờ đối chiếu (UC-27, cán bộ xã): giao dịch SePay báo về nhưng hệ thống không tự ghi được vào khoản thu nào
+ * (sai số tiền, thiếu mã...). Chỉ để xem; cán bộ xã liên hệ hộ và công ty để xử lý.
  */
 // ponytail: chưa có nút gắn giao dịch vào khoản / đánh dấu đã xử lý; thêm khi thực tế có phát sinh.
 export function BankTransfersTab() {
@@ -32,8 +33,8 @@ export function BankTransfersTab() {
   return (
     <>
       <Typography.Paragraph type="secondary">
-        Tiền đã vào tài khoản công ty nhưng hệ thống không tự ghi nhận được. Khoản thu của hộ chưa đổi trạng thái; liên hệ hộ để
-        thu thêm hoặc trả lại.
+        Tiền đã vào tài khoản của xã nhưng hệ thống không tự ghi nhận được. Khoản thu của hộ chưa đổi trạng thái; liên hệ hộ và
+        công ty phụ trách để xử lý.
       </Typography.Paragraph>
       <Table<BankTransfer>
         rowKey="id"
@@ -55,6 +56,15 @@ export function BankTransfersTab() {
           },
         ]}
       />
+    </>
+  );
+}
+
+export function BankTransfersPage() {
+  return (
+    <>
+      <PageHeader title="Chuyển khoản chờ đối chiếu" description="Giao dịch vào tài khoản của xã mà hệ thống chưa khớp được với khoản phải thu." />
+      <BankTransfersTab />
     </>
   );
 }

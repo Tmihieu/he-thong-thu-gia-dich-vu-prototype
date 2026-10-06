@@ -69,8 +69,8 @@ export function usePublishCharges() {
 }
 
 /**
- * Xem trước các khoản sẽ lập khi mở kỳ dự thảo (chỉ đọc, không ghi khoản); {@code householdDueDate} trống thì theo
- * quy tắc của quản trị, kết quả trả lại hạn đã dùng.
+ * Xem trước các khoản sẽ lập khi mở kỳ dự thảo (chỉ đọc, không ghi khoản); {@code companyDueDate} (hạn nộp duy nhất của kỳ)
+ * trống thì giữ hạn của dự thảo.
  */
 export type DraftPreviewParams = Omit<PublishPeriodRequest, 'note'>;
 /** Phạm vi phiếu cán bộ xã chọn khi mở kỳ dự thảo; trống = toàn xã. */
@@ -78,7 +78,7 @@ export type DraftScope = Pick<PublishPeriodRequest, 'feeTypeId' | 'scopeType' | 
 
 export function useDraftPreview(periodId: number | null, params: DraftPreviewParams = {}) {
   return useQuery({
-    queryKey: [...billingKeys.draftPreview, periodId, { ...params, householdDueDate: params.householdDueDate ?? 'default' }],
+    queryKey: [...billingKeys.draftPreview, periodId, params],
     queryFn: () => api.post<DraftPreview>(`/api/billing/periods/${periodId}/draft-preview`, params),
     enabled: periodId !== null,
     placeholderData: (prev) => prev,

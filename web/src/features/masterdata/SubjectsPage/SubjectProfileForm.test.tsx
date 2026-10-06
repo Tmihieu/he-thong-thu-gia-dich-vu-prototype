@@ -15,8 +15,8 @@ vi.mock('../api', async (importOriginal) => ({
 }));
 
 const areas: Area[] = [
-  { id: 24, code: 'KV24', name: 'Tổ dân phố 24', districtId: 3, districtCode: 'NB', status: 'ACTIVE', subjectCount: 9, latitude: null, longitude: null },
-  { id: 25, code: 'KV25', name: 'Tổ dân phố 25', districtId: 4, districtCode: 'DTH', status: 'ACTIVE', subjectCount: 2, latitude: null, longitude: null },
+  { id: 24, code: 'KV24', name: 'Tổ dân phố 24', districtId: 3, districtCode: 'NB', status: 'ACTIVE', subjectCount: 9 },
+  { id: 25, code: 'KV25', name: 'Tổ dân phố 25', districtId: 4, districtCode: 'DTH', status: 'ACTIVE', subjectCount: 2 },
 ];
 const existing: Subject = {
   id: 128, code: 'DTH-H000128', subjectType: 'HOUSEHOLD', name: 'Nguyễn Văn Mẫu', address: 'Số 12 đường Mẫu', houseNo: 'Số 12', street: 'đường Mẫu',

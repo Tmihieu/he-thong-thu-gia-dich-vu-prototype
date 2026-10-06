@@ -10,7 +10,7 @@ const admin = { id: 1, username: 'admin', fullName: 'Quản trị hệ thống',
 const companies = [
   { id: 1, code: 'DV01', name: 'Công ty MTĐT Đông Thạnh', contactName: 'A', contactPhone: '0900000001', status: 'ACTIVE',
     validFrom: '2026-01-01', validTo: null, orgType: null, taxCode: null, address: null, email: null,
-    communeContractNo: null, bankAccount: null, bankName: null },
+    communeContractNo: null },
 ];
 const account = (over: object) => ({
   id: 1, username: 'admin', fullName: 'Quản trị hệ thống', role: 'ADMIN', companyId: null, phone: null, email: null,

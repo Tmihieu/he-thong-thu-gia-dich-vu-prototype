@@ -17,7 +17,7 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   username: 'Tên đăng nhập', fullName: 'Họ và tên', role: 'Vai trò', companyId: 'Công ty', phone: 'Số điện thoại',
   email: 'Email', organization: 'Đơn vị', locked: 'Đã khóa', lastLoginAt: 'Đăng nhập gần nhất',
   contactName: 'Người đầu mối', contactPhone: 'SĐT đầu mối', orgType: 'Loại hình', taxCode: 'Mã số thuế',
-  address: 'Địa chỉ', bankAccount: 'Số tài khoản', bankName: 'Ngân hàng', communeContractNo: 'Số hợp đồng với xã',
+  address: 'Địa chỉ', bankAccount: 'Số tài khoản', bankName: 'Ngân hàng', accountNumber: 'Số tài khoản', accountHolder: 'Chủ tài khoản', communeContractNo: 'Số hợp đồng với xã',
   validFrom: 'Hiệu lực từ', validTo: 'Hiệu lực đến', fromDate: 'Từ ngày', toDate: 'Đến ngày', decisionNo: 'Số văn bản',
   areaId: 'Khu vực', areaCode: 'Mã khu vực', districtId: 'Địa bàn', districtCode: 'Mã địa bàn', companyCode: 'Mã công ty',
   subjectId: 'Đối tượng', subjectType: 'Loại đối tượng', subjectCode: 'Mã đối tượng', tariffGroup: 'Nhóm giá',

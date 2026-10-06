@@ -72,7 +72,6 @@ export function ChargeRequestTab() {
           { title: 'Loại phí', dataIndex: 'feeTypeName' },
           { title: 'Phạm vi', dataIndex: 'scopeType', render: (s: ChargeRequestSummary['scopeType']) => CHARGE_SCOPE_LABELS[s] },
           { title: 'Ngày lập', dataIndex: 'issueDate', render: (d: string) => <DateText value={d} /> },
-          { title: 'Hạn đóng', dataIndex: 'dueDate', render: (d: string) => <DateText value={d} /> },
           { title: 'Số khoản', dataIndex: 'chargeCount', align: 'right' },
           { title: 'Tổng tiền', dataIndex: 'totalAmount', align: 'right', render: (v: number) => <MoneyText value={v} /> },
         ]}
@@ -113,7 +112,7 @@ export function ChargeRequestTab() {
             </Button>
             <OpenDraftPanel
               period={step.period}
-              initial={{ householdDueDate: step.req.dueDate, companyDueDate: step.companyDueDate }}
+              initial={{ companyDueDate: step.companyDueDate }}
               scope={{
                 feeTypeId: step.req.feeTypeId,
                 scopeType: step.req.scopeType,

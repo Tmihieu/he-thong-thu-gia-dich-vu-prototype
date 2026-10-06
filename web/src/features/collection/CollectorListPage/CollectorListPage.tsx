@@ -154,8 +154,8 @@ export function CollectorListPage() {
         <LoadingBlock rows={6} />
       ) : visible.length === 0 ? (
         <EmptyBlock
-          title={items.length === 0 ? 'Chưa có hộ nào trong tổ được giao' : 'Không có hộ phù hợp'}
-          hint={items.length === 0 ? 'Công ty chưa phân tổ cho bạn hoặc kỳ này chưa có khoản thu.' : 'Thử bỏ bớt bộ lọc hoặc đổi từ khóa tìm.'}
+          title={items.length === 0 ? 'Chưa có hộ nào của công ty' : 'Không có hộ phù hợp'}
+          hint={items.length === 0 ? 'Kỳ này công ty chưa có khoản thu.' : 'Thử bỏ bớt bộ lọc hoặc đổi từ khóa tìm.'}
         />
       ) : (
         <ul className="clm-cards">

@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
 import { App, Button, Card, Col, Progress, Row, Space, Table, theme, Typography } from 'antd';
 import { type ReactNode, useMemo, useState } from 'react';
 
@@ -15,12 +15,22 @@ import { remittanceKeys, useCompanyLedger } from '../../remittance/api';
 import { LedgerStats } from '../../remittance/LedgerStats';
 import { cappedRate, rateBand } from '../../remittance/rateBand';
 import { PROGRESS_TONES } from '../../remittance/tones';
-import { type CashHeld, collectionKeys, type Handover, useCashHeld, useCollectorAssignments, useCompanyWork, useHandovers } from '../api';
+import {
+  type CashHeld,
+  type CollectorCharge,
+  type CollectorPayment,
+  collectionKeys,
+  type Handover,
+  useCashHeld,
+  useCollectorPayments,
+  useCompanyWork,
+  useHandovers,
+} from '../api';
 import { CompanyHouseholdsPage } from '../CompanyHouseholdsPage/CompanyHouseholdsPage';
 import type { WorkChip } from '../workState';
 import { CashReceiveForm, type CashReceiveRequest } from './CashReceiveForm';
 
-type CollectorRow = CashHeld & { assigned: number; assignedAmount: number; paid: number; paidAmount: number; overdue: number };
+type CollectorRow = CashHeld & { paid: number; paidAmount: number };
 
 const pct = (v: number | undefined) => (Math.round((v ?? 0) * 10) / 10).toLocaleString('vi-VN');
 const Sub = ({ children }: { children: ReactNode }) => (
@@ -75,11 +85,33 @@ function RingCard({ loading, color, percent, hasData, label, value, note, onOpen
   );
 }
 
+/** Lịch sử thu của một người đi thu (UC-33), mở khi bấm dòng. */
+function CollectorPayments({ collectorId }: { collectorId: number }) {
+  const payments = useCollectorPayments(collectorId);
+  return (
+    <Table<CollectorPayment>
+      size="small"
+      rowKey="id"
+      loading={payments.isLoading}
+      dataSource={payments.data ?? []}
+      pagination={{ pageSize: 10, hideOnSinglePage: true }}
+      locale={{ emptyText: payments.error ? apiErrorText(payments.error) : 'Chưa thu khoản nào' }}
+      columns={[
+        { title: 'Mã', dataIndex: 'code' },
+        { title: 'Thời gian', dataIndex: 'paidAt', render: (d: string) => <DateText value={d} withTime /> },
+        { title: 'Hộ', render: (_, p) => `${p.subjectName} (${p.subjectCode})` },
+        { title: 'Kỳ', dataIndex: 'periodCode' },
+        { title: 'Số tiền', dataIndex: 'amount', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+      ]}
+    />
+  );
+}
+
 const errorText = (e: unknown) => (e ? apiErrorText(e) : null);
 
 /**
  * Tổng quan của công ty (theo prototype rsCompanyAssigned): 3 vòng tiến độ (tiền lấy nguyên dòng sổ công ty–kỳ T24);
- * tiến độ theo tài khoản người đi thu + nhận tiền mặt (G5); danh sách hộ được giao; lịch sử bàn giao.
+ * tiến độ theo người đi thu đã thu (UC-33) + nhận tiền mặt (G5); danh sách hộ của công ty; lịch sử bàn giao.
  */
 export function CompanyOverviewPage() {
   const { message } = App.useApp();
@@ -88,7 +120,7 @@ export function CompanyOverviewPage() {
   const [periodId, setPeriodId] = useState<number>();
   const [receiving, setReceiving] = useState<CashHeld | null>(null);
   const [chip, setChip] = useState<WorkChip>('ALL');
-  const [, setTab] = useTabParam(['overview', 'collectors', 'receipts'], 'overview');
+  const [, setTab] = useTabParam(['overview', 'receipts'], 'overview');
   const showPaidHouseholds = () => {
     setChip('PAID');
     document.getElementById('company-households')?.scrollIntoView?.({ behavior: 'smooth' });
@@ -106,7 +138,6 @@ export function CompanyOverviewPage() {
     },
   });
   const work = useCompanyWork(periodId);
-  const assignments = useCollectorAssignments();
   const row = ledger.data?.[0];
 
   const items = useMemo(() => work.data ?? [], [work.data]);
@@ -118,23 +149,20 @@ export function CompanyOverviewPage() {
     }),
     [items],
   );
-  // ponytail: hộ tính cho người đang phụ trách tổ (không theo người đã xác nhận thu); tách theo người xác nhận cần API trả collectorId của khoản.
-  const collectorRows = useMemo<CollectorRow[]>(() => {
-    const byArea = new Map((assignments.data ?? []).map((a) => [a.areaId, a.collectorId]));
-    return (cash.data ?? []).map((c) => {
-      const mine = items.filter((w) => byArea.get(w.charge.areaId) === c.collectorId);
-      const paid = mine.filter((w) => w.charge.status === 'PAID');
-      return {
-        ...c,
-        assigned: mine.length,
-        assignedAmount: mine.reduce((t, w) => t + w.charge.amount, 0),
-        paid: paid.length,
-        paidAmount: mine.reduce((t, w) => t + w.paidAmount, 0),
-        overdue: mine.filter((w) => w.charge.status === 'UNPAID' && w.charge.overdue).length,
-      };
-    });
-  }, [cash.data, assignments.data, items]);
-  const loadError = ledger.error ?? cash.error ?? handovers.error ?? assignments.error;
+  // UC-33: mỗi người đi thu một lần gọi company-work?collectorId= (khoản người đó đã thu trong kỳ).
+  const perCollector = useQueries({
+    queries: (cash.data ?? []).map((c) => ({
+      queryKey: [...collectionKeys.companyWork, periodId, c.collectorId],
+      queryFn: () =>
+        api.get<CollectorCharge[]>('/api/collection/company-work', { params: { periodId, collectorId: c.collectorId } }),
+      enabled: periodId !== undefined,
+    })),
+  });
+  const collectorRows = (cash.data ?? []).map<CollectorRow>((c, i) => {
+    const mine = perCollector[i]?.data ?? [];
+    return { ...c, paid: mine.length, paidAmount: mine.reduce((t, w) => t + w.paidAmount, 0) };
+  });
+  const loadError = ledger.error ?? cash.error ?? handovers.error ?? perCollector.find((q) => q.error)?.error;
 
   return (
     <>
@@ -202,10 +230,11 @@ export function CompanyOverviewPage() {
         <Table<CollectorRow>
           size="small"
           rowKey="collectorId"
+          expandable={{ expandedRowRender: (c) => <CollectorPayments collectorId={c.collectorId} /> }}
           loading={cash.isLoading}
           dataSource={collectorRows}
           pagination={false}
-          locale={{ emptyText: <EmptyBlock title="Công ty chưa có người đi thu" hint="Quản trị tạo tài khoản người đi thu, sau đó phân tổ ở tab Phân tổ." /> }}
+          locale={{ emptyText: <EmptyBlock title="Công ty chưa có người đi thu" hint="Quản trị viên tạo tài khoản người đi thu cho công ty." /> }}
           columns={[
             {
               title: 'Tài khoản',
@@ -217,34 +246,9 @@ export function CompanyOverviewPage() {
               ),
             },
             {
-              title: 'Hộ được giao',
+              title: 'Hộ đã thu',
               align: 'right',
-              render: (_, c) => (
-                <>
-                  <div>{c.assigned}</div>
-                  <Sub>
-                    <MoneyText value={c.assignedAmount} />
-                  </Sub>
-                </>
-              ),
-            },
-            {
-              title: 'Tiến độ thu',
-              width: 220,
-              render: (_, c) => (
-                <>
-                  <Progress
-                    size="small"
-                    percent={c.assigned ? (c.paid / c.assigned) * 100 : 0}
-                    format={(p) => `${pct(p)}%`}
-                    style={{ marginBottom: 0 }}
-                  />
-                  <Sub>
-                    {c.paid} đã thu · {c.assigned - c.paid} chưa thu
-                    {c.overdue > 0 && <Typography.Text type="danger"> · {c.overdue} quá hạn</Typography.Text>}
-                  </Sub>
-                </>
-              ),
+              render: (_, c) => <div>{c.paid}</div>,
             },
             {
               title: 'Đã thu',

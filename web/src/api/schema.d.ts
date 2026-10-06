@@ -21,23 +21,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/platform/collector-accounts/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Sửa họ tên, liên hệ của người đi thu (tên đăng nhập không đổi) */
-        put: operations["update"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/masterdata/tariffs/{id}": {
         parameters: {
             query?: never;
@@ -65,7 +48,7 @@ export interface paths {
         /** Chi tiết hồ sơ hộ */
         get: operations["get"];
         /** Sửa thông tin đối tượng (cán bộ xã); hợp đồng sửa qua /contracts/{id} */
-        put: operations["update_1"];
+        put: operations["update"];
         post?: never;
         delete?: never;
         options?: never;
@@ -83,7 +66,7 @@ export interface paths {
         /** Quy tắc tự tạo kỳ thu dự thảo (quản trị) */
         get: operations["get_1"];
         /** Sửa quy tắc tự tạo kỳ thu: bật/tắt, chu kỳ, ngày tạo, số ngày hạn (quản trị) */
-        put: operations["update_2"];
+        put: operations["update_1"];
         post?: never;
         delete?: never;
         options?: never;
@@ -143,6 +126,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/masterdata/commune-bank-account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Xem tài khoản nhận chuyển khoản của xã (mọi vai trò nội bộ); 404 nếu chưa khai */
+        get: operations["get_2"];
+        /** Khai báo / sửa tài khoản nhận chuyển khoản của xã (quản trị viên) */
+        put: operations["save"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/masterdata/areas/{id}": {
         parameters: {
             query?: never;
@@ -160,23 +161,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/masterdata/areas/{id}/location": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Đặt vị trí khu vực trên bản đồ (cán bộ xã, quản trị) */
-        put: operations["moveArea"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/citizen/market/saved/{postId}": {
         parameters: {
             query?: never;
@@ -186,7 +170,7 @@ export interface paths {
         };
         get?: never;
         /** Lưu bài */
-        put: operations["save"];
+        put: operations["save_1"];
         post?: never;
         /** Bỏ lưu (cả bài không còn xem được) */
         delete: operations["unsave"];
@@ -387,75 +371,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/platform/collector-accounts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Danh sách tài khoản người đi thu của công ty mình (quản lý công ty) */
-        get: operations["list_3"];
-        put?: never;
-        /** Tạo tài khoản người đi thu thuộc công ty của người gọi */
-        post: operations["create_1"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/platform/collector-accounts/{id}/unlock": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Mở khóa tài khoản người đi thu */
-        post: operations["unlock"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/platform/collector-accounts/{id}/password": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Đặt lại mật khẩu người đi thu */
-        post: operations["resetPassword"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/platform/collector-accounts/{id}/lock": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Khóa tài khoản người đi thu */
-        post: operations["lock_1"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/platform/auth/login": {
         parameters: {
             query?: never;
@@ -587,7 +502,7 @@ export interface paths {
         get: operations["search"];
         put?: never;
         /** Tạo hồ sơ hộ, kèm hợp đồng đầu tiên nếu có (cán bộ xã) */
-        post: operations["create_2"];
+        post: operations["create_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -689,7 +604,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Bổ sung đường vào danh mục (cán bộ xã, có nhật ký) */
-        post: operations["create_3"];
+        post: operations["create_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -704,7 +619,7 @@ export interface paths {
             cookie?: never;
         };
         /** Danh sách kỳ thu đã mở, mới nhất trước (không gồm kỳ dự thảo); có date thì chỉ các kỳ chứa ngày đó */
-        get: operations["list_4"];
+        get: operations["list_3"];
         put?: never;
         /** Tạo kỳ thu tháng/quý dự thảo (quản trị) và báo cán bộ xã; cán bộ xã đặt ngày mở, hạn nộp rồi mở kỳ */
         post: operations["open"];
@@ -827,10 +742,10 @@ export interface paths {
             cookie?: never;
         };
         /** Đề nghị (xã, lãnh đạo, quản trị); lọc trạng thái / loại; mới nhất trước */
-        get: operations["list_5"];
+        get: operations["list_4"];
         put?: never;
         /** Cán bộ xã lập đề nghị hoàn (khoản đã thu) hoặc xóa nợ (khoản chưa thu); thông báo lãnh đạo */
-        post: operations["create_4"];
+        post: operations["create_3"];
         delete?: never;
         options?: never;
         head?: never;
@@ -879,10 +794,10 @@ export interface paths {
             cookie?: never;
         };
         /** Danh sách khiếu nại, mới nhất trước; công ty chỉ thấy khiếu nại đã chuyển cho mình (G12) */
-        get: operations["list_6"];
+        get: operations["list_5"];
         put?: never;
         /** Cán bộ xã ghi nhận khiếu nại qua điện thoại / trực tiếp */
-        post: operations["create_5"];
+        post: operations["create_4"];
         delete?: never;
         options?: never;
         head?: never;
@@ -949,7 +864,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Người đi thu báo hộ của một khoản trong tổ được giao đã chuyển đi / sai thông tin; thông báo tới xã và công ty */
+        /** Người đi thu báo hộ của một khoản của công ty đã chuyển đi / sai thông tin; thông báo tới xã và công ty */
         post: operations["reportSubject"];
         delete?: never;
         options?: never;
@@ -968,41 +883,6 @@ export interface paths {
         put?: never;
         /** Ghi nhận hộ đã đóng tiền mặt (đúng số cần đóng); chuyển khoản chỉ ghi tự động khi ngân hàng báo về qua VietQR. Gửi lại cùng clientRequestId trả kết quả cũ (200) */
         post: operations["pay"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/collection/collector-assignments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Phân tổ đang hiệu lực vào ngày (mặc định hôm nay), theo phạm vi người gọi */
-        get: operations["assignments"];
-        put?: never;
-        /** Phân tổ cho người đi thu (quản lý công ty); người cũ của tổ kết thúc vào ngày trước */
-        post: operations["assign_1"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/collection/collector-assignments/{id}/end": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Kết thúc phân tổ vào ngày endDate (quản lý công ty) */
-        post: operations["end_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1105,7 +985,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Đăng bài; khớp từ khóa lọc thì chờ cán bộ xã duyệt; retry cùng clientRequestId trả bài cũ */
-        post: operations["create_6"];
+        post: operations["create_5"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1188,7 +1068,7 @@ export interface paths {
             cookie?: never;
         };
         /** Phản ánh của hộ, mới nhất trước */
-        get: operations["list_7"];
+        get: operations["list_6"];
         put?: never;
         /** Gửi phản ánh (kênh APP); vị trí để trống thì lấy địa chỉ hộ */
         post: operations["submit"];
@@ -1343,7 +1223,7 @@ export interface paths {
             cookie?: never;
         };
         /** Một phiếu thu (để in: số tiền bằng chữ, lũy kế, còn phải nộp) */
-        get: operations["get_2"];
+        get: operations["get_3"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1378,6 +1258,23 @@ export interface paths {
         };
         /** Tiến độ thu theo tổ trong kỳ (công ty theo khoản đã phát hành; tổ chưa có công ty đánh dấu). Công ty chỉ thấy tổ của mình */
         get: operations["areaProgress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/platform/collector-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Danh sách tài khoản người đi thu của công ty mình (quản lý công ty) */
+        get: operations["list_7"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1513,7 +1410,7 @@ export interface paths {
             cookie?: never;
         };
         /** Chi tiết kỳ thu */
-        get: operations["get_3"];
+        get: operations["get_4"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1582,23 +1479,6 @@ export interface paths {
         };
         /** Danh sách khu vực / tổ dân phố, lọc theo địa bàn nếu có */
         get: operations["areas"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/masterdata/areas/{id}/schedules": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Lịch thu gom của khu vực */
-        get: operations["schedules"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1785,7 +1665,7 @@ export interface paths {
             cookie?: never;
         };
         /** Chi tiết khiếu nại kèm timeline */
-        get: operations["get_4"];
+        get: operations["get_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1801,7 +1681,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Danh sách thu của người đi thu: khoản trong tổ được giao, kèm đã thu */
+        /** Danh sách thu của người đi thu: mọi khoản của công ty mình, kèm đã thu */
         get: operations["myWork"];
         put?: never;
         post?: never;
@@ -1818,7 +1698,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Khoản của hộ trong các tổ được giao (người đi thu) */
+        /** Khoản của mọi hộ thuộc công ty (người đi thu) */
         get: operations["myCharges"];
         put?: never;
         post?: never;
@@ -1835,7 +1715,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Một khoản trong phạm vi người đi thu; ngoài tổ được giao → 404 */
+        /** Một khoản của công ty người đi thu; công ty khác → 404 */
         get: operations["myCharge"];
         put?: never;
         post?: never;
@@ -1852,7 +1732,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Hộ được giao của công ty: khoản các tổ công ty phụ trách, kèm đã thu */
+        /** Khoản của công ty, kèm đã thu; lọc theo tổ / tình trạng; collectorId: chỉ khoản người đó đã thu (UC-33) */
         get: operations["companyWork"];
         put?: never;
         post?: never;
@@ -1879,6 +1759,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/collection/collectors/{collectorId}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lịch sử thu của một người đi thu của công ty, mới trước (UC-33, quản lý công ty) */
+        get: operations["collectorPayments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/collection/charges/{id}/transfer-info": {
         parameters: {
             query?: never;
@@ -1886,7 +1783,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Thông tin chuyển khoản của một khoản: tài khoản công ty, số tiền cần đóng, mã nội dung */
+        /** Thông tin chuyển khoản của một khoản: tài khoản của xã, số tiền cần đóng, mã nội dung */
         get: operations["transferInfo"];
         put?: never;
         post?: never;
@@ -1956,23 +1853,6 @@ export interface paths {
         };
         /** Chuyển khoản chờ đối chiếu (không tự khớp được với khoản thu); công ty chỉ thấy của mình */
         get: operations["unmatched"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/citizen/schedule": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Lịch thu gom của tổ hộ đang ở */
-        get: operations["schedule"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2193,7 +2073,7 @@ export interface paths {
             cookie?: never;
         };
         /** Chi tiết phản ánh kèm timeline (của hộ khác trả 404) */
-        get: operations["get_5"];
+        get: operations["get_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2318,12 +2198,6 @@ export interface components {
             status: "ACTIVE" | "LOCKED";
             /** Format: date-time */
             lastLoginAt: string | null;
-        };
-        UpdateCollectorRequest: {
-            fullName: string;
-            phone?: string;
-            /** Format: email */
-            email?: string;
         };
         RateRequest: {
             /** @enum {string} */
@@ -2558,8 +2432,6 @@ export interface components {
             /** Format: email */
             email?: string;
             communeContractNo?: string;
-            bankAccount?: string;
-            bankName?: string;
         };
         CompanyDto: {
             /** Format: int64 */
@@ -2581,8 +2453,16 @@ export interface components {
             address: string | null;
             email: string | null;
             communeContractNo: string | null;
-            bankAccount: string | null;
-            bankName: string | null;
+        };
+        SaveRequest: {
+            bankName: string;
+            accountNumber: string;
+            accountHolder: string;
+        };
+        CommuneBankAccountDto: {
+            bankName: string;
+            accountNumber: string;
+            accountHolder: string;
         };
         AreaRequest: {
             name: string;
@@ -2606,22 +2486,6 @@ export interface components {
              * @description Số đối tượng chưa chấm dứt
              */
             subjectCount: number;
-            /**
-             * Format: double
-             * @description Vĩ độ điểm đại diện
-             */
-            latitude: number | null;
-            /**
-             * Format: double
-             * @description Kinh độ điểm đại diện
-             */
-            longitude: number | null;
-        };
-        AreaLocationRequest: {
-            /** Format: double */
-            latitude: number;
-            /** Format: double */
-            longitude: number;
         };
         SavedStateDto: {
             saved: boolean;
@@ -2861,15 +2725,6 @@ export interface components {
             password: string;
         };
         PasswordRequest: {
-            password: string;
-        };
-        CreateCollectorRequest: {
-            /** @example thu07b */
-            username: string;
-            fullName: string;
-            phone?: string;
-            /** Format: email */
-            email?: string;
             password: string;
         };
         LoginRequest: {
@@ -3308,37 +3163,6 @@ export interface components {
             /** @description true khi gửi lại cùng clientRequestId */
             replayed: boolean;
         };
-        AssignCollectorRequest: {
-            /** Format: int64 */
-            collectorId: number;
-            areaIds: number[];
-            /** Format: date */
-            fromDate: string;
-            note?: string;
-        };
-        CollectorAssignmentDto: {
-            /** Format: int64 */
-            id: number;
-            /** Format: int64 */
-            collectorId: number;
-            collectorUsername: string;
-            collectorName: string;
-            /** Format: int64 */
-            areaId: number;
-            areaCode: string;
-            areaName: string;
-            /** Format: int64 */
-            companyId: number;
-            /** Format: date */
-            validFrom: string;
-            /** Format: date */
-            validTo: string | null;
-            note: string | null;
-        };
-        EndAssignmentRequest: {
-            /** Format: date */
-            endDate: string;
-        };
         HandoverRequest: {
             /** Format: int64 */
             collectorId: number;
@@ -3527,14 +3351,9 @@ export interface components {
             openDate?: string;
             /**
              * Format: date
-             * @description Hạn công ty nộp xã; trống thì giữ hạn của dự thảo
+             * @description Hạn nộp (hạn duy nhất của kỳ); trống thì giữ hạn của dự thảo
              */
             companyDueDate?: string;
-            /**
-             * Format: date
-             * @description Hạn hộ đóng; trống thì theo quy tắc của quản trị
-             */
-            householdDueDate?: string;
             /**
              * Format: int64
              * @description Loại phí; trống thì phí vệ sinh môi trường
@@ -3599,14 +3418,9 @@ export interface components {
             openDate?: string;
             /**
              * Format: date
-             * @description Hạn công ty nộp xã; trống thì giữ hạn của dự thảo
+             * @description Hạn nộp (hạn duy nhất của kỳ); trống thì giữ hạn của dự thảo
              */
             companyDueDate?: string;
-            /**
-             * Format: date
-             * @description Hạn hộ đóng; trống thì theo quy tắc của quản trị
-             */
-            householdDueDate?: string;
             /**
              * Format: int64
              * @description Loại phí; trống thì phí vệ sinh môi trường
@@ -3632,11 +3446,6 @@ export interface components {
         };
         DraftPreviewDto: {
             period: components["schemas"]["PeriodDto"];
-            /**
-             * Format: date
-             * @description Hạn hộ đóng đã dùng để tính xem trước
-             */
-            dueDate: string;
             result: components["schemas"]["IssueResultDto"];
         };
         IssueRequest: {
@@ -3653,11 +3462,6 @@ export interface components {
              * @description Bắt buộc khi scopeType = COMPANY
              */
             companyId?: number;
-            /**
-             * Format: date
-             * @description Hạn hộ đóng, không sau hạn công ty nộp xã
-             */
-            dueDate: string;
             /**
              * Format: int64
              * @description Chỉ với loại phí giá cố định; trống thì dùng giá mặc định
@@ -3892,30 +3696,6 @@ export interface components {
             defaultPrice: number | null;
             active: boolean;
         };
-        CollectionScheduleDto: {
-            /** Format: int64 */
-            id: number;
-            /** Format: int64 */
-            areaId: number;
-            /**
-             * Format: int32
-             * @description 1 = Thứ 2 … 7 = Chủ nhật (ISO)
-             * @example 3
-             */
-            weekday: number;
-            /**
-             * Format: int32
-             * @description Null = hằng tuần; 1 = tuần đầu tháng
-             */
-            weekOfMonth: number | null;
-            /** @example 17:00:00 */
-            startTime: string;
-            /** @example 19:00:00 */
-            endTime: string;
-            /** @enum {string} */
-            wasteType: "HOUSEHOLD" | "HOUSEHOLD_RECYCLABLE" | "BULKY";
-            note: string | null;
-        };
         PageDtoMarketPostDto: {
             items: components["schemas"]["MarketPostDto"][];
             /** Format: int64 */
@@ -4014,11 +3794,14 @@ export interface components {
             months: number;
             /** Format: int64 */
             amount: number;
-            /** Format: date */
+            /**
+             * Format: date
+             * @description Hạn nộp của kỳ (hạn duy nhất)
+             */
             dueDate: string;
             /** @enum {string} */
             status: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
-            /** @description Chưa thu và đã qua hạn đóng */
+            /** @description Chưa thu và đã qua hạn nộp của kỳ */
             overdue: boolean;
             /**
              * Format: int64
@@ -4070,11 +3853,27 @@ export interface components {
             phone: string | null;
             active: boolean;
         };
+        CollectorPaymentDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example TT-1026-000123 */
+            code: string;
+            /** Format: date-time */
+            paidAt: string;
+            /** Format: int64 */
+            amount: number;
+            /** @enum {string} */
+            method: "CASH" | "TRANSFER" | "APP_SIMULATED" | "REFUND";
+            /** Format: int64 */
+            chargeId: number;
+            chargeCode: string;
+            periodCode: string;
+            subjectCode: string;
+            subjectName: string;
+        };
         TransferInfoDto: {
-            /** @description Công ty đã khai tài khoản ngân hàng */
-            configured: boolean;
-            bankName: string | null;
-            bankAccount: string | null;
+            bankName: string;
+            bankAccount: string;
             accountHolder: string;
             /**
              * Format: int64
@@ -4133,42 +3932,6 @@ export interface components {
             companyId: number | null;
             /** Format: date-time */
             createdAt: string;
-        };
-        CitizenScheduleDto: {
-            /** @example KV07 */
-            areaCode: string;
-            areaName: string;
-            districtName: string;
-            company: components["schemas"]["ServingCompanyDto"];
-            lines: components["schemas"]["ScheduleLineDto"][];
-        };
-        ScheduleLineDto: {
-            /**
-             * Format: int32
-             * @description 1 = Thứ 2 … 7 = Chủ nhật (ISO)
-             */
-            weekday: number;
-            /**
-             * Format: int32
-             * @description Null = hằng tuần; 1 = tuần đầu tháng
-             */
-            weekOfMonth: number | null;
-            /** @example 17:00:00 */
-            startTime: string;
-            /** @example 19:00:00 */
-            endTime: string;
-            /** @enum {string} */
-            wasteType: "HOUSEHOLD" | "HOUSEHOLD_RECYCLABLE" | "BULKY";
-            note: string | null;
-        };
-        ServingCompanyDto: {
-            /** Format: int64 */
-            id: number;
-            /** @example DV01 */
-            code: string;
-            name: string;
-            contactName: string;
-            contactPhone: string;
         };
         PaymentConfirmationDto: {
             /** Format: int64 */
@@ -4249,6 +4012,15 @@ export interface components {
             districtCode: string;
             districtName: string;
         };
+        ServingCompanyDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example DV01 */
+            code: string;
+            name: string;
+            contactName: string;
+            contactPhone: string;
+        };
         MarketSavedDto: {
             /** Format: int64 */
             postId: number;
@@ -4320,11 +4092,14 @@ export interface components {
             coverageFrom: string;
             /** Format: date */
             coverageTo: string;
-            /** Format: date */
+            /**
+             * Format: date
+             * @description Hạn nộp của kỳ (hạn duy nhất)
+             */
             dueDate: string;
             /** @enum {string} */
             status: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
-            /** @description Chưa thu và đã qua hạn đóng */
+            /** @description Chưa thu và đã qua hạn nộp của kỳ */
             overdue: boolean;
             /** Format: date-time */
             paidAt: string | null;
@@ -4343,8 +4118,6 @@ export interface components {
             scopeType: "ALL" | "AREAS" | "COMPANY";
             /** Format: date */
             issueDate: string;
-            /** Format: date */
-            dueDate: string;
             /** Format: int64 */
             unitPrice: number | null;
             /** Format: int64 */
@@ -4375,32 +4148,6 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UpdateUserRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["UserDto"];
-                };
-            };
-        };
-    };
-    update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateCollectorRequest"];
             };
         };
         responses: {
@@ -4463,7 +4210,7 @@ export interface operations {
             };
         };
     };
-    update_1: {
+    update: {
         parameters: {
             query?: never;
             header?: never;
@@ -4509,7 +4256,7 @@ export interface operations {
             };
         };
     };
-    update_2: {
+    update_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -4633,6 +4380,50 @@ export interface operations {
             };
         };
     };
+    get_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CommuneBankAccountDto"];
+                };
+            };
+        };
+    };
+    save: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CommuneBankAccountDto"];
+                };
+            };
+        };
+    };
     updateArea: {
         parameters: {
             query?: never;
@@ -4659,33 +4450,7 @@ export interface operations {
             };
         };
     };
-    moveArea: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AreaLocationRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["AreaDto"];
-                };
-            };
-        };
-    };
-    save: {
+    save_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -5096,120 +4861,6 @@ export interface operations {
             };
         };
     };
-    list_3: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["UserDto"][];
-                };
-            };
-        };
-    };
-    create_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateCollectorRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["UserDto"];
-                };
-            };
-        };
-    };
-    unlock: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["UserDto"];
-                };
-            };
-        };
-    };
-    resetPassword: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PasswordRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["UserDto"];
-                };
-            };
-        };
-    };
-    lock_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["UserDto"];
-                };
-            };
-        };
-    };
     login: {
         parameters: {
             query?: never;
@@ -5418,7 +5069,7 @@ export interface operations {
             };
         };
     };
-    create_2: {
+    create_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -5572,7 +5223,7 @@ export interface operations {
             };
         };
     };
-    create_3: {
+    create_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -5596,7 +5247,7 @@ export interface operations {
             };
         };
     };
-    list_4: {
+    list_3: {
         parameters: {
             query?: {
                 date?: string;
@@ -5848,7 +5499,7 @@ export interface operations {
             };
         };
     };
-    list_5: {
+    list_4: {
         parameters: {
             query?: {
                 status?: "PENDING" | "APPROVED" | "REJECTED";
@@ -5871,7 +5522,7 @@ export interface operations {
             };
         };
     };
-    create_4: {
+    create_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -5947,7 +5598,7 @@ export interface operations {
             };
         };
     };
-    list_6: {
+    list_5: {
         parameters: {
             query?: {
                 status?: "NEW" | "PROCESSING" | "RESOLVED";
@@ -5969,7 +5620,7 @@ export interface operations {
             };
         };
     };
-    create_5: {
+    create_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -6117,78 +5768,6 @@ export interface operations {
             };
         };
     };
-    assignments: {
-        parameters: {
-            query?: {
-                date?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["CollectorAssignmentDto"][];
-                };
-            };
-        };
-    };
-    assign_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AssignCollectorRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["CollectorAssignmentDto"][];
-                };
-            };
-        };
-    };
-    end_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EndAssignmentRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["CollectorAssignmentDto"];
-                };
-            };
-        };
-    };
     simulate: {
         parameters: {
             query?: never;
@@ -6324,7 +5903,7 @@ export interface operations {
             };
         };
     };
-    create_6: {
+    create_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -6451,7 +6030,7 @@ export interface operations {
             };
         };
     };
-    list_7: {
+    list_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -6713,7 +6292,7 @@ export interface operations {
             };
         };
     };
-    get_2: {
+    get_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -6775,6 +6354,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["AreaProgressDto"][];
+                };
+            };
+        };
+    };
+    list_7: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UserDto"][];
                 };
             };
         };
@@ -6936,7 +6535,7 @@ export interface operations {
             };
         };
     };
-    get_3: {
+    get_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -7036,28 +6635,6 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["AreaDto"][];
-                };
-            };
-        };
-    };
-    schedules: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["CollectionScheduleDto"][];
                 };
             };
         };
@@ -7293,7 +6870,7 @@ export interface operations {
             };
         };
     };
-    get_4: {
+    get_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -7392,6 +6969,7 @@ export interface operations {
             query?: {
                 periodId?: number;
                 areaId?: number;
+                collectorId?: number;
                 status?: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
                 page?: number;
                 size?: number;
@@ -7429,6 +7007,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CollectorDto"][];
+                };
+            };
+        };
+    };
+    collectorPayments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                collectorId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CollectorPaymentDto"][];
                 };
             };
         };
@@ -7537,26 +7137,6 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["BankTransferDto"][];
-                };
-            };
-        };
-    };
-    schedule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["CitizenScheduleDto"];
                 };
             };
         };
@@ -7827,7 +7407,7 @@ export interface operations {
             };
         };
     };
-    get_5: {
+    get_6: {
         parameters: {
             query?: never;
             header?: never;

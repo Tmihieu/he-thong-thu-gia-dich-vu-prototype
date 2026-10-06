@@ -5,7 +5,7 @@ import type { Role } from '../../../app/auth/authContext';
 import { StatusTag } from '../../../shared/StatusTag';
 import { MENU, ROLE_LABELS } from '../../../app/layout/menuConfig';
 
-const SCOPES = ['Toàn xã', 'Toàn xã (chỉ xem)', 'Đúng một công ty', 'Tổ công ty giao', 'Hệ thống'] as const;
+const SCOPES = ['Toàn xã', 'Toàn xã (chỉ xem)', 'Đúng một công ty', 'Mọi hộ của công ty', 'Hệ thống'] as const;
 const RIGHTS = ['Xem', 'Tạo/cập nhật', 'Xuất dữ liệu', 'Duyệt/khóa sổ', 'Duyệt miễn giảm / hoàn / xóa nợ'] as const;
 
 interface RoleRow {
@@ -19,7 +19,7 @@ const INITIAL: RoleRow[] = (
   [
     ['COMMUNE_OFFICER', 'Toàn xã', ['Xem', 'Tạo/cập nhật', 'Xuất dữ liệu', 'Duyệt/khóa sổ']],
     ['COMPANY_MANAGER', 'Đúng một công ty', ['Xem', 'Tạo/cập nhật', 'Xuất dữ liệu']],
-    ['COLLECTOR', 'Tổ công ty giao', ['Xem', 'Tạo/cập nhật']],
+    ['COLLECTOR', 'Mọi hộ của công ty', ['Xem', 'Tạo/cập nhật']],
     ['ADMIN', 'Hệ thống', ['Xem', 'Tạo/cập nhật']],
     ['LEADER', 'Toàn xã (chỉ xem)', ['Xem', 'Xuất dữ liệu', 'Duyệt miễn giảm / hoàn / xóa nợ']],
   ] as const

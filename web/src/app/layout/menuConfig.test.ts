@@ -15,6 +15,7 @@ describe('menuConfig', () => {
       'Công ty',
       'Tiến độ thu',
       'Đối soát',
+      'Chuyển khoản chờ đối chiếu',
       'Khiếu nại',
       'Chợ cộng đồng',
     ]);

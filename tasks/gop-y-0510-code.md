@@ -11,5 +11,5 @@ Làm tuần tự từng lát, mỗi lát một commit, chỉ một việc nặng
 | S3 | Bỏ phân tổ (`collector_assignments`), lịch thu gom (`collection_schedules`), vị trí khu vực (`areas.latitude/longitude`); người đi thu thu mọi hộ có khoản của công ty, ghi ai đã thu | UC-12, UC-14, UC-18, UC-23, UC-30, UC-33 | xong backend (migration V44; IT chưa chạy: Docker tắt); web ở S6 (bỏ màn phân tổ, lịch thu gom, bản đồ khu vực; `/my-work`, `/company-work` không còn theo tổ; thêm `company-work?collectorId=` và `GET /collection/collectors/{id}/payments` cho UC-33), Flutter ở S7 (bỏ lịch thu gom `GET /citizen/schedule`) |
 | S4 | Quản trị viên tạo tài khoản người đi thu (công ty không còn tạo) | UC-04 | xong backend (IT chưa chạy: Docker tắt; CollectorAccountIT đã sửa); web ở S6 (bỏ nút tạo/sửa/khóa/đặt lại mật khẩu ở menu "Người đi thu" của công ty, chỉ còn xem; thêm màn quản trị tạo người đi thu có chọn công ty qua `/api/platform/users`; `POST/PUT/lock/unlock/password` của `/api/platform/collector-accounts` đã bỏ, chỉ còn GET) |
 | S5 | Phải nộp xã tính trên đã thu; khóa kỳ theo điều kiện mới; công nợ hộ sang kỳ sau | UC-38, UC-39 | chờ chốt cách lưu công nợ hộ và làm tròn phí thu gom |
-| S6 | Web theo các lát trên | | chưa |
+| S6 | Web theo các lát trên | | xong |
 | S7 | Flutter theo các lát trên (bỏ lịch thu gom) | | chưa |

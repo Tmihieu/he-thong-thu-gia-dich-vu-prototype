@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 
-import { api } from '../../api/client';
+import { api, ApiError } from '../../api/client';
 import type { components } from '../../api/schema';
 
 export type TariffVersion = components['schemas']['TariffVersionDto'];
@@ -28,6 +28,8 @@ export type Street = components['schemas']['StreetDto'];
 export type StreetSuggestions = components['schemas']['SuggestDto'];
 export type DuplicateSubject = components['schemas']['DuplicateDto'];
 
+export type CommuneBankAccount = components['schemas']['CommuneBankAccountDto'];
+
 export interface SubjectQuery {
   areaId?: number;
   status?: Subject['status'];
@@ -47,6 +49,7 @@ export const masterdataKeys = {
   companies: ['masterdata', 'companies'] as const,
   assignments: ['masterdata', 'assignments'] as const,
   subjects: ['masterdata', 'subjects'] as const,
+  communeBankAccount: ['masterdata', 'commune-bank-account'] as const,
 };
 
 export function useTariffs() {
@@ -146,15 +149,6 @@ export function useUpdateArea() {
       await qc.invalidateQueries({ queryKey: masterdataKeys.areas });
       await qc.invalidateQueries({ queryKey: masterdataKeys.assignments });
     },
-  });
-}
-
-export function useMoveArea() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, latitude, longitude }: { id: number; latitude: number; longitude: number }) =>
-      api.put<Area>(`/api/masterdata/areas/${id}/location`, { latitude, longitude }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: masterdataKeys.areas }),
   });
 }
 
@@ -343,4 +337,27 @@ export function periodStart(type: Period['periodType'], year: number | undefined
   if (!year || !number) return undefined;
   const month = type === 'MONTH' ? number : (number - 1) * 3 + 1;
   return dayjs(new Date(year, month - 1, 1));
+}
+
+/** Tài khoản nhận chuyển khoản của xã (UC-54); chưa khai thì máy chủ trả 404, hiện là {@code null}. */
+export function useCommuneBankAccount() {
+  return useQuery({
+    queryKey: masterdataKeys.communeBankAccount,
+    queryFn: async () => {
+      try {
+        return await api.get<CommuneBankAccount>('/api/masterdata/commune-bank-account');
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 404) return null;
+        throw e;
+      }
+    },
+  });
+}
+
+export function useSaveCommuneBankAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CommuneBankAccount) => api.put<CommuneBankAccount>('/api/masterdata/commune-bank-account', body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: masterdataKeys.communeBankAccount }),
+  });
 }

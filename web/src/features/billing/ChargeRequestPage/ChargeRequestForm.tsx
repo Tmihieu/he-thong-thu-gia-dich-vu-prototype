@@ -12,7 +12,6 @@ interface FormValues {
   scopeType: ChargeScope;
   areaIds?: number[];
   companyId?: number;
-  dueDate?: Dayjs | null;
   companyDueDate?: Dayjs | null;
   unitPrice?: number | null;
   note?: string;
@@ -31,7 +30,7 @@ interface Props {
   onPreview: (req: IssueRequest, companyDueDate?: string) => void;
 }
 
-/** Form phiếu yêu cầu thu (§10 bước 2): kỳ, loại phí, phạm vi, hạn hộ đóng; bước tiếp theo là Xem trước. */
+/** Form phiếu yêu cầu thu (§10 bước 2): kỳ, loại phí, phạm vi, hạn nộp; bước tiếp theo là Xem trước. */
 export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading = false, error, initial, onPreview }: Props) {
   const [form] = Form.useForm<FormValues>();
   const scope = Form.useWatch('scopeType', form) ?? 'ALL';
@@ -40,8 +39,6 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
   const period = periods.find((p) => p.id === periodId);
   const feeType = feeTypes.find((f) => f.id === feeTypeId);
   const isDraft = period?.status === 'DRAFT';
-  const companyDue = Form.useWatch('companyDueDate', form);
-  const dueLimit = isDraft && companyDue ? companyDue : period ? dayjs(period.dueDate) : undefined;
   const openPeriods = periods.filter((p) => p.status !== 'LOCKED');
 
   function finish(v: FormValues) {
@@ -51,7 +48,6 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
       scopeType: v.scopeType,
       areaIds: v.scopeType === 'AREAS' ? v.areaIds : undefined,
       companyId: v.scopeType === 'COMPANY' ? v.companyId : undefined,
-      dueDate: v.dueDate!.format('YYYY-MM-DD'),
       unitPrice: feeType?.pricingMode === 'FIXED' && v.unitPrice != null ? v.unitPrice : undefined,
       note: v.note?.trim() || undefined,
     }, isDraft && v.companyDueDate ? v.companyDueDate.format('YYYY-MM-DD') : undefined);
@@ -63,18 +59,13 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
       layout="vertical"
       requiredMark={false}
       disabled={loading}
-      initialValues={
-        initial
-          ? { ...initial, dueDate: dayjs(initial.dueDate) }
-          : { scopeType: 'ALL', feeTypeId: feeTypes.find((f) => f.code === 'ENV')?.id }
-      }
+      initialValues={initial ?? { scopeType: 'ALL', feeTypeId: feeTypes.find((f) => f.code === 'ENV')?.id }}
       onValuesChange={(changed) => {
         if ('periodId' in changed) {
-          // Kỳ chưa bắt đầu: mặc định hạn công ty nộp xã là ngày 25 và hạn hộ đóng là ngày 20 của kỳ; cán bộ xã chọn lại được.
+          // Kỳ chưa bắt đầu: mặc định hạn nộp là ngày 25 của kỳ; cán bộ xã chọn lại được.
           const p = periods.find((x) => x.id === changed.periodId);
           form.setFieldsValue({
             companyDueDate: p ? (p.status === 'DRAFT' ? dayjs(p.endDate).date(25) : dayjs(p.dueDate)) : null,
-            ...(p?.status === 'DRAFT' ? { dueDate: dayjs(p.endDate).date(20) } : {}),
           });
         }
       }}
@@ -133,33 +124,11 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
       )}
       <Space size="middle" wrap style={{ display: 'flex' }}>
         <Form.Item
-          label="Hạn hộ đóng"
-          name="dueDate"
-          dependencies={['periodId', 'companyDueDate']}
-          rules={[
-            { required: true, message: 'Vui lòng chọn hạn đóng' },
-            {
-              validator(_, value: Dayjs | null | undefined) {
-                if (!value || !period) return Promise.resolve();
-                if (value.isBefore(dayjs(period.openDate), 'day')) {
-                  return Promise.reject(new Error('Hạn đóng không được trước ngày mở kỳ'));
-                }
-                if (dueLimit && value.isAfter(dueLimit, 'day')) {
-                  return Promise.reject(new Error('Hạn đóng không được sau hạn công ty nộp xã'));
-                }
-                return Promise.resolve();
-              },
-            },
-          ]}
-        >
-          <DatePicker format="DD/MM/YYYY" placeholder="dd/mm/yyyy" />
-        </Form.Item>
-        <Form.Item
-          label="Hạn công ty nộp về xã"
+          label="Hạn nộp"
           name="companyDueDate"
         >
           <DatePicker
-            aria-label="Hạn công ty nộp về xã"
+            aria-label="Hạn nộp"
             format="DD/MM/YYYY"
             placeholder="dd/mm/yyyy"
             allowClear={false}
