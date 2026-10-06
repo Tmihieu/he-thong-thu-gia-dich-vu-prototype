@@ -189,6 +189,12 @@ public class TariffService {
                     ? "Biểu giá thu theo nhân khẩu phải có đơn giá một người."
                     : "Biểu giá phải có đơn giá cho đủ các nhóm giá.");
         }
+        // Câu 8 chưa trả lời, tạm chốt 06/10: tiền thu theo nhân khẩu xã giữ hết, công ty không giữ phần thu gom
+        // (LedgerQueries chia theo thu gom / tổng đơn giá nên thu gom phải là 0).
+        if (cmd.rates().stream().anyMatch(r -> r.group() == TariffGroup.HH_PER_CAPITA && r.collectionFee() != 0)) {
+            throw new BusinessRuleException("TARIFF_PER_CAPITA_COLLECTION",
+                    "Đơn giá một người do xã giữ toàn bộ: phần thu gom phải là 0, nhập cả đơn giá vào phần vận chuyển.");
+        }
         Set<District> scope = new HashSet<>();
         if (!cmd.perCapitaAll()) {
             for (Long id : new HashSet<>(cmd.perCapitaDistrictIds())) {

@@ -1,6 +1,6 @@
 # Thu theo nhân khẩu, nguồn thải tự cân (họp công ty 05/10)
 
-Trạng thái: **đã code (06/10)** backend (V48) + web + Flutter + tài liệu; còn câu 8 và luồng phí xử lý (code tạm, xem mục 6). Trả lời BR-MD-16 (thu theo hộ hay theo nhân khẩu).
+Trạng thái: **đã code (06/10)** backend (V48) + web + Flutter + tài liệu; câu 8 tạm chốt xã giữ hết; còn luồng phí xử lý (code tạm, xem mục 6). Trả lời BR-MD-16 (thu theo hộ hay theo nhân khẩu).
 
 ## 0. Tình hình (06/10, tối)
 
@@ -12,9 +12,10 @@ Trạng thái: **đã code (06/10)** backend (V48) + web + Flutter + tài liệu
 - Kiểm: `mvn verify` (255 test unit + IT) đạt, web `tsc` + `lint` + 163 test đạt, Flutter `analyze` + `test` đạt.
 
 Còn hở:
-- Câu 8 và phí xử lý thuộc ai (code tạm: phí xử lý nộp xã cùng vận chuyển, LedgerQueries chia theo thu gom / tổng đơn giá).
+- Câu 8 chưa có trả lời chính thức; tạm chốt 06/10: tiền theo nhân khẩu xã giữ hết (thu gom của `HH_PER_CAPITA` bắt buộc 0, máy chủ chặn `TARIFF_PER_CAPITA_COLLECTION`).
+- Phí xử lý thuộc ai: chưa trả lời (code tạm: nộp xã cùng vận chuyển, LedgerQueries chia theo thu gom / tổng đơn giá).
 - Chưa có BR cho lỗi `MEMBER_COUNT_REQUIRED` khi lập khoản theo nhân khẩu; `SPEC.md` §11 O2 lệch BR-REM-02 (có từ trước); `docs/phan-quyen.md:7`, `tasks/todo.md:796-797` chưa sửa.
-- Chưa có test web riêng cho ô theo nhân khẩu; chưa chạy thử giao diện thật.
+- Đã có test web cho ô theo nhân khẩu và chạy thử giao diện thật (06/10).
 
 ## 1. Đã chốt (06/10)
 
@@ -155,7 +156,7 @@ Cách hiểu (chờ xác nhận):
 Thuật ngữ: "Hộ/cơ sở" → hộ gia đình / nguồn thải nhỏ / nguồn thải lớn; thêm "Tính theo nhân khẩu", "Đăng ký cân", "Phí xử lý". `phan-quyen.md` không thêm quyền mới.
 
 **Việc chưa làm**
-- [ ] Hỏi câu 8: đơn giá một người có tách thu gom + vận chuyển không.
+- [x] Câu 8: tạm chốt xã giữ hết (06/10), chờ xác nhận chính thức.
 - [ ] Hỏi: phí xử lý thu được thuộc về ai (đang code tạm: nộp xã như vận chuyển).
 - [x] Sửa tài liệu theo mục 4, 5, 6: `SPEC.md`, `business-rules.md`, `data-dictionary.md` (thay ghi chú tạm ở `BY_VOLUME`), `use-cases.md`, `kich-ban-kiem-thu.md`, `demo-runbook.md`.
 - [x] Code: backend (V48) → web → Flutter, mỗi lát một commit.

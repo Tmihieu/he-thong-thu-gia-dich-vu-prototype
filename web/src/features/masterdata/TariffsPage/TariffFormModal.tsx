@@ -78,7 +78,8 @@ export function TariffFormModal({ draft, template, open, submitting, error, onCr
     rates: GROUPS.map((g) => {
       const r = source?.rates.find((x) => x.tariffGroup === g);
       return {
-        tariffGroup: g, collectionFee: r?.collectionFee, transportFee: r?.transportFee,
+        // Đơn giá một người: xã giữ hết (tạm chốt 06/10), thu gom luôn 0.
+        tariffGroup: g, collectionFee: g === 'HH_PER_CAPITA' ? 0 : r?.collectionFee, transportFee: r?.transportFee,
         processingFee: r?.processingFee ?? 0, unitLabel: unitOf(g),
       };
     }),
@@ -96,7 +97,7 @@ export function TariffFormModal({ draft, template, open, submitting, error, onCr
       note: optional(v.note),
       // Đơn giá một người chỉ gửi khi đã nhập (bắt buộc khi bật theo nhân khẩu).
       rates: v.rates
-        .filter((r) => r.tariffGroup !== 'HH_PER_CAPITA' || r.collectionFee != null || r.transportFee != null)
+        .filter((r) => r.tariffGroup !== 'HH_PER_CAPITA' || r.transportFee != null)
         .map((r) => ({
           tariffGroup: r.tariffGroup,
           collectionFee: r.collectionFee ?? 0,
@@ -194,7 +195,7 @@ export function TariffFormModal({ draft, template, open, submitting, error, onCr
                   </Col>
                   <Col span={4}>
                     <Form.Item name={[f.name, 'collectionFee']} rules={rule}>
-                      <InputNumber<number> {...money} aria-label={`Thu gom ${TARIFF_GROUP_LABELS[g]}`} />
+                      <InputNumber<number> {...money} disabled={g === 'HH_PER_CAPITA'} aria-label={`Thu gom ${TARIFF_GROUP_LABELS[g]}`} />
                     </Form.Item>
                   </Col>
                   <Col span={4}>
@@ -223,7 +224,7 @@ export function TariffFormModal({ draft, template, open, submitting, error, onCr
           }
         </Form.List>
         <Form.Item name="perCapita" valuePropName="checked" style={{ marginBottom: 8 }}>
-          <Checkbox>Thu hộ gia đình theo nhân khẩu (đơn giá một người × số nhân khẩu)</Checkbox>
+          <Checkbox>Thu hộ gia đình theo nhân khẩu (đơn giá một người × số nhân khẩu; xã giữ toàn bộ, nhập vào cột Vận chuyển)</Checkbox>
         </Form.Item>
         {perCapita && (
           <Row gutter={16}>

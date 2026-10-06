@@ -319,7 +319,7 @@ Hộ gia đình / nguồn thải nhỏ / nguồn thải lớn (06/10, V48; thay 
 | ----------------- | ------------------------------------ | --------------------------------------- |
 | `HH_UP_TO_2` | HGĐ ≤ 2 người | 29.000 + 11.000 = 40.000 đ/hộ/tháng |
 | `HH_3_PLUS` | HGĐ ≥ 3 người | 57.000 + 23.000 = 80.000 đ/hộ/tháng |
-| `HH_PER_CAPITA` | HGĐ theo nhân khẩu | Chưa có số chính thức; quản trị nhập đ/người/tháng (× số nhân khẩu). Tách thu gom / vận chuyển hay không chưa biết (câu 8) |
+| `HH_PER_CAPITA` | HGĐ theo nhân khẩu | Chưa có số chính thức; quản trị nhập đ/người/tháng (× số nhân khẩu). Tạm chốt 06/10 (câu 8 chưa trả lời): xã giữ toàn bộ, `collection_fee` = 0, cả đơn giá ở `transport_fee` |
 | `SMALL_UP_TO_126` | Chủ nguồn thải nhỏ ≤ 126 kg/tháng | 57.000 + 23.000 = 80.000 đ/tháng |
 | `SMALL_126_TO_250` | Chủ nguồn thải nhỏ 126–250 kg/tháng | 85.000 + 34.000 = 119.000 đ/tháng |
 | `SMALL_250_TO_500` | Chủ nguồn thải nhỏ 250–500 kg/tháng | 170.000 + 68.000 = 238.000 đ/tháng |

@@ -138,6 +138,33 @@ class TariffDraftIT extends IntegrationTest {
     }
 
     @Test
+    void perCapitaDraftNeedsItsRateAndCommuneKeepsAllOfIt() throws Exception {
+        String base = draft("2027-01-01", 1);
+        String on = base.substring(0, base.length() - 1) + ",\"perCapitaAll\":true}";
+        createRaw(admin, "BG-NK1", on).andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.message").value("Biểu giá thu theo nhân khẩu phải có đơn giá một người."));
+        String withRate = on.replace("\"rates\":[", "\"rates\":[%s,".formatted(perCapita(5_000)));
+        createRaw(admin, "BG-NK2", withRate).andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("TARIFF_PER_CAPITA_COLLECTION"));
+        createRaw(admin, "BG-NK3", on.replace("\"rates\":[", "\"rates\":[%s,".formatted(perCapita(0))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.perCapitaAll").value(true))
+                .andExpect(jsonPath("$.rates.length()").value(8));
+    }
+
+    private static String perCapita(long collectionFee) {
+        return """
+                {"tariffGroup":"HH_PER_CAPITA","collectionFee":%d,"transportFee":20000,"unitLabel":"đ/người/tháng"}"""
+                .formatted(collectionFee);
+    }
+
+    private ResultActions createRaw(String token, String code, String draftJson) throws Exception {
+        return mvc.perform(post("/api/masterdata/tariffs").header(HttpHeaders.AUTHORIZATION, token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"code\":\"%s\",\"draft\":%s}".formatted(code, draftJson)));
+    }
+
+    @Test
     void cannotIssueWhenAPeriodAlreadyStartsOnOrAfterTheNewDate() throws Exception {
         periods.save(CollectionPeriod.open(PeriodType.MONTH, 2026, 11, null, LocalDate.of(2026, 11, 30), bg65));
         long id = createdId("2026-11-01");
