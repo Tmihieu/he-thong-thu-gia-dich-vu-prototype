@@ -117,3 +117,31 @@ Cách hiểu (chờ xác nhận):
 - `data-dictionary.md`: 273-292 loại, 285-287, 310, 320-327 nhóm, 360-365 biểu giá, 446 khoản (thêm số nhân khẩu), 1424 (trái câu 2).
 - `use-cases.md`: thuật ngữ dòng 23, UC-05, 07, 11, 12, 21.
 - `kich-ban-kiem-thu.md` 2.1, 2.2, 9.1, 9.4; `demo-runbook.md:72,99` (tổng 1.319.000 đổi nếu đổi seed); `phan-quyen.md:7`; `tasks/todo.md:796-797`.
+
+## 6. Use case và việc chưa làm (06/10)
+
+**UC mới: không có.** Công tắc nhân khẩu nằm trong biểu giá (câu 5) nên gộp vào UC-19; cân một lần làm định mức (câu 7) nên nằm trong UC-09.
+
+**UC phải sửa trong `docs/use-cases.md`**
+
+| UC | Sửa gì |
+|---|---|
+| UC-05 Nhập hộ từ Excel | Cột loại nguồn thải nhỏ / lớn, nhóm giá mới, mã `NN` / `NL` |
+| UC-06 Tạo hồ sơ | Loại mới; nguồn thải nhỏ chọn theo QĐ / cân; hộ gia đình chọn được theo nhân khẩu; chủ nhà trọ là nguồn thải |
+| UC-07 Tra cứu hồ sơ | Lọc theo loại mới |
+| UC-08 Cập nhật hồ sơ | Số nhân khẩu là căn cứ tính tiền khi theo nhân khẩu, áp ngay cho khoản chưa lập (câu 9) |
+| UC-09 Đăng ký thu phí | Nhóm `HH_PER_CAPITA`, `FULL_COST_BY_KG`; nhóm được chọn theo loại; đổi cách tính từ kỳ sau |
+| UC-11 Báo sai thông tin | Nhãn "sai số thành viên" giờ ảnh hưởng thẳng số tiền |
+| UC-12 Người dân xem hộ | Nhãn loại / nhóm mới |
+| UC-19 Biểu giá | Đơn giá một người, phí xử lý, ô theo nhân khẩu + toàn xã / chọn địa bàn |
+| UC-21 Phát hành khoản | Tính theo nhân khẩu theo cờ biểu giá và địa bàn; chụp nhóm thực tính + số nhân khẩu; thiếu định mức kg cho nhóm cân mới |
+| UC-22 Tra cứu khoản | Hiện cách tính (nhân khẩu × đơn giá, kg × đơn giá) |
+| UC-31 Người dân xem khoản | Hiện cách tính như UC-22 (không bắt buộc) |
+
+Thuật ngữ: "Hộ/cơ sở" → hộ gia đình / nguồn thải nhỏ / nguồn thải lớn; thêm "Tính theo nhân khẩu", "Đăng ký cân", "Phí xử lý". `phan-quyen.md` không thêm quyền mới.
+
+**Việc chưa làm**
+- [ ] Hỏi câu 8: đơn giá một người có tách thu gom + vận chuyển không.
+- [ ] Hỏi: phí xử lý thu được thuộc về ai (đang code tạm: nộp xã như vận chuyển).
+- [ ] Sửa tài liệu theo mục 4, 5, 6: `SPEC.md`, `business-rules.md`, `data-dictionary.md` (thay ghi chú tạm ở `BY_VOLUME`), `use-cases.md`, `kich-ban-kiem-thu.md`, `demo-runbook.md`.
+- [ ] Code: backend (V48) → web → Flutter, mỗi lát một commit.
