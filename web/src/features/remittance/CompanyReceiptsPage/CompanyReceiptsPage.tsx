@@ -11,7 +11,7 @@ import { MoneyText } from '../../../shared/MoneyText';
 import { EmptyBlock, ErrorBlock } from '../../../shared/StateBlock';
 import { StatusTag } from '../../../shared/StatusTag';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
-import { type Receipt, type ReceiptIssue, useCompanyLedger, useReceiptIssues, useReceipts } from '../api';
+import { type Payout, type Receipt, type ReceiptIssue, useCompanyLedger, usePayouts, useReceiptIssues, useReceipts } from '../api';
 import { LedgerStats } from '../LedgerStats';
 import { ISSUE_TONES } from '../tones';
 import { ReportIssueModal } from './ReportIssueModal';
@@ -25,6 +25,7 @@ export function CompanyReceiptsPage() {
   const [reporting, setReporting] = useState<Receipt | null>(null);
   const receipts = useReceipts(periodId);
   const ledger = useCompanyLedger(periodId);
+  const payouts = usePayouts(periodId);
   const issues = useReceiptIssues();
   const pending = new Set((issues.data ?? []).filter((i) => i.status === 'PENDING').map((i) => i.receiptId));
   const error = receipts.error ?? issues.error ?? ledger.error;
@@ -67,6 +68,25 @@ export function CompanyReceiptsPage() {
               </Button>
             ),
           },
+        ]}
+      />
+      <Typography.Title level={5} style={{ marginTop: 24 }}>
+        Phiếu xã trả lại
+      </Typography.Title>
+      <Table<Payout>
+        rowKey="id"
+        size="small"
+        loading={payouts.isLoading}
+        dataSource={payouts.data ?? []}
+        pagination={false}
+        locale={{ emptyText: <EmptyBlock title="Kỳ này xã chưa trả lại khoản nào" hint="Khi phải nộp xã của công ty âm, xã trả lại và lập phiếu chi trả, phiếu hiện ở đây." /> }}
+        columns={[
+          { title: 'Số phiếu', dataIndex: 'code' },
+          { title: 'Ngày trả', dataIndex: 'payoutDate', render: (d: string) => <DateText value={d} /> },
+          { title: 'Số tiền', dataIndex: 'amount', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Lũy kế xã đã trả', dataIndex: 'cumulativePaid', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Xã còn phải trả', dataIndex: 'remainingAfter', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Ghi chú', dataIndex: 'note', render: (v: string | null) => v ?? '—' },
         ]}
       />
       <Typography.Title level={5} style={{ marginTop: 24 }}>

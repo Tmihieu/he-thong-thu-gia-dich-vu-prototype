@@ -18,7 +18,7 @@ import { PeriodTrend } from './PeriodTrend';
 const centered = (cols: ColumnsType<LedgerRow>): ColumnsType<LedgerRow> =>
   cols.map((c, i) => ({ ...c, align: i === 0 ? 'left' : 'center', width: i === 0 ? 200 : 140, onCell: () => ({ style: { verticalAlign: 'middle' } }) }));
 
-function Gap({ gap }: { gap: number }) {
+function Gap({ gap, paid }: { gap: number; paid: number }) {
   if (gap === 0) return <MoneyText value={0} />;
   return (
     <Space direction="vertical" size={0} style={{ textAlign: 'center' }}>
@@ -28,6 +28,11 @@ function Gap({ gap }: { gap: number }) {
       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
         {gap < 0 ? 'thu rồi chưa nộp' : 'xã trả lại công ty'}
       </Typography.Text>
+      {gap > 0 && paid > 0 && (
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          đã trả <MoneyText value={paid} />
+        </Typography.Text>
+      )}
     </Space>
   );
 }
@@ -121,7 +126,7 @@ export function ReconciliationPage() {
               </Space>
             ),
           },
-          { title: 'Chênh lệch', dataIndex: 'gap', align: 'right', render: (v: number) => <Gap gap={v} /> },
+          { title: 'Chênh lệch', dataIndex: 'gap', align: 'right', render: (v: number, r: LedgerRow) => <Gap gap={v} paid={r.communePaid} /> },
           {
             title: 'Kết quả',
             dataIndex: 'reconciliation',

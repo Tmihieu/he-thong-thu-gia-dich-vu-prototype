@@ -116,7 +116,7 @@ export function ReceiptsPage() {
               </Space>
             ),
           },
-          { title: 'Còn phải nộp', dataIndex: 'remaining', align: 'right', render: (v: number) => <RemainingText value={v} strong /> },
+          { title: 'Còn phải nộp', dataIndex: 'remaining', align: 'right', render: (v: number, r) => <RemainingText value={v} paid={r.communePaid} strong /> },
           {
             title: 'Tiến độ',
             dataIndex: 'progress',

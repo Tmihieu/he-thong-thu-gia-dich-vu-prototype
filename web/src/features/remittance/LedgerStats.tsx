@@ -23,7 +23,16 @@ export function LedgerStats({ rows, show = DEFAULT_KEYS }: { rows: LedgerRow[]; 
         const total = rows.reduce((t, r) => t + r[key], 0);
         // Còn phải nộp âm = xã trả lại công ty phần chênh (phải nộp xã tính trên đã thu).
         if (key === 'remaining' && total < 0) {
-          return <StatCard key={key} label="Xã trả lại công ty" tone="warning" value={<MoneyText value={-total} />} />;
+          const paid = rows.reduce((t, r) => t + r.communePaid, 0);
+          return (
+            <StatCard
+              key={key}
+              label="Xã trả lại công ty"
+              tone="warning"
+              value={<MoneyText value={-total} />}
+              hint={paid > 0 && <>đã trả <MoneyText value={paid} />, còn <MoneyText value={rows.reduce((t, r) => t + r.communeOwed, 0)} /></>}
+            />
+          );
         }
         return (
           <StatCard

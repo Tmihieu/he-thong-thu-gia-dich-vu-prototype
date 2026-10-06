@@ -72,7 +72,7 @@ export function ProgressPage() {
   const rows = ledger.data ?? [];
   const unassigned = (areas.data ?? []).filter((a) => a.noCompany && a.subjectCount > 0);
   const overdue = rows.filter((r) => r.progress === 'OVERDUE');
-  const sum = (key: 'due' | 'collected' | 'debtCollected' | 'payable' | 'received' | 'remaining') => rows.reduce((t, r) => t + r[key], 0);
+  const sum = (key: 'due' | 'collected' | 'debtCollected' | 'payable' | 'received' | 'remaining' | 'communePaid' | 'communeOwed') => rows.reduce((t, r) => t + r[key], 0);
   const remaining = sum('remaining');
 
   return (
@@ -105,7 +105,12 @@ export function ProgressPage() {
         <StatCard label="Đã nộp" tone="success" value={<MoneyText value={sum('received')} />} />
         {/* Còn phải nộp âm = xã trả lại công ty phần chênh (phải nộp xã tính trên đã thu). */}
         {remaining < 0 ? (
-          <StatCard label="Xã trả lại công ty" tone="warning" value={<MoneyText value={-remaining} />} />
+          <StatCard
+            label="Xã trả lại công ty"
+            tone="warning"
+            value={<MoneyText value={-remaining} />}
+            hint={sum('communePaid') > 0 && <>đã trả <MoneyText value={sum('communePaid')} />, còn <MoneyText value={sum('communeOwed')} /></>}
+          />
         ) : (
           <StatCard label="Còn phải nộp" tone="warning" value={<MoneyText value={remaining} />} />
         )}
@@ -198,7 +203,7 @@ export function ProgressPage() {
           { title: 'Đã thu', dataIndex: 'collected', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           { title: 'Phải nộp xã', dataIndex: 'payable', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           { title: 'Đã nộp', dataIndex: 'received', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-          { title: 'Còn phải nộp', dataIndex: 'remaining', align: 'right', render: (v: number) => <RemainingText value={v} strong /> },
+          { title: 'Còn phải nộp', dataIndex: 'remaining', align: 'right', render: (v: number, r: LedgerRow) => <RemainingText value={v} paid={r.communePaid} strong /> },
           // Phải nộp xã <= 0 thì chưa có gì để nộp: không chia cho 0 hay số âm.
           { title: 'Tỷ lệ nộp', render: (_, r) => (r.payable > 0 ? <Rate rate={r.remittedRate} /> : '—') },
           {

@@ -18,7 +18,7 @@ const dv01 = {
   companyId: 1, companyCode: 'DV01', companyName: 'Công ty MTĐT Đông Thạnh', periodId: 10, due: 1_600_000, chargeCount: 20,
   collected: 1_200_000, cashCollected: 1_200_000, received: 1_000_000, receiptCount: 1, remaining: 600_000, gap: -200_000, previousDebt: 0,
   overdue: false, collectionRate: 75, lowCollectionRate: false, remittedRate: 62.5, lowRemittedRate: false, progress: 'PARTIAL',
-  reconciliation: 'PENDING', adjustment: 0, refunded: 0, retained: 0, payable: 1_600_000, debtCollected: 0,
+  reconciliation: 'PENDING', adjustment: 0, refunded: 0, retained: 0, payable: 1_600_000, debtCollected: 0, communePaid: 0, communeOwed: 0,
 };
 const dv07 = { ...dv01, companyId: 7, companyCode: 'DV07', companyName: 'Công ty Xanh Sài Gòn', due: 800_000, collected: 200_000,
   received: 0, receiptCount: 0, remaining: 800_000, gap: -200_000, previousDebt: 150_000, collectionRate: 25,
@@ -373,5 +373,60 @@ describe('Phiếu thu công ty', () => {
     const print = screen.getByText('PHIẾU THU').closest('.ant-modal-content') as HTMLElement;
     expect(within(print).getByText('1.400.000 đ', norm)).toBeInTheDocument();
     expect(within(print).getAllByRole('button').map((b) => b.textContent)).toContain('In');
+  });
+});
+
+describe('Phiếu chi trả công ty (xã trả lại)', () => {
+  // DV02: phải nộp xã -228.000, xã đã trả 100.000, còn phải trả 128.000.
+  const dv02 = { ...dv01, companyId: 2, companyCode: 'DV02', companyName: 'Công ty Hai', collected: 1_000_000, cashCollected: 0,
+    retained: 228_000, payable: -228_000, received: 0, receiptCount: 0, remaining: -228_000, gap: 228_000, communePaid: 100_000,
+    communeOwed: 128_000, progress: 'PAID_IN_FULL', reconciliation: 'PENDING' };
+
+  it('Tiến độ thu hiện xã trả lại, đã trả và còn phải trả', async () => {
+    mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
+      'GET /api/masterdata/periods': () => jsonResponse(200, periods),
+      'GET /api/remittance/ledger': () => jsonResponse(200, [dv02]),
+      'GET /api/remittance/area-progress': () => jsonResponse(200, []),
+    });
+    renderApp('/commune/progress');
+
+    // Thẻ tổng (hint) và ô "Còn phải nộp" của công ty đều ghi đã trả / còn phải trả.
+    await screen.findByText('Công ty Hai');
+    const text = document.body.textContent!.replace(/\s+/g, ' ');
+    expect(text).toContain('đã trả 100.000 đ, còn 128.000 đ');
+    expect(text).toContain('Xã trả lại công ty 228.000 đ, đã trả 100.000 đ, còn 128.000 đ');
+  });
+
+  it('lập phiếu chi cho DV02 rồi hiện bản in có số tiền bằng chữ', async () => {
+    const fetchFn = mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
+      'GET /api/masterdata/periods': () => jsonResponse(200, periods),
+      'GET /api/billing/charge-requests': () => jsonResponse(200, []),
+      'GET /api/remittance/ledger': () => jsonResponse(200, [dv01, dv02]),
+      'POST /api/remittance/payouts': () =>
+        jsonResponse(201, {
+          id: 5, code: 'PC-CT-1026-002', companyId: 2, companyCode: 'DV02', companyName: 'Công ty Hai', periodId: 10,
+          periodCode: '2026-10', periodLabel: 'Tháng 10/2026', amount: 28_000, amountInWords: 'Hai mươi tám nghìn đồng',
+          payoutDate: '2026-10-20', note: null, cumulativePaid: 128_000, periodOwed: 228_000, remainingAfter: 100_000,
+        }),
+    });
+    renderApp('/commune/charges');
+    await userEvent.click(await screen.findByRole('tab', { name: 'Phiếu chi trả công ty' }));
+
+    // Chỉ công ty có xã phải trả/đã trả mới hiện: DV01 (phải nộp dương) không có.
+    expect(await screen.findByRole('button', { name: 'Lập phiếu chi DV02' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Lập phiếu chi DV01' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Lập phiếu chi DV02' }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.type(within(dialog).getByLabelText('Số tiền'), '28000');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Lập phiếu' }));
+
+    await waitFor(() =>
+      expect(fetchFn.mock.calls.some(([url, init]) => String(url) === '/api/remittance/payouts'
+        && (init as RequestInit | undefined)?.method === 'POST')).toBe(true),
+    );
+    expect(await screen.findByText('Hai mươi tám nghìn đồng')).toBeInTheDocument();
+    expect(screen.getByText('PHIẾU CHI TRẢ')).toBeInTheDocument();
   });
 });
