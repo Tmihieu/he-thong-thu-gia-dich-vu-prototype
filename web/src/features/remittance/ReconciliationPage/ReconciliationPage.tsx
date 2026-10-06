@@ -1,6 +1,6 @@
 import { CheckOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, Card, Segmented, Space, Table, Typography } from 'antd';
+import { Alert, App, Button, Card, ConfigProvider, Segmented, Space, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
@@ -24,6 +24,9 @@ import { IssueReceiptForm, type IssueReceiptRequest } from '../ReceiptsPage/Issu
 import { ReceiptPrint } from '../ReceiptsPage/ReceiptPrint';
 import { LockPeriodButton } from './LockPeriodButton';
 import { VouchersModal } from './VouchersModal';
+
+/** Viền đậm hơn viền mặc định để bảng nhiều cột dễ đọc. */
+const BORDER = '#8793a3';
 
 type Filter = 'all' | 'open' | 'settled';
 
@@ -203,7 +206,7 @@ export function ReconciliationPage() {
       />
       {ledger.error && <ErrorBlock error={ledger.error} onRetry={() => void ledger.refetch()} />}
 
-      <Card title="Tiền xã đang giữ trong kỳ" extra={<Typography.Text type="secondary">So với phần phí vận chuyển xã được hưởng</Typography.Text>} styles={{ body: { padding: 0 } }}>
+      <Card style={{ borderColor: BORDER }} title="Tiền xã đang giữ trong kỳ" extra={<Typography.Text type="secondary">So với phần phí vận chuyển xã được hưởng</Typography.Text>} styles={{ body: { padding: 0 } }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch' }}>
           <Cell label="Xã đang giữ" value={holding}>
             QR đã nhận <MoneyText value={qrTotal} />
@@ -260,7 +263,7 @@ export function ReconciliationPage() {
         />
       )}
 
-      <Card style={{ marginTop: 16 }} styles={{ body: { padding: 0 } }}>
+      <Card style={{ marginTop: 16, borderColor: BORDER }} styles={{ body: { padding: 0 } }}>
         <div style={{ padding: '10px 12px', borderBottom: `1px solid ${semantic.neutral.bg}` }}>
           <Segmented<Filter>
             value={filter}
@@ -272,7 +275,9 @@ export function ReconciliationPage() {
             ]}
           />
         </div>
+        <ConfigProvider theme={{ components: { Table: { borderColor: BORDER } } }}>
         <Table<LedgerRow>
+          bordered
           rowKey="companyId"
           loading={ledger.isLoading}
           dataSource={shown}
@@ -282,6 +287,7 @@ export function ReconciliationPage() {
           scroll={{ x: 1650 }}
           columns={columns}
         />
+        </ConfigProvider>
       </Card>
 
       <IssueReceiptForm
