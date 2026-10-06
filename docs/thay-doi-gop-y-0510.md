@@ -46,8 +46,6 @@ Phần thuật ngữ và luồng chính của use-cases.md sửa theo cho khớp
 - Còn bản đồ khu vực và thao tác kéo thả vị trí (`PUT /areas/{id}/location`).
 - VietQR và đối chiếu SePay dùng tài khoản ngân hàng của công ty (`companies.bank_account`); chưa có chỗ khai báo tài khoản của xã.
 - Giao dịch chờ đối chiếu đang hiện cho công ty.
-- Phải nộp xã tính trên phải thu (`payable = due − adjustment − retained`), chưa tính trên đã thu.
-- Khóa kỳ chưa xét hạn nộp; kỳ đã khóa thì chặn thu luôn, chưa có công nợ hộ chuyển sang kỳ sau.
 - Còn hai hạn: hạn hộ đóng (phiếu YCT, khoản) và hạn công ty nộp xã (kỳ); nhắc hộ đang tính theo hạn hộ đóng.
 - Tiến độ theo người đi thu ở màn công ty tính theo phân tổ, chưa theo người đã thu.
 - App người dân còn màn lịch thu gom (`collection_schedules`).

@@ -88,7 +88,7 @@ Cột "Kiểm" để các lane điền khi rà: ✔ khớp · ✘ lệch (ghi s�
 | BR-COL-09 | Khoản đã xóa nợ: người đi thu vẫn thấy, nhãn "Đã xóa nợ", không có nút cập nhật | 29/09 T57 | Chốt | |
 | BR-COL-10 | Lịch sử hộ của người đi thu theo một kỳ, đổi kỳ bằng ô chọn kỳ | DD T53 | Chốt | |
 | BR-COL-11 | Báo sai thông tin hộ: chỉ phát thông báo INFO cho xã + công ty | DD G7 | Chốt | |
-| BR-COL-12 | Kỳ đã khóa: không sửa khoản / thanh toán của kỳ | SPEC §9.6 | Chốt | |
+| BR-COL-12 | Kỳ đã khóa: không sửa khoản, số liệu và phiếu thu của kỳ. Ngoại lệ: khoản hộ chưa đóng (công nợ của hộ, BR-REM-15) vẫn thu được, tiền ghi vào kỳ đang thu | SPEC §9.6, góp ý BA 05/10 | Chốt | |
 | BR-COL-13 | Dân chuyển khoản qua mã VietQR trên app → tiền vào **tài khoản chung của xã** (quản trị khai báo), ngân hàng báo về, khoản Đã thu, công ty và xã thấy ngay. App không tự ghi thanh toán. Công ty không có tài khoản nhận | SPEC §9.9, 04/10, góp ý BA 05/10 | Chốt | |
 
 ## 5. Nộp về xã, đối soát, khóa kỳ (`remittance`)
@@ -98,19 +98,20 @@ Sổ công ty–kỳ là nguồn số duy nhất cho: Tiến độ, Đối soát
 | Mã | Rule | Nguồn | Trạng thái | Kiểm |
 |---|---|---|---|---|
 | BR-REM-01 | Phải thu (`due`) của công ty–kỳ = Σ khoản theo `company_id` chụp trên khoản, không tính khoản xóa nợ trong chính kỳ | DD G3, T57 | Chốt | |
-| BR-REM-02 | **Công ty cầm lại phần thu gom, chỉ nộp phần vận chuyển.** `retained` = Σ từng khoản `amount × collection_fee / monthly_total` (làm tròn đồng); khoản phí cố định không có phần cầm lại | 03/10 (thay O2 "nộp toàn bộ") | Chốt | |
+| BR-REM-02 | **Công ty cầm lại phần thu gom, chỉ nộp phần vận chuyển.** `retained` = Σ từng khoản ĐÃ THU (cả chuyển khoản) `số đã thu của khoản × collection_fee / monthly_total` của nhóm giá, làm tròn đồng theo khoản rồi cộng lại; khoản phí cố định không có phần cầm lại | 03/10 (thay O2 "nộp toàn bộ") | Chốt | |
 | BR-REM-03 | Phải nộp xã `payable = tiền mặt công ty đã thu − adjustment − retained`, trong đó `retained` tính trên **toàn bộ số đã thu** (cả chuyển khoản vào tài khoản xã), không tính trên phải thu. `payable` âm → xã trả lại công ty phần chênh. Còn phải nộp `remaining = payable − received`. Nợ kỳ trước và nhắc nộp theo `payable` | 03/10, góp ý BA 05/10 | Chốt | |
 | BR-REM-04 | Phiếu thu xã lập khi công ty nộp: 1 phiếu 1 kỳ, 1 kỳ nhiều phiếu; 0 < số tiền ≤ còn phải nộp; mã `PT-CT-MMYY-nnn`; in có số tiền bằng chữ | SPEC §9.6 | Chốt | |
 | BR-REM-05 | Phiếu sai: không sửa, không hủy; lập phiếu mới. Sai sót "Đã xử lý" = đóng kèm ghi chú. Kỳ đã khóa: chỉ đóng kèm ghi chú | DD G6, P2 | Demo | |
 | BR-REM-06 | Nhắc nộp: chỉ công ty có nợ quá hạn; giữ lịch sử | SPEC §9.6, DD D6 | Chốt | |
-| BR-REM-07 | Đối soát: chênh lệch = đã nộp − công ty đã thu; trạng thái Khớp / Đang nộp / Lệch. Trạng thái đối soát không phải điều kiện khóa kỳ | SPEC §9.6, flows | Chốt | |
-| BR-REM-08 | Khóa kỳ chỉ được khi **mọi công ty đã nộp đủ** số phải nộp xã (tính trên đã thu), **và** kỳ đã thu đủ mọi khoản **hoặc** đã đến hạn nộp; không thì chặn, báo lý do rõ. Khoản hộ chưa đóng khi khóa thành **công nợ của hộ**: hộ nộp được ở kỳ sau, tiền tính vào kỳ đang thu | DD G15, flows, góp ý BA 05/10 | Chốt | |
-| BR-REM-09 | Sau khóa: không sửa khoản / thanh toán / phiếu thu của kỳ | SPEC §9.6 | Chốt | |
-| BR-REM-10 | Cờ dưới 45%: cấp công ty theo đã nộp / phải thu; cấp tổ theo đã thu / phải thu; so số nguyên | DD P4 | Chốt | |
+| BR-REM-07 | Đối soát: chênh lệch = đã nộp − phải nộp xã (âm: còn nộp thiếu; dương: nộp dư hoặc xã trả lại công ty); đã thu gồm tiền mặt và chuyển khoản; trạng thái Khớp / Đang nộp / Lệch. Trạng thái đối soát không phải điều kiện khóa kỳ | SPEC §9.6, flows | Chốt | |
+| BR-REM-08 | Khóa kỳ chỉ được khi **mọi công ty đã nộp đủ** số phải nộp xã (tính trên đã thu), **và** kỳ đã thu đủ mọi khoản (không còn khoản Chưa thu) **hoặc** đã đến hạn nộp (hôm nay ≥ ngày hạn nộp của kỳ; ⚠ đúng ngày hạn đã tính là đến hạn, cần xác nhận); không thì chặn, báo lý do rõ. Khoản hộ chưa đóng khi khóa thành **công nợ của hộ**: hộ nộp được ở kỳ sau, tiền tính vào kỳ đang thu | DD G15, flows, góp ý BA 05/10 | Chốt | |
+| BR-REM-09 | Sau khóa: không sửa khoản, số liệu và phiếu thu của kỳ; điều chỉnh phát sinh sau đó ghi vào kỳ đang thu. Ngoại lệ: tiền hộ nộp công nợ (BR-REM-15) | SPEC §9.6, góp ý BA 05/10 | Chốt | |
+| BR-REM-10 | Cờ dưới 45%: cấp công ty theo đã nộp / phải thu; cấp tổ theo đã thu / phải thu; so số nguyên. **Chưa chốt lại sau góp ý BA 05/10** (phải nộp xã nay tính trên đã thu); bản code giữ như BR-REM-13, chờ quyết định | DD P4 | Chốt, chờ rà lại | |
 | BR-REM-11 | Vòng tỷ lệ thu ở Đối soát: < 25% đỏ, 25–< 50% vàng, 50–< 75% cam, ≥ 75% xanh lá; "Thu 3 tháng gần nhất" chỉ kỳ tháng | 29/09 | Chốt | |
 | BR-REM-12 | Số liệu Tiến độ = Đối soát = màn Công ty = Dashboard/Báo cáo lãnh đạo cho cùng kỳ | SPEC §9.6, §9.10 | Chốt | |
 | BR-REM-13 | Cờ 45% cấp công ty sau khi có phần cầm lại: so **đã nộp / phải nộp xã (`payable`)**; `payable = 0` thì không gắn cờ. Cấp tổ giữ đã thu / phải thu | QĐ-L2 04/10 | Chốt | |
 | BR-REM-14 | Xã nộp phần vận chuyển về Sở, giữ ≤ 8% (QĐ 65) | QĐ 65 | Ngoài phạm vi demo | |
+| BR-REM-15 | **Công nợ của hộ:** khoản `UNPAID` của kỳ đã khóa (không tạo bảng mới). Hộ nộp được ở kỳ sau; tiền ghi vào **kỳ đang thu mới nhất** (`payments.ledger_period_id`), số kỳ đã khóa giữ nguyên; không có kỳ đang thu thì chưa nhận được (`NO_COLLECTING_PERIOD`). Cũng áp cho chuyển khoản SePay khớp khoản đó | góp ý BA 05/10 | Chốt | |
 
 ## 6. Lãnh đạo và đề nghị về tiền (`leadership`)
 

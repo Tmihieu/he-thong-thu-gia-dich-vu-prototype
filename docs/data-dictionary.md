@@ -453,7 +453,7 @@ Nguồn duy nhất cho "phải thu" của hộ.
 
 **Enum `ChargeStatus`:** `UNPAID` Chưa thu · `PAID` Đã thu · `EXEMPT` Miễn giảm (hiển thị thêm "Quá hạn" tính từ hạn nộp của kỳ)
 
-**Công nợ của hộ (góp ý BA 05/10):** khi khóa kỳ, khoản `UNPAID` thành **công nợ của hộ**, hộ nộp được ở kỳ sau (không chặn thu như trước); tiền tính vào kỳ đang thu. ⚠ Cách lưu (cột/bảng đánh dấu khoản chuyển kỳ) **chưa chốt**; bản demo chưa có.
+**Công nợ của hộ (góp ý BA 05/10):** khi khóa kỳ, khoản `UNPAID` thành **công nợ của hộ**, hộ nộp được ở kỳ sau (không chặn thu như trước); tiền tính vào kỳ đang thu. **Cách lưu (chốt 06/10/2026): không thêm bảng hay cột.** Công nợ của hộ là các khoản `UNPAID` của kỳ `LOCKED`, truy ra từ `charges` nối `collection_periods`. Khi hộ nộp, dòng `payments` mới có `ledger_period_id` = kỳ đang thu mới nhất (không có kỳ đang thu thì từ chối `NO_COLLECTING_PERIOD`) và khoản chuyển `PAID`; số của kỳ đã khóa giữ nguyên vì sổ công ty–kỳ tính thanh toán theo `coalesce(ledger_period_id, kỳ của khoản)`. Kỳ đã khóa vẫn chặn sửa khoản và lập phiếu thu cũ.
 
 **Khóa/ràng buộc:** `code` duy nhất; không chồng lấn `(subject_id, fee_type_id, daterange(coverage_from, coverage_to))` — exclusion constraint, chặn phát hành trùng kỳ tháng/quý (R2). Kỳ đã khóa thì không sửa.
 
@@ -1394,7 +1394,7 @@ Prototype có hai dạng: web `KN-2609-nnn` (YYMM) và app `PA-0926-nnn` (MMYY).
 
 **Hoàn tiền (T58):** một dòng `payments` với `method = REFUND`, `amount` **âm**, không có người đi thu; cột mới `ledger_period_id` = kỳ ghi nhận trong sổ công ty–kỳ (null với thanh toán thường = kỳ của khoản). Enum `PaymentMethod` thêm `REFUND` Hoàn tiền.
 
-**Sổ công ty–kỳ (`LedgerRowDto`):** thêm `adjustment` (Điều chỉnh kỳ trước: khoản kỳ đã khóa được xóa nợ, ghi ở kỳ này) và `refunded` (đã hoàn, ghi ở kỳ này). Còn phải nộp = phải thu − điều chỉnh − đã nộp; đã thu = Σ thanh toán (trừ hoàn) theo kỳ ghi nhận. O8, O9, O10 chốt 29/09/2026 (SPEC §11).
+**Sổ công ty–kỳ (`LedgerRowDto`):** thêm `adjustment` (Điều chỉnh kỳ trước: khoản kỳ đã khóa được xóa nợ, ghi ở kỳ này) và `refunded` (đã hoàn, ghi ở kỳ này). Đã thu = Σ thanh toán (tiền mặt và chuyển khoản, trừ hoàn) theo kỳ ghi nhận; thêm `cashCollected` (phần tiền mặt, hoàn tính vào đây). **Từ góp ý BA 05/10:** phải nộp xã `payable = cashCollected − adjustment − retained`; còn phải nộp = `payable` − đã nộp (xem mục "Phần công ty cầm lại" bên dưới). Chênh lệch `gap` = đã nộp − `payable`. O8, O9, O10 chốt 29/09/2026 (SPEC §11).
 
 ### HouseholdReminder — Nhật ký nhắc hộ dân nộp phí · `household_reminders` (V28)
 
@@ -1402,6 +1402,6 @@ Mỗi cặp `(charge_id, stage)` chỉ có một dòng nên mỗi mốc nhắc c
 
 ### Phần công ty cầm lại (thu gom) và đổi số nhân khẩu — chốt 03/10/2026
 
-- **Phần thu gom công ty cầm lại** không lưu thành cột: tính từ biểu giá của kỳ, mỗi khoản = `amount × collection_fee / monthly_total` của nhóm giá (làm tròn đồng). Sổ công ty–kỳ có thêm `retained` (Σ phần thu gom, đã trừ khoản kỳ khác xóa nợ ghi ở kỳ này) và `payable = due − adjustment − retained` (phải nộp xã). `remaining = payable − received`; nợ kỳ trước và nhắc nộp công ty cũng theo `payable`. Khoản không theo biểu giá (phí cố định) không có phần cầm lại. (Cột `companies.retained_percent` của V27 đã bỏ ở V30.)
+- **Phần thu gom công ty cầm lại (phí thu gom công ty được hưởng)** không lưu thành cột: tính từ biểu giá của kỳ **theo từng khoản đã thu** (góp ý BA 05/10): mỗi khoản = Σ thanh toán ròng của khoản ghi ở kỳ × `collection_fee / monthly_total` của nhóm giá, làm tròn đồng một lần theo khoản, rồi cộng lại; tính cho toàn bộ số đã thu, kể cả chuyển khoản vào tài khoản xã. Sổ công ty–kỳ có `retained` (Σ phần thu gom của số đã thu, trừ phần thu gom của khoản kỳ khác xóa nợ ghi ở kỳ này) và `payable = cashCollected − adjustment − retained` (phải nộp xã). **`payable` có thể âm**: xã trả lại công ty phần chênh, hệ thống giữ số âm, không cắt về 0. `remaining = payable − received`; nợ kỳ trước (Σ max(0, `payable` − đã nộp) các kỳ đã hết hạn) và nhắc nộp công ty cũng theo `payable`. Khoản không theo biểu giá (phí cố định) không có phần cầm lại. (Cột `companies.retained_percent` của V27 đã bỏ ở V30.)
 - **Phí xử lý** không thu và không đưa vào hệ thống (biểu giá chỉ có thu gom + vận chuyển).
 - **Đổi số người của hộ** áp từ kỳ sau: hợp đồng đang mở kết thúc hết kỳ đang chạy (`validTo` = ngày cuối kỳ), hợp đồng mới cùng nhóm giá mới bắt đầu ngày đầu kỳ kế tiếp, giữ nguyên miễn giảm và định mức. Không có kỳ nào đang chạy hoặc hợp đồng chưa bắt đầu thì đổi tại chỗ. Khoản đã phát hành giữ nhóm giá của nó.
