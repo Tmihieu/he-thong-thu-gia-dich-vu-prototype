@@ -21,6 +21,8 @@ import vn.dongthanh.vsmt.collection.domain.PaymentMethod;
 import vn.dongthanh.vsmt.collection.domain.PaymentRepository;
 import vn.dongthanh.vsmt.citizen.domain.CitizenAccountRepository;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
+import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository;
+import vn.dongthanh.vsmt.masterdata.domain.PeriodStatus;
 import vn.dongthanh.vsmt.notification.domain.NotificationKind;
 import vn.dongthanh.vsmt.notification.service.NotificationService;
 import vn.dongthanh.vsmt.notification.service.NotificationService.NotificationCommand;
@@ -40,9 +42,10 @@ import vn.dongthanh.vsmt.platform.service.AuditService;
  * khoản chuyển ngay sang Đã thu; không có thu một phần hay lượt ghé không thu được. Chỉ hai cách đóng: tiền mặt cho
  * người đi thu ({@link #recordPayment}) và chuyển khoản VietQR, ghi tự động khi ngân hàng báo về
  * ({@link #recordBankTransfer}); không ai tự bấm "đã chuyển khoản", không có thanh toán mô phỏng.
- * Người đi thu chỉ ghi cho khoản trong tổ được giao; quản lý công ty ghi thay cho hộ của công ty mình (phải chọn
- * người đi thu đang giữ tiền). Gửi lại cùng {@code clientRequestId} trả kết quả cũ (sau khi kiểm phạm vi). Kỳ đã khóa
- * hoặc khoản miễn thì không ghi được.
+ * Người đi thu ghi cho mọi khoản của công ty; quản lý công ty ghi thay cho hộ của công ty mình (phải chọn
+ * người đi thu đang giữ tiền). Gửi lại cùng {@code clientRequestId} trả kết quả cũ (sau khi kiểm phạm vi). Khoản miễn hoặc đã xóa
+ * nợ thì không ghi được. Khoản Chưa thu của kỳ đã khóa là công nợ của hộ (góp ý BA 05/10): vẫn thu được, tiền ghi vào kỳ
+ * đang thu ({@code ledger_period_id}), số kỳ đã khóa giữ nguyên; chưa có kỳ đang thu thì không ghi được.
  */
 @Service
 @RequiredArgsConstructor
@@ -56,6 +59,7 @@ public class CollectionService {
     private final CollectorWorkService scope;
     private final UserRepository users;
     private final PeriodGuard periodGuard;
+    private final CollectionPeriodRepository periods;
     private final CitizenAccountRepository citizenAccounts;
     private final NotificationService notifications;
     private final AuditService audit;
@@ -83,7 +87,7 @@ public class CollectionService {
         if (existing.isPresent()) {
             return replay(existing.get(), cmd.chargeId());
         }
-        requireCollectable(charge);
+        CollectionPeriod ledgerPeriod = requireCollectable(charge);
         if (cmd.method() != PaymentMethod.CASH) {
             throw new BusinessRuleException("PAYMENT_METHOD_INVALID",
                     "Chỉ ghi nhận tiền mặt ở đây; chuyển khoản tự ghi nhận khi ngân hàng báo tiền vào qua mã VietQR.");
@@ -103,7 +107,7 @@ public class CollectionService {
         Payment payment = payments.save(Payment.builder()
                 .code(code).charge(charge).amount(cmd.amount()).method(cmd.method()).paidAt(now)
                 .collectorId(collectorId).confirmedBy(actor.id()).bankRef(blankToNull(cmd.bankRef()))
-                .note(blankToNull(cmd.note())).clientRequestId(cmd.clientRequestId())
+                .note(blankToNull(cmd.note())).clientRequestId(cmd.clientRequestId()).ledgerPeriod(ledgerPeriod)
                 .build());
         charge.markPaid(now);
         Map<String, Object> after = state(charge, charge.getAmount());
@@ -128,7 +132,7 @@ public class CollectionService {
             return existing.get();
         }
         Charge charge = charges.findByIdWithDetails(chargeId).orElseThrow(CollectionService::chargeNotFound);
-        requireCollectable(charge);
+        CollectionPeriod ledgerPeriod = requireCollectable(charge);
         long paidBefore = payments.sumByChargeId(chargeId);
         long remaining = charge.getAmount() - paidBefore;
         if (amount != remaining) {
@@ -141,7 +145,7 @@ public class CollectionService {
         Payment payment = payments.save(Payment.builder()
                 .code(code).charge(charge).amount(amount).method(PaymentMethod.TRANSFER).paidAt(now)
                 .bankRef(blankToNull(bankRef)).note("Chuyển khoản qua SePay").clientRequestId(requestKey)
-                .build());
+                .ledgerPeriod(ledgerPeriod).build());
         charge.markPaid(now);
         Map<String, Object> after = state(charge, charge.getAmount());
         after.put("payment", code);
@@ -243,8 +247,9 @@ public class CollectionService {
         return charge;
     }
 
-    private void requireCollectable(Charge charge) {
-        periodGuard.requireOpen(charge.getPeriod());
+    /** Kiểm khoản còn thu được; trả kỳ ghi nhận tiền: null = kỳ của khoản, khác null = kỳ đang thu (công nợ hộ). */
+    private CollectionPeriod requireCollectable(Charge charge) {
+        CollectionPeriod ledgerPeriod = ledgerPeriodFor(charge.getPeriod());
         if (charge.getStatus() == ChargeStatus.EXEMPT) {
             throw new BusinessRuleException("CHARGE_EXEMPT", "Khoản " + charge.getCode() + " được miễn, không thu.");
         }
@@ -254,6 +259,26 @@ public class CollectionService {
         if (charge.getStatus() == ChargeStatus.WRITTEN_OFF) {
             throw new BusinessRuleException("CHARGE_WRITTEN_OFF", "Khoản " + charge.getCode() + " đã xóa nợ, không thu.");
         }
+        return ledgerPeriod;
+    }
+
+    /**
+     * Kỳ của khoản còn mở thì ghi vào chính kỳ đó (trả null, như {@link PeriodGuard}). Kỳ đã khóa: khoản chưa đóng là công
+     * nợ của hộ, ghi vào kỳ đang thu mới nhất; trạng thái đọc kèm FOR SHARE để khóa kỳ song song phải chờ. Kỳ dự thảo
+     * vẫn bị chặn.
+     */
+    private CollectionPeriod ledgerPeriodFor(CollectionPeriod own) {
+        if (!PeriodStatus.LOCKED.name().equals(periods.lockStatusForShare(own.getId()))) {
+            periodGuard.requireOpen(own);
+            return null;
+        }
+        for (CollectionPeriod p : periods.findByStatusOrderByStartDateDesc(PeriodStatus.COLLECTING)) {
+            if (PeriodStatus.COLLECTING.name().equals(periods.lockStatusForShare(p.getId()))) {
+                return p;
+            }
+        }
+        throw new BusinessRuleException("NO_COLLECTING_PERIOD", "Kỳ " + own.getCode()
+                + " đã khóa và chưa có kỳ đang thu để ghi nhận tiền công nợ của hộ.");
     }
 
     /** Báo hộ khi người thu ghi tiền: hộ thấy ngay khoản đã được ghi nhận Đã đóng. */

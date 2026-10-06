@@ -31,7 +31,7 @@ public class LedgerController {
     private final CompanyLedgerService ledger;
     private final AreaProgressService areaProgress;
 
-    @Operation(summary = "Sổ công ty–kỳ: phải thu, đã thu, đã nộp, còn nộp, nợ kỳ trước, tiến độ, đối soát."
+    @Operation(summary = "Sổ công ty–kỳ: phải thu, đã thu (tiền mặt, chuyển khoản), phí thu gom giữ lại, phải nộp xã, đã nộp, còn nộp, nợ kỳ trước, tiến độ, đối soát."
             + " Xã và quản trị thấy mọi công ty; công ty chỉ thấy dòng của mình")
     @GetMapping("/ledger")
     public List<LedgerRowDto> ledger(@RequestParam Long periodId, @AuthenticationPrincipal CurrentUser actor) {
@@ -84,12 +84,13 @@ public class LedgerController {
             @Schema(requiredMode = RequiredMode.REQUIRED,
                     description = "Điều chỉnh kỳ trước: khoản kỳ đã khóa được xóa nợ, ghi nhận ở kỳ này") long adjustment,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã hoàn cho hộ, ghi nhận ở kỳ này") long refunded,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Công ty đã thu của hộ (đã trừ hoàn)") long collected,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã thu của hộ gồm tiền mặt và chuyển khoản (đã trừ hoàn), ghi nhận ở kỳ này") long collected,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Trong đã thu: tiền mặt công ty giữ (đã trừ hoàn). Chuyển khoản vào tài khoản xã = đã thu − tiền mặt") long cashCollected,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã nộp về xã") long received,
             @Schema(requiredMode = RequiredMode.REQUIRED) long receiptCount,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Còn phải nộp = phải nộp xã − đã nộp")
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Còn phải nộp = phải nộp xã − đã nộp; âm là xã trả lại công ty phần chênh")
             long remaining,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã nộp về xã (kể cả điều chỉnh kỳ trước) − phần vận chuyển của số tiền đã thu; âm là thu rồi chưa nộp đủ") long gap,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Chênh lệch = đã nộp về xã − phải nộp xã; âm là còn nộp thiếu, dương là nộp dư (xã trả lại công ty)") long gap,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Nợ các kỳ trước đã hết hạn") long previousDebt,
             @Schema(requiredMode = RequiredMode.REQUIRED) boolean overdue,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã thu / phải thu (%)") double collectionRate,
@@ -99,12 +100,12 @@ public class LedgerController {
             boolean lowRemittedRate,
             @Schema(requiredMode = RequiredMode.REQUIRED) Progress progress,
             @Schema(requiredMode = RequiredMode.REQUIRED) Reconciliation reconciliation,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phần thu gom công ty cầm lại, tính từ biểu giá") long retained,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phải nộp xã = phải thu − điều chỉnh − phần giữ lại") long payable) {
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phí thu gom công ty được hưởng: tính từ biểu giá trên toàn bộ số đã thu (cả chuyển khoản), làm tròn đồng theo từng khoản") long retained,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phải nộp xã = tiền mặt đã thu − điều chỉnh kỳ trước − phí thu gom của toàn bộ số đã thu; âm thì xã trả lại công ty") long payable) {
 
         static LedgerRowDto of(LedgerRow r) {
             return new LedgerRowDto(r.companyId(), r.companyCode(), r.companyName(), r.periodId(), r.due(),
-                    r.chargeCount(), r.adjustment(), r.refunded(), r.collected(), r.received(), r.receiptCount(), r.remaining(), r.gap(),
+                    r.chargeCount(), r.adjustment(), r.refunded(), r.collected(), r.cashCollected(), r.received(), r.receiptCount(), r.remaining(), r.gap(),
                     r.previousDebt(), r.overdue(), r.collectionRate(), r.lowCollectionRate(), r.remittedRate(),
                     r.lowRemittedRate(), r.progress(), r.reconciliation(), r.retained(), r.payable());
         }

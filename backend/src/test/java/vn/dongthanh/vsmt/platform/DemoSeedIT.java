@@ -225,19 +225,26 @@ class DemoSeedIT extends IntegrationTest {
                 .extracting(CompanyAmount::amount).singleElement().isIn(609_000L, 639_000L);
         long received = demoDb.queryForObject(
                 "select sum(amount) from company_receipts where company_id = ? and period_id = ?", Long.class, dv01, period);
-        // QĐ-L16: V34_1 hạ phiếu mẫu về 200.000 đ để còn phải nộp dương sau phần cầm lại.
+        // QĐ-L16: V34_1 hạ phiếu mẫu về 200.000 đ.
         assertThat(received).isEqualTo(200_000L);
-        // Như CompanyLedgerService.overdueDebtsOf (nhắc nộp, R16, BR-REM-03): kỳ có hạn trước hôm nay, còn nợ =
-        // phải thu − phần thu gom công ty cầm lại − đã nộp. Đúng cả lúc làm seed lẫn ngày demo.
+        // Phải nộp xã tính trên số ĐÃ THU (góp ý BA 05/10): tiền mặt đã thu − phí thu gom của toàn bộ số đã thu (cả chuyển
+        // khoản). DV01 kỳ 09: tiền mặt 480.000 − phí thu gom của 639.000 đã thu (455.788) = 24.212. Cùng một con số ở truy
+        // vấn một kỳ (màn đối soát) và truy vấn các kỳ đã hết hạn (nợ kỳ trước, nhắc nộp), đúng cả lúc làm seed lẫn ngày demo.
+        // Hộ chuyển khoản vào tài khoản xã mà công ty vẫn hưởng phí thu gom nên phải nộp xã thấp hơn nhiều so với phải thu.
+        long cash = ledger.cashCollectedByCompany(period).stream().filter(c -> c.companyId() == dv01)
+                .mapToLong(CompanyAmount::amount).sum();
+        long retained = ledger.retainedByCompany(period).stream().filter(c -> c.companyId() == dv01)
+                .mapToLong(CompanyAmount::amount).sum();
+        long payable = cash - retained;
+        assertThat(cash).isEqualTo(480_000L);
+        assertThat(payable).isEqualTo(24_212L);
         for (LocalDate today : List.of(LocalDate.of(2026, 9, 28), LocalDate.of(2026, 10, 21))) {
-            long retained = ledger.retainedByCompanyAndPeriodBefore(today).stream()
-                    .filter(r -> r.companyId() == dv01 && r.periodId() == period).mapToLong(CompanyPeriodAmount::amount).sum();
-            assertThat(ledger.dueByCompanyAndPeriodBefore(today)).filteredOn(d -> d.companyId() == dv01)
-                    .map(d -> new CompanyPeriodAmount(d.companyId(), d.periodId(), d.amount() - retained - received))
-                    .containsExactly(new CompanyPeriodAmount(dv01, period, 1_319_000 - retained - received));
-            // Phiếu mẫu phải nhỏ hơn phải nộp xã, để demo hiện "Đang nộp" chứ không âm (QĐ-L16).
-            assertThat(1_319_000 - retained - received).isPositive();
+            assertThat(ledger.payableByCompanyAndPeriodBefore(today)).filteredOn(d -> d.companyId() == dv01)
+                    .containsExactly(new CompanyPeriodAmount(dv01, period, payable));
         }
+        // Còn phải nộp = 24.212 − 200.000 = −175.788: DV01 đã nộp dư so với phải nộp xã, xã trả lại công ty phần chênh, nên không
+        // còn nợ xã và nhắc nộp (R16) không có kỳ nào để nhắc.
+        assertThat(payable - received).isNegative();
 
         // Khoản Đã thu đúng khi Σ thanh toán = số tiền, không thu vượt (G4); hộ kịch bản đã đóng kỳ cũ.
         assertThat(demoDb.queryForObject("""

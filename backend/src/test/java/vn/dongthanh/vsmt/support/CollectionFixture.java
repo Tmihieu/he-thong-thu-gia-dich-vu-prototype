@@ -10,6 +10,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import vn.dongthanh.vsmt.billing.domain.ChargeScope;
 import vn.dongthanh.vsmt.billing.service.ChargeRequestService;
 import vn.dongthanh.vsmt.billing.service.ChargeRequestService.IssueCommand;
+import vn.dongthanh.vsmt.collection.domain.PaymentMethod;
+import vn.dongthanh.vsmt.collection.service.CollectionService;
+import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentCommand;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
 import vn.dongthanh.vsmt.masterdata.domain.AreaAssignment;
 import vn.dongthanh.vsmt.masterdata.domain.AreaAssignmentRepository;
@@ -58,6 +61,7 @@ public class CollectionFixture {
     @Autowired ServiceSubjectRepository subjects;
     @Autowired ServiceContractRepository contracts;
     @Autowired ChargeRequestService chargeRequests;
+    @Autowired CollectionService collection;
     @Autowired UserRepository users;
     @Autowired JwtService jwt;
     @Autowired JdbcTemplate jdbc;
@@ -120,7 +124,26 @@ public class CollectionFixture {
         return this;
     }
 
-    public long chargeId(String subjectCode) {
+/**
+ * Thu đủ tiền mặt các khoản của hộ (80.000 đ, người thu của công ty có khoản). Phải nộp xã tính trên số đã thu nên
+ * muốn có số phải nộp thì phải thu tiền mặt trước.
+ */
+public void collectCash(String... subjectCodes) {
+    for (String code : subjectCodes) {
+        Long companyId = jdbc.queryForObject("select c.company_id from charges c join service_subjects s on s.id = c.subject_id"
+                + " where s.code = ?", Long.class, code);
+        User collector = dv01.getId().equals(companyId) ? thu07 : thu12;
+        collection.recordPayment(new PaymentCommand(chargeId(code), 80_000, PaymentMethod.CASH, "fx-cash-" + code,
+                null, null, null), actor(collector));
+    }
+}
+
+/** Thu đủ tiền mặt cả 6 hộ: DV01 320.000 đ (4 hộ), DV07 160.000 đ (2 hộ). */
+public void collectAllCash() {
+    collectCash("DTH-H000001", "DTH-H000002", "DTH-H000003", "DTH-H000004", "DTH-H000005", "DTH-H000006");
+}
+
+public long chargeId(String subjectCode) {
         return jdbc.queryForObject("select c.id from charges c join service_subjects s on s.id = c.subject_id"
                 + " where s.code = ?", Long.class, subjectCode);
     }

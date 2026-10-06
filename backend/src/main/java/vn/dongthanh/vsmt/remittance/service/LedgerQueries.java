@@ -67,21 +67,6 @@ public class LedgerQueries {
     }
 
     /**
-     * Phải thu (đã trừ điều chỉnh xóa nợ kỳ trước ghi ở kỳ đó) theo (công ty, kỳ) của các kỳ có hạn công ty nộp xã
-     * trước {@code today}.
-     */
-    public List<CompanyPeriodAmount> dueByCompanyAndPeriodBefore(LocalDate today) {
-        return jdbc.query("select x.company_id, x.period_id, sum(x.amount) from ("
-                + " select c.company_id, c.period_id, c.amount from charges c where " + COUNTED
-                + " union all"
-                + " select c.company_id, c.written_off_period_id, -c.amount from charges c"
-                + " where c.written_off_period_id is not null and c.period_id <> c.written_off_period_id"
-                + ") x join collection_periods p on p.id = x.period_id"
-                + " where p.due_date < ? group by x.company_id, x.period_id",
-                (rs, i) -> new CompanyPeriodAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), today);
-    }
-
-    /**
      * Phần thu gom của một khoản = số tiền × thu gom / (thu gom + vận chuyển) của nhóm giá trong biểu giá của kỳ. Công ty
      * cầm lại phần này, chỉ nộp phần vận chuyển về xã (xã chốt 03/10). Khoản không theo biểu giá thì không có phần giữ lại.
      */
@@ -91,14 +76,26 @@ public class LedgerQueries {
     private static final String COLLECTION_JOIN = " join collection_periods cp on cp.id = c.period_id"
             + " left join tariff_rates r on r.tariff_version_id = cp.tariff_version_id and r.tariff_group = c.tariff_group";
 
+    /** Σ thanh toán ròng ghi nhận ở kỳ không phải chuyển khoản (tiền mặt, trừ hoàn): tiền công ty đang giữ để nộp xã. */
+    public List<CompanyAmount> cashCollectedByCompany(long periodId) {
+        return jdbc.query("select c.company_id, sum(p.amount), count(*) filter (where p.amount > 0)"
+                + " from payments p join charges c on c.id = p.charge_id where " + PAYMENT_PERIOD + " = ?"
+                + " and p.method <> 'TRANSFER' group by c.company_id",
+                (rs, i) -> new CompanyAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), periodId);
+    }
+
     /**
-     * Phần công ty giữ lại của kỳ theo công ty: Σ phần thu gom các khoản còn tính phải thu, trừ phần thu gom của khoản kỳ
-     * khác được xóa nợ ghi nhận ở kỳ này (cùng cách tính với phải thu và điều chỉnh). Số {@code count} không dùng.
+     * Phần công ty giữ lại (phí thu gom) của kỳ theo công ty, tính trên TOÀN BỘ số đã thu kể cả chuyển khoản (góp ý BA
+     * 05/10): mỗi khoản lấy Σ thanh toán ròng ghi ở kỳ × collection_fee / monthly_total, làm tròn đồng một lần theo khoản,
+     * rồi cộng lại; trừ phần thu gom của khoản kỳ khác được xóa nợ ghi ở kỳ này (cùng cách tính với điều chỉnh). Khoản
+     * phí cố định (không có đơn giá nhóm) không có phần thu gom. Số {@code count} không dùng.
      */
     public List<CompanyAmount> retainedByCompany(long periodId) {
         return jdbc.query("select x.company_id, sum(x.v), 0 from ("
-                + " select c.company_id, " + COLLECTION_PART + " as v from charges c" + COLLECTION_JOIN
-                + " where c.period_id = ? and " + COUNTED
+                + " select c.company_id, coalesce(round(sum(p.amount) * r.collection_fee::numeric"
+                + " / nullif(r.monthly_total, 0)), 0) as v from payments p join charges c on c.id = p.charge_id"
+                + COLLECTION_JOIN + " where " + PAYMENT_PERIOD + " = ?"
+                + " group by c.id, c.company_id, r.collection_fee, r.monthly_total"
                 + " union all"
                 + " select c.company_id, -" + COLLECTION_PART + " from charges c" + COLLECTION_JOIN
                 + " where c.written_off_period_id = ? and c.period_id <> c.written_off_period_id"
@@ -106,32 +103,34 @@ public class LedgerQueries {
                 (rs, i) -> new CompanyAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), periodId, periodId);
     }
 
-    /** Như {@link #retainedByCompany} nhưng theo (công ty, kỳ) của các kỳ có hạn công ty nộp xã trước {@code today}. */
-    public List<CompanyPeriodAmount> retainedByCompanyAndPeriodBefore(LocalDate today) {
+    /**
+     * Phải nộp xã theo (công ty, kỳ) của các kỳ có hạn nộp trước {@code today}: tiền mặt đã thu − điều chỉnh − phần thu
+     * gom của số đã thu, cùng công thức với {@link #cashCollectedByCompany}, {@link #retainedByCompany} và
+     * {@link #writeOffAdjustmentByCompany}. Có thể âm (xã trả lại công ty).
+     */
+    public List<CompanyPeriodAmount> payableByCompanyAndPeriodBefore(LocalDate today) {
         return jdbc.query("select x.company_id, x.period_id, sum(x.v) from ("
-                + " select c.company_id, c.period_id, " + COLLECTION_PART + " as v from charges c" + COLLECTION_JOIN
-                + " where " + COUNTED
+                + " select c.company_id, " + PAYMENT_PERIOD + " as period_id,"
+                + " sum(case when p.method <> 'TRANSFER' then p.amount else 0 end)"
+                + " - coalesce(round(sum(p.amount) * r.collection_fee::numeric / nullif(r.monthly_total, 0)), 0) as v"
+                + " from payments p join charges c on c.id = p.charge_id" + COLLECTION_JOIN
+                + " group by c.id, c.company_id, p.ledger_period_id, c.period_id, r.collection_fee, r.monthly_total"
                 + " union all"
-                + " select c.company_id, c.written_off_period_id, -" + COLLECTION_PART + " from charges c" + COLLECTION_JOIN
+                + " select c.company_id, c.written_off_period_id, -(c.amount - " + COLLECTION_PART + ") from charges c"
+                + COLLECTION_JOIN
                 + " where c.written_off_period_id is not null and c.period_id <> c.written_off_period_id"
                 + ") x join collection_periods p on p.id = x.period_id"
                 + " where p.due_date < ? group by x.company_id, x.period_id",
                 (rs, i) -> new CompanyPeriodAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), today);
     }
 
-    /**
-     * Phần thu gom nằm trong số tiền công ty ĐÃ THU của kỳ (QĐ-L15): mỗi khoản lấy Σ thanh toán ròng ghi ở kỳ ×
-     * collection_fee / monthly_total, làm tròn đồng một lần theo khoản. Khoản phí cố định (không có đơn giá nhóm) không có
-     * phần thu gom nên tính cả vào phần phải nộp. Số {@code count} không dùng.
-     */
-    public List<CompanyAmount> retainedOfCollectedByCompany(long periodId) {
-        return jdbc.query("select x.company_id, sum(x.v), 0 from ("
-                + " select c.company_id, coalesce(round(sum(p.amount) * r.collection_fee::numeric"
-                + " / nullif(r.monthly_total, 0)), 0) as v from payments p join charges c on c.id = p.charge_id"
-                + COLLECTION_JOIN + " where " + PAYMENT_PERIOD + " = ?"
-                + " group by c.id, c.company_id, r.collection_fee, r.monthly_total) x group by x.company_id",
-                (rs, i) -> new CompanyAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), periodId);
+    /** Số khoản Chưa thu của kỳ: kỳ "đã thu đủ mọi khoản" khi bằng 0 (UC-39). Khoản miễn, đã xóa nợ không tính. */
+    public long unpaidChargeCount(long periodId) {
+        Long n = jdbc.queryForObject("select count(*) from charges c where c.period_id = ? and c.status = 'UNPAID'",
+                Long.class, periodId);
+        return n == null ? 0 : n;
     }
+
 
     /** Đã thu theo tổ chỉ gồm thanh toán ghi nhận ở chính kỳ (hoàn của kỳ đã khóa không làm đổi số kỳ đó, O10). */
     public List<AreaProgressRow> progressByArea(long periodId) {

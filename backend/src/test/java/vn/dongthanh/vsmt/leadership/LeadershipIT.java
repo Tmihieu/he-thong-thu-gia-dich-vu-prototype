@@ -113,7 +113,7 @@ class LeadershipIT extends IntegrationTest {
     }
 
     @Test
-    void approvedWriteOffLeavesTheCompanyDueAndOnlyLeaderDecides() throws Exception {
+    void approvedWriteOffDropsTheChargeFromDueAndOnlyLeaderDecides() throws Exception {
         long charge = fx.chargeId("DTH-H000001");
         long id = create(writeOff(charge));
 
@@ -132,7 +132,8 @@ class LeadershipIT extends IntegrationTest {
         assertThat(chargeStatus(charge)).isEqualTo("WRITTEN_OFF");
         ledgerOf(fx.october.getId(), "DV01")
                 .andExpect(jsonPath("$[0].due").value(240_000))
-                .andExpect(jsonPath("$[0].remaining").value(240_000));
+                // Phải nộp xã tính trên số đã thu: chưa thu đồng nào nên chưa phải nộp.
+                .andExpect(jsonPath("$[0].remaining").value(0));
     }
 
     @Test
@@ -175,18 +176,16 @@ class LeadershipIT extends IntegrationTest {
 
     @Test
     void writeOffOfALockedPeriodGoesToTheCollectingPeriodAsAdjustment() throws Exception {
-        receipts.issue(new IssueReceiptCommand(fx.dv01.getId(), fx.october.getId(), 320_000, ReceiptMethod.TRANSFER,
+        // Kỳ 10: DV01 thu tiền mặt 1 hộ (80.000) và nộp đủ; đến hạn nộp (31/10) nên khóa được dù còn hộ chưa đóng.
+        long paidOctober = fx.chargeId("DTH-H000001");
+        fx.collectCash("DTH-H000001");
+        receipts.issue(new IssueReceiptCommand(fx.dv01.getId(), fx.october.getId(), 80_000, ReceiptMethod.TRANSFER,
                 null, null, null, null), fx.actor(fx.officer));
-        receipts.issue(new IssueReceiptCommand(fx.dv07.getId(), fx.october.getId(), 160_000, ReceiptMethod.TRANSFER,
-                null, null, null, null), fx.actor(fx.officer));
+        clock.set(java.time.Instant.parse("2026-10-31T03:00:00Z"));
         send("/api/remittance/periods/" + fx.october.getId() + "/lock", officer, "{}").andExpect(status().isOk());
         CollectionPeriod november = periods.save(CollectionPeriod.open(PeriodType.MONTH, 2026, 11, null,
                 LocalDate.of(2026, 11, 30), fx.october.getTariffVersion()));
 
-        long paidOctober = fx.chargeId("DTH-H000001");
-        jdbc.update("insert into payments (code, charge_id, amount, method, paid_at, collector_id, client_request_id)"
-                + " values ('TT-FX-1', ?, 80000, 'CASH', now(), ?, 'fx-oct-1')", paidOctober, fx.thu07.getId());
-        jdbc.update("update charges set status = 'PAID', paid_at = now() where id = ?", paidOctober);
         long id = create(writeOff(fx.chargeId("DTH-H000003")));
         send("/api/leadership/approvals/" + id + "/approve", lead, "{}")
                 .andExpect(jsonPath("$.effectivePeriodCode").value(november.getCode()));
@@ -195,13 +194,16 @@ class LeadershipIT extends IntegrationTest {
         ledgerOf(fx.october.getId(), "DV01")
                 .andExpect(jsonPath("$[0].due").value(320_000))
                 .andExpect(jsonPath("$[0].collected").value(80_000))
+                .andExpect(jsonPath("$[0].payable").value(80_000))
                 .andExpect(jsonPath("$[0].remaining").value(0));
         ledgerOf(november.getId(), "DV01")
                 .andExpect(jsonPath("$[0].adjustment").value(80_000))
                 .andExpect(jsonPath("$[0].refunded").value(20_000))
                 .andExpect(jsonPath("$[0].collected").value(-20_000))
-                .andExpect(jsonPath("$[0].remaining").value(-80_000))
-                // Điều chỉnh tính như đã nộp: 0 + 80.000 − (−20.000).
+                // Phải nộp xã = tiền mặt (−20.000, hoàn trừ vào tiền mặt) − điều chỉnh 80.000 − phí thu gom 0 = −100.000.
+                .andExpect(jsonPath("$[0].payable").value(-100_000))
+                .andExpect(jsonPath("$[0].remaining").value(-100_000))
+                // Chênh lệch = đã nộp (0) − phải nộp xã (−100.000).
                 .andExpect(jsonPath("$[0].gap").value(100_000));
     }
 
