@@ -25,14 +25,17 @@ export function HouseholdDebtModal({
   const [page, setPage] = useState(0);
   const debts = useHouseholdDebts({ companyId, areaId, page, size: PAGE_SIZE }, open);
   return (
-    <Modal title="Công nợ hộ" open={open} onCancel={onClose} footer={null} width={960} destroyOnHidden afterClose={() => setPage(0)}>
+    <Modal title="Công nợ hộ" open={open} onCancel={onClose} footer={null} width={1200} destroyOnHidden afterClose={() => setPage(0)}>
       {debts.error && <ErrorBlock error={debts.error} onRetry={() => void debts.refetch()} />}
       <Table<HouseholdDebt>
         size="small"
         rowKey="chargeId"
         loading={debts.isLoading}
         dataSource={debts.data?.items ?? []}
-        scroll={{ x: 760 }}
+        // Mỗi ô một dòng, không rơi chữ; bảng rộng hơn khung thì cuộn ngang.
+        scroll={{ x: 'max-content' }}
+        onRow={() => ({ style: { whiteSpace: 'nowrap' } })}
+        onHeaderRow={() => ({ style: { whiteSpace: 'nowrap' } })}
         locale={{ emptyText: debts.isLoading ? 'Đang tải…' : 'Không có hộ nào còn nợ' }}
         pagination={{
           current: page + 1,
