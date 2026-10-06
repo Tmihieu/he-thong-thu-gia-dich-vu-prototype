@@ -79,6 +79,10 @@ public class Charge extends BaseEntity {
     @Column(updatable = false)
     private Long quotaKg;
 
+    /** Số nhân khẩu chụp lúc phát hành (nhóm theo nhân khẩu); null nếu không áp dụng. */
+    @Column(updatable = false)
+    private Integer memberCount;
+
     /** Chỉ đổi khi lãnh đạo từ chối miễn giảm (khoản Miễn giảm về Chưa thu, O8). */
     @Column(nullable = false)
     private long amount;
@@ -115,6 +119,7 @@ public class Charge extends BaseEntity {
         c.unitPrice = amount.unitPrice();
         c.months = amount.months();
         c.quotaKg = amount.quotaKg();
+        c.memberCount = amount.memberCount();
         c.amount = amount.amount();
         c.coverageFrom = request.getPeriod().getStartDate();
         c.coverageTo = request.getPeriod().getEndDate();
@@ -154,18 +159,20 @@ public class Charge extends BaseEntity {
         if (status != ChargeStatus.EXEMPT) {
             throw new IllegalStateException("Khoản " + code + " không ở trạng thái miễn giảm");
         }
-        long kg = 1;
-        if (tariffGroup == TariffGroup.BY_VOLUME) {
+        long quantity = 1;
+        if (tariffGroup == TariffGroup.HH_PER_CAPITA) {
+            quantity = memberCount; // luôn chụp khi lập khoản theo nhân khẩu
+        } else if (tariffGroup != null && tariffGroup.isPerKg()) {
             // Nhóm theo ký: đơn giá là đ/kg nên phải nhân định mức (đã chụp, hoặc định mức hiện tại của đăng ký nếu hộ miễn chưa có).
             Number quota = quotaKg != null ? quotaKg : contractQuotaKg;
             if (quota == null) {
                 throw new BusinessRuleException("QUOTA_KG_REQUIRED",
                         "Đăng ký thu phí nhóm tính theo ký chưa có định mức kg/tháng; nhập định mức trước khi từ chối miễn giảm.");
             }
-            kg = quota.longValue();
+            quantity = quota.longValue();
         }
         status = ChargeStatus.UNPAID;
-        amount = Math.multiplyExact(Math.multiplyExact(unitPrice, kg), (long) months);
+        amount = Math.multiplyExact(Math.multiplyExact(unitPrice, quantity), (long) months);
     }
 
     /** Quá hạn: chưa thu và đã qua hạn nộp của kỳ (không lưu, tính khi đọc). */

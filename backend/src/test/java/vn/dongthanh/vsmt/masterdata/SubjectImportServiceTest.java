@@ -146,7 +146,7 @@ class SubjectImportServiceTest {
         assertThat(contract.getAllValues().get(1).tariffGroup()).isEqualTo(TariffGroup.HH_3_PLUS);
         assertThat(contract.getAllValues().get(1).validFrom()).hasToString("2026-10-04");
         assertThat(contract.getAllValues().get(2)).isNull();
-        assertThat(cmd.getAllValues().get(2).type()).isEqualTo(SubjectType.BUSINESS_HOUSEHOLD);
+        assertThat(cmd.getAllValues().get(2).type()).isEqualTo(SubjectType.SMALL_SOURCE);
         assertThat(cmd.getAllValues().get(0).areaId()).isEqualTo(7L);
     }
 

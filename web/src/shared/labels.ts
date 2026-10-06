@@ -28,10 +28,12 @@ export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
 export const TARIFF_GROUP_LABELS: Record<TariffGroup, string> = {
   HH_UP_TO_2: 'HGĐ ≤ 2 người',
   HH_3_PLUS: 'HGĐ ≥ 3 người',
+  HH_PER_CAPITA: 'HGĐ theo nhân khẩu',
   SMALL_UP_TO_126: '≤ 126 kg/tháng (nguồn thải nhỏ)',
   SMALL_126_TO_250: '126–250 kg/tháng (nguồn thải nhỏ)',
   SMALL_250_TO_500: '250–500 kg/tháng (nguồn thải nhỏ)',
-  BY_VOLUME: '500–9.000 kg/tháng (nguồn thải lớn)',
+  BY_VOLUME: '500–9.000 kg/tháng (nguồn thải nhỏ)',
+  FULL_COST_BY_KG: 'Đăng ký cân, có phí xử lý',
 };
 
 export const TARIFF_STATUS_LABELS: Record<TariffStatus, string> = {
@@ -53,8 +55,8 @@ export const PERIOD_STATUS_LABELS: Record<PeriodStatus, string> = {
 
 export const SUBJECT_TYPE_LABELS: Record<SubjectType, string> = {
   HOUSEHOLD: 'Hộ gia đình',
-  BUSINESS_HOUSEHOLD: 'Hộ kinh doanh',
-  ENTERPRISE: 'Doanh nghiệp',
+  SMALL_SOURCE: 'Nguồn thải nhỏ',
+  LARGE_SOURCE: 'Nguồn thải lớn',
 };
 
 export const SUBJECT_STATUS_LABELS: Record<SubjectStatus, string> = {

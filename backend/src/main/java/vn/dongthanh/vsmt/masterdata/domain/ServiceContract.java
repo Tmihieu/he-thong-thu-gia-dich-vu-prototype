@@ -55,7 +55,7 @@ public class ServiceContract extends BaseEntity {
     @Setter
     private String note;
 
-    /** Định mức kg/tháng cho nhóm theo ký (BY_VOLUME); null = chưa cân, chưa lập được khoản. */
+    /** Định mức kg/tháng cho nhóm theo ký (BY_VOLUME, FULL_COST_BY_KG), cán bộ xã cân một lần; null = chưa cân, chưa lập được khoản. */
     @Setter
     @Column
     private Integer quotaKg;

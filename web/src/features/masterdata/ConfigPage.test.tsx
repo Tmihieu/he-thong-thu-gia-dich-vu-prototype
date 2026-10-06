@@ -10,8 +10,8 @@ const admin = { id: 1, username: 'admin', fullName: 'Quản trị hệ thống',
 const tariffs = [
   {
     id: 1, code: 'BG-65-2026', legalBasis: 'QĐ 65/2026/QĐ-UBND', issuedDate: null, validFrom: '2026-09-01',
-    validTo: '2027-06-30', status: 'ACTIVE', scopeNote: 'Số tạm', note: null,
-    rates: [{ tariffGroup: 'HH_3_PLUS', collectionFee: 57000, transportFee: 23000, monthlyTotal: 80000, unitLabel: 'đ/hộ/tháng' }],
+    validTo: '2027-06-30', status: 'ACTIVE', scopeNote: 'Số tạm', note: null, perCapitaAll: false, perCapitaDistrictIds: [],
+    rates: [{ tariffGroup: 'HH_3_PLUS', collectionFee: 57000, transportFee: 23000, processingFee: 0, monthlyTotal: 80000, unitLabel: 'đ/hộ/tháng' }],
   },
 ];
 const period = {
@@ -77,6 +77,7 @@ describe('Cấu hình · kỳ thu', () => {
     mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, admin),
       'GET /api/masterdata/periods': () => jsonResponse(200, []),
+      'GET /api/masterdata/districts': () => jsonResponse(200, []),
       'GET /api/masterdata/tariffs': () => jsonResponse(200, tariffs),
     });
     renderApp('/admin/config');
@@ -91,17 +92,18 @@ describe('Cấu hình · kỳ thu', () => {
 });
 
 describe('Cấu hình · soạn và ban hành biểu giá', () => {
-  const groups = ['HH_UP_TO_2', 'HH_3_PLUS', 'SMALL_UP_TO_126', 'SMALL_126_TO_250', 'SMALL_250_TO_500', 'BY_VOLUME'];
+  const groups = ['HH_UP_TO_2', 'HH_3_PLUS', 'SMALL_UP_TO_126', 'SMALL_126_TO_250', 'SMALL_250_TO_500', 'BY_VOLUME', 'FULL_COST_BY_KG'];
   const draft = {
     id: 2, code: 'BG-70-2027', legalBasis: 'QĐ 70/2026/QĐ-UBND', issuedDate: null, validFrom: '2027-01-01', validTo: null,
-    status: 'DRAFT', scopeNote: null, note: null,
-    rates: groups.map((g) => ({ tariffGroup: g, collectionFee: 30000, transportFee: 10000, monthlyTotal: 40000, unitLabel: 'đ/hộ/tháng' })),
+    status: 'DRAFT', scopeNote: null, note: null, perCapitaAll: false, perCapitaDistrictIds: [],
+    rates: groups.map((g) => ({ tariffGroup: g, collectionFee: 30000, transportFee: 10000, processingFee: 0, monthlyTotal: 40000, unitLabel: 'đ/hộ/tháng' })),
   };
 
   it('sửa dự thảo gửi đủ các nhóm giá; bản đã ban hành không có nút Sửa (QĐ-L7)', async () => {
     const fetchFn = mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, admin),
       'GET /api/masterdata/periods': () => jsonResponse(200, []),
+      'GET /api/masterdata/districts': () => jsonResponse(200, []),
       'GET /api/masterdata/tariffs': () => jsonResponse(200, [draft, ...tariffs]),
       'PUT /api/masterdata/tariffs/2': () => jsonResponse(200, draft),
     });
@@ -121,15 +123,47 @@ describe('Cấu hình · soạn và ban hành biểu giá', () => {
     await waitFor(() => expect(fetchFn.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === 'PUT')).toBe(true));
     const put = fetchFn.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === 'PUT')!;
     const body = JSON.parse(String((put[1] as RequestInit).body));
-    expect(body.rates).toHaveLength(6);
+    expect(body.rates).toHaveLength(7); // đơn giá một người bỏ trống khi không bật nhân khẩu
+    expect(body).toMatchObject({ perCapitaAll: false, perCapitaDistrictIds: [] });
     expect(body.rates[0]).toMatchObject({ tariffGroup: 'HH_UP_TO_2', collectionFee: 35000, transportFee: 10000 });
     expect(body).toMatchObject({ legalBasis: 'QĐ 70/2026/QĐ-UBND', validFrom: '2027-01-01' });
+  });
+
+  it('bật thu theo nhân khẩu cho một địa bàn: gửi đơn giá một người vào vận chuyển, thu gom 0', async () => {
+    const fetchFn = mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, admin),
+      'GET /api/masterdata/periods': () => jsonResponse(200, []),
+      'GET /api/masterdata/districts': () => jsonResponse(200, [{ id: 1, code: 'DTH', name: 'Đông Thạnh' }]),
+      'GET /api/masterdata/tariffs': () => jsonResponse(200, [draft, ...tariffs]),
+      'PUT /api/masterdata/tariffs/2': () => jsonResponse(200, draft),
+    });
+    renderApp('/admin/config');
+
+    await userEvent.click(await screen.findByRole('tab', { name: 'Biểu giá' }));
+    await userEvent.click((await screen.findAllByRole('button', { name: 'Sửa' }))[0]!);
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByLabelText('Thu gom HGĐ theo nhân khẩu')).toBeDisabled();
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: /Thu hộ gia đình theo nhân khẩu/ }));
+    await pickOption(within(dialog).getByRole('combobox', { name: 'Địa bàn áp dụng' }), 'Đông Thạnh');
+
+    // Bật mà chưa nhập đơn giá một người thì không lưu.
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu dự thảo' }));
+    expect(await within(dialog).findByText('Nhập số')).toBeInTheDocument();
+    await userEvent.type(within(dialog).getByLabelText('Vận chuyển HGĐ theo nhân khẩu'), '20000');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu dự thảo' }));
+
+    await waitFor(() => expect(fetchFn.mock.calls.some(([, init]) => (init as RequestInit | undefined)?.method === 'PUT')).toBe(true));
+    const put = fetchFn.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === 'PUT')!;
+    const body = JSON.parse(String((put[1] as RequestInit).body));
+    expect(body).toMatchObject({ perCapitaAll: false, perCapitaDistrictIds: [1] });
+    expect(body.rates).toContainEqual(expect.objectContaining({ tariffGroup: 'HH_PER_CAPITA', collectionFee: 0, transportFee: 20000 }));
   });
 
   it('ban hành dự thảo gọi API ban hành; lỗi từ máy chủ hiện tiếng Việt', async () => {
     const fetchFn = mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, admin),
       'GET /api/masterdata/periods': () => jsonResponse(200, []),
+      'GET /api/masterdata/districts': () => jsonResponse(200, []),
       'GET /api/masterdata/tariffs': () => jsonResponse(200, [draft, ...tariffs]),
       'POST /api/masterdata/tariffs/2/issue': () =>
         jsonResponse(422, { code: 'TARIFF_PERIOD_ALREADY_OPEN', message: 'Đã mở Tháng 01/2027 theo biểu giá cũ.' }),
@@ -150,6 +184,7 @@ describe('Cấu hình · soạn và ban hành biểu giá', () => {
     mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, admin),
       'GET /api/masterdata/periods': () => jsonResponse(200, []),
+      'GET /api/masterdata/districts': () => jsonResponse(200, []),
       'GET /api/masterdata/tariffs': () => jsonResponse(200, [{ ...draft, status: 'ACTIVE', issuedDate: '2026-10-01' }]),
     });
     renderApp('/admin/config');

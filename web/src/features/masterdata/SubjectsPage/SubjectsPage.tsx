@@ -136,7 +136,7 @@ export function SubjectsPage() {
     <>
       <PageHeader
         title="Hồ sơ hộ"
-        description="Tìm, thêm, sửa hồ sơ và đăng ký thu phí của hộ, hộ kinh doanh, doanh nghiệp."
+        description="Tìm, thêm, sửa hồ sơ và đăng ký thu phí của hộ gia đình, nguồn thải nhỏ và nguồn thải lớn."
         extra={
           <Space>
             <Button icon={<UploadOutlined />} onClick={() => setImporting(true)}>

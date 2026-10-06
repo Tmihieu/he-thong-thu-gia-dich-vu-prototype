@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import vn.dongthanh.vsmt.platform.common.BaseEntity;
 
-/** Đối tượng sử dụng dịch vụ: hộ gia đình, hộ kinh doanh, doanh nghiệp (data dictionary §2.2). */
+/** Đối tượng sử dụng dịch vụ: hộ gia đình, nguồn thải nhỏ, nguồn thải lớn (data dictionary §2.2). */
 @Getter
 @Setter
 @Entity

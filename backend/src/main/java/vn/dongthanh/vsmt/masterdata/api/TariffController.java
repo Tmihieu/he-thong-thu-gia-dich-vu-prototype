@@ -50,7 +50,7 @@ public class TariffController {
         return tariffs.versions().stream().map(TariffVersionDto::of).toList();
     }
 
-    @Operation(summary = "Tạo dự thảo biểu giá (quản trị); phải đủ đơn giá 4 nhóm")
+    @Operation(summary = "Tạo dự thảo biểu giá (quản trị); phải đủ đơn giá các nhóm (đơn giá một người chỉ bắt buộc khi bật theo nhân khẩu)")
     @PostMapping("/tariffs")
     @ResponseStatus(HttpStatus.CREATED)
     public TariffVersionDto createDraft(@Valid @RequestBody CreateTariffRequest req,
@@ -81,6 +81,7 @@ public class TariffController {
             @Schema(requiredMode = RequiredMode.REQUIRED) @NotNull(message = "không được để trống") TariffGroup tariffGroup,
             @Schema(requiredMode = RequiredMode.REQUIRED) @PositiveOrZero long collectionFee,
             @Schema(requiredMode = RequiredMode.REQUIRED) @PositiveOrZero long transportFee,
+            @Schema(description = "Phí xử lý, chỉ nhóm cân; bỏ trống = 0") @PositiveOrZero long processingFee,
             @Schema(requiredMode = RequiredMode.REQUIRED, example = "đ/hộ/tháng")
             @NotBlank(message = "không được để trống") @Size(max = 30) String unitLabel) {
     }
@@ -92,12 +93,15 @@ public class TariffController {
             @Schema(description = "Để trống là không thời hạn") LocalDate validTo,
             @Size(max = 255) String scopeNote,
             @Size(max = 2000) String note,
-            @Schema(requiredMode = RequiredMode.REQUIRED) @NotEmpty @Valid List<RateRequest> rates) {
+            @Schema(requiredMode = RequiredMode.REQUIRED) @NotEmpty @Valid List<RateRequest> rates,
+            @Schema(description = "Mọi hộ gia đình toàn xã tính theo nhân khẩu") boolean perCapitaAll,
+            @Schema(description = "Các địa bàn tính theo nhân khẩu (khi không bật toàn xã)") List<Long> perCapitaDistrictIds) {
 
         DraftCommand toCommand() {
             return new DraftCommand(legalBasis, validFrom, validTo, blankToNull(scopeNote), blankToNull(note),
                     rates.stream().map(r -> new RateInput(r.tariffGroup(), r.collectionFee(), r.transportFee(),
-                            r.unitLabel())).toList());
+                            r.processingFee(), r.unitLabel())).toList(),
+                    perCapitaAll, perCapitaDistrictIds == null ? List.of() : perCapitaDistrictIds);
         }
 
         private static String blankToNull(String s) {
@@ -115,12 +119,13 @@ public class TariffController {
             @Schema(requiredMode = RequiredMode.REQUIRED) TariffGroup tariffGroup,
             @Schema(requiredMode = RequiredMode.REQUIRED) long collectionFee,
             @Schema(requiredMode = RequiredMode.REQUIRED) long transportFee,
+            @Schema(requiredMode = RequiredMode.REQUIRED) long processingFee,
             @Schema(requiredMode = RequiredMode.REQUIRED) long monthlyTotal,
             @Schema(requiredMode = RequiredMode.REQUIRED, example = "đ/hộ/tháng") String unitLabel) {
 
         static TariffRateDto of(TariffRate r) {
             return new TariffRateDto(r.getTariffGroup(), r.getCollectionFee(), r.getTransportFee(),
-                    r.getMonthlyTotal(), r.getUnitLabel());
+                    r.getProcessingFee(), r.getMonthlyTotal(), r.getUnitLabel());
         }
     }
 
@@ -134,12 +139,15 @@ public class TariffController {
             @Schema(requiredMode = RequiredMode.REQUIRED) TariffStatus status,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String scopeNote,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String note,
-            @Schema(requiredMode = RequiredMode.REQUIRED) List<TariffRateDto> rates) {
+            @Schema(requiredMode = RequiredMode.REQUIRED) List<TariffRateDto> rates,
+            @Schema(requiredMode = RequiredMode.REQUIRED) boolean perCapitaAll,
+            @Schema(requiredMode = RequiredMode.REQUIRED) List<Long> perCapitaDistrictIds) {
 
         static TariffVersionDto of(TariffVersion v) {
             return new TariffVersionDto(v.getId(), v.getCode(), v.getLegalBasis(), v.getIssuedDate(),
                     v.getValidFrom(), v.getValidTo(), v.getStatus(), v.getScopeNote(), v.getNote(),
-                    v.getRates().stream().map(TariffRateDto::of).toList());
+                    v.getRates().stream().map(TariffRateDto::of).toList(), v.isPerCapitaAll(),
+                    v.getPerCapitaDistricts().stream().map(d -> d.getId()).sorted().toList());
         }
     }
 

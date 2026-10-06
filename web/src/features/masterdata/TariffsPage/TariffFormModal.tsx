@@ -1,19 +1,25 @@
-import { Alert, Col, DatePicker, Form, Input, InputNumber, Modal, Row, Typography } from 'antd';
+import { Alert, Checkbox, Col, DatePicker, Form, Input, InputNumber, Modal, Row, Select, Typography } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 
 import { TARIFF_GROUP_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
-import type { CreateTariffRequest, TariffDraftRequest, TariffRate, TariffVersion } from '../api';
+import { useDistricts, type CreateTariffRequest, type TariffDraftRequest, type TariffRate, type TariffVersion } from '../api';
 
 type Group = TariffRate['tariffGroup'];
 const GROUPS = Object.keys(TARIFF_GROUP_LABELS) as Group[];
-/** Đơn vị tính cố định theo nhóm: chủ nguồn thải 500–9.000 kg tính theo ký, còn lại theo tháng. */
-const unitOf = (g: Group) => (g === 'BY_VOLUME' ? 'đ/kg' : g.startsWith('HH_') ? 'đ/hộ/tháng' : 'đ/tháng');
+/** Đơn vị tính cố định theo nhóm: nhóm cân theo ký, nhân khẩu theo người, còn lại theo tháng. */
+const unitOf = (g: Group) =>
+  g === 'BY_VOLUME' || g === 'FULL_COST_BY_KG' ? 'đ/kg'
+    : g === 'HH_PER_CAPITA' ? 'đ/người/tháng'
+      : g.startsWith('HH_') ? 'đ/hộ/tháng' : 'đ/tháng';
+/** Chỉ nhóm cân như nguồn thải lớn có phí xử lý (bảng mục 3 QĐ 65/2026). */
+const hasProcessing = (g: Group) => g === 'FULL_COST_BY_KG';
 
 interface RateValues {
   tariffGroup: Group;
   collectionFee?: number | null;
   transportFee?: number | null;
+  processingFee?: number | null;
   unitLabel?: string;
 }
 
@@ -25,6 +31,9 @@ interface FormValues {
   scopeNote?: string | null;
   note?: string | null;
   rates: RateValues[];
+  perCapita: boolean;
+  perCapitaAll: boolean;
+  perCapitaDistrictIds: number[];
 }
 
 interface Props {
@@ -49,10 +58,13 @@ const money = {
   parser: (v?: string) => Number((v ?? '').replace(/\D/g, '')),
 };
 
-/** Popup soạn dự thảo biểu giá: đủ đơn giá các nhóm; tổng = thu gom + vận chuyển. */
+/** Popup soạn dự thảo biểu giá: đủ đơn giá các nhóm; tổng = thu gom + vận chuyển + xử lý; bật thu theo nhân khẩu. */
 export function TariffFormModal({ draft, template, open, submitting, error, onCreate, onUpdate, onCancel }: Props) {
   const [form] = Form.useForm<FormValues>();
   const rates = Form.useWatch('rates', form);
+  const perCapita = Form.useWatch('perCapita', form);
+  const perCapitaAll = Form.useWatch('perCapitaAll', form);
+  const { data: districts } = useDistricts();
   const source = draft ?? template;
   const issued = !!draft && draft.status !== 'DRAFT';
 
@@ -65,8 +77,15 @@ export function TariffFormModal({ draft, template, open, submitting, error, onCr
     note: draft?.note,
     rates: GROUPS.map((g) => {
       const r = source?.rates.find((x) => x.tariffGroup === g);
-      return { tariffGroup: g, collectionFee: r?.collectionFee, transportFee: r?.transportFee, unitLabel: unitOf(g) };
+      return {
+        // Đơn giá một người: xã giữ hết (tạm chốt 06/10), thu gom luôn 0.
+        tariffGroup: g, collectionFee: g === 'HH_PER_CAPITA' ? 0 : r?.collectionFee, transportFee: r?.transportFee,
+        processingFee: r?.processingFee ?? 0, unitLabel: unitOf(g),
+      };
     }),
+    perCapita: !!draft && (draft.perCapitaAll || draft.perCapitaDistrictIds.length > 0),
+    perCapitaAll: draft?.perCapitaAll ?? false,
+    perCapitaDistrictIds: draft?.perCapitaDistrictIds ?? [],
   };
 
   function finish(v: FormValues) {
@@ -76,12 +95,18 @@ export function TariffFormModal({ draft, template, open, submitting, error, onCr
       validTo: v.validTo ? v.validTo.format('YYYY-MM-DD') : undefined,
       scopeNote: optional(v.scopeNote),
       note: optional(v.note),
-      rates: v.rates.map((r) => ({
-        tariffGroup: r.tariffGroup,
-        collectionFee: r.collectionFee!,
-        transportFee: r.transportFee!,
-        unitLabel: r.unitLabel!.trim(),
-      })),
+      // Đơn giá một người chỉ gửi khi đã nhập (bắt buộc khi bật theo nhân khẩu).
+      rates: v.rates
+        .filter((r) => r.tariffGroup !== 'HH_PER_CAPITA' || r.transportFee != null)
+        .map((r) => ({
+          tariffGroup: r.tariffGroup,
+          collectionFee: r.collectionFee ?? 0,
+          transportFee: r.transportFee ?? 0,
+          processingFee: hasProcessing(r.tariffGroup) ? (r.processingFee ?? 0) : 0,
+          unitLabel: r.unitLabel!.trim(),
+        })),
+      perCapitaAll: v.perCapita && v.perCapitaAll,
+      perCapitaDistrictIds: v.perCapita && !v.perCapitaAll ? v.perCapitaDistrictIds : [],
     };
     if (draft) onUpdate(body);
     else onCreate({ code: v.code!.trim(), draft: body });
@@ -149,44 +174,82 @@ export function TariffFormModal({ draft, template, open, submitting, error, onCr
 
         <Typography.Text strong>Đơn giá theo nhóm</Typography.Text>
         <Row gutter={12} style={{ margin: '8px 0 4px', color: 'rgba(0,0,0,.55)', fontSize: 12 }}>
-          <Col span={8}>Nhóm giá</Col>
+          <Col span={5}>Nhóm giá</Col>
           <Col span={4}>Thu gom (đ)</Col>
           <Col span={4}>Vận chuyển (đ)</Col>
-          <Col span={3}>Đơn vị tính</Col>
-          <Col span={5} style={{ textAlign: 'right' }}>Tổng cộng</Col>
+          <Col span={3}>Xử lý (đ)</Col>
+          <Col span={4}>Đơn vị tính</Col>
+          <Col span={3} style={{ textAlign: 'right' }}>Tổng cộng</Col>
         </Row>
         <Form.List name="rates">
           {(fields) =>
             fields.map((f, i) => {
               const r = rates?.[i];
+              const g = initial.rates[i]!.tariffGroup;
+              // Đơn giá một người chưa có số chính thức: chỉ bắt buộc khi bật theo nhân khẩu.
+              const rule = g === 'HH_PER_CAPITA' && !perCapita ? [] : required('Nhập số');
               return (
                 <Row key={f.key} gutter={12} align="top">
-                  <Col span={8} style={{ paddingTop: 5 }}>
-                    {TARIFF_GROUP_LABELS[initial.rates[i]!.tariffGroup]}
+                  <Col span={5} style={{ paddingTop: 5 }}>
+                    {TARIFF_GROUP_LABELS[g]}
                   </Col>
                   <Col span={4}>
-                    <Form.Item name={[f.name, 'collectionFee']} rules={required('Nhập số')}>
-                      <InputNumber<number> {...money} aria-label={`Thu gom ${TARIFF_GROUP_LABELS[initial.rates[i]!.tariffGroup]}`} />
+                    <Form.Item name={[f.name, 'collectionFee']} rules={rule}>
+                      <InputNumber<number> {...money} disabled={g === 'HH_PER_CAPITA'} aria-label={`Thu gom ${TARIFF_GROUP_LABELS[g]}`} />
                     </Form.Item>
                   </Col>
                   <Col span={4}>
-                    <Form.Item name={[f.name, 'transportFee']} rules={required('Nhập số')}>
-                      <InputNumber<number> {...money} aria-label={`Vận chuyển ${TARIFF_GROUP_LABELS[initial.rates[i]!.tariffGroup]}`} />
+                    <Form.Item name={[f.name, 'transportFee']} rules={rule}>
+                      <InputNumber<number> {...money} aria-label={`Vận chuyển ${TARIFF_GROUP_LABELS[g]}`} />
                     </Form.Item>
                   </Col>
                   <Col span={3}>
+                    {hasProcessing(g) ? (
+                      <Form.Item name={[f.name, 'processingFee']} rules={required('Nhập số')}>
+                        <InputNumber<number> {...money} aria-label={`Xử lý ${TARIFF_GROUP_LABELS[g]}`} />
+                      </Form.Item>
+                    ) : <div style={{ paddingTop: 5 }}>—</div>}
+                  </Col>
+                  <Col span={4}>
                     <Form.Item name={[f.name, 'unitLabel']} rules={[{ required: true, whitespace: true, message: 'Nhập' }]}>
                       <Input maxLength={30} disabled />
                     </Form.Item>
                   </Col>
-                  <Col span={5} style={{ paddingTop: 5, textAlign: 'right' }}>
-                    <MoneyText value={(r?.collectionFee ?? 0) + (r?.transportFee ?? 0)} strong />
+                  <Col span={3} style={{ paddingTop: 5, textAlign: 'right' }}>
+                    <MoneyText value={(r?.collectionFee ?? 0) + (r?.transportFee ?? 0) + (hasProcessing(g) ? (r?.processingFee ?? 0) : 0)} strong />
                   </Col>
                 </Row>
               );
             })
           }
         </Form.List>
+        <Form.Item name="perCapita" valuePropName="checked" style={{ marginBottom: 8 }}>
+          <Checkbox>Thu hộ gia đình theo nhân khẩu (đơn giá một người × số nhân khẩu; xã giữ toàn bộ, nhập vào cột Vận chuyển)</Checkbox>
+        </Form.Item>
+        {perCapita && (
+          <Row gutter={16}>
+            <Col xs={24} md={8}>
+              <Form.Item name="perCapitaAll" valuePropName="checked">
+                <Checkbox>Toàn xã</Checkbox>
+              </Form.Item>
+            </Col>
+            {!perCapitaAll && (
+              <Col xs={24} md={16}>
+                <Form.Item
+                  label="Địa bàn áp dụng"
+                  name="perCapitaDistrictIds"
+                  rules={[{ required: true, type: 'array', min: 1, message: 'Chọn ít nhất một địa bàn hoặc Toàn xã' }]}
+                >
+                  <Select
+                    mode="multiple"
+                    placeholder="Chọn địa bàn"
+                    options={districts?.map((d) => ({ value: d.id, label: d.name }))}
+                  />
+                </Form.Item>
+              </Col>
+            )}
+          </Row>
+        )}
         <Form.Item label="Ghi chú" name="note">
           <Input.TextArea rows={2} maxLength={2000} />
         </Form.Item>

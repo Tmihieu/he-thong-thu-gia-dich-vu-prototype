@@ -42,8 +42,10 @@ Mật khẩu chung `Demo@2026`. Mở F12 ở mọi cửa sổ: chạy hết kị
 
 | # | Vai trò | Thao tác | Kết quả mong đợi | Đạt |
 |---|---|---|---|---|
-| 2.1 | `admin` → Cấu hình → Biểu giá | Xem bản `BG-65-2026` | Đang áp dụng, có giá thu gom + vận chuyển từng nhóm, không có phí xử lý | |
-| 2.2 ✗ | `admin` → Biểu giá | Soạn bản dự thảo bỏ trống một nhóm → **Ban hành** | "Biểu giá phải có đơn giá cho đủ các nhóm giá." | |
+| 2.1 | `admin` → Cấu hình → Biểu giá | Xem bản `BG-65-2026` | Đang áp dụng, có giá thu gom + vận chuyển + xử lý từng nhóm; chỉ nhóm **Đăng ký cân, có phí xử lý** có xử lý 421 (453 + 180 + 421 = 1.054 đ/kg); nhóm 500–9.000 kg ghi "nguồn thải nhỏ"; chưa có dòng HGĐ theo nhân khẩu, ô **Thu hộ gia đình theo nhân khẩu** tắt | |
+| 2.2 ✗ | `admin` → Biểu giá | Soạn bản dự thảo bỏ trống một nhóm (không phải HGĐ theo nhân khẩu) → **Ban hành** | "Biểu giá phải có đơn giá cho đủ các nhóm giá." | |
+| 2.2b ✗ | `admin` → Biểu giá | Dự thảo bật **Thu hộ gia đình theo nhân khẩu**, chọn địa bàn DTH, để trống đơn giá HGĐ theo nhân khẩu → **Ban hành** | "Biểu giá thu theo nhân khẩu phải có đơn giá một người." | |
+| 2.2c | `admin` → Biểu giá | Dự thảo hiệu lực **01/11/2026**, bật theo nhân khẩu cho **DTH**, đơn giá một người số tạm (vd. 10.000 + 5.000) → **Ban hành** | Ban hành được; `BG-65-2026` kết thúc 31/10/2026; xem lại thấy ô nhân khẩu + DTH. Dùng cho 9.13–9.14 | |
 | 2.3 | `admin` → Cấu hình → Kỳ thu | **Tạo kỳ dự thảo** tháng **10/2026** (chỉ chọn loại, năm, tháng) | Kỳ 10/2026 hiện ngay **đầu** bảng, trạng thái **Dự thảo**, gắn `BG-65-2026`, cột Ngày mở và Hạn công ty nộp để trống; `canbo_xa` có thông báo kỳ chờ mở | |
 | 2.4 ✗ | `admin` | Tạo lại kỳ 10/2026 lần nữa | "Kỳ … đã được tạo trước đó." | |
 | 2.5 | `admin` → Kỳ thu → thẻ **Tự tạo kỳ thu** | Bật quy tắc tháng, ngày tạo 1, hộ đóng 15 ngày, nộp xã 10 ngày → **Lưu quy tắc** | Lưu được; không tạo kỳ trùng với kỳ 10 vừa tạo | |
@@ -222,10 +224,17 @@ Web chỉ còn phần **miễn giảm** (bật trên hồ sơ hộ). Hoàn tiề
 | 9.1 | `canbo_xa` → Hồ sơ hộ → **Thêm hộ** | Hộ gia đình 2 người, đường theo danh mục, Ấp 39 | Tạo được; đăng ký thu phí tự gắn nhóm ≤2 người; không hiện số hợp đồng | |
 | 9.2 ✗ | `canbo_xa` | Thêm hộ trùng địa chỉ hộ đã có | Cảnh báo "Địa chỉ này trùng với hồ sơ …" với **Mở hồ sơ đã có** / **Xác nhận là hộ khác** (cảnh báo, không chặn hẳn) | |
 | 9.3 | `canbo_xa` | Gõ đường không có trong danh mục → **Ghi nhận chờ xác minh** | Lưu được, đường đánh dấu chờ xác minh | |
-| 9.4 | `canbo_xa` | Đổi hộ 2 người thành 4 người | Khoản kỳ 10 giữ giá cũ; đăng ký mới (nhóm ≥3) bắt đầu từ kỳ sau; có lịch sử nhân khẩu | |
+| 9.4 | `canbo_xa` | Đổi hộ 2 người (nhóm ≤2, địa bàn chưa bật nhân khẩu) thành 4 người | Khoản kỳ 10 giữ giá cũ; đăng ký mới (nhóm ≥3) bắt đầu từ kỳ sau; có lịch sử nhân khẩu | |
 | 9.5 | `canbo_xa` → **Nhập từ Excel** | **Tải file mẫu**, điền 2 dòng đúng + 1 dòng sai → chọn file | Xem trước báo lỗi dòng sai, **không ghi dòng nào**; sửa hết lỗi thì ghi cả 3 | |
 | 9.6 | `thu07` | Hộ bất kỳ → **Báo sai** → **Gửi báo cáo** | `canbo_xa` và `dv01` có thông báo | |
 | 9.7 | `thu07` | Chọn kỳ 09 → hộ `DTH-H000122` → **Lịch sử** | Thấy lịch sử nộp các kỳ của hộ | |
+| 9.8 | `canbo_xa` → **Thêm hộ** | Loại **Nguồn thải lớn** | Nhóm giá chỉ có **Đăng ký cân, có phí xử lý**, có ô định mức kg/tháng; mã mới dạng `…-NL00001` | |
+| 9.9 | `canbo_xa` | Nguồn thải nhỏ, nhóm **Đăng ký cân**, định mức 600 kg (hiệu lực từ kỳ sau, hoặc kỳ chưa phát hành) → lập khoản kỳ đó | Khoản = 1.054 × 600 = **632.400 đ**/tháng. Xóa định mức → hồ sơ bị bỏ qua ở xem trước kèm lý do thiếu định mức kg | |
+| 9.10 ✗ | `canbo_xa` | Hộ gia đình đang nhóm ≤2: mở đăng ký, chọn nhóm | Chỉ có nhóm hộ gia đình; chỉ chuyển được sang **HGĐ theo nhân khẩu**. Nguồn thải nhỏ không thấy nhóm hộ gia đình | |
+| 9.11 | `canbo_xa` | Kỳ 10 đang thu: đổi nhóm đăng ký của một nguồn thải nhỏ (mã `KD…`/`DN…`) từ bậc 250–500 kg sang **Đăng ký cân** + định mức | Đăng ký cũ kết thúc **31/10/2026**, đăng ký mới nhóm cân từ **01/11/2026**; khoản kỳ 10 giữ nhóm và số tiền cũ | |
+| 9.12 ✗ | `canbo_xa` | Đổi loại nguồn thải nhỏ đang bậc 250–500 kg (đăng ký còn hiệu lực) thành **Nguồn thải lớn** | "Đăng ký thu phí … dùng nhóm giá không hợp loại mới; kết thúc hoặc sửa đăng ký trước khi đổi loại." | |
+| 9.13 | `admin` + `canbo_xa` | Sau 2.2c: tạo kỳ 11/2026 (gắn biểu giá mới) → lập phiếu YCT → **Xem trước** | Hộ gia đình ở DTH tính đơn giá một người × số nhân khẩu dù đăng ký ghi ≤2 / ≥3; hộ TTT / NB vẫn theo nhóm cũ. Sau phát hành, màn Khoản thu hiện "HGĐ theo nhân khẩu · N người" | |
+| 9.14 | `canbo_xa` | Trước khi lập khoản kỳ 11: đổi một hộ DTH từ 4 thành 5 người | Không tách đăng ký; khoản kỳ 11 lập sau đó tính **5 người** (áp ngay). Khoản đã lập giữ số người cũ | |
 
 ## Khoảng trống đã biết (không tính là lỗi khi chạy)
 

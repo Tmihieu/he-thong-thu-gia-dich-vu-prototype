@@ -126,6 +126,9 @@ public class SubjectService {
                 : suspectedDuplicates(area.getId(), street, cmd.houseNo(), cmd.unitNo(), subject.getId());
         requireDuplicateReason(twins, cmd);
         Integer membersBefore = subject.getMemberCount();
+        if (cmd.type() != subject.getSubjectType()) {
+            requireOpenContractsFit(subject, cmd.type());
+        }
         subject.setSubjectType(cmd.type());
         subject.setName(cmd.name().trim());
         applyAddress(subject, cmd, street);
@@ -147,8 +150,7 @@ public class SubjectService {
             return;
         }
         TariffGroup expected = now <= 2 ? TariffGroup.HH_UP_TO_2 : TariffGroup.HH_3_PLUS;
-        LocalDate effective = periods.findCovering(LocalDate.now(clock)).stream().map(CollectionPeriod::getEndDate)
-                .max(Comparator.naturalOrder()).map(d -> d.plusDays(1)).orElse(null);
+        LocalDate effective = nextPeriodStart();
         for (ServiceContract c : contracts.findBySubjectIdOrderByValidFromDesc(subject.getId())) {
             boolean householdGroup = c.getTariffGroup() == TariffGroup.HH_UP_TO_2 || c.getTariffGroup() == TariffGroup.HH_3_PLUS;
             // Đăng ký có ngày kết thúc ở tương lai vẫn đang hiệu lực: cũng phải đổi nhóm (chỉ bỏ đăng ký đã hết).
@@ -170,6 +172,23 @@ public class SubjectService {
                 // Hợp đồng nối tiếp giữ nguyên miễn giảm và định mức; không phát lại sự kiện miễn để khỏi tạo đề nghị trùng.
                 createContract(subject, new ContractCommand(expected, effective, originalEnd, c.isExempt(), c.getExemptReason(),
                         c.getExemptDecisionNo(), c.getNote(), c.getQuotaKg()), actor, false);
+            }
+        }
+    }
+
+    /** Ngày đầu kỳ sau (ngày sau kỳ đang chạy muộn nhất); null nếu chưa có kỳ nào đang chạy. */
+    private LocalDate nextPeriodStart() {
+        return periods.findCovering(LocalDate.now(clock)).stream().map(CollectionPeriod::getEndDate)
+                .max(Comparator.naturalOrder()).map(d -> d.plusDays(1)).orElse(null);
+    }
+
+    /** Đổi loại đối tượng: đăng ký còn hiệu lực phải dùng nhóm giá hợp loại mới, không thì sửa đăng ký trước. */
+    private void requireOpenContractsFit(ServiceSubject subject, SubjectType type) {
+        for (ServiceContract c : contracts.findBySubjectIdOrderByValidFromDesc(subject.getId())) {
+            boolean closed = c.getValidTo() != null && c.getValidTo().isBefore(LocalDate.now(clock));
+            if (!closed && !type.allows(c.getTariffGroup())) {
+                throw new BusinessRuleException("TARIFF_GROUP_MISMATCH", "Đăng ký thu phí " + c.getContractNo()
+                        + " dùng nhóm giá không hợp loại mới; kết thúc hoặc sửa đăng ký trước khi đổi loại.");
             }
         }
     }
@@ -212,6 +231,19 @@ public class SubjectService {
         requireGroupFits(contract.getSubject(), cmd);
         Map<String, Object> before = snapshot(contract);
         boolean wasExempt = contract.isExempt();
+        // Đổi cách tính áp dụng từ kỳ sau (họp công ty 05/10): đăng ký đã chạy qua kỳ đang thu thì giữ nhóm cũ đến hết
+        // kỳ, nhóm mới nằm ở đăng ký nối tiếp từ ngày đầu kỳ sau.
+        LocalDate effective = nextPeriodStart();
+        if (cmd.tariffGroup() != contract.getTariffGroup() && effective != null
+                && cmd.validFrom().isBefore(effective) && (cmd.validTo() == null || !cmd.validTo().isBefore(effective))) {
+            contract.change(contract.getTariffGroup(), cmd.validFrom(), effective.minusDays(1), cmd.exempt(),
+                    cmd.exemptReason(), cmd.exemptDecisionNo());
+            contract.setNote(cmd.note());
+            audit.record(actor, "UPDATE_CONTRACT", CONTRACT, contract.getContractNo(), before, snapshot(contract));
+            return createContract(contract.getSubject(), new ContractCommand(cmd.tariffGroup(), effective, cmd.validTo(),
+                    cmd.exempt(), cmd.exemptReason(), cmd.exemptDecisionNo(), cmd.note(), cmd.quotaKg()), actor,
+                    !wasExempt);
+        }
         contract.change(cmd.tariffGroup(), cmd.validFrom(), cmd.validTo(), cmd.exempt(), cmd.exemptReason(),
                 cmd.exemptDecisionNo());
         contract.setNote(cmd.note());
@@ -307,20 +339,24 @@ public class SubjectService {
     }
 
     /**
-     * Nhóm giá hộ gia đình phải khớp số thành viên hiện tại: ≤2 người → {@code HH_UP_TO_2}, ≥3 → {@code HH_3_PLUS}.
-     * Chỉ bỏ qua hợp đồng đã hết hiệu lực (ngày kết thúc trước hôm nay): hợp đồng đã đóng phản ánh số thành viên lúc đó.
+     * Nhóm giá phải hợp loại đối tượng ({@link SubjectType#allows}); nhóm ≤2 / ≥3 người phải khớp số thành viên hiện tại.
+     * Chỉ bỏ qua hợp đồng đã hết hiệu lực (ngày kết thúc trước hôm nay): hợp đồng đã đóng phản ánh hồ sơ lúc đó.
      */
     private void requireGroupFits(ServiceSubject s, ContractCommand cmd) {
-        boolean householdGroup = cmd.tariffGroup() == TariffGroup.HH_UP_TO_2 || cmd.tariffGroup() == TariffGroup.HH_3_PLUS;
         // Đăng ký có ngày kết thúc ở tương lai vẫn còn hiệu lực nên phải khớp; chỉ đăng ký đã hết mới là lịch sử.
-        if (!householdGroup || (cmd.validTo() != null && cmd.validTo().isBefore(LocalDate.now(clock)))) {
+        if (cmd.validTo() != null && cmd.validTo().isBefore(LocalDate.now(clock))) {
             return;
         }
-        if (s.getSubjectType() != SubjectType.HOUSEHOLD) {
-            throw new BusinessRuleException("TARIFF_GROUP_MISMATCH", "Nhóm giá theo số người chỉ dùng cho hộ gia đình.");
+        if (!s.getSubjectType().allows(cmd.tariffGroup())) {
+            throw new BusinessRuleException("TARIFF_GROUP_MISMATCH", switch (s.getSubjectType()) {
+                case HOUSEHOLD -> "Hộ gia đình chỉ dùng nhóm giá theo số người hoặc theo nhân khẩu.";
+                case SMALL_SOURCE -> "Nguồn thải nhỏ không dùng nhóm giá hộ gia đình.";
+                case LARGE_SOURCE -> "Nguồn thải lớn chỉ tính theo cân (có phí xử lý).";
+            });
         }
-        TariffGroup expected = s.getMemberCount() <= 2 ? TariffGroup.HH_UP_TO_2 : TariffGroup.HH_3_PLUS;
-        if (cmd.tariffGroup() != expected) {
+        boolean byMembers = cmd.tariffGroup() == TariffGroup.HH_UP_TO_2 || cmd.tariffGroup() == TariffGroup.HH_3_PLUS;
+        TariffGroup expected = s.getMemberCount() != null && s.getMemberCount() <= 2 ? TariffGroup.HH_UP_TO_2 : TariffGroup.HH_3_PLUS;
+        if (byMembers && cmd.tariffGroup() != expected) {
             throw new BusinessRuleException("TARIFF_GROUP_MISMATCH", "Hộ có " + s.getMemberCount()
                     + " thành viên phải áp nhóm " + (expected == TariffGroup.HH_UP_TO_2 ? "≤2 người" : "từ 3 người") + ".");
         }

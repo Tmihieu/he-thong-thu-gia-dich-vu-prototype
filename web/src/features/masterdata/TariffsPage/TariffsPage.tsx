@@ -12,6 +12,7 @@ import {
   type TariffVersion,
   useCreateTariffDraft,
   useIssueTariff,
+  useDistricts,
   useTariffs,
   useUpdateTariffDraft,
 } from '../api';
@@ -19,17 +20,24 @@ import { TariffFormModal } from './TariffFormModal';
 
 const GROUP_ORDER = Object.keys(TARIFF_GROUP_LABELS);
 
-function RatesTable({ rates }: { rates: TariffRate[] }) {
+function RatesTable({ version }: { version: TariffVersion }) {
+  const { data: districts } = useDistricts();
+  const scope = version.perCapitaAll
+    ? 'toàn xã'
+    : version.perCapitaDistrictIds.map((id) => districts?.find((d) => d.id === id)?.name ?? id).join(', ');
   return (
-    <Table<TariffRate>
+    <>
+      {scope && <Typography.Paragraph>Thu hộ gia đình theo nhân khẩu: {scope}</Typography.Paragraph>}
+      <Table<TariffRate>
       size="small"
       rowKey="tariffGroup"
       pagination={false}
-      dataSource={[...rates].sort((a, b) => GROUP_ORDER.indexOf(a.tariffGroup) - GROUP_ORDER.indexOf(b.tariffGroup))}
+      dataSource={[...version.rates].sort((a, b) => GROUP_ORDER.indexOf(a.tariffGroup) - GROUP_ORDER.indexOf(b.tariffGroup))}
       columns={[
         { title: 'Nhóm giá', dataIndex: 'tariffGroup', render: (g: TariffRate['tariffGroup']) => TARIFF_GROUP_LABELS[g] },
         { title: 'Thu gom', dataIndex: 'collectionFee', align: 'right', render: (v: number) => <MoneyText value={v} /> },
         { title: 'Vận chuyển', dataIndex: 'transportFee', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+        { title: 'Xử lý', dataIndex: 'processingFee', align: 'right', render: (v: number) => <MoneyText value={v} /> },
         {
           title: 'Tổng cộng',
           dataIndex: 'monthlyTotal',
@@ -38,7 +46,8 @@ function RatesTable({ rates }: { rates: TariffRate[] }) {
         },
         { title: 'Đơn vị tính', dataIndex: 'unitLabel' },
       ]}
-    />
+      />
+    </>
   );
 }
 
@@ -82,7 +91,7 @@ export function TariffsPage() {
         locale={{
           emptyText: tariffs.error ? errorTextOrNull(tariffs.error) : 'Chưa có biểu giá',
         }}
-        expandable={{ expandedRowRender: (v) => <RatesTable rates={v.rates} />, rowExpandable: (v) => v.rates.length > 0 }}
+        expandable={{ expandedRowRender: (v) => <RatesTable version={v} />, rowExpandable: (v) => v.rates.length > 0 }}
         columns={[
           {
             title: 'Phiên bản / căn cứ',

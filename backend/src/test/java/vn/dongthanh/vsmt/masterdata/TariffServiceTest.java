@@ -12,6 +12,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository;
+import vn.dongthanh.vsmt.masterdata.domain.DistrictRepository;
 import vn.dongthanh.vsmt.masterdata.domain.FeeTypeRepository;
 import vn.dongthanh.vsmt.masterdata.domain.TariffGroup;
 import vn.dongthanh.vsmt.masterdata.domain.TariffStatus;
@@ -25,7 +26,7 @@ class TariffServiceTest {
 
     final TariffVersionRepository repo = mock(TariffVersionRepository.class);
     final TariffService service = new TariffService(repo, mock(FeeTypeRepository.class),
-            mock(CollectionPeriodRepository.class), mock(AuditService.class), Clock.systemDefaultZone());
+            mock(CollectionPeriodRepository.class), mock(DistrictRepository.class), mock(AuditService.class), Clock.systemDefaultZone());
 
     final TariffVersion bg67 = version("BG-67-2025", "2025-06-01", "2026-08-31", TariffStatus.EXPIRED);
     final TariffVersion bg65 = version("BG-65-2026", "2026-09-01", "2027-06-30", TariffStatus.ACTIVE);

@@ -78,7 +78,7 @@ class TariffDraftIT extends IntegrationTest {
         String body = create(admin, "BG-70-2027", "2027-01-01", 45_000)
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("DRAFT"))
-                .andExpect(jsonPath("$.rates.length()").value(6))
+                .andExpect(jsonPath("$.rates.length()").value(7))
                 .andReturn().getResponse().getContentAsString();
         long id = ((Number) JsonPath.read(body, "$.id")).longValue();
 
@@ -138,6 +138,33 @@ class TariffDraftIT extends IntegrationTest {
     }
 
     @Test
+    void perCapitaDraftNeedsItsRateAndCommuneKeepsAllOfIt() throws Exception {
+        String base = draft("2027-01-01", 1);
+        String on = base.substring(0, base.length() - 1) + ",\"perCapitaAll\":true}";
+        createRaw(admin, "BG-NK1", on).andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.message").value("Biểu giá thu theo nhân khẩu phải có đơn giá một người."));
+        String withRate = on.replace("\"rates\":[", "\"rates\":[%s,".formatted(perCapita(5_000)));
+        createRaw(admin, "BG-NK2", withRate).andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("TARIFF_PER_CAPITA_COLLECTION"));
+        createRaw(admin, "BG-NK3", on.replace("\"rates\":[", "\"rates\":[%s,".formatted(perCapita(0))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.perCapitaAll").value(true))
+                .andExpect(jsonPath("$.rates.length()").value(8));
+    }
+
+    private static String perCapita(long collectionFee) {
+        return """
+                {"tariffGroup":"HH_PER_CAPITA","collectionFee":%d,"transportFee":20000,"unitLabel":"đ/người/tháng"}"""
+                .formatted(collectionFee);
+    }
+
+    private ResultActions createRaw(String token, String code, String draftJson) throws Exception {
+        return mvc.perform(post("/api/masterdata/tariffs").header(HttpHeaders.AUTHORIZATION, token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"code\":\"%s\",\"draft\":%s}".formatted(code, draftJson)));
+    }
+
+    @Test
     void cannotIssueWhenAPeriodAlreadyStartsOnOrAfterTheNewDate() throws Exception {
         periods.save(CollectionPeriod.open(PeriodType.MONTH, 2026, 11, null, LocalDate.of(2026, 11, 30), bg65));
         long id = createdId("2026-11-01");
@@ -177,10 +204,10 @@ class TariffDraftIT extends IntegrationTest {
 
     private static String draft(String validFrom, long fee) {
         return """
-                {"legalBasis":"QĐ 70/2026/QĐ-UBND","validFrom":"%s","rates":[%s,%s,%s,%s,%s,%s]}"""
+                {"legalBasis":"QĐ 70/2026/QĐ-UBND","validFrom":"%s","rates":[%s,%s,%s,%s,%s,%s,%s]}"""
                 .formatted(validFrom, rate("HH_UP_TO_2", fee), rate("HH_3_PLUS", fee), rate("SMALL_UP_TO_126", fee),
                         rate("SMALL_126_TO_250", fee), rate("SMALL_250_TO_500", fee),
-                        rate("BY_VOLUME", fee));
+                        rate("BY_VOLUME", fee), rate("FULL_COST_BY_KG", fee));
     }
 
     private static String rate(String group, long fee) {

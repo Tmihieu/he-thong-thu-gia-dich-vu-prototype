@@ -237,7 +237,7 @@ export function CollectorListPage() {
                     <div className="clm-kv">
                       <small>Mã khách hàng</small>
                       <span>
-                        {w.charge.subjectCode} · {isBusiness(w) ? 'Hộ kinh doanh' : 'Hộ gia đình'}
+                        {w.charge.subjectCode} · {isBusiness(w) ? 'Nguồn thải' : 'Hộ gia đình'}
                       </span>
                     </div>
                     <div className="clm-kv">

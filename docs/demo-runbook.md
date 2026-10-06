@@ -69,7 +69,7 @@ Mọi tên, SĐT, địa chỉ là dữ liệu giả ("Mẫu", đầu số `0902
 | Lịch thu gom mọi tổ (chuẩn: bỏ lịch thu gom khỏi UC-12; app còn màn này, **chưa có trong bản demo**) | `V17_1` |
 | **Kỳ 09/2026 có số liệu của cả 11 công ty** (Tiến độ thu, Đối soát, Tổng quan không chỉ DV01) | `V40_3`, xem dưới |
 
-**Dữ liệu minh họa nhiều công ty** (`V40_3`, toàn bộ là GIẢ): 28 ấp thêm mới có 6 hộ gia đình mỗi ấp (cách 4 ấp có thêm 1 hộ kinh doanh); phiếu `YCT-0926-02` phát hành kỳ 09/2026 cho 10 công ty DV02–DV11 (số liệu DV01 của `V22_1` không đổi; Ấp 47 chưa có công ty nên chưa có khoản). Mỗi công ty một mức thu/nộp. Số liệu kỳ 09/2026 theo công thức **phải nộp xã tính trên đã thu** (tiền mặt đã thu − điều chỉnh − phí thu gom của toàn bộ số đã thu, cả chuyển khoản; xem BR-REM-03):
+**Dữ liệu minh họa nhiều công ty** (`V40_3`, toàn bộ là GIẢ): 28 ấp thêm mới có 6 hộ gia đình mỗi ấp (cách 4 ấp có thêm 1 nguồn thải nhỏ, mã `KD…` cũ); phiếu `YCT-0926-02` phát hành kỳ 09/2026 cho 10 công ty DV02–DV11 (số liệu DV01 của `V22_1` không đổi; Ấp 47 chưa có công ty nên chưa có khoản). Mỗi công ty một mức thu/nộp. Số liệu kỳ 09/2026 theo công thức **phải nộp xã tính trên đã thu** (tiền mặt đã thu − điều chỉnh − phí thu gom của toàn bộ số đã thu, cả chuyển khoản; xem BR-REM-03):
 
 | Công ty | Phải thu | Đã thu (tiền mặt + chuyển khoản) | Phí thu gom công ty hưởng | Phải nộp xã | Đã nộp | Còn phải nộp |
 |---|---|---|---|---|---|---|
@@ -96,7 +96,7 @@ Mọi tên, SĐT, địa chỉ là dữ liệu giả ("Mẫu", đầu số `0902
 
 | DV01 · kỳ 09/2026 | Số tiền |
 |---|---|
-| Phải thu (19 khoản: 9 hộ KV07, 9 hộ + 1 hộ kinh doanh KV09, giá BG-65-2026) | 1.319.000 |
+| Phải thu (19 khoản: 9 hộ KV07, 9 hộ + 1 nguồn thải nhỏ KV09, giá BG-65-2026) | 1.319.000 |
 | Đã thu (8 lần, mọi khoản đã thu là thu đủ): tiền mặt 480.000 + chuyển khoản 159.000 | 639.000 |
 | Phí thu gom công ty được hưởng (tính theo từng khoản đã thu, cả chuyển khoản) | 455.788 |
 | **Phải nộp xã** = 480.000 − 0 (điều chỉnh) − 455.788 | **24.212** |

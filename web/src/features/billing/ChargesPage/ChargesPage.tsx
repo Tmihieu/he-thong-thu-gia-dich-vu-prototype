@@ -108,7 +108,8 @@ export function ChargesPage() {
                 {c.tariffGroup && (
                   <>
                     <br />
-                    <span style={{ color: brand.textMuted, fontSize: 13 }}>{TARIFF_GROUP_LABELS[c.tariffGroup]}</span>
+                    <span style={{ color: brand.textMuted, fontSize: 13 }}>{TARIFF_GROUP_LABELS[c.tariffGroup]}
+                      {c.tariffGroup === 'HH_PER_CAPITA' && c.memberCount ? ` · ${c.memberCount} người` : ''}</span>
                   </>
                 )}
               </>
