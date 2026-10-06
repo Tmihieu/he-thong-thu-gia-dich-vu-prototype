@@ -106,11 +106,11 @@ Chuẩn (UC-18 bỏ): không phân tổ; người đi thu thu được mọi h�
 
 | # | Vai trò | Thao tác | Kết quả mong đợi | Đạt |
 |---|---|---|---|---|
-| 4.18 | `canbo_xa` → Tiến độ thu | Kỳ 10/2026 | Seed: DV01 **không** còn "Nợ kỳ trước" (kỳ 09 phải nộp xã 24.212, đã nộp 200.000, xã trả lại công ty 175.788); ghi lại số "Xã trả lại công ty" ở dòng kỳ 09. Kỳ 10 chưa có số thì DV01 chưa hiện dòng | |
+| 4.18 | `canbo_xa` → Tiến độ thu | Kỳ 10/2026 | Seed: DV01 **không** còn cảnh báo "Kỳ trước chưa khóa" (kỳ 09 phải nộp xã 24.212, đã nộp 200.000, xã trả lại công ty 175.788); ghi lại số "Xã trả lại công ty" ở dòng kỳ 09. Kỳ 10 chưa có số thì DV01 chưa hiện dòng | |
 | 4.19 | `canbo_xa` | DV01 → **Nhắc công ty nộp tiền về xã** → **Gửi nhắc nộp** (cần công ty nợ quá hạn: xem ghi chú ⚠ ở đầu 4d; seed không có) | `dv01` có thông báo ở chuông; bấm vào mở đúng màn | |
 | 4.20 ✗ | `canbo_xa` | Nhắc một công ty không nợ (DV02 kỳ 09, hoặc DV01 theo seed) | "Công ty … không có kỳ nào quá hạn còn nợ, không cần nhắc nộp." | |
 | 4.21 ✗ | `canbo_xa` → Khoản thu → Phiếu thu công ty → kỳ 09 → **Lập phiếu** DV01 | Số tiền bất kỳ (seed: còn phải nộp âm), hoặc ở kỳ có nợ: số tiền **lớn hơn** "còn phải nộp" | "Số tiền phải lớn hơn 0 và không vượt số còn phải nộp (…)"; khi không còn phải nộp: "… công ty không còn số phải nộp ở kỳ này (xã trả lại công ty 175.788 đ)" | |
-| 4.22 | `canbo_xa` | Kỳ có nợ (xem ⚠ ở đầu 4d): lập phiếu DV01 đúng bằng còn phải nộp | Phiếu `PT-CT-…`; **Bản in phiếu thu** có số tiền bằng chữ; DV01 đã nộp đủ (còn phải nộp 0); Tiến độ hết "Nợ kỳ trước" nếu đó là kỳ cũ. Số tiền mỗi phiếu không vượt số còn phải nộp (UC-35) | |
+| 4.22 | `canbo_xa` | Kỳ có nợ (xem ⚠ ở đầu 4d): lập phiếu DV01 đúng bằng còn phải nộp | Phiếu `PT-CT-…`; **Bản in phiếu thu** có số tiền bằng chữ; DV01 đã nộp đủ (còn phải nộp 0); Tiến độ hết cảnh báo "Kỳ trước chưa khóa" nếu đó là kỳ cũ. Số tiền mỗi phiếu không vượt số còn phải nộp (UC-35) | |
 | 4.23 | `canbo_xa` | Kỳ 10 (đã ghi tiền mặt ≥ 4 hộ, xem ⚠) → Lập phiếu DV01 số **nhỏ hơn** còn phải nộp | Tiến độ thu: **Nộp một phần**; Đối soát: **Đang nộp** | |
 | 4.24 | `canbo_xa` → Tiến độ thu | So số DV01 kỳ 10 với `dv01` → Tổng quan và Đối soát | Phải thu / đã thu (tiền mặt + chuyển khoản) / phí thu gom công ty hưởng / phải nộp xã / đã nộp **khớp nhau** ở cả 3 màn (BR-REM-12). Phải nộp xã = tiền mặt công ty đã thu − điều chỉnh kỳ trước − phí thu gom của toàn bộ số đã thu (cả chuyển khoản); âm thì hiện "Xã trả lại công ty". Ví dụ: 2 hộ tiền mặt (160.000) + 1 hộ chuyển khoản (80.000): thu gom 3 × 57.000 = 171.000, phải nộp xã = 160.000 − 171.000 = −11.000 | |
 
@@ -132,6 +132,11 @@ Chuẩn (UC-18 bỏ): không phân tổ; người đi thu thu được mọi h�
 | 4.31 ✗ | `canbo_xa` | Kỳ 10 còn hộ chưa đóng, hạn nộp chưa tới, mọi công ty đã nộp đủ phần đã thu → **Khóa kỳ** | Bị chặn: "… còn N khoản hộ chưa đóng và chưa đến hạn nộp (…)" | |
 | 4.32 ✗ | `canbo_xa` | Kỳ 09 đã khóa → thử lập phiếu thu kỳ 09, phát hành thêm khoản kỳ 09 | "Kỳ 2026-09 đã khóa, không thay đổi được." | |
 | 4.33 ✗ | (Máy hoặc người đi thu) | Kỳ 09 đã khóa, **chưa có kỳ đang thu**: ghi thu hộ còn nợ kỳ 09 | "… đã khóa và chưa có kỳ đang thu để ghi nhận tiền công nợ của hộ." | |
+| 4.34 | `canbo_xa` → Tiến độ thu | Sau khi khóa kỳ 09 (4.30), chọn kỳ 10/2026 | Có đủ thẻ: Phải thu, Đã thu (tiền mặt, chuyển khoản), Phải nộp xã, Đã nộp, Còn phải nộp, **Công nợ hộ** (N hộ, tổng tiền các khoản chưa thu của kỳ 09, đúng bằng số hộ chưa đóng kỳ 09). Bảng công ty có cột Phải nộp xã và Tỷ lệ nộp, **không** có cột "Nợ kỳ trước"; thanh tỷ lệ không tô đỏ dưới 45% | |
+| 4.35 | `canbo_xa` | Thẻ Công nợ hộ → **Xem danh sách**; rồi mở công ty → cột "Hộ còn nợ kỳ cũ" của tổ → bấm số | Danh sách hộ: hộ, địa chỉ, tổ, công ty, kỳ (Tháng 09/2026), số tiền, số kỳ nợ; bấm từ tổ chỉ còn hộ của tổ đó. Phân trang 10 dòng | |
+| 4.36 | `canbo_xa` | Hộ `TTT-H000221` nộp công nợ kỳ 09 (như 4.30) → mở lại Tiến độ thu kỳ 10 | Thẻ Công nợ hộ **giảm 1 hộ** và hết hộ đó trong danh sách; thẻ Đã thu có chú thích "trong đó thu công nợ kỳ cũ: <số tiền khoản đã nộp>" | |
+| 4.37 | `canbo_xa` → Đối soát, kỳ 10 | Xem bảng | Cột: Công ty, Phải thu, Đã thu tiền mặt, Đã thu chuyển khoản, Phí thu gom công ty hưởng, Điều chỉnh, Phải nộp xã, Đã nộp, Chênh lệch, Kết quả (Khớp / Đang nộp / Lệch); **không** có "Nợ kỳ trước". Công ty còn phải nộp của kỳ cũ hiện ở cảnh báo đầu trang | |
+| 4.38 | `lanhdao` → Tiến độ thu | Xem thẻ Công nợ hộ và danh sách | Thấy thẻ và danh sách; **không** có nút "Nhắc công ty nộp". Tài khoản `dv01` không vào được màn này (1.3) | |
 
 ## 5. Quy trình con F — Miễn giảm, hoàn, xóa nợ (lãnh đạo duyệt)
 

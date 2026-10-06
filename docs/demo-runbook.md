@@ -107,7 +107,7 @@ Mọi tên, SĐT, địa chỉ là dữ liệu giả ("Mẫu", đầu số `0902
 - `thu07`, `thu09` đã bàn giao hết tiền mặt kỳ 09 (`BG-0926-01`, `BG-0926-02`): bước 3 bắt đầu với 0 đồng đang giữ.
 - Lịch sử hộ kỳ 09 cho màn người đi thu: `DTH-H000122` vắng 08/09 rồi thu 10/09; `DTH-H000124` hẹn lại 12/09, còn nợ.
 - Các thao tác trên có dòng nhật ký (mở kỳ, phát hành, ghi thu, bàn giao, lập phiếu thu).
-- Theo công thức mới DV01 **không còn nợ kỳ 09** nên ở kỳ 10/2026 dòng DV01 trên Tiến độ thu **không** hiện "Quá hạn nộp"/"Nợ kỳ trước" từ seed (trước đây hiện nợ 919.000 do phải nộp tính trên phải thu). Kỳ 09 vẫn còn các hộ chưa đóng (kể cả `TTT-H000221`, `NB-H000341` có app): khi khóa kỳ 09 họ thành **công nợ của hộ**, nộp được ở kỳ 10 và tiền tính vào kỳ 10 (bước 8).
+- Theo công thức mới DV01 **không còn nợ kỳ 09** nên ở kỳ 10/2026 dòng DV01 trên Tiến độ thu **không** hiện "Quá hạn nộp" hay cảnh báo "Kỳ trước chưa khóa" từ seed (trước đây hiện nợ 919.000 do phải nộp tính trên phải thu). Kỳ 09 vẫn còn các hộ chưa đóng (kể cả `TTT-H000221`, `NB-H000341` có app): khi khóa kỳ 09 họ thành **công nợ của hộ**, nộp được ở kỳ 10 và tiền tính vào kỳ 10 (bước 8). Sau khi khóa kỳ 09, thẻ **Công nợ hộ** ở Tiến độ thu hiện số hộ và tiền các khoản kỳ 09 chưa thu (bấm **Xem danh sách** để xem hộ); hộ nộp ở kỳ 10 thì hết nợ và phần đó hiện ở chú thích "trong đó thu công nợ kỳ cũ" của thẻ Đã thu.
 
 ## Kịch bản §10
 
