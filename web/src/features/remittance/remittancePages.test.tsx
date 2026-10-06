@@ -64,7 +64,7 @@ function api() {
 const norm = { normalizer: (s: string) => s.replace(/\s+/g, ' ').trim() };
 
 describe('Tiến độ thu', () => {
-  it('bảng công ty có đủ cột phải nộp xã, không còn cột Nợ kỳ trước; kỳ trước chưa khóa hiện ở cảnh báo; cảnh báo tổ chưa có công ty', async () => {
+  it('bảng công ty bỏ cột phải nộp xã, đã nộp, còn phải nộp và cột Nợ kỳ trước; kỳ trước chưa khóa hiện ở cảnh báo; cảnh báo tổ chưa có công ty', async () => {
     const fetchFn = api();
     renderApp('/commune/progress');
 
@@ -72,7 +72,8 @@ describe('Tiến độ thu', () => {
     expect(await screen.findAllByLabelText('Chưa nộp đủ')).toHaveLength(2);
     expect(screen.getByText('1 tổ chưa có công ty thu: KV24')).toBeInTheDocument();
     const headers = screen.getAllByRole('columnheader').map((h) => h.textContent);
-    expect(headers).toEqual(expect.arrayContaining(['Công ty', 'Phải thu', 'Đã thu', 'Phải nộp xã', 'Đã nộp', 'Còn phải nộp', 'Tỷ lệ nộp', 'Đã nộp đủ']));
+    expect(headers).toEqual(expect.arrayContaining(['Công ty', 'Phải thu', 'Đã thu', 'Tỷ lệ nộp', 'Đã nộp đủ']));
+    for (const removed of ['Phải nộp xã', 'Đã nộp', 'Còn phải nộp']) expect(headers).not.toContain(removed);
     expect(screen.queryByRole('columnheader', { name: 'Nợ kỳ trước' })).not.toBeInTheDocument();
     // Cảnh báo đầu trang thay cho cột: chỉ DV07 có previousDebt.
     expect(screen.getByText(/Kỳ trước chưa khóa: Công ty Xanh Sài Gòn còn phải nộp/)).toHaveTextContent('150.000 đ');
@@ -123,7 +124,7 @@ describe('Tiến độ thu', () => {
     expect(container.querySelector('.ant-progress-status-exception')).toBeNull();
   });
 
-  it('thẻ tổng có đã thu kèm thu công nợ kỳ cũ và thẻ công nợ hộ; bấm mở danh sách hộ nợ', async () => {
+  it('thẻ tổng có đã thu kèm thu công nợ kỳ cũ, tỷ lệ đã thu và thẻ công nợ hộ; bấm mở danh sách hộ nợ', async () => {
     const fetchFn = mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
       'GET /api/masterdata/periods': () => jsonResponse(200, periods),
@@ -138,8 +139,11 @@ describe('Tiến độ thu', () => {
     expect(debtCard).toHaveTextContent('240.000 đ');
     const collectedCard = screen.getByText('Đã thu (tiền mặt, chuyển khoản)').closest('.stat-card') as HTMLElement;
     await waitFor(() => expect(collectedCard).toHaveTextContent('trong đó thu công nợ kỳ cũ: 160.000 đ'));
-    for (const label of ['Phải thu', 'Phải nộp xã', 'Đã nộp', 'Còn phải nộp']) {
-      expect(screen.getByText(label, { selector: '.stat-label' })).toBeInTheDocument();
+    // Tỷ lệ đã thu = (1.200.000 − 160.000 thu nợ kỳ cũ) / 1.600.000 = 65%.
+    const rateCard = screen.getByText('Tỷ lệ đã thu').closest('.stat-card') as HTMLElement;
+    expect(rateCard).toHaveTextContent('65%');
+    for (const label of ['Phải nộp xã', 'Đã nộp', 'Còn phải nộp', 'Xã trả lại công ty']) {
+      expect(screen.queryByText(label, { selector: '.stat-label' })).not.toBeInTheDocument();
     }
     expect(screen.queryByText('Nợ kỳ trước')).not.toBeInTheDocument();
 
@@ -249,24 +253,6 @@ describe('Đối soát', () => {
     await userEvent.click(screen.getByText('Chưa khớp 2'));
     expect(await screen.findByRole('cell', { name: 'Cty Thu gom A' })).toBeInTheDocument();
     expect(screen.queryByRole('cell', { name: 'Cty Thu gom B' })).not.toBeInTheDocument();
-  });
-});
-
-describe('Tiến độ thu: xã trả lại công ty', () => {
-  it('tổng còn phải nộp âm hiện thẻ "Xã trả lại công ty" thay vì "Nộp thừa"', async () => {
-    const dv02 = { ...dv01, companyId: 2, companyCode: 'DV02', companyName: 'Công ty Hai', collected: 1_000_000, cashCollected: 0,
-      retained: 228_000, payable: -228_000, received: 0, receiptCount: 0, remaining: -228_000, gap: 228_000 };
-    mockApi({
-      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
-      'GET /api/masterdata/periods': () => jsonResponse(200, periods),
-      'GET /api/remittance/ledger': () => jsonResponse(200, [dv02]),
-      'GET /api/remittance/area-progress': () => jsonResponse(200, []),
-    });
-    renderApp('/commune/progress');
-
-    // Một ở thẻ tổng, một ở ô "Còn phải nộp" của công ty.
-    expect(await screen.findAllByText('Xã trả lại công ty')).toHaveLength(2);
-    expect(screen.queryByText('Nộp thừa')).not.toBeInTheDocument();
   });
 });
 
@@ -417,7 +403,7 @@ describe('Phiếu chi trả công ty (xã trả lại)', () => {
     retained: 228_000, payable: -228_000, received: 0, receiptCount: 0, remaining: -228_000, gap: 228_000, communePaid: 100_000,
     communeOwed: 128_000, progress: 'PAID_IN_FULL', reconciliation: 'PENDING' };
 
-  it('Tiến độ thu hiện xã trả lại, đã trả và còn phải trả', async () => {
+  it('Tiến độ thu không còn hiện xã trả lại (xem ở Đối soát)', async () => {
     mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
       'GET /api/masterdata/periods': () => jsonResponse(200, periods),
@@ -426,11 +412,8 @@ describe('Phiếu chi trả công ty (xã trả lại)', () => {
     });
     renderApp('/commune/progress');
 
-    // Thẻ tổng (hint) và ô "Còn phải nộp" của công ty đều ghi đã trả / còn phải trả.
     await screen.findByText('Công ty Hai');
-    const text = document.body.textContent!.replace(/\s+/g, ' ');
-    expect(text).toContain('đã trả 100.000 đ, còn 128.000 đ');
-    expect(text).toContain('Xã trả lại công ty 228.000 đ, đã trả 100.000 đ, còn 128.000 đ');
+    expect(screen.queryByText(/Xã trả lại công ty/)).not.toBeInTheDocument();
   });
 
   it('lập phiếu chi cho DV02 rồi hiện bản in có số tiền bằng chữ', async () => {
