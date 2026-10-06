@@ -4,7 +4,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 import type { components } from '../../../api/schema';
 import { formatMoney } from '../../../shared/format';
 import { RECEIPT_METHOD_LABELS, type ReceiptMethod } from '../../../shared/labels';
-import { MoneyText } from '../../../shared/MoneyText';
+import { RemainingText } from '../../../shared/MoneyText';
 import type { LedgerRow } from '../api';
 
 export type IssueReceiptRequest = components['schemas']['IssueReceiptRequest'];
@@ -60,7 +60,7 @@ export function IssueReceiptForm({ row, periodLabel, submitting, error, onSubmit
       {error && <Alert type="error" showIcon role="alert" style={{ marginBottom: 12 }} message={error} />}
       {row && (
         <Typography.Paragraph>
-          {row.companyName} · còn phải nộp <MoneyText value={remaining} strong />
+          {row.companyName} · còn phải nộp <RemainingText value={remaining} strong />
         </Typography.Paragraph>
       )}
       <Form<FormValues>

@@ -24,7 +24,7 @@ const period = {
 };
 const ledgerRow = {
   companyId: 1, companyCode: 'DV01', companyName: 'Công ty MTĐT Đông Thạnh', periodId: 9, due: 1_319_000, chargeCount: 19,
-  collected: 609_000, received: 400_000, receiptCount: 1, remaining: 919_000, gap: -209_000, previousDebt: 0,
+  collected: 609_000, cashCollected: 609_000, received: 400_000, receiptCount: 1, remaining: 919_000, gap: -209_000, previousDebt: 0,
   overdue: true, collectionRate: 30.3, lowCollectionRate: true, progress: 'OVERDUE', reconciliation: 'MISMATCH',
 };
 

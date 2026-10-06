@@ -56,7 +56,7 @@ function api() {
         chargeId: 2, chargeCode: 'KT-2', periodCode: '2026-10', subjectCode: 'DTH-H000002', subjectName: 'Hộ Bình' }]),
     'GET /api/remittance/ledger': () =>
       jsonResponse(200, [{ companyId: 1, companyCode: 'DV01', companyName: 'Công ty MTĐT Đông Thạnh', periodId: 10,
-        due: 1_600_000, chargeCount: 20, collected: 1_200_000, received: 1_000_000, receiptCount: 1, remaining: 600_000,
+        due: 1_600_000, chargeCount: 20, collected: 1_200_000, cashCollected: 1_200_000, received: 1_000_000, receiptCount: 1, remaining: 600_000,
         gap: -200_000, previousDebt: 0, overdue: false, collectionRate: 75, lowCollectionRate: false, remittedRate: 62.5,
         lowRemittedRate: false, progress: 'PARTIAL', reconciliation: 'PENDING' }]),
     'GET /api/collection/cash/held': () =>

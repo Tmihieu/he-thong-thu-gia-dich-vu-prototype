@@ -21,15 +21,16 @@ function Gap({ gap }: { gap: number }) {
         <MoneyText value={gap} />
       </Typography.Text>
       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-        {gap < 0 ? 'thu rồi chưa nộp' : 'nộp trước'}
+        {gap < 0 ? 'thu rồi chưa nộp' : 'xã trả lại công ty'}
       </Typography.Text>
     </Space>
   );
 }
 
 /**
- * Đối soát (R14): phải thu / công ty đã thu / đã nộp về xã / chênh lệch = đã nộp − đã thu. Trong kỳ: Đang nộp;
- * hết hạn còn chưa nộp hoặc nợ kỳ trước: Lệch. Cán bộ xã khóa kỳ từ màn này (G1).
+ * Đối soát (R14, UC-38): phải thu / đã thu (tiền mặt, chuyển khoản) / phí thu gom công ty hưởng / phải nộp xã / đã nộp về
+ * xã / chênh lệch = đã nộp − phải nộp xã. Trong kỳ: Đang nộp; hết hạn còn chưa nộp hoặc nợ kỳ trước: Lệch. Cán bộ xã khóa kỳ
+ * từ màn này (G1, UC-39).
  */
 export function ReconciliationPage() {
   // Lãnh đạo xem màn này chỉ đọc: không khóa kỳ (SPEC §9.10).
@@ -43,7 +44,7 @@ export function ReconciliationPage() {
     <>
       <PageHeader
         title="Đối soát"
-        description="So số công ty đã thu với số đã nộp về xã; kỳ chỉ khóa được khi không còn công ty nợ."
+        description="So số đã thu (tiền mặt, chuyển khoản) với số phải nộp xã và số đã nộp; kỳ chỉ khóa được khi mọi công ty nộp đủ và kỳ đã thu đủ hoặc đã đến hạn nộp."
         extra={
           <Space wrap>
             <PeriodSelect value={periodId} onChange={setPeriodId} />
@@ -55,7 +56,7 @@ export function ReconciliationPage() {
       {ledger.error && <ErrorBlock error={ledger.error} onRetry={() => void ledger.refetch()} />}
       <StatGrid>
         <StatCard label="Phải nộp xã" tone="info" value={<MoneyText value={rows.reduce((t, r) => t + r.payable, 0)} />} />
-        <StatCard label="Công ty đã thu" tone="info" value={<MoneyText value={rows.reduce((t, r) => t + r.collected, 0)} />} />
+        <StatCard label="Đã thu (tiền mặt, chuyển khoản)" tone="info" value={<MoneyText value={rows.reduce((t, r) => t + r.collected, 0)} />} />
         <StatCard label="Đã nộp về xã" tone="success" value={<MoneyText value={rows.reduce((t, r) => t + r.received, 0)} />} />
         <StatCard label="Thu rồi chưa nộp" tone={notRemitted > 0 ? 'danger' : 'neutral'} value={<MoneyText value={notRemitted} />} />
       </StatGrid>
@@ -85,6 +86,11 @@ export function ReconciliationPage() {
             render: (v: number, r) => (
               <>
                 <MoneyText value={v} />
+                <div>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    tiền mặt <MoneyText value={r.cashCollected} /> · chuyển khoản <MoneyText value={v - r.cashCollected} />
+                  </Typography.Text>
+                </div>
                 {r.refunded > 0 && (
                   <div>
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -117,14 +123,14 @@ export function ReconciliationPage() {
           {
             title: 'Kết quả',
             dataIndex: 'gap',
-            // Nhãn theo dấu của chênh lệch backend: 0 khớp, âm thu rồi chưa nộp, dương nộp trước.
+            // Nhãn theo dấu của chênh lệch backend: 0 khớp, âm thu rồi chưa nộp, dương xã trả lại công ty.
             render: (gap: number) =>
               gap === 0 ? (
                 <StatusTag tone="success">Khớp</StatusTag>
               ) : gap < 0 ? (
                 <StatusTag tone="warning">Thu rồi chưa nộp</StatusTag>
               ) : (
-                <StatusTag tone="info">Nộp trước</StatusTag>
+                <StatusTag tone="info">Xã trả lại công ty</StatusTag>
               ),
           },
         ]}

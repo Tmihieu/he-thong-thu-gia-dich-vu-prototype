@@ -7,7 +7,10 @@ import { errorText } from '../../../shared/errorText';
 import { StatusTag } from '../../../shared/StatusTag';
 import { masterdataKeys, type Period, usePeriods } from '../../masterdata/api';
 
-/** Khóa kỳ (cán bộ xã, G1): còn công ty chưa nộp đủ thì máy chủ trả lý do kèm danh sách công ty và số nợ. */
+/**
+ * Khóa kỳ (cán bộ xã, G1; UC-39): máy chủ chặn và nêu lý do khi còn công ty chưa nộp đủ phải nộp xã (kèm danh sách công ty
+ * và số nợ) hoặc kỳ còn khoản hộ chưa đóng mà chưa đến hạn nộp. Khoản hộ chưa đóng khi khóa thành công nợ của hộ.
+ */
 export function LockPeriodButton({ periodId }: { periodId: number }) {
   const { message } = App.useApp();
   const qc = useQueryClient();
@@ -33,7 +36,7 @@ export function LockPeriodButton({ periodId }: { periodId: number }) {
     <>
       <Popconfirm
         title={`Khóa kỳ ${period.label}?`}
-        description="Sau khi khóa không phát hành khoản, ghi thu hay lập phiếu thu cho kỳ này được nữa."
+        description="Sau khi khóa không phát hành khoản hay lập phiếu thu cho kỳ này được nữa. Khoản hộ chưa đóng thành công nợ của hộ: hộ nộp ở kỳ sau, tiền tính vào kỳ đang thu."
         okText="Khóa kỳ"
         cancelText="Hủy"
         onConfirm={() => lock.mutate()}

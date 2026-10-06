@@ -294,7 +294,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Khóa kỳ (cán bộ xã); còn công ty chưa nộp đủ thì 422 kèm danh sách công ty và số nợ */
+        /** Khóa kỳ (cán bộ xã); 422 nêu lý do khi còn công ty chưa nộp đủ phải nộp xã, hoặc kỳ còn khoản hộ chưa đóng mà chưa đến hạn nộp. Khoản hộ chưa đóng khi khóa thành công nợ của hộ */
         post: operations["lock"];
         delete?: never;
         options?: never;
@@ -1239,7 +1239,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Sổ công ty–kỳ: phải thu, đã thu, đã nộp, còn nộp, nợ kỳ trước, tiến độ, đối soát. Xã và quản trị thấy mọi công ty; công ty chỉ thấy dòng của mình */
+        /** Sổ công ty–kỳ: phải thu, đã thu (tiền mặt, chuyển khoản), phí thu gom giữ lại, phải nộp xã, đã nộp, còn nộp, nợ kỳ trước, tiến độ, đối soát. Xã và quản trị thấy mọi công ty; công ty chỉ thấy dòng của mình */
         get: operations["ledger"];
         put?: never;
         post?: never;
@@ -3519,9 +3519,14 @@ export interface components {
             refunded: number;
             /**
              * Format: int64
-             * @description Công ty đã thu của hộ (đã trừ hoàn)
+             * @description Đã thu của hộ gồm tiền mặt và chuyển khoản (đã trừ hoàn), ghi nhận ở kỳ này
              */
             collected: number;
+            /**
+             * Format: int64
+             * @description Trong đã thu: tiền mặt công ty giữ (đã trừ hoàn). Chuyển khoản vào tài khoản xã = đã thu − tiền mặt
+             */
+            cashCollected: number;
             /**
              * Format: int64
              * @description Đã nộp về xã
@@ -3531,12 +3536,12 @@ export interface components {
             receiptCount: number;
             /**
              * Format: int64
-             * @description Còn phải nộp = phải nộp xã − đã nộp
+             * @description Còn phải nộp = phải nộp xã − đã nộp; âm là xã trả lại công ty phần chênh
              */
             remaining: number;
             /**
              * Format: int64
-             * @description Đã nộp về xã (kể cả điều chỉnh kỳ trước) − phần vận chuyển của số tiền đã thu; âm là thu rồi chưa nộp đủ
+             * @description Chênh lệch = đã nộp về xã − phải nộp xã; âm là còn nộp thiếu, dương là nộp dư (xã trả lại công ty)
              */
             gap: number;
             /**
@@ -3565,12 +3570,12 @@ export interface components {
             reconciliation: "MATCHED" | "PENDING" | "MISMATCH";
             /**
              * Format: int64
-             * @description Phần thu gom công ty cầm lại, tính từ biểu giá
+             * @description Phí thu gom công ty được hưởng: tính từ biểu giá trên toàn bộ số đã thu (cả chuyển khoản), làm tròn đồng theo từng khoản
              */
             retained: number;
             /**
              * Format: int64
-             * @description Phải nộp xã = phải thu − điều chỉnh − phần giữ lại
+             * @description Phải nộp xã = tiền mặt đã thu − điều chỉnh kỳ trước − phí thu gom của toàn bộ số đã thu; âm thì xã trả lại công ty
              */
             payable: number;
         };

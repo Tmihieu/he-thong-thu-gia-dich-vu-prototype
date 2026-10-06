@@ -16,7 +16,7 @@ const REASON_LABELS: Record<NonNullable<BankTransfer['reason']>, string> = {
   CHARGE_NOT_FOUND: 'Mã khoản thu không tồn tại',
   WRONG_ACCOUNT: 'Tiền vào tài khoản không phải của xã (hoặc xã chưa khai tài khoản)',
   AMOUNT_MISMATCH: 'Số tiền khác số phải thu',
-  CHARGE_NOT_COLLECTABLE: 'Khoản đã thu, được miễn hoặc kỳ đã khóa',
+  CHARGE_NOT_COLLECTABLE: 'Khoản đã thu, được miễn, đã xóa nợ hoặc kỳ đã khóa mà chưa có kỳ đang thu',
 };
 
 /**

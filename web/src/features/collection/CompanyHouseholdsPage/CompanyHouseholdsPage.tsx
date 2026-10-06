@@ -5,7 +5,6 @@ import { MoneyText } from '../../../shared/MoneyText';
 import { EmptyBlock, ErrorBlock } from '../../../shared/StateBlock';
 import { StatusTag } from '../../../shared/StatusTag';
 import { normalizeText } from '../../../shared/normalizeText';
-import { usePeriods } from '../../masterdata/api';
 import { type CollectorCharge, useCollectors, useCompanyWork } from '../api';
 import { ResultSheet } from '../CollectorListPage/ResultSheet';
 import { byChipOrder, countChips, WORK_CHIPS, type WorkChip, matchesChip, workState } from '../workState';
@@ -28,8 +27,7 @@ export function CompanyHouseholdsPage({
   // Lọc người đi thu do máy chủ làm: chỉ khoản người đó đã thu (UC-33).
   const work = useCompanyWork(periodId, collectorId);
   const collectors = useCollectors();
-  // BR-COL-12: kỳ đã khóa không ghi thu nữa.
-  const locked = usePeriods().data?.find((p) => p.id === periodId)?.status === 'LOCKED';
+  // Khoản Chưa thu của kỳ đã khóa là công nợ của hộ (góp ý BA 05/10): vẫn ghi thu được, tiền tính vào kỳ đang thu.
 
   const items = useMemo(() => work.data ?? [], [work.data]);
   const areaOptions = useMemo(() => {
@@ -148,7 +146,7 @@ export function CompanyHouseholdsPage({
             title: '',
             render: (_, w) =>
               w.charge.status === 'UNPAID' ? (
-                <Button size="small" disabled={locked} title={locked ? 'Kỳ đã khóa' : undefined} onClick={() => setEditing(w)} aria-label={`Ghi thu ${w.charge.subjectName}`}>
+                <Button size="small" onClick={() => setEditing(w)} aria-label={`Ghi thu ${w.charge.subjectName}`}>
                   Ghi thu
                 </Button>
               ) : null,

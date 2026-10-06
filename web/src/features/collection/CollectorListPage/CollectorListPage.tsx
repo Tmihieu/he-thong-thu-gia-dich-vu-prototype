@@ -17,7 +17,6 @@ import { MoneyText } from '../../../shared/MoneyText';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../../../shared/StateBlock';
 import { StatusTag } from '../../../shared/StatusTag';
 import { normalizeText } from '../../../shared/normalizeText';
-import { usePeriods } from '../../masterdata/api';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type CollectorCharge, useCashHeld, useMyWork, useMyWorkAllPeriods } from '../api';
 import { byChipOrder, countChips, matchesChip, WORK_CHIPS, type WorkChip, workState } from '../workState';
@@ -52,8 +51,7 @@ export function CollectorListPage() {
   const work = useMyWork(periodId);
   const all = useMyWorkAllPeriods();
   const cash = useCashHeld();
-  // BR-COL-12: kỳ đã khóa không ghi thu nữa.
-  const locked = usePeriods().data?.find((p) => p.id === periodId)?.status === 'LOCKED';
+  // Khoản Chưa thu của kỳ đã khóa là công nợ của hộ (góp ý BA 05/10): vẫn ghi thu được, tiền tính vào kỳ đang thu.
   const items = useMemo(() => work.data ?? [], [work.data]);
 
   const streets = useMemo(
@@ -200,8 +198,6 @@ export function CollectorListPage() {
                           size="large"
                           icon={<WalletOutlined />}
                           aria-label="Đã thu tiền mặt"
-                          disabled={locked}
-                          title={locked ? 'Kỳ đã khóa' : undefined}
                           onClick={() => setEditing({ item: w, method: 'CASH' })}
                         >
                           Đã thu tiền mặt
@@ -212,8 +208,6 @@ export function CollectorListPage() {
                           className="clm-pay-transfer"
                           icon={<BankOutlined />}
                           aria-label="Chuyển khoản (QR)"
-                          disabled={locked}
-                          title={locked ? 'Kỳ đã khóa' : undefined}
                           onClick={() => setEditing({ item: w, method: 'TRANSFER' })}
                         >
                           Chuyển khoản (QR)

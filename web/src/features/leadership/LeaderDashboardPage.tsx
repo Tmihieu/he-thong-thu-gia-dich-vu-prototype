@@ -68,7 +68,7 @@ export function LeaderDashboardPage() {
       <StatGrid>
         <StatCard label="Phải thu" value={<MoneyText value={total.due} />} hint={`${rows.length} công ty`} tone="info" />
         <StatCard
-          label="Công ty đã thu"
+          label="Đã thu"
           value={<MoneyText value={total.collected} />}
           hint="trên số phải thu"
           tone="success"

@@ -16,7 +16,7 @@ const periods = [
 ];
 const dv01 = {
   companyId: 1, companyCode: 'DV01', companyName: 'Công ty MTĐT Đông Thạnh', periodId: 10, due: 1_600_000, chargeCount: 20,
-  collected: 1_200_000, received: 1_000_000, receiptCount: 1, remaining: 600_000, gap: -200_000, previousDebt: 0,
+  collected: 1_200_000, cashCollected: 1_200_000, received: 1_000_000, receiptCount: 1, remaining: 600_000, gap: -200_000, previousDebt: 0,
   overdue: false, collectionRate: 75, lowCollectionRate: false, remittedRate: 62.5, lowRemittedRate: false, progress: 'PARTIAL',
   reconciliation: 'PENDING',
 };
@@ -110,6 +110,43 @@ describe('Đối soát', () => {
     expect(within(dv01Row).getAllByText('Thu rồi chưa nộp')).toHaveLength(1);
     expect(within(dv01Row).getByText('1 phiếu thu')).toBeInTheDocument();
     expect(screen.getAllByText('400.000 đ', norm).length).toBeGreaterThan(0);
+  });
+
+  it('phải nộp xã âm: hiện "Xã trả lại công ty" và tách đã thu thành tiền mặt, chuyển khoản', async () => {
+    // Hộ chuyển khoản 1.000.000 vào tài khoản xã, công ty không thu tiền mặt nhưng vẫn hưởng phí thu gom 228.000.
+    const dv02 = { ...dv01, companyId: 2, companyCode: 'DV02', companyName: 'Công ty Hai', due: 1_000_000, collected: 1_000_000,
+      cashCollected: 0, retained: 228_000, payable: -228_000, received: 0, receiptCount: 0, remaining: -228_000, gap: 228_000,
+      collectionRate: 100, remittedRate: 0, lowRemittedRate: false, progress: 'PAID_IN_FULL', reconciliation: 'MATCHED' };
+    mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
+      'GET /api/masterdata/periods': () => jsonResponse(200, periods),
+      'GET /api/remittance/ledger': () => jsonResponse(200, [dv02]),
+    });
+    renderApp('/commune/reconciliation');
+
+    const row = (await screen.findByRole('cell', { name: 'Công ty Hai' })).closest('tr')!;
+    expect(within(row).getByText(/tiền mặt/)).toHaveTextContent('tiền mặt 0 đ · chuyển khoản 1.000.000 đ');
+    expect(within(row).getByText('xã trả lại công ty')).toBeInTheDocument();
+    expect(within(row).getByText('Xã trả lại công ty')).toBeInTheDocument();
+    expect(within(row).getByText('phí thu gom công ty hưởng', { exact: false })).toHaveTextContent('228.000 đ');
+  });
+});
+
+describe('Tiến độ thu: xã trả lại công ty', () => {
+  it('tổng còn phải nộp âm hiện thẻ "Xã trả lại công ty" thay vì "Nộp thừa"', async () => {
+    const dv02 = { ...dv01, companyId: 2, companyCode: 'DV02', companyName: 'Công ty Hai', collected: 1_000_000, cashCollected: 0,
+      retained: 228_000, payable: -228_000, received: 0, receiptCount: 0, remaining: -228_000, gap: 228_000 };
+    mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
+      'GET /api/masterdata/periods': () => jsonResponse(200, periods),
+      'GET /api/remittance/ledger': () => jsonResponse(200, [dv02]),
+      'GET /api/remittance/area-progress': () => jsonResponse(200, []),
+    });
+    renderApp('/commune/progress');
+
+    // Một ở thẻ tổng, một ở ô "Còn phải nộp" của công ty.
+    expect(await screen.findAllByText('Xã trả lại công ty')).toHaveLength(2);
+    expect(screen.queryByText('Nộp thừa')).not.toBeInTheDocument();
   });
 });
 

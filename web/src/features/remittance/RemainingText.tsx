@@ -1,12 +1,12 @@
 import { MoneyText } from '../../shared/MoneyText';
 import { StatusTag } from '../../shared/StatusTag';
 
-/** Còn phải nộp; số âm là công ty nộp thừa (QĐ-L12) nên hiện "Nộp thừa X đ" thay vì số âm. */
+/** Còn phải nộp; số âm là xã phải trả lại công ty (phải nộp xã tính trên đã thu, góp ý BA 05/10), hiện "Xã trả lại công ty X đ" thay vì số âm. */
 export function RemainingText({ value, strong = false }: { value: number; strong?: boolean }) {
   if (value < 0) {
     return (
       <StatusTag tone="warning">
-        Nộp thừa <MoneyText value={-value} />
+        Xã trả lại công ty <MoneyText value={-value} />
       </StatusTag>
     );
   }
