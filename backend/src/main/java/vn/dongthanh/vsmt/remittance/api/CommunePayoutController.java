@@ -26,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.platform.common.VietnameseMoneyWords;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
 import vn.dongthanh.vsmt.remittance.domain.CommunePayout;
+import vn.dongthanh.vsmt.remittance.domain.ReceiptMethod;
 import vn.dongthanh.vsmt.remittance.service.CommunePayoutService;
 import vn.dongthanh.vsmt.remittance.service.CommunePayoutService.IssuePayoutCommand;
 import vn.dongthanh.vsmt.remittance.service.CommunePayoutService.PayoutView;
@@ -43,7 +44,8 @@ public class CommunePayoutController {
     @ResponseStatus(HttpStatus.CREATED)
     public PayoutDto issue(@Valid @RequestBody IssuePayoutRequest req, @AuthenticationPrincipal CurrentUser actor) {
         CommunePayout p = payouts.issue(
-                new IssuePayoutCommand(req.companyId(), req.periodId(), req.amount(), req.payoutDate(), req.note()), actor);
+                new IssuePayoutCommand(req.companyId(), req.periodId(), req.amount(), req.method(), req.payoutDate(), req.documentRef(),
+                req.note()), actor);
         return PayoutDto.of(payouts.get(p.getId(), actor));
     }
 
@@ -64,7 +66,9 @@ public class CommunePayoutController {
             @Schema(requiredMode = RequiredMode.REQUIRED) @NotNull(message = "không được để trống") Long companyId,
             @Schema(requiredMode = RequiredMode.REQUIRED) @NotNull(message = "không được để trống") Long periodId,
             @Schema(requiredMode = RequiredMode.REQUIRED) @Positive(message = "phải lớn hơn 0") long amount,
+            @Schema(requiredMode = RequiredMode.REQUIRED) @NotNull(message = "không được để trống") ReceiptMethod method,
             @Schema(description = "Để trống thì lấy hôm nay") LocalDate payoutDate,
+            @Size(max = 50) String documentRef,
             @Size(max = 500) String note) {
     }
 
@@ -79,7 +83,9 @@ public class CommunePayoutController {
             @Schema(requiredMode = RequiredMode.REQUIRED) String periodLabel,
             @Schema(requiredMode = RequiredMode.REQUIRED) long amount,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Số tiền bằng chữ") String amountInWords,
+            @Schema(requiredMode = RequiredMode.REQUIRED) ReceiptMethod method,
             @Schema(requiredMode = RequiredMode.REQUIRED) LocalDate payoutDate,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String documentRef,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String note,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Lũy kế xã đã trả tới phiếu này") long cumulativePaid,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Số xã phải trả lại công ty của kỳ (= −còn phải nộp)") long periodOwed,
@@ -89,7 +95,7 @@ public class CommunePayoutController {
             CommunePayout p = v.payout();
             return new PayoutDto(p.getId(), p.getCode(), p.getCompany().getId(), p.getCompany().getCode(),
                     p.getCompany().getName(), p.getPeriod().getId(), p.getPeriod().getCode(), p.getPeriod().getLabel(),
-                    p.getAmount(), VietnameseMoneyWords.read(p.getAmount()), p.getPayoutDate(), p.getNote(),
+                    p.getAmount(), VietnameseMoneyWords.read(p.getAmount()), p.getMethod(), p.getPayoutDate(), p.getDocumentRef(), p.getNote(),
                     v.cumulativePaid(), v.periodOwed(), v.remainingAfter());
         }
     }

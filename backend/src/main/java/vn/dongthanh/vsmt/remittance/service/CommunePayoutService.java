@@ -29,6 +29,7 @@ import vn.dongthanh.vsmt.platform.security.CurrentUser;
 import vn.dongthanh.vsmt.platform.service.AuditService;
 import vn.dongthanh.vsmt.remittance.domain.CommunePayout;
 import vn.dongthanh.vsmt.remittance.domain.CommunePayoutRepository;
+import vn.dongthanh.vsmt.remittance.domain.ReceiptMethod;
 
 /**
  * Phiếu chi trả công ty (UC-55): xã trả lại công ty khi phải nộp xã của công ty trong kỳ âm. Chỉ cán bộ xã lập; 1 phiếu
@@ -50,7 +51,8 @@ public class CommunePayoutService {
     private final AuditService audit;
     private final Clock clock;
 
-    public record IssuePayoutCommand(Long companyId, Long periodId, long amount, LocalDate payoutDate, String note) {
+    public record IssuePayoutCommand(Long companyId, Long periodId, long amount, ReceiptMethod method, LocalDate payoutDate,
+            String documentRef, String note) {
     }
 
     /** Phiếu kèm lũy kế xã đã trả tới phiếu này, số xã phải trả lại của kỳ (= −còn phải nộp) và số còn phải trả sau phiếu. */
@@ -82,12 +84,13 @@ public class CommunePayoutService {
         String prefix = "PC-CT-" + period.documentToken() + "-";
         String code = prefix + "%03d".formatted(payouts.maxCodeNumber(prefix) + 1);
         CommunePayout saved = payouts.save(CommunePayout.builder()
-                .code(code).company(company).period(period).amount(cmd.amount()).payoutDate(date)
-                .note(blankToNull(cmd.note())).issuedBy(actor.id()).build());
+                .code(code).company(company).period(period).amount(cmd.amount()).method(cmd.method())
+                .payoutDate(date).documentRef(blankToNull(cmd.documentRef())).note(blankToNull(cmd.note())).issuedBy(actor.id()).build());
         Map<String, Object> after = new LinkedHashMap<>();
         after.put("company", company.getCode());
         after.put("period", period.getCode());
         after.put("amount", cmd.amount());
+        after.put("method", cmd.method());
         after.put("owedBefore", owed);
         after.put("owedAfter", owed - cmd.amount());
         audit.record(actor, "ISSUE_COMMUNE_PAYOUT", ENTITY, code, null, after);

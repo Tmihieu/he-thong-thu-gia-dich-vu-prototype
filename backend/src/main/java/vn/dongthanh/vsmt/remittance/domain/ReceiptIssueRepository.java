@@ -17,6 +17,15 @@ public interface ReceiptIssueRepository extends JpaRepository<ReceiptIssue, Long
     @Query("select i from ReceiptIssue i join fetch i.receipt r join fetch r.company join fetch r.period where i.id = :id")
     Optional<ReceiptIssue> findByIdWithDetails(Long id);
 
+    /** Sai sót phiếu chi trả (UC-56, UC-57); mới nhất trước. */
+    @Query("select i from ReceiptIssue i join fetch i.payout p join fetch p.company c join fetch p.period"
+            + " where (:status is null or i.status = :status) and (:companyId is null or c.id = :companyId)"
+            + " order by i.createdAt desc, i.id desc")
+    List<ReceiptIssue> searchPayoutIssues(ReceiptIssueStatus status, Long companyId);
+
+    @Query("select i from ReceiptIssue i join fetch i.payout p join fetch p.company join fetch p.period where i.id = :id")
+    Optional<ReceiptIssue> findPayoutIssueById(Long id);
+
     /** Id các phiếu có sai sót đang chờ xã kiểm tra (nhãn "Đã báo sai sót · chờ xã kiểm tra"). */
     @Query("select distinct i.receipt.id from ReceiptIssue i where i.status = 'PENDING' and i.receipt.id in :receiptIds")
     List<Long> findPendingReceiptIds(Collection<Long> receiptIds);

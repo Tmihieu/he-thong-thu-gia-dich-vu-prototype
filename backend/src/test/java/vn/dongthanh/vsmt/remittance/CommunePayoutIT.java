@@ -93,7 +93,7 @@ class CommunePayoutIT extends IntegrationTest {
         String officer = fx.bearer(fx.officer);
         mvc.perform(post("/api/remittance/payouts").header(HttpHeaders.AUTHORIZATION, officer)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"companyId\":%d,\"periodId\":%d,\"amount\":1000,\"payoutDate\":\"2026-12-31\"}"
+                        .content("{\"companyId\":%d,\"periodId\":%d,\"amount\":1000,\"method\":\"CASH\",\"payoutDate\":\"2026-12-31\"}"
                                 .formatted(fx.dv01.getId(), fx.october.getId())))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("PAYOUT_DATE_INVALID"));
@@ -101,7 +101,7 @@ class CommunePayoutIT extends IntegrationTest {
         // DV07 không có số xã phải trả.
         mvc.perform(post("/api/remittance/payouts").header(HttpHeaders.AUTHORIZATION, officer)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"companyId\":%d,\"periodId\":%d,\"amount\":1000}".formatted(fx.dv07.getId(), fx.october.getId())))
+                        .content("{\"companyId\":%d,\"periodId\":%d,\"amount\":1000,\"method\":\"CASH\"}".formatted(fx.dv07.getId(), fx.october.getId())))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("PAYOUT_AMOUNT_OUT_OF_RANGE"));
     }
@@ -136,6 +136,74 @@ class CommunePayoutIT extends IntegrationTest {
     }
 
     @Test
+    void methodAndDocumentRefAreStoredAndMethodIsRequired() throws Exception {
+        String officer = fx.bearer(fx.officer);
+        mvc.perform(post("/api/remittance/payouts").header(HttpHeaders.AUTHORIZATION, officer)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"companyId\":%d,\"periodId\":%d,\"amount\":5000,\"method\":\"CASH\",\"documentRef\":\"PC-01\"}"
+                                .formatted(fx.dv01.getId(), fx.october.getId())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.method").value("CASH"))
+                .andExpect(jsonPath("$.documentRef").value("PC-01"));
+        mvc.perform(post("/api/remittance/payouts").header(HttpHeaders.AUTHORIZATION, officer)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"companyId\":%d,\"periodId\":%d,\"amount\":5000}".formatted(fx.dv01.getId(), fx.october.getId())))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void payoutIssueFlowCompanyReportsCommuneResolvesPayoutUntouched() throws Exception {
+        issue(fx.bearer(fx.officer), 10_000, null).andExpect(status().isCreated());
+        long payoutId = jdbc.queryForObject("select id from commune_payouts", Long.class);
+        String body = "{\"payoutId\":%d,\"issueType\":\"WRONG_AMOUNT\",\"correctAmount\":12000,\"description\":\"Nhận 12.000\"}"
+                .formatted(payoutId);
+
+        // Chỉ công ty có phiếu mới báo được; xã, lãnh đạo, công ty khác thì không.
+        for (User u : new User[] {fx.officer, leader, fx.admin, fx.dv07Manager}) {
+            mvc.perform(post("/api/remittance/payout-issues").header(HttpHeaders.AUTHORIZATION, fx.bearer(u))
+                    .contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(u == fx.dv07Manager ? status().isNotFound() : status().isForbidden());
+        }
+        mvc.perform(post("/api/remittance/payout-issues").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.dv01Manager))
+                        .contentType(MediaType.APPLICATION_JSON).content(body.replace("Nhận 12.000", " ")))
+                .andExpect(status().isBadRequest());
+        String id = com.jayway.jsonpath.JsonPath.read(mvc.perform(post("/api/remittance/payout-issues")
+                        .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.dv01Manager))
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.payoutCode").value("PC-CT-1026-001"))
+                .andExpect(jsonPath("$.status").value("PENDING")).andReturn().getResponse().getContentAsString(), "$.id").toString();
+
+        listIssues(fx.officer).andExpect(jsonPath("$", hasSize(1)));
+        listIssues(leader).andExpect(jsonPath("$", hasSize(1)));
+        listIssues(fx.dv01Manager).andExpect(jsonPath("$", hasSize(1)));
+        listIssues(fx.dv07Manager).andExpect(jsonPath("$", hasSize(0)));
+        listIssues(fx.admin).andExpect(status().isForbidden());
+        // Sai sót phiếu chi không lẫn vào danh sách sai sót phiếu thu.
+        mvc.perform(get("/api/remittance/receipt-issues").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer)))
+                .andExpect(jsonPath("$", hasSize(0)));
+        mvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer)))
+                .andExpect(jsonPath("$.items[?(@.title =~ /.*báo sai sót phiếu chi trả PC-CT-1026-001/)]", hasSize(1)));
+
+        for (User u : new User[] {fx.dv01Manager, leader, fx.admin}) {
+            mvc.perform(post("/api/remittance/payout-issues/" + id + "/resolve").header(HttpHeaders.AUTHORIZATION, fx.bearer(u))
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"resolutionNote\":\"ok\"}"))
+                    .andExpect(status().isForbidden());
+        }
+        mvc.perform(post("/api/remittance/payout-issues/" + id + "/resolve").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"resolutionNote\":\"Đã đối chiếu sao kê\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("RESOLVED"));
+        mvc.perform(post("/api/remittance/payout-issues/" + id + "/resolve").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"resolutionNote\":\"lại\"}"))
+                .andExpect(status().isUnprocessableEntity());
+        // Phiếu giữ nguyên; công ty nhận thông báo kết quả.
+        assertThat(jdbc.queryForObject("select amount from commune_payouts where id = ?", Long.class, payoutId)).isEqualTo(10_000);
+        mvc.perform(get("/api/notifications").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.dv01Manager)))
+                .andExpect(jsonPath("$.items[?(@.title == 'Xã đã xử lý sai sót phiếu chi trả PC-CT-1026-001')]", hasSize(1)));
+        assertThat(jdbc.queryForObject("select count(*) from audit_logs where action in ('REPORT_PAYOUT_ISSUE', 'RESOLVE_PAYOUT_ISSUE')",
+                Integer.class)).isEqualTo(2);
+    }
+
+    @Test
     void lockedPeriodIsRejected() throws Exception {
         jdbc.update("update collection_periods set status = 'LOCKED', locked_at = now() where id = ?", fx.october.getId());
         em.clear();
@@ -146,8 +214,12 @@ class CommunePayoutIT extends IntegrationTest {
     private ResultActions issue(String token, long amount, String note) throws Exception {
         return mvc.perform(post("/api/remittance/payouts").header(HttpHeaders.AUTHORIZATION, token)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"companyId\":%d,\"periodId\":%d,\"amount\":%d%s}".formatted(fx.dv01.getId(), fx.october.getId(),
+                .content("{\"companyId\":%d,\"periodId\":%d,\"amount\":%d,\"method\":\"TRANSFER\"%s}".formatted(fx.dv01.getId(), fx.october.getId(),
                         amount, note == null ? "" : ",\"note\":\"" + note + "\"")));
+    }
+
+    private ResultActions listIssues(User user) throws Exception {
+        return mvc.perform(get("/api/remittance/payout-issues").header(HttpHeaders.AUTHORIZATION, fx.bearer(user)));
     }
 
     private ResultActions list(User user) throws Exception {

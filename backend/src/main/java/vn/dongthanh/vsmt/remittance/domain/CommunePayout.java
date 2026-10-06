@@ -4,6 +4,8 @@ import java.time.LocalDate;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -37,21 +39,30 @@ public class CommunePayout extends BaseEntity {
     @Column(nullable = false, updatable = false)
     private long amount;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, updatable = false, length = 30)
+    private ReceiptMethod method;
+
     @Column(nullable = false, updatable = false)
     private LocalDate payoutDate;
+
+    @Column(updatable = false, length = 50)
+    private String documentRef;
 
     @Column(updatable = false, length = 500)
     private String note;
 
     @Builder
     private static CommunePayout issue(String code, Company company, CollectionPeriod period, long amount,
-            LocalDate payoutDate, String note, Long issuedBy) {
+            ReceiptMethod method, LocalDate payoutDate, String documentRef, String note, Long issuedBy) {
         CommunePayout p = new CommunePayout();
         p.code = code;
         p.company = company;
         p.period = period;
         p.amount = amount;
+        p.method = method;
         p.payoutDate = payoutDate;
+        p.documentRef = documentRef;
         p.note = note;
         p.setCreatedBy(issuedBy);
         return p;

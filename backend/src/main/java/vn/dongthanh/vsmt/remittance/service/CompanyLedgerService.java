@@ -134,6 +134,11 @@ public class CompanyLedgerService {
         return queries.unpaidChargeCount(periodId);
     }
 
+    /** Công ty xã còn phải trả lại &gt; 0 cho kỳ (chặn khóa kỳ, UC-39 / UC-55). */
+    public List<LedgerRow> companiesCommuneOwes(Long periodId) {
+        return ledger(periodId).stream().filter(r -> r.communeOwed() > 0).toList();
+    }
+
     public record PeriodDebt(CollectionPeriod period, long remaining) {
     }
 

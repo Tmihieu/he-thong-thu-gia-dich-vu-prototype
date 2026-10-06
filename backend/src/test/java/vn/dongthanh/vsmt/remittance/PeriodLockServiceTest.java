@@ -150,11 +150,23 @@ class PeriodLockServiceTest {
     }
 
     @Test
-    void companyThatTheCommuneOwesMoneyDoesNotBlockLocking() {
-        // Phải nộp xã âm (xã trả lại công ty) thì còn phải nộp ≤ 0: ledger không đưa công ty đó vào danh sách còn nợ.
-        when(periodService.markLocked(october, officer)).thenReturn(october);
+    void companyThatTheCommuneStillOwesBlocksLockingUntilPaidInFull() {
+        // Phải nộp xã âm: công ty không nợ xã (không trong companiesWithDebt) nhưng xã còn phải trả lại thì chặn khóa (UC-55).
+        when(ledger.companiesCommuneOwes(10L)).thenReturn(List.of(owed("DV02", 34_000)));
 
+        assertThatThrownBy(() -> service.lock(10L, officer))
+                .hasMessageContaining("xã còn phải trả lại 1 công ty")
+                .hasMessageContaining("DV02: 34.000 đ")
+                .extracting("code").isEqualTo("PERIOD_COMMUNE_OWES");
+
+        when(ledger.companiesCommuneOwes(10L)).thenReturn(List.of());
+        when(periodService.markLocked(october, officer)).thenReturn(october);
         assertThat(service.lock(10L, officer)).isSameAs(october);
+    }
+
+    private static LedgerRow owed(String code, long communeOwed) {
+        return new LedgerRow(1L, code, "Công ty " + code, 10L, 0, 1, 0, 0, 0, 0, 0, 0, -communeOwed, communeOwed, 0, false, 0, true,
+                0, false, Progress.PAID_IN_FULL, Reconciliation.PENDING, 0, -communeOwed, 0, 0, communeOwed);
     }
 
     private static LedgerRow debt(String code, long remaining) {
