@@ -102,7 +102,8 @@ class LedgerApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$[0].remaining").value(-34_000))
                 .andExpect(jsonPath("$[0].gap").value(34_000))
                 .andExpect(jsonPath("$[0].progress").value("PAID_IN_FULL"))
-                .andExpect(jsonPath("$[0].reconciliation").value("MATCHED"));
+                .andExpect(jsonPath("$[0].communeOwed").value(34_000))
+                .andExpect(jsonPath("$[0].reconciliation").value("PENDING"));
         // Còn phải nộp âm thì không lập được phiếu thu nộp thêm.
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/remittance/receipts")
                         .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer))

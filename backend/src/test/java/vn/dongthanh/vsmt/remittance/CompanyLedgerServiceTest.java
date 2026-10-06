@@ -207,9 +207,22 @@ class CompanyLedgerServiceTest {
         assertThat(r.remaining()).isEqualTo(-228_000);
         assertThat(r.gap()).isEqualTo(228_000);
         assertThat(r.progress()).isEqualTo(Progress.PAID_IN_FULL);
-        assertThat(r.reconciliation()).isEqualTo(Reconciliation.MATCHED);
+        // Xã chưa trả lại: còn nợ công ty 228.000, đối soát chưa Khớp (UC-55).
+        assertThat(r.communePaid()).isZero();
+        assertThat(r.communeOwed()).isEqualTo(228_000);
+        assertThat(r.reconciliation()).isEqualTo(Reconciliation.PENDING);
         assertThat(r.lowRemittedRate()).isFalse();
         assertThat(service("2026-10-15").remaining(1L, 10L)).isEqualTo(-228_000);
+        // Xã trả 100.000 rồi 128.000: còn phải trả giảm dần, đủ thì Khớp; còn phải nộp vẫn âm.
+        when(remitted.paidBackByCompany(10L)).thenReturn(Map.of(1L, 100_000L));
+        LedgerRow part = service("2026-10-15").row(1L, 10L);
+        assertThat(part.communeOwed()).isEqualTo(128_000);
+        assertThat(part.reconciliation()).isEqualTo(Reconciliation.PENDING);
+        when(remitted.paidBackByCompany(10L)).thenReturn(Map.of(1L, 228_000L));
+        LedgerRow full = service("2026-10-15").row(1L, 10L);
+        assertThat(full.communeOwed()).isZero();
+        assertThat(full.remaining()).isEqualTo(-228_000);
+        assertThat(full.reconciliation()).isEqualTo(Reconciliation.MATCHED);
         assertThat(service("2026-10-15").companiesWithDebt(10L)).isEmpty();
     }
 
