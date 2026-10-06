@@ -2372,12 +2372,6 @@ export interface components {
             createDay: number;
             /**
              * Format: int32
-             * @description Hạn hộ đóng mặc định = ngày phát hành + số ngày này
-             * @example 15
-             */
-            householdDueDays: number;
-            /**
-             * Format: int32
              * @description Hạn công ty nộp xã = ngày cuối kỳ + số ngày này
              * @example 10
              */
@@ -2389,8 +2383,6 @@ export interface components {
             periodType: "MONTH" | "QUARTER";
             /** Format: int32 */
             createDay: number;
-            /** Format: int32 */
-            householdDueDays: number;
             /** Format: int32 */
             remitDueDays: number;
             /** Format: date-time */

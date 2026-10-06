@@ -18,7 +18,7 @@ Bản rút gọn ngày 30/09/2026, dùng để chỉnh sơ đồ swimlane. Mỗi
 
 | Bước | Làn | Hành động | Nhánh / bước tiếp theo |
 |---|---|---|---|
-| A1 | Quản trị | Đặt quy tắc tự tạo kỳ một lần: bật/tắt, chu kỳ tháng hoặc quý, ngày tạo kỳ, số ngày hộ đóng, số ngày công ty nộp xã (có thể vẫn mở kỳ thủ công) | → A2 |
+| A1 | Quản trị | Đặt quy tắc tự tạo kỳ một lần: bật/tắt, chu kỳ tháng hoặc quý, ngày tạo kỳ, số ngày công ty nộp xã (có thể vẫn mở kỳ thủ công) | → A2 |
 | A2 | Hệ thống | Đến ngày tạo kỳ (7h30 hằng ngày) tự tạo kỳ kế tiếp ở dạng **Dự thảo**, gắn biểu giá áp dụng, báo cán bộ xã; kỳ Dự thảo chưa có khoản thu và chưa ghi thu được | → A3 |
 | A3 | Cán bộ xã | Xác định công ty phụ trách các khu vực cần thu; phân công nếu chưa có. Mở tab **Kỳ chờ mở** ở Khoản thu | → A4 |
 | A4 | Cán bộ xã | Chọn kỳ Dự thảo; hạn nộp (hạn duy nhất của kỳ, hộ đóng trong hạn này) mặc định theo quy tắc của quản trị, sửa được. (Lập phiếu thủ công cho kỳ đã mở vẫn dùng được) | → A5 |

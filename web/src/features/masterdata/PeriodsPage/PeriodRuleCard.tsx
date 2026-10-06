@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ApiError } from '../../../api/client';
 import { type PeriodRule, useDraftPeriods, usePeriodRule, useRunPeriodRule, useUpdatePeriodRule } from '../api';
 
-type FormValues = Pick<PeriodRule, 'enabled' | 'periodType' | 'createDay' | 'householdDueDays' | 'remitDueDays'>;
+type FormValues = Pick<PeriodRule, 'enabled' | 'periodType' | 'createDay' | 'remitDueDays'>;
 
 function errorMessage(err: unknown): string | null {
   if (!err) return null;
@@ -54,7 +54,6 @@ export function PeriodRuleCard() {
           enabled: rule.data.enabled,
           periodType: rule.data.periodType,
           createDay: rule.data.createDay,
-          householdDueDays: rule.data.householdDueDays,
           remitDueDays: rule.data.remitDueDays,
         }}
         onValuesChange={() => setDirty(true)}
@@ -90,14 +89,6 @@ export function PeriodRuleCard() {
             extra={`Tạo kỳ ${unit} kế tiếp ${when}.`}
           >
             <InputNumber min={1} max={28} precision={0} style={{ width: 100 }} />
-          </Form.Item>
-          <Form.Item
-            label="Hạn hộ đóng"
-            name="householdDueDays"
-            rules={[{ required: true, message: 'Vui lòng nhập số ngày' }]}
-            extra="Mặc định = ngày phát hành + số ngày này (cán bộ xã sửa được khi mở kỳ)."
-          >
-            <InputNumber min={1} max={365} precision={0} style={{ width: 130 }} addonAfter="ngày" />
           </Form.Item>
           <Form.Item
             label="Hạn công ty nộp xã"
