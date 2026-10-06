@@ -209,15 +209,14 @@ describe('Đối soát', () => {
     renderApp('/commune/reconciliation');
   }
 
-  it('tổng kỳ: xã đang giữ − được hưởng = thừa; còn phải chi / thu; cảnh báo QR chưa xác định', async () => {
+  it('tổng kỳ: xã đang giữ − được hưởng = thừa; cảnh báo QR chưa xác định', async () => {
     setup();
 
-    // Giữ 59.300.000 − hưởng 50.000.000 = thừa 9.300.000 (= phải chi 11.300.000 − phải thu 2.000.000).
+    // Giữ 59.300.000 − hưởng 50.000.000 = thừa 9.300.000.
     expect(await screen.findByText('Xã đang THỪA')).toBeInTheDocument();
     const text = () => document.body.textContent!.replace(/\s+/g, ' ');
     await waitFor(() => expect(text()).toContain('9.300.000'));
-    expect(text()).toContain('Xã còn phải chi: 11.300.000 đ cho 1 Cty');
-    expect(text()).toContain('Xã còn phải thu: 2.000.000 đ từ 1 Cty');
+    expect(text()).not.toContain('Xã còn phải chi');
     // Sao kê QR = QR của các công ty (57.300.000) + chưa xác định (180.000).
     expect(await screen.findByText(/Sao kê QR/)).toHaveTextContent('57.480.000');
     expect(screen.getByText(/3 giao dịch chưa xác định Cty/)).toBeInTheDocument();

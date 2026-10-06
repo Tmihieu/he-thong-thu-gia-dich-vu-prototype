@@ -118,8 +118,6 @@ export function ReconciliationPage() {
   const holding = sum(rows, (r) => r.holding);
   const entitled = sum(rows, (r) => r.entitled);
   const diff = holding - entitled;
-  const toPay = rows.filter((r) => r.communeOwed > 0);
-  const toCollect = rows.filter((r) => r.remaining > 0);
   const qrTotal = sum(rows, (r) => r.qrTotal);
   const counts = { all: rows.length, open: rows.filter((r) => !r.settled).length, settled: rows.filter((r) => r.settled).length };
   const shown = rows.filter((r) => filter === 'all' || (filter === 'settled') === r.settled);
@@ -193,7 +191,7 @@ export function ReconciliationPage() {
   ];
 
   return (
-    <>
+    <ConfigProvider theme={{ token: { borderRadius: 0, borderRadiusLG: 0, borderRadiusSM: 0 }, components: { Table: { borderColor: BORDER } } }}>
       <PageHeader
         title={period ? `Đối soát ${period.label.toLowerCase()}` : 'Đối soát'}
         description={`${rows.length} công ty thu gom · Lập phiếu thu/chi đủ số còn lại thì công ty đó chuyển sang Khớp`}
@@ -233,15 +231,6 @@ export function ReconciliationPage() {
             </span>
           </div>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 24px', padding: '12px 20px', borderTop: `1px solid ${BORDER}`, background: '#f7f8f6' }}>
-          <span>
-            Xã còn phải chi: <strong style={{ color: semantic.info.fg }}><MoneyText value={sum(toPay, (r) => r.communeOwed)} /></strong> cho {toPay.length} Cty
-          </span>
-          <span>
-            Xã còn phải thu: <strong style={{ color: semantic.warning.fg }}><MoneyText value={sum(toCollect, (r) => r.remaining)} /></strong> từ {toCollect.length} Cty
-          </span>
-          {qr && qr.count > 0 && <Typography.Text type="secondary">Chưa tính <MoneyText value={qr.amount} /> QR chưa xác định Cty</Typography.Text>}
-        </div>
       </Card>
 
       {qr && qr.count > 0 && (
@@ -263,8 +252,8 @@ export function ReconciliationPage() {
         />
       )}
 
-      <Card style={{ marginTop: 16, borderColor: BORDER }} styles={{ body: { padding: 0 } }}>
-        <div style={{ padding: '10px 12px', borderBottom: `1px solid ${BORDER}` }}>
+      <div style={{ marginTop: 16 }}>
+        <div style={{ paddingBottom: 12 }}>
           <Segmented<Filter>
             value={filter}
             onChange={setFilter}
@@ -275,7 +264,6 @@ export function ReconciliationPage() {
             ]}
           />
         </div>
-        <ConfigProvider theme={{ components: { Table: { borderColor: BORDER } } }}>
         <Table<LedgerRow>
           bordered
           rowKey="companyId"
@@ -287,8 +275,7 @@ export function ReconciliationPage() {
           scroll={{ x: 1650 }}
           columns={columns}
         />
-        </ConfigProvider>
-      </Card>
+      </div>
 
       <IssueReceiptForm
         row={issuingReceipt}
@@ -315,7 +302,7 @@ export function ReconciliationPage() {
       <VouchersModal row={viewing} onClose={() => setViewing(null)} />
       <ReceiptPrint receipt={printReceipt} onClose={() => setPrintReceipt(null)} />
       <PayoutPrint payout={printPayout} onClose={() => setPrintPayout(null)} />
-    </>
+    </ConfigProvider>
   );
 }
 
@@ -334,5 +321,5 @@ function Cell({ label, value, children }: { label: string; value: number; childr
 }
 
 function Operator({ children }: { children: ReactNode }) {
-  return <div style={{ display: 'flex', alignItems: 'center', padding: '0 4px', fontSize: 28, color: semantic.neutral.fg }}>{children}</div>;
+  return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 48, flex: '0 0 48px', fontSize: 28, color: semantic.neutral.fg }}>{children}</div>;
 }
