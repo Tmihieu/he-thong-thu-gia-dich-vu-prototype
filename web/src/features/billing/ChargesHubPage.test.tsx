@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, vi } from 'vitest';
 
 import { TOKEN_KEY } from '../../app/auth/authContext';
-import { pickDate, pickOption } from '../../test/antd';
+import { pickOption } from '../../test/antd';
 import { jsonResponse, mockApi, renderApp } from '../../test/renderApp';
 
 const officer = { id: 2, username: 'canbo_xa', fullName: 'Nguyễn Thị Mẫu', role: 'COMMUNE_OFFICER', companyId: null };
@@ -50,7 +50,6 @@ async function fillAndPreview() {
   await userEvent.click(await screen.findByRole('tab', { name: 'Phiếu YCT' }));
   await userEvent.click(await screen.findByRole('button', { name: /Lập phiếu YCT/ }));
   await pickOption(await screen.findByRole('combobox', { name: 'Kỳ thu' }), 'Tháng 10/2026 (BG-65-2026)');
-  pickDate(screen.getByLabelText('Hạn hộ đóng'), '25/10/2026');
   await userEvent.click(screen.getByRole('button', { name: 'Xem trước' }));
 }
 
@@ -81,7 +80,7 @@ describe('Khoản thu · phiếu YCT', () => {
     expect(screen.queryByRole('alert', { name: /lỗi/i })).not.toBeInTheDocument();
   });
 
-  it('tab khoản thu hiện "Quá hạn" theo hạn đóng', async () => {
+  it('tab khoản thu hiện "Quá hạn" theo hạn nộp của kỳ', async () => {
     baseApi(() => jsonResponse(500, {}));
     renderApp('/commune/charges');
 

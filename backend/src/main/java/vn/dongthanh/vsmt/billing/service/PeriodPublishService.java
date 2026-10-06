@@ -1,8 +1,8 @@
 package vn.dongthanh.vsmt.billing.service;
 
-import java.time.Clock;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
@@ -27,7 +27,7 @@ import vn.dongthanh.vsmt.platform.service.AuditService;
 
 /**
  * Cán bộ xã duyệt kỳ dự thảo (xã chốt 04/10/2026): xem trước các khoản sẽ lập rồi "Mở kỳ & phát hành". Mở kỳ và phát
- * hành phiếu yêu cầu thu phí vệ sinh môi trường cho toàn xã nằm trong một transaction: lỗi ở khâu lập khoản thì kỳ vẫn
+ * hành phiếu yêu cầu thu (mặc định phí vệ sinh môi trường cho toàn xã, hoặc theo phạm vi cán bộ xã chọn) nằm trong một transaction: lỗi ở khâu lập khoản thì kỳ vẫn
  * là Dự thảo. Phát hành dùng đúng {@link ChargeRequestService} nên cùng quy tắc R2 với phiếu YCT lập tay.
  */
 @Service
@@ -43,40 +43,40 @@ public class PeriodPublishService {
     private final TariffService tariffs;
     private final ChargeRequestService chargeRequests;
     private final AuditService audit;
-    private final Clock clock;
 
-    /** @param dueDate hạn hộ đóng đã dùng cho lần xem trước (mặc định theo quy tắc nếu người dùng chưa chọn) */
-    public record DraftPreview(CollectionPeriod period, LocalDate dueDate, IssueResult result) {
+    public record DraftPreview(CollectionPeriod period, IssueResult result) {
     }
 
     public record PublishResult(CollectionPeriod period, IssueResult result) {
+    }
+
+    /** Phạm vi phiếu khi mở kỳ; {@code null} = phí vệ sinh môi trường cho toàn xã. */
+    public record Scope(Long feeTypeId, ChargeScope scopeType, List<Long> areaIds, Long companyId, Long unitPrice) {
     }
 
     /**
      * Xem trước các khoản sẽ lập khi mở kỳ. Kỳ dự thảo lấy lại biểu giá hiệu lực tại ngày đầu kỳ (biểu giá có thể
      * vừa được ban hành sau lúc hệ thống tạo dự thảo), nên số tiền xem trước khớp với lúc mở kỳ.
      */
-    public DraftPreview preview(Long periodId, LocalDate openDate, LocalDate companyDueDate, LocalDate householdDueDate,
-            CurrentUser actor) {
+    public DraftPreview preview(Long periodId, LocalDate openDate, LocalDate companyDueDate,
+            Scope scope, CurrentUser actor) {
         actor.requireRole(Role.COMMUNE_OFFICER);
         CollectionPeriod period = periods.findByIdWithTariff(periodId).orElseThrow(PeriodPublishService::notFound);
         requireDraft(period);
         refreshTariff(period);
         schedule(period, openDate, companyDueDate);
-        LocalDate due = dueDate(period, householdDueDate);
-        return new DraftPreview(period, due, chargeRequests.previewDraft(command(period, due, null), actor));
+        return new DraftPreview(period, chargeRequests.previewDraft(command(period, null, scope), actor));
     }
 
-    public PublishResult publish(Long periodId, LocalDate openDate, LocalDate companyDueDate, LocalDate householdDueDate,
-            String note, CurrentUser actor) {
+    public PublishResult publish(Long periodId, LocalDate openDate, LocalDate companyDueDate,
+            String note, Scope scope, CurrentUser actor) {
         actor.requireRole(Role.COMMUNE_OFFICER);
         // Khóa dòng kỳ: hai cán bộ cùng bấm thì người sau thấy kỳ đã mở.
         CollectionPeriod period = periods.findByIdForUpdate(periodId).orElseThrow(PeriodPublishService::notFound);
         requireDraft(period);
         TariffVersion tariff = refreshTariff(period);
         schedule(period, openDate, companyDueDate);
-        LocalDate due = dueDate(period, householdDueDate);
-        IssueCommand cmd = command(period, due, note);
+        IssueCommand cmd = command(period, note, scope);
 
         period.publish();
         // Đẩy trạng thái COLLECTING xuống CSDL trước khi phát hành: PeriodGuard đọc lại trạng thái bằng FOR SHARE.
@@ -87,8 +87,7 @@ public class PeriodPublishService {
         after.put("status", period.getStatus());
         after.put("tariffVersion", tariff.getCode());
         after.put("openDate", period.getOpenDate());
-        after.put("companyDueDate", period.getDueDate());
-        after.put("dueDate", due);
+        after.put("dueDate", period.getDueDate());
         after.put("requestCode", result.requestCode());
         after.put("chargeCount", result.chargeCount());
         after.put("totalAmount", result.totalAmount());
@@ -96,7 +95,7 @@ public class PeriodPublishService {
         return new PublishResult(period, result);
     }
 
-    /** Cán bộ xã đặt ngày mở / hạn công ty nộp xã (trống thì giữ giá trị của dự thảo). */
+    /** Cán bộ xã đặt ngày mở / hạn nộp (hạn duy nhất của kỳ) (trống thì giữ giá trị của dự thảo). */
     private static void schedule(CollectionPeriod period, LocalDate openDate, LocalDate companyDueDate) {
         if (openDate != null || companyDueDate != null) {
             period.schedule(openDate != null ? openDate : period.getOpenDate(),
@@ -119,30 +118,18 @@ public class PeriodPublishService {
         return current;
     }
 
-    /**
-     * Hạn hộ đóng: người dùng chọn, hoặc gợi ý ngày 20 của kỳ (kỳ quý: tháng cuối quý). Đã quá ngày 20 khi mở thì lấy
-     * hạn công ty nộp xã. Luôn nằm giữa ngày mở kỳ và hạn công ty nộp xã.
-     */
-    private LocalDate dueDate(CollectionPeriod period, LocalDate requested) {
-        if (requested != null) {
-            if (requested.isBefore(period.getOpenDate()) || requested.isAfter(period.getDueDate())) {
-                throw new BusinessRuleException("HOUSEHOLD_DUE_OUT_OF_RANGE",
-                        "Hạn hộ đóng phải nằm giữa ngày mở kỳ và hạn công ty nộp xã.");
-            }
-            return requested;
+    private IssueCommand command(CollectionPeriod period, String note, Scope scope) {
+        if (scope != null && scope.scopeType() != null) {
+            Long feeTypeId = scope.feeTypeId() != null ? scope.feeTypeId() : envFeeType().getId();
+            return new IssueCommand(period.getId(), feeTypeId, scope.scopeType(), scope.areaIds(), scope.companyId(),
+                    scope.unitPrice(), note);
         }
-        LocalDate from = LocalDate.now(clock);
-        if (period.getOpenDate().isAfter(from)) {
-            from = period.getOpenDate();
-        }
-        LocalDate suggested = period.getEndDate().withDayOfMonth(20);
-        return suggested.isBefore(from) || suggested.isAfter(period.getDueDate()) ? period.getDueDate() : suggested;
+        return new IssueCommand(period.getId(), envFeeType().getId(), ChargeScope.ALL, null, null, null, note);
     }
 
-    private IssueCommand command(CollectionPeriod period, LocalDate due, String note) {
-        FeeType env = feeTypes.findByCode(ENV_FEE_CODE).orElseThrow(() -> new NotFoundException("FEE_TYPE_NOT_FOUND",
+    private FeeType envFeeType() {
+        return feeTypes.findByCode(ENV_FEE_CODE).orElseThrow(() -> new NotFoundException("FEE_TYPE_NOT_FOUND",
                 "Chưa có loại phí vệ sinh môi trường (" + ENV_FEE_CODE + ") để lập khoản."));
-        return new IssueCommand(period.getId(), env.getId(), ChargeScope.ALL, null, null, due, null, note);
     }
 
     private static NotFoundException notFound() {

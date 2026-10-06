@@ -186,9 +186,6 @@ export function CompaniesPage({ admin = false }: { admin?: boolean }) {
               <Descriptions.Item label="Địa chỉ" span={2}>{detail.address ?? '—'}</Descriptions.Item>
               <Descriptions.Item label="Email">{detail.email ?? '—'}</Descriptions.Item>
               <Descriptions.Item label="Số hợp đồng với xã">{detail.communeContractNo ?? '—'}</Descriptions.Item>
-              <Descriptions.Item label="Tài khoản ngân hàng" span={2}>
-                {detail.bankAccount ? `${detail.bankAccount}${detail.bankName ? ` · ${detail.bankName}` : ''}` : '—'}
-              </Descriptions.Item>
             </Descriptions>
 
             {!admin && (

@@ -94,7 +94,7 @@ class CitizenApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$[0].paidAmount").value(80_000))
                 .andExpect(jsonPath("$[0].remainingAmount").value(0))
                 .andExpect(jsonPath("$[0].status").value("PAID"))
-                .andExpect(jsonPath("$[0].dueDate").value("2026-10-25"))
+                .andExpect(jsonPath("$[0].dueDate").value("2026-10-31"))
                 .andExpect(jsonPath("$[0].overdue").value(false));
 
         mvc.perform(get("/api/citizen/charges").header(HttpHeaders.AUTHORIZATION, bearer(citizenB)))
@@ -104,8 +104,8 @@ class CitizenApiIT extends IntegrationTest {
     }
 
     @Test
-    void chargeIsOverdueAfterDueDateWhileUnpaid() throws Exception {
-        clock.set(Instant.parse("2026-10-26T02:00:00Z"));
+    void chargeIsOverdueAfterPeriodDueDateWhileUnpaid() throws Exception {
+        clock.set(Instant.parse("2026-11-01T02:00:00Z"));
 
         mvc.perform(get("/api/citizen/charges").header(HttpHeaders.AUTHORIZATION, bearer(citizenA)))
                 .andExpect(jsonPath("$[0].overdue").value(true));

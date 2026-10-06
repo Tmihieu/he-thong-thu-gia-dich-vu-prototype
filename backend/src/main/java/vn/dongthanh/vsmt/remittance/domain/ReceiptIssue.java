@@ -16,16 +16,20 @@ import lombok.NoArgsConstructor;
 import vn.dongthanh.vsmt.platform.common.BaseEntity;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 
-/** Công ty báo sai sót một phiếu thu; xã đóng kèm ghi chú kết quả (G6), không sửa phiếu. */
+/** Công ty báo sai sót một phiếu thu hoặc một phiếu chi trả (đúng một trong hai); xã đóng kèm ghi chú kết quả (G6), không sửa phiếu. */
 @Getter
 @Entity
 @Table(name = "receipt_issues")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ReceiptIssue extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "receipt_id", nullable = false, updatable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "receipt_id", updatable = false)
     private CompanyReceipt receipt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payout_id", updatable = false)
+    private CommunePayout payout;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, updatable = false, length = 30)
@@ -60,6 +64,13 @@ public class ReceiptIssue extends BaseEntity {
         i.description = description;
         i.status = ReceiptIssueStatus.PENDING;
         i.reportedBy = reportedBy;
+        return i;
+    }
+
+    public static ReceiptIssue reportPayout(CommunePayout payout, ReceiptIssueType type, Long correctAmount,
+            String description, Long reportedBy) {
+        ReceiptIssue i = report(null, type, correctAmount, description, reportedBy);
+        i.payout = payout;
         return i;
     }
 

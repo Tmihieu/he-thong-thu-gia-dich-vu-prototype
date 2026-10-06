@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Navigate, type RouteObject } from 'react-router';
 
 import { ChargesHubPage } from '../features/billing/ChargesHubPage';
+import { BankTransfersPage } from '../features/collection/BankTransfersTab';
 import { CollectorAccountPage } from '../features/collection/CollectorAccountPage';
 import { CollectorCashPage } from '../features/collection/CollectorCashPage';
 import { CollectorAccountsPage } from '../features/collection/CollectorAccountsPage/CollectorAccountsPage';
@@ -12,6 +13,7 @@ import { CompanyComplaintsPage } from '../features/complaints/CompanyComplaintsP
 import { MarketModerationPage, MarketModerationPostPage } from '../features/market/MarketPages';
 import { AreasPage } from '../features/masterdata/AreasPage/AreasPage';
 import { LeaderDashboardPage } from '../features/leadership/LeaderDashboardPage';
+import { LeaderPayoutsPage } from '../features/leadership/LeaderPayoutsPage';
 import { LeaderReportPage } from '../features/leadership/LeaderReportPage';
 import { CompaniesPage } from '../features/masterdata/CompaniesPage/CompaniesPage';
 import { ConfigPage } from '../features/masterdata/ConfigPage';
@@ -41,12 +43,14 @@ const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'COMMUNE_OFFICER:charges': <ChargesHubPage />,
   'COMMUNE_OFFICER:progress': <ProgressPage />,
   'COMMUNE_OFFICER:reconciliation': <ReconciliationPage />,
+  'COMMUNE_OFFICER:transfers': <BankTransfersPage />,
   'COMMUNE_OFFICER:complaints': <CommuneComplaintsPage />,
   'COMMUNE_OFFICER:market': <MarketModerationPage />,
   'LEADER:dashboard': <LeaderDashboardPage />,
   'LEADER:report': <LeaderReportPage />,
   'LEADER:progress': <ProgressPage />,
   'LEADER:reconciliation': <ReconciliationPage />,
+  'LEADER:payouts': <LeaderPayoutsPage />,
   'COMPANY_MANAGER:complaints': <CompanyComplaintsPage />,
   'COMPANY_MANAGER:assigned': <CompanyHubPage />,
   'COMPANY_MANAGER:collectors': <CollectorAccountsPage />,

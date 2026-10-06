@@ -52,8 +52,7 @@ public class PeriodAutoService {
     private final NotificationService notifications;
     private final Clock clock;
 
-    public record RuleCommand(boolean enabled, PeriodType periodType, int createDay, int householdDueDays,
-            int remitDueDays) {
+    public record RuleCommand(boolean enabled, PeriodType periodType, int createDay, int remitDueDays) {
     }
 
     /** Kết quả một lần chạy: {@code created} null kèm lý do khi chưa tạo kỳ nào. */
@@ -70,7 +69,7 @@ public class PeriodAutoService {
         return loadRule();
     }
 
-    /** Dành cho service khác trong cùng hệ thống (hạn hộ đóng mặc định khi mở kỳ); không kiểm quyền. */
+    /** Dành cho service khác trong cùng hệ thống (quy tắc hiện hành); không kiểm quyền. */
     @Transactional(readOnly = true)
     public PeriodAutoRule currentRule() {
         return loadRule();
@@ -80,7 +79,7 @@ public class PeriodAutoService {
         actor.requireRole(Role.ADMIN);
         PeriodAutoRule rule = loadRule();
         Map<String, Object> before = snapshot(rule);
-        rule.update(cmd.enabled(), cmd.periodType(), cmd.createDay(), cmd.householdDueDays(), cmd.remitDueDays(),
+        rule.update(cmd.enabled(), cmd.periodType(), cmd.createDay(), cmd.remitDueDays(),
                 OffsetDateTime.now(clock), actor.id());
         audit.record(actor, "UPDATE_PERIOD_RULE", RULE_ENTITY, PeriodAutoRule.ID, before, snapshot(rule));
         return rule;
@@ -221,6 +220,6 @@ public class PeriodAutoService {
 
     private static Map<String, Object> snapshot(PeriodAutoRule r) {
         return Map.of("enabled", r.isEnabled(), "periodType", r.getPeriodType(), "createDay", r.getCreateDay(),
-                "householdDueDays", r.getHouseholdDueDays(), "remitDueDays", r.getRemitDueDays());
+                "remitDueDays", r.getRemitDueDays());
     }
 }

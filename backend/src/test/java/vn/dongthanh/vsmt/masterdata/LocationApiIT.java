@@ -84,29 +84,6 @@ class LocationApiIT extends IntegrationTest {
                 .content(body)).andExpect(status().isNotFound());
     }
 
-    @Test
-    void communeOfficerMovesAreaOnMapAndOthersCannot() throws Exception {
-        mvc.perform(put("/api/masterdata/areas/" + area.getId() + "/location")
-                .header(HttpHeaders.AUTHORIZATION, token(Role.COMMUNE_OFFICER)).contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {"latitude":10.9054978,"longitude":106.6418215}
-                        """))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.latitude").value(10.9054978))
-                .andExpect(jsonPath("$.longitude").value(106.6418215));
-        assertThat(jdbc.queryForList("select action from audit_logs where entity_type = 'Area'", String.class))
-                .containsExactly("MOVE_AREA");
-
-        mvc.perform(put("/api/masterdata/areas/" + area.getId() + "/location")
-                .header(HttpHeaders.AUTHORIZATION, token(Role.LEADER)).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"latitude\":10.9,\"longitude\":106.6}")).andExpect(status().isForbidden());
-        mvc.perform(put("/api/masterdata/areas/" + area.getId() + "/location")
-                .header(HttpHeaders.AUTHORIZATION, admin).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"latitude\":91,\"longitude\":106.6}")).andExpect(status().isBadRequest());
-        mvc.perform(put("/api/masterdata/areas/" + area.getId() + "/location")
-                .header(HttpHeaders.AUTHORIZATION, admin).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"latitude\":10.9}")).andExpect(status().isBadRequest());
-    }
-
     private String token(Role role) {
         User user = users.save(User.create("location_" + role.name().toLowerCase(), "Người dùng", role, null, "x"));
         return "Bearer " + jwt.issue(user).value();

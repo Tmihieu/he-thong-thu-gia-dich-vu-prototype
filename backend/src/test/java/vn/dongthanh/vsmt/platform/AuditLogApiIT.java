@@ -52,7 +52,7 @@ class AuditLogApiIT extends IntegrationTest {
                 null, null, null), fx.actor(fx.thu07));
         mvc.perform(post("/api/remittance/receipts").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"companyId\":%d,\"periodId\":%d,\"amount\":200000,\"method\":\"TRANSFER\"}"
+                        .content("{\"companyId\":%d,\"periodId\":%d,\"amount\":80000,\"method\":\"TRANSFER\"}"
                                 .formatted(fx.dv01.getId(), fx.october.getId())))
                 .andExpect(status().isCreated());
         admin = fx.bearer(fx.admin);
@@ -75,7 +75,7 @@ class AuditLogApiIT extends IntegrationTest {
         assertThat(receipt.get("beforeData").isNull()).isTrue();
         JsonNode after = json.readTree(receipt.get("afterData").asText());
         assertThat(after.get("company").asText()).isEqualTo("DV01");
-        assertThat(after.get("amount").asLong()).isEqualTo(200_000);
+        assertThat(after.get("amount").asLong()).isEqualTo(80_000);
 
         JsonNode payment = page.at("/items/1");
         assertThat(json.readTree(payment.get("beforeData").asText()).get("status").asText()).isEqualTo("UNPAID");

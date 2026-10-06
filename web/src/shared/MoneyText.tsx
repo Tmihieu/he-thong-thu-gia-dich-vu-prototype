@@ -11,12 +11,12 @@ export function MoneyText({ value, strong = false }: MoneyTextProps) {
   return <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: strong ? 600 : undefined }}>{text}</span>;
 }
 
-/** "Còn phải nộp": số âm (công ty nộp dư) hiện "Nộp thừa X đ", lấy đúng số sổ công ty–kỳ, không kẹp 0 (QĐ-L12). */
+/** "Còn phải nộp": số âm (xã phải trả lại công ty) hiện "Xã trả lại công ty X đ", lấy đúng số sổ công ty–kỳ, không kẹp 0. */
 export function RemainingText({ value, strong = false }: MoneyTextProps) {
   if (value !== null && value !== undefined && value < 0) {
     return (
       <span style={{ color: semantic.success.fg, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums', fontWeight: strong ? 600 : undefined }}>
-        Nộp thừa {formatMoney(-value)}
+        Xã trả lại công ty {formatMoney(-value)}
       </span>
     );
   }

@@ -10,7 +10,7 @@ const officer = { id: 2, username: 'canbo_xa', fullName: 'Nguyễn Thị Mẫu',
 const company = (over: object) => ({
   id: 1, code: 'DV01', name: 'Công ty MTĐT Đông Thạnh', contactName: 'Trần Hoàng Phúc', contactPhone: '0900000001',
   status: 'ACTIVE', validFrom: '2026-01-01', validTo: null, orgType: null, taxCode: null, address: null, email: null,
-  communeContractNo: null, bankAccount: null, bankName: null, ...over,
+  communeContractNo: null, ...over,
 });
 const companies = [company({}), company({ id: 2, code: 'DV02', name: 'HTX Môi trường An Phú', status: 'INACTIVE' })];
 const kv07 = {
@@ -24,7 +24,7 @@ const period = {
 };
 const ledgerRow = {
   companyId: 1, companyCode: 'DV01', companyName: 'Công ty MTĐT Đông Thạnh', periodId: 9, due: 1_319_000, chargeCount: 19,
-  collected: 609_000, received: 400_000, receiptCount: 1, remaining: 919_000, gap: -209_000, previousDebt: 0,
+  collected: 609_000, cashCollected: 609_000, received: 400_000, receiptCount: 1, remaining: 919_000, gap: -209_000, previousDebt: 0,
   overdue: true, collectionRate: 30.3, lowCollectionRate: true, progress: 'OVERDUE', reconciliation: 'MISMATCH',
 };
 

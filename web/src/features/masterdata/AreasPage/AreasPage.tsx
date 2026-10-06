@@ -1,6 +1,6 @@
-import { App, Button, Card, Checkbox, Select, Skeleton, Space, Table } from 'antd';
+import { App, Button, Checkbox, Select, Space, Table } from 'antd';
 import dayjs from 'dayjs';
-import { lazy, Suspense, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { errorTextOrNull } from '../../../shared/errorText';
 import { StatusTag } from '../../../shared/StatusTag';
@@ -22,10 +22,7 @@ interface Row extends Area {
   assignment?: AreaAssignment;
 }
 
-// Leaflet nặng và chỉ màn này dùng: tách chunk riêng.
-const AreasMap = lazy(() => import('./AreasMap').then((m) => ({ default: m.AreasMap })));
-
-/** Khu vực của cán bộ xã: bản đồ + bảng các ấp, công ty đang phụ trách, lọc chưa có công ty, phân công ấp chưa có công ty, lịch sử. */
+/** Khu vực của cán bộ xã: bảng các ấp, công ty đang phụ trách, lọc chưa có công ty, phân công ấp chưa có công ty, lịch sử. */
 export function AreasPage() {
   const { message } = App.useApp();
   const today = dayjs().format('YYYY-MM-DD');
@@ -83,17 +80,6 @@ export function AreasPage() {
           Chỉ ấp chưa có công ty
         </Checkbox>
       </Space>
-      <Card size="small" style={{ marginBottom: 16 }}>
-        <Suspense fallback={<Skeleton.Node active style={{ width: '100%', height: 480 }} />}>
-          <AreasMap
-            areas={allRows}
-            districtNames={districtNames}
-            isDimmed={(a) => !matches(a)}
-            onAssign={(id) => openModal([id])}
-            onHistory={setHistoryArea}
-          />
-        </Suspense>
-      </Card>
       <Table<Row>
         rowKey="id"
         loading={areas.isLoading || active.isLoading}

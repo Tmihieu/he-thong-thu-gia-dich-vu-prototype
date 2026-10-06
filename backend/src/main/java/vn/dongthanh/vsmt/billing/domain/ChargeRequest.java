@@ -57,15 +57,12 @@ public class ChargeRequest extends BaseEntity {
     @Column(nullable = false, updatable = false)
     private LocalDate issueDate;
 
-    @Column(nullable = false)
-    private LocalDate dueDate;
-
     private Long unitPrice;
 
     private String note;
 
     public static ChargeRequest issue(String code, CollectionPeriod period, FeeType feeType, ChargeScope scope,
-            Set<Area> areas, Company company, LocalDate issueDate, LocalDate dueDate, Long unitPrice, String note,
+            Set<Area> areas, Company company, LocalDate issueDate, Long unitPrice, String note,
             Long issuedBy) {
         ChargeRequest r = new ChargeRequest();
         r.code = code;
@@ -77,7 +74,6 @@ public class ChargeRequest extends BaseEntity {
         }
         r.scopeCompany = scope == ChargeScope.COMPANY ? company : null;
         r.issueDate = issueDate;
-        r.dueDate = dueDate;
         r.unitPrice = unitPrice;
         r.note = note;
         r.setCreatedBy(issuedBy);

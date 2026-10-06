@@ -5,12 +5,11 @@ import { MoneyText } from '../../../shared/MoneyText';
 import { EmptyBlock, ErrorBlock } from '../../../shared/StateBlock';
 import { StatusTag } from '../../../shared/StatusTag';
 import { normalizeText } from '../../../shared/normalizeText';
-import { usePeriods } from '../../masterdata/api';
-import { type CollectorCharge, useCollectorAssignments, useCollectors, useCompanyWork } from '../api';
+import { type CollectorCharge, useCollectors, useCompanyWork } from '../api';
 import { ResultSheet } from '../CollectorListPage/ResultSheet';
 import { byChipOrder, countChips, WORK_CHIPS, type WorkChip, matchesChip, workState } from '../workState';
 
-/** "Hộ được giao" của công ty (nằm dưới tổng quan): khoản các tổ mình phụ trách trong kỳ; lọc khu vực / người đi thu / trạng thái; ghi thay. */
+/** "Hộ được giao" của công ty (nằm dưới tổng quan): khoản của công ty trong kỳ; lọc khu vực / người đi thu đã thu / trạng thái; ghi thay. */
 export function CompanyHouseholdsPage({
   periodId,
   chip,
@@ -25,17 +24,10 @@ export function CompanyHouseholdsPage({
   const [collectorId, setCollectorId] = useState<number>();
   const [q, setQ] = useState('');
   const [editing, setEditing] = useState<CollectorCharge | null>(null);
-  const work = useCompanyWork(periodId);
-  const assignments = useCollectorAssignments();
+  // Lọc người đi thu do máy chủ làm: chỉ khoản người đó đã thu (UC-33).
+  const work = useCompanyWork(periodId, collectorId);
   const collectors = useCollectors();
-  // BR-COL-12: kỳ đã khóa không ghi thu nữa.
-  const locked = usePeriods().data?.find((p) => p.id === periodId)?.status === 'LOCKED';
-
-  const collectorOfArea = useMemo(() => {
-    const m = new Map<number, { id: number; name: string }>();
-    (assignments.data ?? []).forEach((a) => m.set(a.areaId, { id: a.collectorId, name: a.collectorName }));
-    return m;
-  }, [assignments.data]);
+  // Khoản Chưa thu của kỳ đã khóa là công nợ của hộ (góp ý BA 05/10): vẫn ghi thu được, tiền tính vào kỳ đang thu.
 
   const items = useMemo(() => work.data ?? [], [work.data]);
   const areaOptions = useMemo(() => {
@@ -49,11 +41,9 @@ export function CompanyHouseholdsPage({
     const needle = normalizeText(q.trim());
     return items.filter((w) => {
       if (areaId !== undefined && w.charge.areaId !== areaId) return false;
-      if (collectorId !== undefined && collectorOfArea.get(w.charge.areaId)?.id !== collectorId) return false;
-      const who = collectorOfArea.get(w.charge.areaId)?.name ?? '';
-      return !needle || normalizeText(`${w.charge.subjectName} ${w.charge.subjectCode} ${w.charge.subjectAddress} ${who}`).includes(needle);
+      return !needle || normalizeText(`${w.charge.subjectName} ${w.charge.subjectCode} ${w.charge.subjectAddress}`).includes(needle);
     });
-  }, [items, areaId, collectorId, collectorOfArea, q]);
+  }, [items, areaId, q]);
 
   const counts = useMemo(() => countChips(scoped), [scoped]);
 
@@ -65,13 +55,13 @@ export function CompanyHouseholdsPage({
     [scoped, chip],
   );
 
-  const error = work.error ?? assignments.error ?? collectors.error;
+  const error = work.error ?? collectors.error;
   return (
-    <Card size="small" title="Hộ được giao" className="section-card" id="company-households">
+    <Card size="small" title="Hộ của công ty" className="section-card" id="company-households">
       <Space wrap style={{ marginBottom: 12 }}>
         <Input.Search
           allowClear
-          placeholder="Tên hộ, mã hộ, địa chỉ, người thu"
+          placeholder="Tên hộ, mã hộ, địa chỉ"
           aria-label="Tìm hộ"
           style={{ width: 300 }}
           value={q}
@@ -81,7 +71,7 @@ export function CompanyHouseholdsPage({
         <Select
           allowClear
           aria-label="Người đi thu"
-          placeholder="Tất cả người đi thu"
+          placeholder="Người đi thu đã thu"
           style={{ width: 220 }}
           value={collectorId}
           onChange={setCollectorId}
@@ -112,7 +102,7 @@ export function CompanyHouseholdsPage({
         locale={{
           emptyText:
             items.length === 0 ? (
-              <EmptyBlock title="Kỳ này công ty chưa có khoản nào" hint="Xã phát hành phiếu yêu cầu thu thì khoản của hộ trong tổ hiện ở đây." />
+              <EmptyBlock title="Kỳ này công ty chưa có khoản nào" hint="Xã phát hành phiếu yêu cầu thu thì khoản của hộ hiện ở đây." />
             ) : (
               <EmptyBlock title="Không có hộ phù hợp" hint="Thử bỏ bớt bộ lọc hoặc đổi từ khóa tìm." />
             ),
@@ -140,7 +130,6 @@ export function CompanyHouseholdsPage({
               </>
             ),
           },
-          { title: 'Người đi thu', render: (_, w) => collectorOfArea.get(w.charge.areaId)?.name ?? '—' },
           {
             title: 'Số tiền',
             align: 'right',
@@ -157,7 +146,7 @@ export function CompanyHouseholdsPage({
             title: '',
             render: (_, w) =>
               w.charge.status === 'UNPAID' ? (
-                <Button size="small" disabled={locked} title={locked ? 'Kỳ đã khóa' : undefined} onClick={() => setEditing(w)} aria-label={`Ghi thu ${w.charge.subjectName}`}>
+                <Button size="small" onClick={() => setEditing(w)} aria-label={`Ghi thu ${w.charge.subjectName}`}>
                   Ghi thu
                 </Button>
               ) : null,
@@ -168,7 +157,7 @@ export function CompanyHouseholdsPage({
         item={editing}
         onClose={() => setEditing(null)}
         collectors={collectors.data ?? []}
-        defaultCollectorId={editing ? collectorOfArea.get(editing.charge.areaId)?.id : undefined}
+        defaultCollectorId={collectorId}
       />
     </Card>
   );

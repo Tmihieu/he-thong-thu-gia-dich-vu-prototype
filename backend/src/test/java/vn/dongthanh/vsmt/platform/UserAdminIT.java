@@ -122,7 +122,7 @@ class UserAdminIT extends IntegrationTest {
     }
 
     @Test
-    void updateGuardsCollectorAssignmentsAndAdminSelf() throws Exception {
+    void updateChangesCompanyAndGuardsAdminSelf() throws Exception {
         send(put("/api/platform/users/%d".formatted(fx.dv01Manager.getId())), """
                 {"fullName":"Quản lý mới","role":"COMPANY_MANAGER","companyId":%d,"phone":"0901234567"}"""
                 .formatted(fx.dv07.getId()))
@@ -130,11 +130,10 @@ class UserAdminIT extends IntegrationTest {
                 .andExpect(jsonPath("$.fullName").value("Quản lý mới"))
                 .andExpect(jsonPath("$.companyId").value(fx.dv07.getId()))
                 .andExpect(jsonPath("$.username").value(fx.dv01Manager.getUsername()));
-        // Người đi thu còn phân tổ KV07 thì không đổi công ty được; chỉ sửa tên thì được.
+        // Người đi thu không còn phân tổ, chưa giữ tiền mặt thì đổi công ty được.
         send(put("/api/platform/users/%d".formatted(fx.thu07.getId())), """
                 {"fullName":"Người thu 07","role":"COLLECTOR","companyId":%d}""".formatted(fx.dv07.getId()))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("COLLECTOR_HAS_ASSIGNMENTS"));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.companyId").value(fx.dv07.getId()));
         send(put("/api/platform/users/%d".formatted(fx.thu07.getId())), """
                 {"fullName":"Tên mới","role":"COLLECTOR","companyId":%d}""".formatted(fx.dv01.getId()))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.fullName").value("Tên mới"));
@@ -147,19 +146,12 @@ class UserAdminIT extends IntegrationTest {
     }
 
     @Test
-    void collectorWithFutureAssignmentOrUnhandedCashCannotMove() throws Exception {
+    void collectorWithUnhandedCashCannotMove() throws Exception {
         String toDv07 = """
                 {"fullName":"X","role":"COLLECTOR","companyId":%d}""".formatted(fx.dv07.getId());
-        // Phân tổ bắt đầu sau hôm nay (01/10) vẫn chặn.
-        jdbc.update("update collector_assignments set valid_from = '2026-11-01' where collector_id = ?", fx.thu09.getId());
-        send(put("/api/platform/users/%d".formatted(fx.thu09.getId())), toDv07)
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("COLLECTOR_HAS_ASSIGNMENTS"));
-
-        // Hết phân tổ nhưng còn giữ tiền mặt chưa bàn giao.
+        // Còn giữ tiền mặt chưa bàn giao (BR-PLT-05).
         collection.recordPayment(new PaymentCommand(fx.chargeId("DTH-H000001"), 80_000, PaymentMethod.CASH, "p-1",
                 null, null, null), fx.actor(fx.thu07));
-        jdbc.update("update collector_assignments set valid_to = '2026-09-30' where collector_id = ?", fx.thu07.getId());
         send(put("/api/platform/users/%d".formatted(fx.thu07.getId())), toDv07)
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("COLLECTOR_HOLDS_CASH"));

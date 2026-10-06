@@ -1,6 +1,7 @@
 package vn.dongthanh.vsmt.collection.api;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -25,7 +26,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
@@ -33,20 +33,21 @@ import vn.dongthanh.vsmt.billing.api.BillingController.ChargeDto;
 import vn.dongthanh.vsmt.billing.api.BillingController.ChargePageDto;
 import vn.dongthanh.vsmt.billing.domain.Charge;
 import vn.dongthanh.vsmt.billing.domain.ChargeStatus;
-import vn.dongthanh.vsmt.collection.domain.CollectorAssignment;
+import vn.dongthanh.vsmt.collection.domain.Payment;
+import vn.dongthanh.vsmt.collection.domain.PaymentMethod;
 import vn.dongthanh.vsmt.collection.domain.SubjectReportType;
-import vn.dongthanh.vsmt.collection.service.CollectorAssignmentService;
+import vn.dongthanh.vsmt.collection.service.CollectorWorkService;
 import vn.dongthanh.vsmt.collection.service.SubjectReportService;
 import vn.dongthanh.vsmt.platform.domain.User;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
 
-@Tag(name = "Thu tiền: phân tổ người đi thu, khoản theo phạm vi, báo sai thông tin hộ")
+@Tag(name = "Thu tiền: người đi thu, khoản của công ty, báo sai thông tin hộ")
 @RestController
 @RequestMapping("/api/collection")
 @RequiredArgsConstructor
 public class CollectionController {
 
-    private final CollectorAssignmentService service;
+    private final CollectorWorkService service;
     private final SubjectReportService subjectReports;
 
     @Operation(summary = "Người đi thu của công ty (quản lý công ty)")
@@ -55,48 +56,31 @@ public class CollectionController {
         return service.collectorsOf(actor).stream().map(CollectorDto::of).toList();
     }
 
-    @Operation(summary = "Phân tổ đang hiệu lực vào ngày (mặc định hôm nay), theo phạm vi người gọi")
-    @GetMapping("/collector-assignments")
-    public List<CollectorAssignmentDto> assignments(@RequestParam(required = false) LocalDate date,
+    @Operation(summary = "Lịch sử thu của một người đi thu của công ty, mới trước (UC-33, quản lý công ty)")
+    @GetMapping("/collectors/{collectorId}/payments")
+    public List<CollectorPaymentDto> collectorPayments(@PathVariable Long collectorId,
             @AuthenticationPrincipal CurrentUser actor) {
-        return service.activeOn(date != null ? date : service.today(), actor).stream()
-                .map(CollectorAssignmentDto::of).toList();
+        return service.paymentsOf(collectorId, actor).stream().map(CollectorPaymentDto::of).toList();
     }
 
-    @Operation(summary = "Phân tổ cho người đi thu (quản lý công ty); người cũ của tổ kết thúc vào ngày trước")
-    @PostMapping("/collector-assignments")
-    @ResponseStatus(HttpStatus.CREATED)
-    public List<CollectorAssignmentDto> assign(@Valid @RequestBody AssignCollectorRequest req,
-            @AuthenticationPrincipal CurrentUser actor) {
-        return service.assign(req.collectorId(), req.areaIds(), req.fromDate(), req.note(), actor).stream()
-                .map(CollectorAssignmentDto::of).toList();
-    }
-
-    @Operation(summary = "Kết thúc phân tổ vào ngày endDate (quản lý công ty)")
-    @PostMapping("/collector-assignments/{id}/end")
-    public CollectorAssignmentDto end(@PathVariable Long id, @Valid @RequestBody EndAssignmentRequest req,
-            @AuthenticationPrincipal CurrentUser actor) {
-        return CollectorAssignmentDto.of(service.end(id, req.endDate(), actor));
-    }
-
-    @Operation(summary = "Khoản của hộ trong các tổ được giao (người đi thu)")
+    @Operation(summary = "Khoản của mọi hộ thuộc công ty (người đi thu)")
     @GetMapping("/my-charges")
     public ChargePageDto myCharges(@RequestParam(required = false) Long periodId,
             @RequestParam(required = false) ChargeStatus status, @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "200") @Min(1) @Max(500) int size, @AuthenticationPrincipal CurrentUser actor) {
-        Page<Charge> result = service.myCharges(periodId, status, PageRequest.of(page, size, Sort.by("code")), actor);
+        Page<Charge> result = service.companyCharges(periodId, null, status, PageRequest.of(page, size, Sort.by("code")), actor);
         LocalDate today = service.today();
         return new ChargePageDto(result.getContent().stream().map(c -> ChargeDto.of(c, today)).toList(),
                 result.getTotalElements(), page, size);
     }
 
-    @Operation(summary = "Một khoản trong phạm vi người đi thu; ngoài tổ được giao → 404")
+    @Operation(summary = "Một khoản của công ty người đi thu; công ty khác → 404")
     @GetMapping("/my-charges/{id}")
     public ChargeDto myCharge(@PathVariable Long id, @AuthenticationPrincipal CurrentUser actor) {
         return ChargeDto.of(service.myCharge(id, actor), service.today());
     }
 
-    @Operation(summary = "Người đi thu báo hộ của một khoản trong tổ được giao đã chuyển đi / sai thông tin;"
+    @Operation(summary = "Người đi thu báo hộ của một khoản của công ty đã chuyển đi / sai thông tin;"
             + " thông báo tới xã và công ty")
     @PostMapping("/subject-reports")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -112,18 +96,6 @@ public class CollectionController {
             @Size(max = 1000, message = "tối đa 1000 ký tự") String description) {
     }
 
-    public record AssignCollectorRequest(
-            @Schema(requiredMode = RequiredMode.REQUIRED) @NotNull(message = "không được để trống") Long collectorId,
-            @Schema(requiredMode = RequiredMode.REQUIRED) @NotEmpty(message = "phải chọn ít nhất một tổ")
-            List<@NotNull Long> areaIds,
-            @Schema(requiredMode = RequiredMode.REQUIRED) @NotNull(message = "không được để trống") LocalDate fromDate,
-            @Size(max = 2000) String note) {
-    }
-
-    public record EndAssignmentRequest(
-            @Schema(requiredMode = RequiredMode.REQUIRED) @NotNull(message = "không được để trống") LocalDate endDate) {
-    }
-
     public record CollectorDto(
             @Schema(requiredMode = RequiredMode.REQUIRED) Long id,
             @Schema(requiredMode = RequiredMode.REQUIRED) String username,
@@ -136,23 +108,22 @@ public class CollectionController {
         }
     }
 
-    public record CollectorAssignmentDto(
+    public record CollectorPaymentDto(
             @Schema(requiredMode = RequiredMode.REQUIRED) Long id,
-            @Schema(requiredMode = RequiredMode.REQUIRED) Long collectorId,
-            @Schema(requiredMode = RequiredMode.REQUIRED) String collectorUsername,
-            @Schema(requiredMode = RequiredMode.REQUIRED) String collectorName,
-            @Schema(requiredMode = RequiredMode.REQUIRED) Long areaId,
-            @Schema(requiredMode = RequiredMode.REQUIRED) String areaCode,
-            @Schema(requiredMode = RequiredMode.REQUIRED) String areaName,
-            @Schema(requiredMode = RequiredMode.REQUIRED) Long companyId,
-            @Schema(requiredMode = RequiredMode.REQUIRED) LocalDate validFrom,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) LocalDate validTo,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String note) {
+            @Schema(requiredMode = RequiredMode.REQUIRED, example = "TT-1026-000123") String code,
+            @Schema(requiredMode = RequiredMode.REQUIRED) OffsetDateTime paidAt,
+            @Schema(requiredMode = RequiredMode.REQUIRED) long amount,
+            @Schema(requiredMode = RequiredMode.REQUIRED) PaymentMethod method,
+            @Schema(requiredMode = RequiredMode.REQUIRED) Long chargeId,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String chargeCode,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String periodCode,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String subjectCode,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String subjectName) {
 
-        static CollectorAssignmentDto of(CollectorAssignment a) {
-            return new CollectorAssignmentDto(a.getId(), a.getCollector().getId(), a.getCollector().getUsername(),
-                    a.getCollector().getFullName(), a.getArea().getId(), a.getArea().getCode(), a.getArea().getName(),
-                    a.getCompany().getId(), a.getValidFrom(), a.getValidTo(), a.getNote());
+        static CollectorPaymentDto of(Payment p) {
+            var c = p.getCharge();
+            return new CollectorPaymentDto(p.getId(), p.getCode(), p.getPaidAt(), p.getAmount(), p.getMethod(),
+                    c.getId(), c.getCode(), c.getPeriod().getCode(), c.getSubject().getCode(), c.getSubject().getName());
         }
     }
 }

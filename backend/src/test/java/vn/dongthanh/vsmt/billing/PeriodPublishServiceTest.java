@@ -62,7 +62,7 @@ class PeriodPublishServiceTest {
     // 28/10/2026 09:00 giờ Việt Nam.
     final Clock clock = Clock.fixed(Instant.parse("2026-10-28T02:00:00Z"), ZoneId.of("Asia/Ho_Chi_Minh"));
     final PeriodPublishService service = new PeriodPublishService(periods, feeTypes, tariffs, chargeRequests,
-            audit, clock);
+            audit);
 
     final CurrentUser officer = new CurrentUser(2L, "canbo_xa", Role.COMMUNE_OFFICER, null);
     final TariffVersion bg65 = tariff(10L, "BG-65-2026");
@@ -94,7 +94,7 @@ class PeriodPublishServiceTest {
 
     @Test
     void publishOpensThePeriodAndIssuesTheEnvRequestForTheWholeCommune() {
-        PublishResult r = service.publish(77L, null, null, null, "Kỳ tháng 11", officer);
+        PublishResult r = service.publish(77L, null, null, "Kỳ tháng 11", null, officer);
 
         assertThat(r.period().getStatus()).isEqualTo(PeriodStatus.COLLECTING);
         assertThat(r.result()).isSameAs(issued);
@@ -109,6 +109,24 @@ class PeriodPublishServiceTest {
     }
 
     @Test
+    void scopeChosenByOfficerIsUsedForPreviewAndPublish() {
+        PeriodPublishService.Scope byCompany = new PeriodPublishService.Scope(null, ChargeScope.COMPANY, null, 5L, null);
+
+        service.preview(77L, null, null, byCompany, officer);
+        service.publish(77L, null, null, null, byCompany, officer);
+
+        ArgumentCaptor<IssueCommand> previewed = ArgumentCaptor.forClass(IssueCommand.class);
+        verify(chargeRequests).previewDraft(previewed.capture(), eq(officer));
+        ArgumentCaptor<IssueCommand> published = ArgumentCaptor.forClass(IssueCommand.class);
+        verify(chargeRequests).publish(published.capture(), eq(officer));
+        for (IssueCommand c : List.of(previewed.getValue(), published.getValue())) {
+            assertThat(c.scopeType()).isEqualTo(ChargeScope.COMPANY);
+            assertThat(c.companyId()).isEqualTo(5L);
+            assertThat(c.feeTypeId()).isEqualTo(1L);
+        }
+    }
+
+    @Test
     void periodIsFlushedAsCollectingBeforeChargesAreIssued() {
         service.publish(77L, null, null, null, null, officer);
 
@@ -116,40 +134,6 @@ class PeriodPublishServiceTest {
         InOrder order = inOrder(periods, chargeRequests);
         order.verify(periods).saveAndFlush(draft);
         order.verify(chargeRequests).publish(any(), any());
-    }
-
-    @Test
-    void defaultHouseholdDueIsThe20thOfThePeriod() {
-        // Kỳ 11/2026 mở 01/11: gợi ý hạn hộ đóng là 20/11.
-        service.publish(77L, null, null, null, null, officer);
-
-        ArgumentCaptor<IssueCommand> cmd = ArgumentCaptor.forClass(IssueCommand.class);
-        verify(chargeRequests).publish(cmd.capture(), any());
-        assertThat(cmd.getValue().dueDate()).isEqualTo(LocalDate.of(2026, 11, 20));
-    }
-
-    @Test
-    void defaultHouseholdDueFallsBackToCompanyDueWhenOpenedAfterThe20th() {
-        // Mở muộn: hôm nay 28/10 đã quá ngày 20/10 của kỳ tháng 10.
-        draft = CollectionPeriod.draft(PeriodType.MONTH, 2026, 10, LocalDate.of(2026, 11, 10), bg65);
-        ReflectionTestUtils.setField(draft, "id", 77L);
-        when(tariffs.activeVersionOn(LocalDate.of(2026, 10, 1))).thenReturn(bg65);
-
-        service.publish(77L, null, null, null, null, officer);
-
-        ArgumentCaptor<IssueCommand> cmd = ArgumentCaptor.forClass(IssueCommand.class);
-        verify(chargeRequests).publish(cmd.capture(), any());
-        // Lấy hạn công ty nộp xã 10/11.
-        assertThat(cmd.getValue().dueDate()).isEqualTo(LocalDate.of(2026, 11, 10));
-    }
-
-    @Test
-    void householdDueChosenByOfficerIsUsedAsIs() {
-        service.publish(77L, null, null, LocalDate.of(2026, 11, 20), null, officer);
-
-        ArgumentCaptor<IssueCommand> cmd = ArgumentCaptor.forClass(IssueCommand.class);
-        verify(chargeRequests).publish(cmd.capture(), any());
-        assertThat(cmd.getValue().dueDate()).isEqualTo(LocalDate.of(2026, 11, 20));
     }
 
     @Test
@@ -196,10 +180,9 @@ class PeriodPublishServiceTest {
     }
 
     @Test
-    void previewUsesTheDraftPathAndReturnsTheDueDateItAssumed() {
+    void previewUsesTheDraftPath() {
         DraftPreview p = service.preview(77L, null, null, null, officer);
 
-        assertThat(p.dueDate()).isEqualTo(LocalDate.of(2026, 11, 20));
         assertThat(p.result().chargeCount()).isEqualTo(120);
         assertThat(p.result().requestCode()).isNull();
         verify(chargeRequests).previewDraft(any(), eq(officer));
@@ -233,8 +216,7 @@ class PeriodPublishServiceTest {
 
     @Test
     void companyDueDateBeforeOpenDateIsRejected() {
-        assertThatThrownBy(() -> service.publish(77L, LocalDate.of(2026, 11, 5), LocalDate.of(2026, 11, 4), null, null,
-                officer)).isInstanceOf(BusinessRuleException.class);
+        assertThatThrownBy(() -> service.publish(77L, LocalDate.of(2026, 11, 5), LocalDate.of(2026, 11, 4), null, null, officer)).isInstanceOf(BusinessRuleException.class);
         verify(chargeRequests, never()).publish(any(), any());
     }
 }

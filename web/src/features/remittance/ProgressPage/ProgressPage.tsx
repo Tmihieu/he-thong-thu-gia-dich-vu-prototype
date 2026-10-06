@@ -8,18 +8,21 @@ import { ErrorBlock } from '../../../shared/StateBlock';
 import { PageHeader } from '../../../shared/PageHeader';
 import { StatusTag } from '../../../shared/StatusTag';
 import { MoneyText } from '../../../shared/MoneyText';
+import { StatCard, StatGrid } from '../../../shared/StatCard';
 import { type Charge, useCharges } from '../../billing/api';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
-import { type AreaProgress, type LedgerRow, useAreaProgress, useCompanyLedger } from '../api';
-import { LedgerStats } from '../LedgerStats';
+import { type AreaProgress, type LedgerRow, useAreaProgress, useCompanyLedger, useHouseholdDebts } from '../api';
+import { PreviousDebtAlert } from '../PreviousDebtAlert';
 import { cappedRate } from '../rateBand';
 import { RemainingText } from '../RemainingText';
+import { HouseholdDebtModal } from './HouseholdDebtModal';
 import { ReminderModal } from './ReminderModal';
 
-function Rate({ rate, low }: { rate: number; low: boolean }) {
+/** Thanh tiến độ trơn: không tô đỏ theo ngưỡng (cờ 45% không còn ở màn này). */
+function Rate({ rate }: { rate: number }) {
   return (
     <Space size={4} style={{ minWidth: 120 }}>
-      <Progress percent={cappedRate(rate)} size="small" showInfo={false} status={low ? 'exception' : 'normal'} style={{ width: 56 }} />
+      <Progress percent={cappedRate(rate)} size="small" showInfo={false} style={{ width: 56 }} />
       <span style={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{cappedRate(rate).toLocaleString('vi-VN')}%</span>
     </Space>
   );
@@ -52,19 +55,25 @@ function UnpaidHouseholds({ periodId, areaId, companyId }: { periodId: number; a
 }
 
 /**
- * Tiến độ thu theo công ty và theo tổ (§10 bước 5, R13): trạng thái nộp, nợ kỳ trước, cờ dưới 45% như prototype —
- * công ty theo đã nộp về xã / phải thu, tổ theo đã thu / phải thu.
+ * Tiến độ thu theo công ty và theo tổ (UC-32, R13): phải thu, đã thu, phải nộp xã, đã nộp, còn phải nộp, tỷ lệ nộp = đã nộp /
+ * phải nộp xã; tổ theo đã thu / phải thu. Có thẻ công nợ hộ (khoản chưa thu của kỳ đã khóa). Kỳ trước chưa khóa hiện ở
+ * cảnh báo đầu trang, không còn cột riêng.
  */
 export function ProgressPage() {
   const [periodId, setPeriodId] = useState<number>();
   const [reminding, setReminding] = useState(false);
+  // Danh sách công nợ hộ: mở từ thẻ (toàn xã) hoặc từ dòng tổ (lọc theo tổ, công ty).
+  const [debtFilter, setDebtFilter] = useState<{ companyId?: number; areaId?: number }>();
   // Lãnh đạo xem màn này chỉ đọc: không nhắc nộp (SPEC §9.10).
   const readOnly = useAuth().user?.role === 'LEADER';
   const ledger = useCompanyLedger(periodId);
   const areas = useAreaProgress(periodId);
+  const debts = useHouseholdDebts({ page: 0, size: 1 });
   const rows = ledger.data ?? [];
   const unassigned = (areas.data ?? []).filter((a) => a.noCompany && a.subjectCount > 0);
   const overdue = rows.filter((r) => r.progress === 'OVERDUE');
+  const sum = (key: 'due' | 'collected' | 'debtCollected' | 'payable' | 'received' | 'remaining' | 'communePaid' | 'communeOwed') => rows.reduce((t, r) => t + r[key], 0);
+  const remaining = sum('remaining');
 
   return (
     <>
@@ -83,7 +92,46 @@ export function ProgressPage() {
         }
       />
       {ledger.error && <ErrorBlock error={ledger.error} onRetry={() => void ledger.refetch()} />}
-      <LedgerStats rows={rows} show={['due', 'payable', 'received', 'remaining']} />
+      <PreviousDebtAlert rows={rows} />
+      <StatGrid>
+        <StatCard label="Phải thu" value={<MoneyText value={sum('due')} />} />
+        <StatCard
+          label="Đã thu (tiền mặt, chuyển khoản)"
+          tone="info"
+          value={<MoneyText value={sum('collected')} />}
+          hint={sum('debtCollected') > 0 && <>trong đó thu công nợ kỳ cũ: <MoneyText value={sum('debtCollected')} /></>}
+        />
+        <StatCard label="Phải nộp xã" tone="info" value={<MoneyText value={sum('payable')} />} />
+        <StatCard label="Đã nộp" tone="success" value={<MoneyText value={sum('received')} />} />
+        {/* Còn phải nộp âm = xã trả lại công ty phần chênh (phải nộp xã tính trên đã thu). */}
+        {remaining < 0 ? (
+          <StatCard
+            label="Xã trả lại công ty"
+            tone="warning"
+            value={<MoneyText value={-remaining} />}
+            hint={sum('communePaid') > 0 && <>đã trả <MoneyText value={sum('communePaid')} />, còn <MoneyText value={sum('communeOwed')} /></>}
+          />
+        ) : (
+          <StatCard label="Còn phải nộp" tone="warning" value={<MoneyText value={remaining} />} />
+        )}
+        <StatCard
+          label="Công nợ hộ"
+          tone={debts.data && debts.data.householdCount > 0 ? 'danger' : 'neutral'}
+          value={debts.data ? `${debts.data.householdCount} hộ` : '—'}
+          hint={
+            debts.data && (
+              <>
+                <MoneyText value={debts.data.totalAmount} /> chưa thu của kỳ đã khóa{' '}
+                {debts.data.householdCount > 0 && (
+                  <Button type="link" size="small" style={{ padding: 0 }} onClick={() => setDebtFilter({})}>
+                    Xem danh sách
+                  </Button>
+                )}
+              </>
+            )
+          }
+        />
+      </StatGrid>
       {unassigned.length > 0 && (
         <Alert
           type="warning"
@@ -118,7 +166,25 @@ export function ProgressPage() {
                 { title: 'Khoản đã thu', render: (_, a) => `${a.paidCount}/${a.chargeCount}` },
                 { title: 'Phải thu', dataIndex: 'due', align: 'right', render: (v: number) => <MoneyText value={v} /> },
                 { title: 'Đã thu', dataIndex: 'collected', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-                { title: 'Tỷ lệ', render: (_, a) => <Rate rate={a.collectionRate} low={a.lowCollectionRate} /> },
+                { title: 'Tỷ lệ thu', render: (_, a) => <Rate rate={a.collectionRate} /> },
+                {
+                  title: 'Hộ còn nợ kỳ cũ',
+                  dataIndex: 'debtHouseholds',
+                  align: 'right',
+                  render: (v: number, a) =>
+                    v > 0 ? (
+                      <Button
+                        type="link"
+                        size="small"
+                        aria-label={`Xem ${v} hộ còn nợ kỳ cũ của ${a.areaCode}`}
+                        onClick={() => setDebtFilter({ areaId: a.areaId, companyId: r.companyId })}
+                      >
+                        {v}
+                      </Button>
+                    ) : (
+                      0
+                    ),
+                },
               ]}
             />
           ),
@@ -133,31 +199,13 @@ export function ProgressPage() {
               </Typography.Text>
             ),
           },
-          {
-            title: 'Phải thu',
-            dataIndex: 'due',
-            align: 'right',
-            render: (v: number) => (
-              <>
-                <MoneyText value={v} />
-              </>
-            ),
-          },
-          {
-            title: 'Đã thu',
-            dataIndex: 'collected',
-            align: 'right',
-            render: (v: number) => <MoneyText value={v} />,
-          },
-          { title: 'Đã nộp về xã', dataIndex: 'received', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-          { title: 'Tỷ lệ nộp', render: (_, r) => <Rate rate={r.remittedRate} low={r.lowRemittedRate} /> },
-          { title: 'Còn phải nộp', dataIndex: 'remaining', align: 'right', render: (v: number) => <RemainingText value={v} strong /> },
-          {
-            title: 'Nợ kỳ trước',
-            dataIndex: 'previousDebt',
-            align: 'right',
-            render: (v: number) => (v > 0 ? <Typography.Text type="danger"><MoneyText value={v} /></Typography.Text> : '—'),
-          },
+          { title: 'Phải thu', dataIndex: 'due', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Đã thu', dataIndex: 'collected', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Phải nộp xã', dataIndex: 'payable', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Đã nộp', dataIndex: 'received', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Còn phải nộp', dataIndex: 'remaining', align: 'right', render: (v: number, r: LedgerRow) => <RemainingText value={v} paid={r.communePaid} strong /> },
+          // Phải nộp xã <= 0 thì chưa có gì để nộp: không chia cho 0 hay số âm.
+          { title: 'Tỷ lệ nộp', render: (_, r) => (r.payable > 0 ? <Rate rate={r.remittedRate} /> : '—') },
           {
             title: 'Đã nộp đủ',
             align: 'center',
@@ -170,6 +218,12 @@ export function ProgressPage() {
               ),
           },
         ]}
+      />
+      <HouseholdDebtModal
+        open={debtFilter !== undefined}
+        onClose={() => setDebtFilter(undefined)}
+        companyId={debtFilter?.companyId}
+        areaId={debtFilter?.areaId}
       />
       <ReminderModal
         open={reminding}

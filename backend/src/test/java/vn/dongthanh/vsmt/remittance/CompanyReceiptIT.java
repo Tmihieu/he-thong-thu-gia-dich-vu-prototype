@@ -27,9 +27,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import vn.dongthanh.vsmt.collection.domain.PaymentMethod;
-import vn.dongthanh.vsmt.collection.service.CollectionService;
-import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentCommand;
 import vn.dongthanh.vsmt.platform.domain.User;
 import vn.dongthanh.vsmt.remittance.domain.CompanyReceipt;
 import vn.dongthanh.vsmt.remittance.domain.ReceiptMethod;
@@ -50,15 +47,14 @@ class CompanyReceiptIT extends IntegrationTest {
     @Autowired DatabaseCleaner cleaner;
     @Autowired TransactionTemplate tx;
     @Autowired CompanyReceiptService receiptService;
-    @Autowired CollectionService collection;
 
     @BeforeEach
     void seed() {
         cleaner.truncateAll();
         tx.executeWithoutResult(s -> {
             fx.build();
-            collection.recordPayment(new PaymentCommand(fx.chargeId("DTH-H000001"), 80_000, PaymentMethod.CASH, "p-1",
-                    null, null, null), fx.actor(fx.thu07));
+            // Phải nộp xã tính trên số đã thu: thu đủ tiền mặt để DV01 phải nộp 320.000, DV07 160.000.
+            fx.collectAllCash();
         });
     }
 
@@ -69,7 +65,7 @@ class CompanyReceiptIT extends IntegrationTest {
 
     @Test
     void remainingAfterIsMeasuredAgainstPayableNotDue() throws Exception {
-        // Công ty cầm lại phần thu gom: phải nộp xã 92.000 trên phải thu 320.000; nộp đủ 92.000 thì không còn nợ.
+        // Công ty cầm lại phần thu gom của số đã thu: phải nộp xã 92.000 trên đã thu 320.000; nộp đủ 92.000 thì không còn nợ.
         jdbc.update("update tariff_rates set collection_fee = 57000, transport_fee = 23000 where tariff_group = 'HH_3_PLUS'");
 
         issue(fx.bearer(fx.officer), fx.dv01.getId(), 92_000)
@@ -106,8 +102,19 @@ class CompanyReceiptIT extends IntegrationTest {
                 Integer.class)).isEqualTo(2);
     }
 
-    @Test
-    void companySeesOnlyItsOwnReceipts() throws Exception {
+@Test
+void receiptCannotExceedWhatIsStillPayableOnTheCollectedAmount() throws Exception {
+    // Mỗi phiếu không vượt số còn phải nộp (tính trên đã thu): DV01 đã thu tiền mặt 320.000, nộp 320.000 xong thì hết.
+    String officer = fx.bearer(fx.officer);
+    issue(officer, fx.dv01.getId(), 320_001).andExpect(status().isUnprocessableEntity())
+            .andExpect(jsonPath("$.code").value("RECEIPT_AMOUNT_OUT_OF_RANGE"));
+    issue(officer, fx.dv01.getId(), 320_000).andExpect(status().isCreated()).andExpect(jsonPath("$.remainingAfter").value(0));
+    issue(officer, fx.dv01.getId(), 1).andExpect(status().isUnprocessableEntity())
+            .andExpect(jsonPath("$.code").value("RECEIPT_AMOUNT_OUT_OF_RANGE"));
+}
+
+@Test
+void companySeesOnlyItsOwnReceipts() throws Exception {
         String officer = fx.bearer(fx.officer);
         issue(officer, fx.dv01.getId(), 100_000);
         issue(officer, fx.dv07.getId(), 50_000);

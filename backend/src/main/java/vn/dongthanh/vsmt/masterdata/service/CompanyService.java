@@ -34,7 +34,7 @@ public class CompanyService {
 
     public record CompanyCommand(String name, String contactName, String contactPhone, ActiveStatus status,
             LocalDate validFrom, LocalDate validTo, CompanyType orgType, String taxCode, String address, String email,
-            String communeContractNo, String bankAccount, String bankName) {
+            String communeContractNo) {
     }
 
     public Company create(CompanyCommand cmd, CurrentUser actor) {
@@ -82,8 +82,6 @@ public class CompanyService {
         c.setAddress(blankToNull(cmd.address()));
         c.setEmail(blankToNull(cmd.email()));
         c.setCommuneContractNo(blankToNull(cmd.communeContractNo()));
-        c.setBankAccount(blankToNull(cmd.bankAccount()));
-        c.setBankName(blankToNull(cmd.bankName()));
     }
 
     private static String blankToNull(String s) {
@@ -104,8 +102,6 @@ public class CompanyService {
         m.put("address", c.getAddress());
         m.put("email", c.getEmail());
         m.put("communeContractNo", c.getCommuneContractNo());
-        m.put("bankAccount", c.getBankAccount());
-        m.put("bankName", c.getBankName());
         return m;
     }
 }

@@ -3,6 +3,7 @@ package vn.dongthanh.vsmt.collection;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +48,7 @@ import vn.dongthanh.vsmt.support.CollectionFixture;
 import vn.dongthanh.vsmt.support.DatabaseCleaner;
 import vn.dongthanh.vsmt.support.FixedClockConfig;
 import vn.dongthanh.vsmt.support.IntegrationTest;
+import vn.dongthanh.vsmt.support.MutableClock;
 
 /**
  * Ghi tiền song song như server thật: dữ liệu commit, không có transaction của test bao ngoài (khóa dòng chỉ có tác
@@ -69,6 +71,7 @@ class MoneyConcurrencyIT extends IntegrationTest {
     @Autowired CollectionService collection;
     @Autowired CashService cash;
     @Autowired FeeTypeRepository feeTypes;
+    @Autowired MutableClock clock;
 
     final ExecutorService pool = Executors.newFixedThreadPool(4);
     FeeType extra;
@@ -92,6 +95,7 @@ class MoneyConcurrencyIT extends IntegrationTest {
     void clean() throws InterruptedException {
         pool.shutdownNow();
         pool.awaitTermination(30, TimeUnit.SECONDS);
+        clock.reset();
         cleaner.truncateAll();
     }
 
@@ -125,32 +129,38 @@ class MoneyConcurrencyIT extends IntegrationTest {
 
     @Test
     void writesWaitingForThePeriodLockAreRejectedOnceTheLockCommits() throws Exception {
-        remitInFull();
+        // 5 hộ đã đóng và công ty đã nộp đủ phần đã thu; hộ DTH-H000001 còn nợ, nhưng đã đến hạn nộp nên khóa kỳ được.
+        collectAllButFirstAndRemit();
+        clock.set(Instant.parse("2026-10-31T03:00:00Z"));
 
         List<MockHttpServletResponse> waited = whileHeldOpen(
                 () -> periodLock.lock(fx.october.getId(), fx.actor(fx.officer)),
                 () -> pay(80_000, "during-lock"),
                 () -> post("/api/billing/charge-requests", officer,
-                        "{\"periodId\":%d,\"feeTypeId\":%d,\"scopeType\":\"ALL\",\"dueDate\":\"2026-10-25\"}"
+                        "{\"periodId\":%d,\"feeTypeId\":%d,\"scopeType\":\"ALL\"}"
                                 .formatted(fx.october.getId(), extra.getId())));
 
-        assertRejected(waited.get(0), "PERIOD_LOCKED");
+        // Khóa xong: khoản chưa đóng là công nợ hộ, chưa có kỳ đang thu nên chưa ghi được tiền; khoản mới bị chặn.
+        assertRejected(waited.get(0), "NO_COLLECTING_PERIOD");
         assertRejected(waited.get(1), "PERIOD_LOCKED");
         assertThat(periodStatus()).isEqualTo("LOCKED");
-        assertThat(jdbc.queryForObject("select count(*) from payments", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from payments where charge_id = ?", Integer.class, chargeId)).isZero();
         assertThat(jdbc.queryForObject("select count(*) from charges", Integer.class)).isEqualTo(6);
     }
 
     @Test
-    void lockWaitsForAnInFlightChargeRequestAndThenSeesItsDebt() throws Exception {
-        remitInFull();
+    void lockWaitsForAnInFlightChargeRequestAndThenSeesItsUnpaidCharges() throws Exception {
+        // Mọi hộ đã đóng, mọi công ty đã nộp đủ, chưa đến hạn nộp: khóa được. Nhưng phát hành thêm 6 khoản phụ phí đang chạy:
+        // khóa phải chờ rồi thấy 6 khoản chưa đóng khi chưa đến hạn nộp nên bị chặn.
+        tx.executeWithoutResult(s -> fx.collectAllCash());
+        remit(320_000, 160_000);
 
         List<MockHttpServletResponse> waited = whileHeldOpen(
                 () -> chargeRequests.publish(new IssueCommand(fx.october.getId(), extra.getId(), ChargeScope.ALL, null,
-                        null, LocalDate.of(2026, 10, 25), null, null), fx.actor(fx.officer)),
+                        null, null, null), fx.actor(fx.officer)),
                 () -> post("/api/remittance/periods/" + fx.october.getId() + "/lock", officer, "{}"));
 
-        assertRejected(waited.get(0), "PERIOD_HAS_DEBT");
+        assertRejected(waited.get(0), "PERIOD_NOT_DUE");
         assertThat(periodStatus()).isEqualTo("COLLECTING");
         assertThat(jdbc.queryForObject("select count(*) from charges", Integer.class)).isEqualTo(12);
     }
@@ -191,11 +201,17 @@ class MoneyConcurrencyIT extends IntegrationTest {
         }
     }
 
-    private void remitInFull() {
+    /** Thu đủ tiền mặt 5 hộ (trừ DTH-H000001) rồi công ty nộp đủ phải nộp xã: DV01 240.000, DV07 160.000. */
+    private void collectAllButFirstAndRemit() {
+        tx.executeWithoutResult(s -> fx.collectCash("DTH-H000002", "DTH-H000003", "DTH-H000004", "DTH-H000005", "DTH-H000006"));
+        remit(240_000, 160_000);
+    }
+
+    private void remit(long dv01, long dv07) {
         tx.executeWithoutResult(s -> {
-            receipts.issue(new IssueReceiptCommand(fx.dv01.getId(), fx.october.getId(), 320_000,
+            receipts.issue(new IssueReceiptCommand(fx.dv01.getId(), fx.october.getId(), dv01,
                     ReceiptMethod.TRANSFER, null, null, null, null), fx.actor(fx.officer));
-            receipts.issue(new IssueReceiptCommand(fx.dv07.getId(), fx.october.getId(), 160_000,
+            receipts.issue(new IssueReceiptCommand(fx.dv07.getId(), fx.october.getId(), dv07,
                     ReceiptMethod.TRANSFER, null, null, null, null), fx.actor(fx.officer));
         });
     }

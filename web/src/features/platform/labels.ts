@@ -7,6 +7,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   RESET_PASSWORD: 'Đặt lại mật khẩu',
   CREATE_COMPANY: 'Thêm công ty',
   UPDATE_COMPANY: 'Sửa thông tin công ty',
+  SAVE_COMMUNE_BANK_ACCOUNT: 'Khai tài khoản nhận chuyển khoản của xã',
   UPDATE_DISTRICT: 'Sửa địa bàn',
   UPDATE_AREA: 'Sửa khu vực',
   UPDATE_TARIFF_VERSION: 'Sửa biểu giá đã ban hành',
@@ -51,6 +52,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
 export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   User: 'Tài khoản',
   Company: 'Công ty môi trường',
+  CommuneBankAccount: 'Tài khoản nhận chuyển khoản của xã',
   District: 'Địa bàn',
   Area: 'Khu vực',
   TariffVersion: 'Biểu giá',

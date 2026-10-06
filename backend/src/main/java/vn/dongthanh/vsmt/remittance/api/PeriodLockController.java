@@ -23,7 +23,7 @@ public class PeriodLockController {
     private final PeriodLockService lock;
     private final PeriodService periods;
 
-    @Operation(summary = "Khóa kỳ (cán bộ xã); còn công ty chưa nộp đủ thì 422 kèm danh sách công ty và số nợ")
+    @Operation(summary = "Khóa kỳ (cán bộ xã); 422 nêu lý do khi còn công ty chưa nộp đủ phải nộp xã, hoặc kỳ còn khoản hộ chưa đóng mà chưa đến hạn nộp. Khoản hộ chưa đóng khi khóa thành công nợ của hộ")
     @PostMapping("/{id}/lock")
     public PeriodDto lock(@PathVariable Long id, @AuthenticationPrincipal CurrentUser actor) {
         lock.lock(id, actor);

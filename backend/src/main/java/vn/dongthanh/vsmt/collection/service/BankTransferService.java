@@ -17,17 +17,17 @@ import vn.dongthanh.vsmt.collection.domain.BankTransfer.Status;
 import vn.dongthanh.vsmt.collection.domain.BankTransferRepository;
 import vn.dongthanh.vsmt.collection.domain.Payment;
 import vn.dongthanh.vsmt.collection.service.CollectionService.Activity;
-import vn.dongthanh.vsmt.masterdata.domain.Company;
-import vn.dongthanh.vsmt.masterdata.domain.CompanyRepository;
+import vn.dongthanh.vsmt.masterdata.domain.CommuneBankAccount;
+import vn.dongthanh.vsmt.masterdata.service.CommuneBankAccountService;
 import vn.dongthanh.vsmt.platform.common.BusinessRuleException;
 import vn.dongthanh.vsmt.platform.common.NotFoundException;
 import vn.dongthanh.vsmt.platform.domain.Role;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
 
 /**
- * Chuyển khoản qua SePay (04/10). Tiền vào tài khoản của công ty thu gom; SePay gọi webhook cho mỗi giao dịch tiền vào.
- * Đúng mã khoản ({@code VSMT} + id khoản), đúng tài khoản công ty phụ trách và đúng số cần đóng thì tự ghi thanh toán
- * chuyển khoản; mọi trường hợp khác không đụng tới khoản thu, lưu lại cho công ty đối chiếu.
+ * Chuyển khoản qua SePay. Tiền vào tài khoản chung của xã (UC-54); SePay gọi webhook cho mỗi giao dịch tiền vào.
+ * Đúng mã khoản ({@code VSMT} + id khoản), đúng tài khoản của xã và đúng số cần đóng thì tự ghi thanh toán
+ * chuyển khoản; mọi trường hợp khác không đụng tới khoản thu, lưu lại cho cán bộ xã đối chiếu (UC-27).
  *
  * <p>Không bọc cả lượt xử lý trong một transaction: ghi thanh toán thất bại (số tiền lệch, khoản đã thu...) phải rollback
  * riêng, sau đó vẫn lưu được dòng chờ đối chiếu.
@@ -41,7 +41,7 @@ public class BankTransferService {
 
     private final BankTransferRepository transfers;
     private final ChargeRepository charges;
-    private final CompanyRepository companies;
+    private final CommuneBankAccountService communeAccount;
     private final CollectionService collection;
 
     /** Giao dịch tiền vào SePay báo về. */
@@ -50,7 +50,7 @@ public class BankTransferService {
     }
 
     /** Thông tin để hiện mã QR chuyển khoản của một khoản. */
-    public record TransferInfo(boolean configured, String bankName, String bankAccount, String accountHolder, long amount,
+    public record TransferInfo(String bankName, String bankAccount, String accountHolder, long amount,
             String code) {
     }
 
@@ -68,8 +68,9 @@ public class BankTransferService {
                 .sepayId(in.sepayId()).gateway(cut(in.gateway(), 100)).accountNumber(cut(in.accountNumber(), 50))
                 .transactionDate(cut(in.transactionDate(), 30)).amount(in.amount()).content(cut(in.content(), 1000))
                 .code(cut(in.code(), 50)).referenceCode(cut(in.referenceCode(), 100));
-        Optional<Company> owner = companyOfAccount(in.accountNumber());
-        owner.ifPresent(c -> row.companyId(c.getId()));
+        // Chưa khai tài khoản xã thì không giao dịch nào được coi là đúng tài khoản (rơi vào WRONG_ACCOUNT, chờ cán bộ xã).
+        boolean toCommune = communeAccount.find().map(a -> normalize(a.getAccountNumber()))
+                .filter(a -> a.equals(normalize(in.accountNumber()))).isPresent();
 
         Optional<Long> chargeId = chargeIdIn(in.code()).or(() -> chargeIdIn(in.content()));
         Optional<Charge> charge = chargeId.flatMap(charges::findByIdWithDetails);
@@ -81,11 +82,8 @@ public class BankTransferService {
             reason = Reason.CHARGE_NOT_FOUND;
         } else {
             Charge c = charge.get();
-            row.chargeId(c.getId());
-            if (owner.isEmpty()) {
-                row.companyId(c.getCompany().getId());
-            }
-            if (owner.isEmpty() || !owner.get().getId().equals(c.getCompany().getId())) {
+            row.chargeId(c.getId()).companyId(c.getCompany().getId());
+            if (!toCommune) {
                 reason = Reason.WRONG_ACCOUNT;
             } else {
                 try {
@@ -114,13 +112,10 @@ public class BankTransferService {
 
     /**
      * Chỉ demo: giả lập ngân hàng báo có đúng số còn phải đóng của khoản, đi qua đúng đường webhook thật (tự khớp mã,
-     * tài khoản, số tiền). Công ty chưa khai tài khoản ngân hàng thì không giả lập được.
+     * tài khoản, số tiền). Xã chưa khai tài khoản thì không giả lập được (409).
      */
     public void simulate(Long chargeId, CurrentUser actor) {
         TransferInfo info = transferInfo(chargeId, actor);
-        if (!info.configured()) {
-            throw new BusinessRuleException("BANK_ACCOUNT_MISSING", "Công ty chưa khai tài khoản ngân hàng.");
-        }
         if (info.amount() <= 0) {
             throw new BusinessRuleException("CHARGE_NOT_COLLECTABLE", "Khoản này không còn số cần đóng.");
         }
@@ -137,29 +132,16 @@ public class BankTransferService {
         return infoOf(charge, collection.paidOf(chargeId));
     }
 
-    private static TransferInfo infoOf(Charge charge, long paid) {
-        Company company = charge.getCompany();
-        String account = normalize(company.getBankAccount());
-        boolean configured = !account.isEmpty() && company.getBankName() != null && !company.getBankName().isBlank();
-        return new TransferInfo(configured, company.getBankName(), configured ? account : null, company.getName(),
+    private TransferInfo infoOf(Charge charge, long paid) {
+        CommuneBankAccount account = communeAccount.require();
+        return new TransferInfo(account.getBankName(), normalize(account.getAccountNumber()), account.getAccountHolder(),
                 charge.getAmount() - paid, codeOf(charge.getId()));
     }
 
-    /** Chuyển khoản chờ đối chiếu: công ty thấy của mình, cán bộ xã / quản trị / lãnh đạo thấy tất cả. */
+    /** Chuyển khoản chờ đối chiếu (UC-27): chỉ cán bộ xã xem. */
     public List<BankTransfer> unmatched(CurrentUser actor) {
-        actor.requireRole(Role.COMPANY_MANAGER, Role.COMMUNE_OFFICER, Role.ADMIN, Role.LEADER);
-        return actor.role().belongsToCompany()
-                ? transfers.findTop200ByCompanyIdAndStatusOrderByCreatedAtDesc(actor.companyId(), Status.UNMATCHED)
-                : transfers.findTop200ByStatusOrderByCreatedAtDesc(Status.UNMATCHED);
-    }
-
-    private Optional<Company> companyOfAccount(String accountNumber) {
-        String account = normalize(accountNumber);
-        if (account.isEmpty()) {
-            return Optional.empty();
-        }
-        // ponytail: quét cả danh mục công ty (vài chục dòng); nhiều công ty thì thêm cột chuẩn hóa + chỉ mục duy nhất.
-        return companies.findAll().stream().filter(c -> account.equals(normalize(c.getBankAccount()))).findFirst();
+        actor.requireRole(Role.COMMUNE_OFFICER);
+        return transfers.findTop200ByStatusOrderByCreatedAtDesc(Status.UNMATCHED);
     }
 
     private static Optional<Long> chargeIdIn(String text) {

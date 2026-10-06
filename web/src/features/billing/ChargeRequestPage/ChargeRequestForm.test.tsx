@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 
-import { pickDate, pickOption } from '../../../test/antd';
+import { pickOption } from '../../../test/antd';
 import type { Area, Period } from '../../masterdata/api';
 import type { FeeType } from '../api';
 import { ChargeRequestForm } from './ChargeRequestForm';
@@ -24,7 +24,7 @@ const feeTypes: FeeType[] = [
   { id: 2, code: 'EXTRA', name: 'Phụ phí dịch vụ phát sinh', pricingMode: 'FIXED', defaultPrice: 50000, active: true },
 ];
 const areas: Area[] = [
-  { id: 7, code: 'KV07', name: 'Tổ dân phố 07', districtId: 1, districtCode: 'DTH', status: 'ACTIVE', subjectCount: 9, latitude: null, longitude: null },
+  { id: 7, code: 'KV07', name: 'Tổ dân phố 07', districtId: 1, districtCode: 'DTH', status: 'ACTIVE', subjectCount: 9 },
 ];
 
 function renderForm() {
@@ -34,12 +34,11 @@ function renderForm() {
 }
 
 describe('ChargeRequestForm', () => {
-  it('thiếu kỳ và hạn đóng thì báo lỗi; kỳ đã khóa không có trong danh sách', async () => {
+  it('thiếu kỳ thì báo lỗi; kỳ đã khóa không có trong danh sách', async () => {
     const onPreview = renderForm();
     await userEvent.click(screen.getByRole('button', { name: 'Xem trước' }));
 
     expect(await screen.findByText('Vui lòng chọn kỳ')).toBeInTheDocument();
-    expect(screen.getByText('Vui lòng chọn hạn đóng')).toBeInTheDocument();
     expect(onPreview).not.toHaveBeenCalled();
 
     await userEvent.click(screen.getByRole('combobox', { name: 'Kỳ thu' }));
@@ -54,31 +53,16 @@ describe('ChargeRequestForm', () => {
     expect(await screen.findByText('Vui lòng chọn ít nhất một tổ')).toBeInTheDocument();
   });
 
-  it('hạn đóng trước ngày mở kỳ hoặc sau hạn công ty nộp xã thì báo lỗi', async () => {
-    const onPreview = renderForm();
-    await pickOption(screen.getByRole('combobox', { name: 'Kỳ thu' }), 'Tháng 10/2026 (BG-65-2026)');
-
-    pickDate(screen.getByLabelText('Hạn hộ đóng'), '30/09/2026');
-    await userEvent.click(screen.getByRole('button', { name: 'Xem trước' }));
-    expect(await screen.findByText('Hạn đóng không được trước ngày mở kỳ')).toBeInTheDocument();
-
-    pickDate(screen.getByLabelText('Hạn hộ đóng'), '05/11/2026');
-    await userEvent.click(screen.getByRole('button', { name: 'Xem trước' }));
-    expect(await screen.findByText('Hạn đóng không được sau hạn công ty nộp xã')).toBeInTheDocument();
-    expect(onPreview).not.toHaveBeenCalled();
-  });
-
   it('toàn xã kỳ 10/2026 gửi đúng yêu cầu xem trước', async () => {
     const onPreview = renderForm();
     await pickOption(screen.getByRole('combobox', { name: 'Kỳ thu' }), 'Tháng 10/2026 (BG-65-2026)');
-    pickDate(screen.getByLabelText('Hạn hộ đóng'), '25/10/2026');
     await userEvent.click(screen.getByRole('button', { name: 'Xem trước' }));
 
     await waitFor(() =>
       expect(onPreview).toHaveBeenCalledWith(
-        { periodId: 5, feeTypeId: 1, scopeType: 'ALL', areaIds: undefined, companyId: undefined, dueDate: '2026-10-25',
+        { periodId: 5, feeTypeId: 1, scopeType: 'ALL', areaIds: undefined, companyId: undefined,
           unitPrice: undefined, note: undefined },
-        undefined, // kỳ đã mở: hạn công ty nộp xã không đổi được
+        undefined, // kỳ đã mở: hạn nộp không đổi được
       ),
     );
   });
@@ -94,7 +78,6 @@ describe('ChargeRequestForm', () => {
     const onPreview = renderForm();
     await pickOption(screen.getByRole('combobox', { name: 'Kỳ thu' }), 'Tháng 10/2026 (BG-65-2026)');
     await pickOption(screen.getByRole('combobox', { name: 'Loại phí' }), 'Phụ phí dịch vụ phát sinh');
-    pickDate(screen.getByLabelText('Hạn hộ đóng'), '25/10/2026');
     await userEvent.type(await screen.findByLabelText('Đơn giá'), '0');
     await userEvent.click(screen.getByRole('button', { name: 'Xem trước' }));
 

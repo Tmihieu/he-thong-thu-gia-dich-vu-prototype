@@ -74,19 +74,18 @@ public class BankTransferController {
     }
 
     public record TransferInfoDto(
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Công ty đã khai tài khoản ngân hàng") boolean configured,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String bankName,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String bankAccount,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String bankName,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String bankAccount,
             @Schema(requiredMode = RequiredMode.REQUIRED) String accountHolder,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Số cần đóng của khoản") long amount,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Mã ghi trong nội dung chuyển khoản") String code) {
 
         public static TransferInfoDto of(TransferInfo i) {
-            return new TransferInfoDto(i.configured(), i.bankName(), i.bankAccount(), i.accountHolder(), i.amount(), i.code());
+            return new TransferInfoDto(i.bankName(), i.bankAccount(), i.accountHolder(), i.amount(), i.code());
         }
     }
 
-    @Operation(summary = "Thông tin chuyển khoản của một khoản: tài khoản công ty, số tiền cần đóng, mã nội dung")
+    @Operation(summary = "Thông tin chuyển khoản của một khoản: tài khoản của xã, số tiền cần đóng, mã nội dung")
     @GetMapping("/api/collection/charges/{id}/transfer-info")
     public TransferInfoDto transferInfo(@PathVariable Long id, @AuthenticationPrincipal CurrentUser actor) {
         return TransferInfoDto.of(service.transferInfo(id, actor));

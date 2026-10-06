@@ -41,7 +41,8 @@ class ReminderIT extends IntegrationTest {
     @BeforeEach
     void seed() {
         fx.build();
-        // DV07 nộp đủ kỳ 10; DV01 chưa nộp.
+        // Đã thu đủ tiền mặt cả hai công ty (phải nộp xã tính trên đã thu); DV07 nộp đủ kỳ 10, DV01 chưa nộp.
+        fx.collectAllCash();
         receipts.issue(new IssueReceiptCommand(fx.dv07.getId(), fx.october.getId(), 160_000, ReceiptMethod.CASH, null,
                 null, null, null), fx.actor(fx.officer));
     }

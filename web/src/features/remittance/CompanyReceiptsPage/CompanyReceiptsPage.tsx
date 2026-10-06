@@ -11,10 +11,11 @@ import { MoneyText } from '../../../shared/MoneyText';
 import { EmptyBlock, ErrorBlock } from '../../../shared/StateBlock';
 import { StatusTag } from '../../../shared/StatusTag';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
-import { type Receipt, type ReceiptIssue, useCompanyLedger, useReceiptIssues, useReceipts } from '../api';
+import { type Payout, type PayoutIssue, type Receipt, type ReceiptIssue, useCompanyLedger, usePayoutIssues, usePayouts, useReceiptIssues, useReceipts } from '../api';
 import { LedgerStats } from '../LedgerStats';
 import { ISSUE_TONES } from '../tones';
 import { ReportIssueModal } from './ReportIssueModal';
+import { ReportPayoutIssueModal } from './ReportPayoutIssueModal';
 
 /**
  * "Phiếu thu xã lập" của công ty: chỉ phiếu của công ty mình (backend lọc), kèm lũy kế và còn phải nộp;
@@ -23,8 +24,12 @@ import { ReportIssueModal } from './ReportIssueModal';
 export function CompanyReceiptsPage() {
   const [periodId, setPeriodId] = useState<number>();
   const [reporting, setReporting] = useState<Receipt | null>(null);
+  const [reportingPayout, setReportingPayout] = useState<Payout | null>(null);
   const receipts = useReceipts(periodId);
   const ledger = useCompanyLedger(periodId);
+  const payouts = usePayouts(periodId);
+  const payoutIssues = usePayoutIssues();
+  const pendingPayouts = new Set((payoutIssues.data ?? []).filter((i) => i.status === 'PENDING').map((i) => i.payoutId));
   const issues = useReceiptIssues();
   const pending = new Set((issues.data ?? []).filter((i) => i.status === 'PENDING').map((i) => i.receiptId));
   const error = receipts.error ?? issues.error ?? ledger.error;
@@ -70,6 +75,67 @@ export function CompanyReceiptsPage() {
         ]}
       />
       <Typography.Title level={5} style={{ marginTop: 24 }}>
+        Phiếu xã trả lại
+      </Typography.Title>
+      <Table<Payout>
+        rowKey="id"
+        size="small"
+        loading={payouts.isLoading}
+        dataSource={payouts.data ?? []}
+        pagination={false}
+        locale={{ emptyText: <EmptyBlock title="Kỳ này xã chưa trả lại khoản nào" hint="Khi phải nộp xã của công ty âm, xã trả lại và lập phiếu chi trả, phiếu hiện ở đây." /> }}
+        columns={[
+          { title: 'Số phiếu', dataIndex: 'code' },
+          { title: 'Ngày trả', dataIndex: 'payoutDate', render: (d: string) => <DateText value={d} /> },
+          { title: 'Số tiền', dataIndex: 'amount', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Hình thức', dataIndex: 'method', render: (m: Payout['method']) => RECEIPT_METHOD_LABELS[m] },
+          { title: 'Chứng từ', dataIndex: 'documentRef', render: (v: string | null) => v ?? '—' },
+          { title: 'Lũy kế xã đã trả', dataIndex: 'cumulativePaid', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Xã còn phải trả', dataIndex: 'remainingAfter', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Ghi chú', dataIndex: 'note', render: (v: string | null) => v ?? '—' },
+          {
+            title: 'Trạng thái',
+            render: (_, p) =>
+              pendingPayouts.has(p.id) ? (
+                <StatusTag tone="warning">Đã báo sai sót · chờ xã kiểm tra</StatusTag>
+              ) : (
+                <StatusTag tone="success">Xã đã ghi nhận</StatusTag>
+              ),
+          },
+          {
+            title: '',
+            render: (_, p) => (
+              <Button size="small" onClick={() => setReportingPayout(p)} disabled={pendingPayouts.has(p.id)} aria-label={`Báo sai sót ${p.code}`}>
+                Báo sai sót
+              </Button>
+            ),
+          },
+        ]}
+      />
+      <Typography.Title level={5} style={{ marginTop: 24 }}>
+        Sai sót phiếu xã trả lại đã báo
+      </Typography.Title>
+      <Table<PayoutIssue>
+        rowKey="id"
+        size="small"
+        loading={payoutIssues.isLoading}
+        dataSource={payoutIssues.data ?? []}
+        pagination={false}
+        locale={{ emptyText: <EmptyBlock title="Chưa báo sai sót phiếu xã trả lại nào" hint="Thấy phiếu ghi sai số tiền hay sai kỳ thì bấm Báo sai sót trên phiếu đó." /> }}
+        columns={[
+          { title: 'Phiếu', dataIndex: 'payoutCode' },
+          { title: 'Loại', dataIndex: 'issueType', render: (t: PayoutIssue['issueType']) => RECEIPT_ISSUE_TYPE_LABELS[t] },
+          { title: 'Mô tả', dataIndex: 'description' },
+          { title: 'Ngày báo', dataIndex: 'reportedAt', render: (d: string) => <DateText value={d} /> },
+          {
+            title: 'Trạng thái',
+            dataIndex: 'status',
+            render: (s: PayoutIssue['status']) => <StatusTag tone={ISSUE_TONES[s]}>{RECEIPT_ISSUE_STATUS_LABELS[s]}</StatusTag>,
+          },
+          { title: 'Kết quả xử lý', dataIndex: 'resolutionNote', render: (v: string | null) => v ?? '—' },
+        ]}
+      />
+      <Typography.Title level={5} style={{ marginTop: 24 }}>
         Sai sót đã báo
       </Typography.Title>
       <Table<ReceiptIssue>
@@ -93,6 +159,7 @@ export function CompanyReceiptsPage() {
         ]}
       />
       <ReportIssueModal receipt={reporting} onClose={() => setReporting(null)} />
+      <ReportPayoutIssueModal payout={reportingPayout} onClose={() => setReportingPayout(null)} />
     </>
   );
 }

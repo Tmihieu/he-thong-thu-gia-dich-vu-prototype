@@ -11,8 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
 import vn.dongthanh.vsmt.masterdata.domain.AreaRepository;
-import vn.dongthanh.vsmt.masterdata.domain.CollectionSchedule;
-import vn.dongthanh.vsmt.masterdata.domain.CollectionScheduleRepository;
 import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.masterdata.domain.CompanyRepository;
 import vn.dongthanh.vsmt.masterdata.domain.District;
@@ -34,7 +32,6 @@ public class MasterDataQueryService {
     private final AreaRepository areas;
     private final CompanyRepository companies;
     private final ServiceSubjectRepository subjects;
-    private final CollectionScheduleRepository schedules;
 
     public List<District> districts() {
         return districts.findAllByOrderBySortOrderAscCodeAsc();
@@ -49,14 +46,6 @@ public class MasterDataQueryService {
         Map<Long, Long> counts = new HashMap<>();
         subjects.countActiveByArea().forEach(row -> counts.put((Long) row[0], (Long) row[1]));
         return counts;
-    }
-
-    /** Lịch thu gom của khu vực, sắp theo thứ, tuần trong tháng (hằng tuần trước), giờ bắt đầu. */
-    public List<CollectionSchedule> schedulesOf(Long areaId) {
-        if (!areas.existsById(areaId)) {
-            throw new NotFoundException("AREA_NOT_FOUND", "Không tìm thấy khu vực.");
-        }
-        return schedules.findByAreaIdOrdered(areaId);
     }
 
     public List<Company> companies(CurrentUser actor) {

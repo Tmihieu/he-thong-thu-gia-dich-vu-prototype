@@ -54,8 +54,8 @@ function api(overrides: Record<string, (url: string, init: RequestInit) => Respo
     'GET /api/masterdata/periods': () => jsonResponse(200, periods),
     'GET /api/collection/my-work': () => jsonResponse(200, items),
     'GET /api/collection/charges/4/transfer-info': () =>
-      jsonResponse(200, { configured: true, bankName: 'Vietcombank', bankAccount: '0071000888888',
-        accountHolder: 'Công ty MTĐT Đông Thạnh', amount: 80_000, code: 'VSMT000004' }),
+      jsonResponse(200, { bankName: 'Vietcombank', bankAccount: '0071000888888',
+        accountHolder: 'UBND xã Đông Thạnh', amount: 80_000, code: 'VSMT000004' }),
     'GET /api/collection/cash/held': () =>
       jsonResponse(200, [{ collectorId: 21, collectorUsername: 'thu07', collectorName: 'Nguyễn Thành Mẫu', collectedCash: 240_000,
         handedOver: 80_000, held: 160_000 }]),
@@ -293,5 +293,17 @@ describe('Người đi thu: tiền mặt', () => {
     expect(await screen.findByText('BG-1026-01')).toBeInTheDocument();
     expect(screen.getByText('11/10/2026')).toBeInTheDocument();
     expect(await screen.findByText('160.000 đ', norm)).toBeInTheDocument();
+  });
+
+  it('xã chưa khai tài khoản nhận chuyển khoản (409) thì báo rõ, không hiện QR', async () => {
+    api({
+      'GET /api/collection/charges/4/transfer-info': () =>
+        jsonResponse(409, { code: 'COMMUNE_BANK_ACCOUNT_MISSING', message: 'Xã chưa khai tài khoản nhận chuyển khoản.' }),
+    });
+    renderApp('/collector/list');
+
+    const dialog = await openSheet('Hộ Phạm Thị Dung', 'Chuyển khoản (QR)');
+    expect(await within(dialog).findByText('Xã chưa khai tài khoản nhận chuyển khoản')).toBeInTheDocument();
+    expect(within(dialog).queryByRole('img', { name: 'Mã QR chuyển khoản' })).not.toBeInTheDocument();
   });
 });

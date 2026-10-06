@@ -33,7 +33,7 @@ import vn.dongthanh.vsmt.remittance.domain.ReceiptMethod;
 
 /**
  * Phiếu thu xã lập cho công ty (R15): chỉ cán bộ xã; 1 phiếu 1 kỳ, 1 kỳ nộp nhiều lần; 0 &lt; số tiền ≤ còn phải nộp
- * theo sổ công ty–kỳ. Khóa dòng kỳ thu trong transaction để mã phiếu tuần tự không trùng và hai phiếu song song
+ * theo sổ công ty–kỳ (phải nộp xã tính trên số đã thu). Khóa dòng kỳ thu trong transaction để mã phiếu tuần tự không trùng và hai phiếu song song
  * không cùng vượt số còn nộp.
  */
 @Service
@@ -77,8 +77,10 @@ public class CompanyReceiptService {
         }
         long remaining = ledger.remaining(company.getId(), period.getId());
         if (cmd.amount() <= 0 || cmd.amount() > remaining) {
-            throw new BusinessRuleException("RECEIPT_AMOUNT_OUT_OF_RANGE",
-                    "Số tiền phải lớn hơn 0 và không vượt số còn phải nộp (" + Money.format(remaining) + ").");
+            // Phải nộp xã tính trên số đã thu nên có thể đã nộp đủ (0) hoặc xã phải trả lại công ty (âm).
+            String detail = remaining > 0 ? "không vượt số còn phải nộp (" + Money.format(remaining) + ")"
+                    : "công ty không còn số phải nộp ở kỳ này" + (remaining < 0 ? " (xã trả lại công ty " + Money.format(-remaining) + ")" : "");
+            throw new BusinessRuleException("RECEIPT_AMOUNT_OUT_OF_RANGE", "Số tiền phải lớn hơn 0 và " + detail + ".");
         }
         String prefix = "PT-CT-" + period.documentToken() + "-";
         String code = prefix + "%03d".formatted(receipts.maxCodeNumber(prefix) + 1);

@@ -42,7 +42,7 @@ import vn.dongthanh.vsmt.collection.service.CollectionService.Activity;
 import vn.dongthanh.vsmt.collection.service.CollectionService.ChargeProgress;
 import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentCommand;
 import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentOutcome;
-import vn.dongthanh.vsmt.collection.service.CollectorAssignmentService;
+import vn.dongthanh.vsmt.collection.service.CollectorWorkService;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
 
 @Tag(name = "Thu tiền: ghi nhận kết quả thu")
@@ -52,32 +52,34 @@ import vn.dongthanh.vsmt.platform.security.CurrentUser;
 public class PaymentController {
 
     private final CollectionService collection;
-    private final CollectorAssignmentService assignments;
+    private final CollectorWorkService work;
 
-    @Operation(summary = "Danh sách thu của người đi thu: khoản trong tổ được giao, kèm đã thu")
+    @Operation(summary = "Danh sách thu của người đi thu: mọi khoản của công ty mình, kèm đã thu")
     @GetMapping("/my-work")
     public List<CollectorChargeDto> myWork(@RequestParam(required = false) Long periodId,
             @RequestParam(required = false) ChargeStatus status, @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "500") @Min(1) @Max(1000) int size, @AuthenticationPrincipal CurrentUser actor) {
-        return withProgress(assignments.myCharges(periodId, status, PageRequest.of(page, size, Sort.by("code")), actor));
+        return withProgress(work.companyCharges(periodId, null, status, PageRequest.of(page, size, Sort.by("code")), actor));
     }
 
     private List<CollectorChargeDto> withProgress(Page<Charge> result) {
         Map<Long, ChargeProgress> progress = collection.progressOf(result.getContent().stream().map(Charge::getId).toList());
-        LocalDate today = assignments.today();
+        LocalDate today = work.today();
         return result.getContent().stream()
                 .map(c -> CollectorChargeDto.of(ChargeDto.of(c, today), progress.get(c.getId())))
                 .toList();
     }
 
-    @Operation(summary = "Hộ được giao của công ty: khoản các tổ công ty phụ trách, kèm đã thu")
+    @Operation(summary = "Khoản của công ty, kèm đã thu; lọc theo tổ / tình trạng; collectorId: chỉ khoản người đó đã thu (UC-33)")
     @GetMapping("/company-work")
     public List<CollectorChargeDto> companyWork(@RequestParam(required = false) Long periodId,
-            @RequestParam(required = false) Long areaId, @RequestParam(required = false) ChargeStatus status,
+            @RequestParam(required = false) Long areaId, @RequestParam(required = false) Long collectorId,
+            @RequestParam(required = false) ChargeStatus status,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "1000") @Min(1) @Max(2000) int size, @AuthenticationPrincipal CurrentUser actor) {
-        Page<Charge> result = assignments.companyCharges(periodId, areaId, status,
-                PageRequest.of(page, size, Sort.by("code")), actor);
+        PageRequest paging = PageRequest.of(page, size, Sort.by("code"));
+        Page<Charge> result = collectorId == null ? work.companyCharges(periodId, areaId, status, paging, actor)
+                : work.chargesCollectedBy(collectorId, periodId, status, paging, actor);
         return withProgress(result);
     }
 
@@ -94,7 +96,7 @@ public class PaymentController {
     @GetMapping("/charges/{id}/activity")
     public ActivityDto activity(@PathVariable Long id, @AuthenticationPrincipal CurrentUser actor) {
         Activity a = collection.activity(id, actor);
-        return new ActivityDto(ChargeDto.of(a.charge(), assignments.today()), a.paidAmount(),
+        return new ActivityDto(ChargeDto.of(a.charge(), work.today()), a.paidAmount(),
                 a.charge().getAmount() - a.paidAmount(), a.payments().stream().map(PaymentDto::of).toList());
     }
 

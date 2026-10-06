@@ -38,7 +38,7 @@ import vn.dongthanh.vsmt.collection.domain.PaymentRepository;
 import vn.dongthanh.vsmt.collection.service.CollectionService;
 import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentCommand;
 import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentOutcome;
-import vn.dongthanh.vsmt.collection.service.CollectorAssignmentService;
+import vn.dongthanh.vsmt.collection.service.CollectorWorkService;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository;
@@ -70,7 +70,7 @@ class CollectionServiceTest {
 
     final PaymentRepository payments = mock(PaymentRepository.class);
     final ChargeRepository charges = mock(ChargeRepository.class);
-    final CollectorAssignmentService scope = mock(CollectorAssignmentService.class);
+    final CollectorWorkService scope = mock(CollectorWorkService.class);
     final UserRepository users = mock(UserRepository.class);
     final CollectionPeriodRepository periods = mock(CollectionPeriodRepository.class);
     final CitizenAccountRepository citizenAccounts = mock(CitizenAccountRepository.class);
@@ -78,21 +78,26 @@ class CollectionServiceTest {
     final AuditService audit = mock(AuditService.class);
     final Clock clock = Clock.fixed(Instant.parse("2026-10-12T10:40:00Z"), ZoneId.of("Asia/Ho_Chi_Minh"));
     final CollectionService service = new CollectionService(payments, charges, scope, users,
-            new PeriodGuard(periods), citizenAccounts, notifications, audit, clock);
+            new PeriodGuard(periods), periods, citizenAccounts, notifications, audit, clock);
 
     final Company dv01 = withId(Company.create("DV01", "Công ty Một", "A", "0900000001", LocalDate.of(2026, 1, 1)), 1L);
     final CurrentUser collector = new CurrentUser(21L, "thu07", Role.COLLECTOR, 1L);
     final CurrentUser manager = new CurrentUser(5L, "dv01", Role.COMPANY_MANAGER, 1L);
     final List<Payment> saved = new ArrayList<>();
     CollectionPeriod october;
+    CollectionPeriod november;
     Charge charge;
 
     @BeforeEach
     void setUp() {
         TariffVersion bg = TariffVersion.create("BG", "QĐ", LocalDate.of(2026, 9, 1), null, TariffStatus.ACTIVE);
         october = CollectionPeriod.open(PeriodType.MONTH, 2026, 10, null, LocalDate.of(2026, 10, 31), bg);
+        november = CollectionPeriod.open(PeriodType.MONTH, 2026, 11, null, LocalDate.of(2026, 11, 30), bg);
+        withId(october, 10L);
+        withId(november, 11L);
         // Trạng thái kỳ đọc lại từ CSDL (FOR SHARE) giả lập bằng trạng thái của entity.
-        when(periods.lockStatusForShare(any())).thenAnswer(inv -> october.getStatus().name());
+        when(periods.lockStatusForShare(any()))
+                .thenAnswer(inv -> (Long.valueOf(11L).equals(inv.getArgument(0)) ? november : october).getStatus().name());
         charge = newCharge(new ChargeAmount(TariffGroup.HH_3_PLUS, 80_000, 1, 80_000, false), 900L);
         when(charges.findByIdWithDetails(900L)).thenReturn(Optional.of(charge));
         when(payments.save(any(Payment.class))).thenAnswer(inv -> {
@@ -208,10 +213,55 @@ class CollectionServiceTest {
     }
 
     @Test
-    void lockedPeriodIs422() {
+    void lockedPeriodWithoutACollectingPeriodIs422() {
         ReflectionTestUtils.setField(october, "status", PeriodStatus.LOCKED);
         assertThatThrownBy(() -> service.recordPayment(cash(80_000, "req-1"), collector))
-                .extracting("code").isEqualTo("PERIOD_LOCKED");
+                .extracting("code").isEqualTo("NO_COLLECTING_PERIOD");
+        assertThat(saved).isEmpty();
+        assertThat(charge.getStatus()).isEqualTo(ChargeStatus.UNPAID);
+    }
+
+    @Test
+    void householdDebtOfALockedPeriodIsPaidIntoTheCollectingPeriod() {
+        // Công nợ hộ: khoản Chưa thu của kỳ đã khóa vẫn thu được, tiền ghi vào kỳ đang thu (ledger_period_id).
+        ReflectionTestUtils.setField(october, "status", PeriodStatus.LOCKED);
+        when(periods.findByStatusOrderByStartDateDesc(PeriodStatus.COLLECTING)).thenReturn(List.of(november));
+
+        PaymentOutcome r = service.recordPayment(cash(80_000, "req-1"), collector);
+
+        assertThat(r.payment().getLedgerPeriod()).isSameAs(november);
+        assertThat(charge.getStatus()).isEqualTo(ChargeStatus.PAID);
+        assertThat(charge.getPeriod()).isSameAs(october); // khoản vẫn thuộc kỳ cũ, kỳ cũ không đổi
+
+        // Chuyển khoản qua ngân hàng cũng vậy.
+        Charge other = newCharge(new ChargeAmount(TariffGroup.HH_3_PLUS, 80_000, 1, 80_000, false), 905L);
+        when(charges.findByIdWithDetails(905L)).thenReturn(Optional.of(other));
+        when(payments.sumByChargeId(905L)).thenReturn(0L);
+        assertThat(service.recordBankTransfer(905L, 80_000, "FT1", "sepay-1").getLedgerPeriod()).isSameAs(november);
+    }
+
+    @Test
+    void householdDebtPicksTheNewestCollectingPeriodAndSkipsOnesLockedMeanwhile() {
+        ReflectionTestUtils.setField(october, "status", PeriodStatus.LOCKED);
+        CollectionPeriod december = withId(CollectionPeriod.open(PeriodType.MONTH, 2026, 12, null, LocalDate.of(2026, 12, 31),
+                october.getTariffVersion()), 12L);
+        ReflectionTestUtils.setField(december, "status", PeriodStatus.LOCKED);
+        when(periods.lockStatusForShare(12L)).thenReturn("LOCKED");
+        when(periods.findByStatusOrderByStartDateDesc(PeriodStatus.COLLECTING)).thenReturn(List.of(december, november));
+
+        assertThat(service.recordPayment(cash(80_000, "req-1"), collector).payment().getLedgerPeriod()).isSameAs(november);
+    }
+
+    @Test
+    void ordinaryPaymentInAnOpenPeriodHasNoLedgerPeriod() {
+        assertThat(service.recordPayment(cash(80_000, "req-1"), collector).payment().getLedgerPeriod()).isNull();
+    }
+
+    @Test
+    void draftPeriodStillBlocksPayment() {
+        ReflectionTestUtils.setField(october, "status", PeriodStatus.DRAFT);
+        assertThatThrownBy(() -> service.recordPayment(cash(80_000, "req-1"), collector))
+                .extracting("code").isEqualTo("PERIOD_DRAFT");
     }
 
     @Test
@@ -257,7 +307,7 @@ class CollectionServiceTest {
     }
 
     @Test
-    void collectorOutsideAssignedAreaIsRejectedAndCommuneCannotRecord() {
+    void collectorOfAnotherCompanyIsRejectedAndCommuneCannotRecord() {
         doThrow(new NotFoundException("CHARGE_NOT_FOUND", "x")).when(scope).requireInScope(charge, collector);
         assertThatThrownBy(() -> service.recordPayment(cash(80_000, "req-1"), collector))
                 .isInstanceOf(NotFoundException.class);
@@ -305,7 +355,7 @@ class CollectionServiceTest {
                 amount.exempt(), amount.exempt() ? "Hộ nghèo" : null, null);
         ChargeRequest req = ChargeRequest.issue("YCT-1026-01", october,
                 FeeType.create("ENV", "Phí", PricingMode.TARIFF, null), ChargeScope.ALL, java.util.Set.of(), null,
-                LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 25), null, null, 2L);
+                LocalDate.of(2026, 10, 1), null, null, 2L);
         return withId(Charge.issue("KT-1026-DTH-H000128", req, s, c, dv01, amount), id);
     }
 

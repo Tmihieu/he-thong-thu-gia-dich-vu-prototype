@@ -106,13 +106,11 @@ public class BillingController {
             @Schema(requiredMode = RequiredMode.REQUIRED) @NotNull(message = "không được để trống") ChargeScope scopeType,
             @Schema(description = "Bắt buộc khi scopeType = AREAS") List<@NotNull Long> areaIds,
             @Schema(description = "Bắt buộc khi scopeType = COMPANY") Long companyId,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Hạn hộ đóng, không sau hạn công ty nộp xã")
-            @NotNull(message = "không được để trống") LocalDate dueDate,
             @Schema(description = "Chỉ với loại phí giá cố định; trống thì dùng giá mặc định") @PositiveOrZero Long unitPrice,
             @Size(max = 2000) String note) {
 
         IssueCommand toCommand() {
-            return new IssueCommand(periodId, feeTypeId, scopeType, areaIds, companyId, dueDate, unitPrice, note);
+            return new IssueCommand(periodId, feeTypeId, scopeType, areaIds, companyId, unitPrice, note);
         }
     }
 
@@ -155,7 +153,6 @@ public class BillingController {
             @Schema(requiredMode = RequiredMode.REQUIRED) String feeTypeName,
             @Schema(requiredMode = RequiredMode.REQUIRED) ChargeScope scopeType,
             @Schema(requiredMode = RequiredMode.REQUIRED) LocalDate issueDate,
-            @Schema(requiredMode = RequiredMode.REQUIRED) LocalDate dueDate,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) Long unitPrice,
             @Schema(requiredMode = RequiredMode.REQUIRED) long chargeCount,
             @Schema(requiredMode = RequiredMode.REQUIRED) long exemptCount,
@@ -165,7 +162,7 @@ public class BillingController {
             var r = s.request();
             return new ChargeRequestDto(r.getId(), r.getCode(), r.getPeriod().getId(), r.getPeriod().getCode(),
                     r.getFeeType().getCode(), r.getFeeType().getName(), r.getScopeType(), r.getIssueDate(),
-                    r.getDueDate(), r.getUnitPrice(), s.chargeCount(), s.exemptCount(), s.totalAmount());
+                    r.getUnitPrice(), s.chargeCount(), s.exemptCount(), s.totalAmount());
         }
     }
 
@@ -188,9 +185,9 @@ public class BillingController {
             @Schema(requiredMode = RequiredMode.REQUIRED) long unitPrice,
             @Schema(requiredMode = RequiredMode.REQUIRED) int months,
             @Schema(requiredMode = RequiredMode.REQUIRED) long amount,
-            @Schema(requiredMode = RequiredMode.REQUIRED) LocalDate dueDate,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Hạn nộp của kỳ (hạn duy nhất)") LocalDate dueDate,
             @Schema(requiredMode = RequiredMode.REQUIRED) ChargeStatus status,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Chưa thu và đã qua hạn đóng") boolean overdue,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Chưa thu và đã qua hạn nộp của kỳ") boolean overdue,
             @Schema(requiredMode = RequiredMode.REQUIRED,
                     description = "Tổng đã hoàn của khoản (số dương); chỉ điền ở GET /api/billing/charges, nơi khác là 0") long refunded,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true,
@@ -216,7 +213,7 @@ public class BillingController {
                     c.getSubject().getCode(), c.getSubject().getName(), c.getSubject().getAddress(), c.getArea().getId(),
                     c.getArea().getCode(), c.getCompany().getId(), c.getCompany().getCode(), c.getPeriod().getId(),
                     c.getPeriod().getCode(), c.getFeeType().getCode(), c.getTariffGroup(), c.getUnitPrice(),
-                    c.getMonths(), c.getAmount(), c.getDueDate(), c.getStatus(), c.isOverdue(today), refunded,
+                    c.getMonths(), c.getAmount(), c.getPeriod().getDueDate(), c.getStatus(), c.isOverdue(today), refunded,
                     c.getSubject().getMemberCount(), paidAt, paymentMethod);
         }
     }

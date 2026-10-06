@@ -64,15 +64,15 @@ class PeriodAutoServiceTest {
 
     PeriodAutoRule rule;
 
-    static PeriodAutoRule rule(boolean enabled, PeriodType type, int createDay, int householdDays, int remitDays) {
+    static PeriodAutoRule rule(boolean enabled, PeriodType type, int createDay, int remitDays) {
         PeriodAutoRule r = BeanUtils.instantiateClass(PeriodAutoRule.class);
-        r.update(enabled, type, createDay, householdDays, remitDays, OffsetDateTime.parse("2026-10-01T00:00:00Z"), 1L);
+        r.update(enabled, type, createDay, remitDays, OffsetDateTime.parse("2026-10-01T00:00:00Z"), 1L);
         return r;
     }
 
     @BeforeEach
     void setUp() {
-        rule = rule(true, PeriodType.MONTH, 25, 15, 10);
+        rule = rule(true, PeriodType.MONTH, 25, 10);
         when(rules.findById(PeriodAutoRule.ID)).thenAnswer(inv -> Optional.of(rule));
         when(periods.save(any(CollectionPeriod.class))).thenAnswer(inv -> inv.getArgument(0));
         when(tariffs.activeVersionOn(any())).thenReturn(bg65);
@@ -82,7 +82,7 @@ class PeriodAutoServiceTest {
 
     @Test
     void monthlyRuleTargetsNextMonthFromCreateDay() {
-        PeriodAutoRule r = rule(true, PeriodType.MONTH, 25, 15, 10);
+        PeriodAutoRule r = rule(true, PeriodType.MONTH, 25, 10);
 
         assertThat(PeriodAutoService.targetOn(LocalDate.of(2026, 10, 24), r)).isEmpty();
         Target t = PeriodAutoService.targetOn(LocalDate.of(2026, 10, 25), r).orElseThrow();
@@ -97,7 +97,7 @@ class PeriodAutoServiceTest {
 
     @Test
     void decemberRollsOverToJanuaryOfNextYear() {
-        Target t = PeriodAutoService.targetOn(LocalDate.of(2026, 12, 28), rule(true, PeriodType.MONTH, 25, 15, 10))
+        Target t = PeriodAutoService.targetOn(LocalDate.of(2026, 12, 28), rule(true, PeriodType.MONTH, 25, 10))
                 .orElseThrow();
 
         assertThat(t.year()).isEqualTo(2027);
@@ -107,7 +107,7 @@ class PeriodAutoServiceTest {
 
     @Test
     void quarterlyRuleOnlyActsInLastMonthOfQuarter() {
-        PeriodAutoRule r = rule(true, PeriodType.QUARTER, 20, 15, 10);
+        PeriodAutoRule r = rule(true, PeriodType.QUARTER, 20, 10);
 
         assertThat(PeriodAutoService.targetOn(LocalDate.of(2026, 10, 25), r)).isEmpty();
         assertThat(PeriodAutoService.targetOn(LocalDate.of(2026, 11, 25), r)).isEmpty();
@@ -164,7 +164,7 @@ class PeriodAutoServiceTest {
 
     @Test
     void doesNothingWhenRuleIsOff() {
-        rule = rule(false, PeriodType.MONTH, 25, 15, 10);
+        rule = rule(false, PeriodType.MONTH, 25, 10);
 
         DraftRun run = service.createDraftIfDue(null);
 
@@ -176,7 +176,7 @@ class PeriodAutoServiceTest {
 
     @Test
     void doesNothingBeforeCreateDay() {
-        rule = rule(true, PeriodType.MONTH, 26, 15, 10);
+        rule = rule(true, PeriodType.MONTH, 26, 10);
 
         DraftRun run = service.createDraftIfDue(null);
 
@@ -222,7 +222,7 @@ class PeriodAutoServiceTest {
 
     @Test
     void onlyAdminMayReadRunOrChangeTheRule() {
-        RuleCommand cmd = new RuleCommand(true, PeriodType.MONTH, 25, 15, 10);
+        RuleCommand cmd = new RuleCommand(true, PeriodType.MONTH, 25, 10);
 
         assertThatThrownBy(() -> service.rule(officer)).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> service.updateRule(cmd, officer)).isInstanceOf(AccessDeniedException.class);
@@ -241,11 +241,10 @@ class PeriodAutoServiceTest {
 
     @Test
     void updateRuleSavesAndAudits() {
-        PeriodAutoRule updated = service.updateRule(new RuleCommand(true, PeriodType.QUARTER, 20, 30, 5), admin);
+        PeriodAutoRule updated = service.updateRule(new RuleCommand(true, PeriodType.QUARTER, 20, 5), admin);
 
         assertThat(updated.getPeriodType()).isEqualTo(PeriodType.QUARTER);
         assertThat(updated.getCreateDay()).isEqualTo(20);
-        assertThat(updated.getHouseholdDueDays()).isEqualTo(30);
         assertThat(updated.getRemitDueDays()).isEqualTo(5);
         assertThat(updated.getUpdatedBy()).isEqualTo(1L);
         verify(audit).record(eq(admin), eq("UPDATE_PERIOD_RULE"), eq("PeriodAutoRule"), eq(1), any(), any());
@@ -253,15 +252,13 @@ class PeriodAutoServiceTest {
 
     @Test
     void rejectsInvalidRuleValues() {
-        assertThatThrownBy(() -> service.updateRule(new RuleCommand(true, PeriodType.MONTH, 0, 15, 10), admin))
+        assertThatThrownBy(() -> service.updateRule(new RuleCommand(true, PeriodType.MONTH, 0, 10), admin))
                 .isInstanceOf(BusinessRuleException.class).hasMessageContaining("Ngày tạo kỳ");
-        assertThatThrownBy(() -> service.updateRule(new RuleCommand(true, PeriodType.MONTH, 29, 15, 10), admin))
+        assertThatThrownBy(() -> service.updateRule(new RuleCommand(true, PeriodType.MONTH, 29, 10), admin))
                 .isInstanceOf(BusinessRuleException.class).hasMessageContaining("Ngày tạo kỳ");
-        assertThatThrownBy(() -> service.updateRule(new RuleCommand(true, PeriodType.MONTH, 25, 0, 10), admin))
-                .isInstanceOf(BusinessRuleException.class).hasMessageContaining("hộ đóng");
-        assertThatThrownBy(() -> service.updateRule(new RuleCommand(true, PeriodType.MONTH, 25, 15, -1), admin))
+        assertThatThrownBy(() -> service.updateRule(new RuleCommand(true, PeriodType.MONTH, 25, -1), admin))
                 .isInstanceOf(BusinessRuleException.class).hasMessageContaining("công ty nộp xã");
-        assertThatThrownBy(() -> service.updateRule(new RuleCommand(true, null, 25, 15, 10), admin))
+        assertThatThrownBy(() -> service.updateRule(new RuleCommand(true, null, 25, 10), admin))
                 .isInstanceOf(BusinessRuleException.class);
         verify(audit, never()).record(any(), any(), any(), any(), any(), any());
     }

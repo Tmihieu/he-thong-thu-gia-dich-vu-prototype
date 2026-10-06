@@ -71,9 +71,6 @@ class DemoSeedIT extends IntegrationTest {
                 "select d.code from areas a join districts d on d.id = a.district_id"
                         + " where a.code in ('AP02', 'AP22', 'AP27', 'AP42', 'AP47', 'AP48') order by a.code",
                 String.class)).containsExactly("TTT", "TTT", "DTH", "DTH", "DTH", "NB");
-        // Mọi ấp đều có vị trí để vẽ ghim trên bản đồ Khu vực.
-        assertThat(demoDb.queryForObject("select count(*) from areas where latitude is null or longitude is null",
-                Integer.class)).isZero();
         assertThat(demoDb.queryForList("select code from companies order by code", String.class))
                 .hasSize(11).startsWith("DV01").endsWith("DV11");
 
@@ -150,37 +147,19 @@ class DemoSeedIT extends IntegrationTest {
     }
 
     @Test
-    void demoProfileSeedsOneCollectorPerAssignedArea() {
+    void demoProfileSeedsCollectorsWithoutAreaAssignments() {
         assertThat(demoDb.queryForObject("select count(*) from users where role = 'COLLECTOR'", Integer.class)).isEqualTo(51);
-        assertThat(demoDb.queryForObject("select count(*) from collector_assignments", Integer.class)).isEqualTo(51);
-        // Ấp thêm mới (V40_2) có người thu thuap{số ấp} cùng công ty đang phụ trách.
+        // Ấp thêm mới (V40_2) có người thu thuap{số ấp}; phân tổ đã bỏ (V44), người thu thuộc công ty qua users.company_id.
+        assertThat(demoDb.queryForObject("select count(*) from users where username like 'thuap%'", Integer.class))
+                .isEqualTo(28);
         assertThat(demoDb.queryForObject("""
-                select count(*) from collector_assignments ca join users u on u.id = ca.collector_id
-                join area_assignments aa on aa.area_id = ca.area_id
-                where u.username like 'thuap%' and aa.company_id = ca.company_id and u.company_id = ca.company_id""",
-                Integer.class)).isEqualTo(28);
-        assertThat(demoDb.queryForObject("""
-                select u.username || ':' || a.code || ':' || c.code from collector_assignments ca
-                join users u on u.id = ca.collector_id join areas a on a.id = ca.area_id
-                join companies c on c.id = ca.company_id where u.username = 'thu07'""", String.class))
-                .isEqualTo("thu07:AP39:DV01");
+                select c.code from users u join companies c on c.id = u.company_id where u.username = 'thu07'""",
+                String.class)).isEqualTo("DV01");
+        assertThat(demoDb.queryForObject("select count(*) from information_schema.tables where table_name in"
+                + " ('collector_assignments', 'collection_schedules')", Integer.class)).isZero();
+        assertThat(demoDb.queryForObject("select count(*) from information_schema.columns where table_name = 'areas'"
+                + " and column_name in ('latitude', 'longitude')", Integer.class)).isZero();
         assertThat(demoDb.queryForObject("select count(*) from users where username = 'thu24'", Integer.class)).isZero();
-    }
-
-    @Test
-    void demoProfileSeedsCollectionSchedulesForEveryArea() {
-        assertThat(demoDb.queryForObject("""
-                select count(*) from areas a
-                where not exists (select 1 from collection_schedules s where s.area_id = a.id)""", Integer.class))
-                .isZero();
-        // Ấp 39 (DTH, tổ KV07 cũ) theo lịch prototype: thứ 3 – 5 – 7 buổi chiều, Chủ nhật đầu tháng rác cồng kềnh.
-        assertThat(demoDb.queryForList("""
-                select s.weekday || ':' || coalesce(s.week_of_month::text, '-') || ':' || to_char(s.start_time, 'HH24:MI')
-                       || ':' || s.waste_type
-                from collection_schedules s join areas a on a.id = s.area_id
-                where a.code = 'AP39' order by s.weekday""", String.class))
-                .containsExactly("2:-:17:00:HOUSEHOLD", "4:-:17:00:HOUSEHOLD", "6:-:17:00:HOUSEHOLD_RECYCLABLE",
-                        "7:1:08:00:BULKY");
     }
 
     @Test
@@ -246,19 +225,26 @@ class DemoSeedIT extends IntegrationTest {
                 .extracting(CompanyAmount::amount).singleElement().isIn(609_000L, 639_000L);
         long received = demoDb.queryForObject(
                 "select sum(amount) from company_receipts where company_id = ? and period_id = ?", Long.class, dv01, period);
-        // QĐ-L16: V34_1 hạ phiếu mẫu về 200.000 đ để còn phải nộp dương sau phần cầm lại.
+        // QĐ-L16: V34_1 hạ phiếu mẫu về 200.000 đ.
         assertThat(received).isEqualTo(200_000L);
-        // Như CompanyLedgerService.overdueDebtsOf (nhắc nộp, R16, BR-REM-03): kỳ có hạn trước hôm nay, còn nợ =
-        // phải thu − phần thu gom công ty cầm lại − đã nộp. Đúng cả lúc làm seed lẫn ngày demo.
+        // Phải nộp xã tính trên số ĐÃ THU (góp ý BA 05/10): tiền mặt đã thu − phí thu gom của toàn bộ số đã thu (cả chuyển
+        // khoản). DV01 kỳ 09: tiền mặt 480.000 − phí thu gom của 639.000 đã thu (455.788) = 24.212. Cùng một con số ở truy
+        // vấn một kỳ (màn đối soát) và truy vấn các kỳ đã hết hạn (nợ kỳ trước, nhắc nộp), đúng cả lúc làm seed lẫn ngày demo.
+        // Hộ chuyển khoản vào tài khoản xã mà công ty vẫn hưởng phí thu gom nên phải nộp xã thấp hơn nhiều so với phải thu.
+        long cash = ledger.cashCollectedByCompany(period).stream().filter(c -> c.companyId() == dv01)
+                .mapToLong(CompanyAmount::amount).sum();
+        long retained = ledger.retainedByCompany(period).stream().filter(c -> c.companyId() == dv01)
+                .mapToLong(CompanyAmount::amount).sum();
+        long payable = cash - retained;
+        assertThat(cash).isEqualTo(480_000L);
+        assertThat(payable).isEqualTo(24_212L);
         for (LocalDate today : List.of(LocalDate.of(2026, 9, 28), LocalDate.of(2026, 10, 21))) {
-            long retained = ledger.retainedByCompanyAndPeriodBefore(today).stream()
-                    .filter(r -> r.companyId() == dv01 && r.periodId() == period).mapToLong(CompanyPeriodAmount::amount).sum();
-            assertThat(ledger.dueByCompanyAndPeriodBefore(today)).filteredOn(d -> d.companyId() == dv01)
-                    .map(d -> new CompanyPeriodAmount(d.companyId(), d.periodId(), d.amount() - retained - received))
-                    .containsExactly(new CompanyPeriodAmount(dv01, period, 1_319_000 - retained - received));
-            // Phiếu mẫu phải nhỏ hơn phải nộp xã, để demo hiện "Đang nộp" chứ không âm (QĐ-L16).
-            assertThat(1_319_000 - retained - received).isPositive();
+            assertThat(ledger.payableByCompanyAndPeriodBefore(today)).filteredOn(d -> d.companyId() == dv01)
+                    .containsExactly(new CompanyPeriodAmount(dv01, period, payable));
         }
+        // Còn phải nộp = 24.212 − 200.000 = −175.788: DV01 đã nộp dư so với phải nộp xã, xã trả lại công ty phần chênh, nên không
+        // còn nợ xã và nhắc nộp (R16) không có kỳ nào để nhắc.
+        assertThat(payable - received).isNegative();
 
         // Khoản Đã thu đúng khi Σ thanh toán = số tiền, không thu vượt (G4); hộ kịch bản đã đóng kỳ cũ.
         assertThat(demoDb.queryForObject("""
@@ -299,10 +285,8 @@ class DemoSeedIT extends IntegrationTest {
         assertThat(demoDb.queryForObject("""
                 select count(*) from charges c join areas a on a.id = c.area_id where a.code = 'AP47'""", Integer.class))
                 .isZero();
-        // Cả 11 công ty có tài khoản ngân hàng tạm để màn người đi thu và app hiện VietQR.
-        assertThat(demoDb.queryForList(
-                "select code from companies where bank_name is null or bank_account is null", String.class))
-                .isEmpty();
+        // Xã có tài khoản nhận chuyển khoản tạm (V43_1) để màn người đi thu và app hiện VietQR.
+        assertThat(demoDb.queryForObject("select count(*) from commune_bank_account", Integer.class)).isEqualTo(1);
 
         // Sổ công ty có đủ trạng thái: DV02 và DV11 thu đủ 100%, DV10 dưới 45%, DV06 và DV10 chưa nộp đồng nào.
         LedgerQueries ledger = new LedgerQueries(demoDb);
@@ -319,8 +303,8 @@ class DemoSeedIT extends IntegrationTest {
         assertThat(demoDb.queryForObject("""
                 select count(*) from payments p where p.method = 'TRANSFER' and p.code > 'TT-0926-000008'
                 and not exists (select 1 from bank_transfers b join charges c on c.id = p.charge_id
-                    join companies co on co.id = c.company_id where b.payment_id = p.id and b.status = 'MATCHED'
-                    and b.account_number = co.bank_account and b.amount = p.amount
+                    where b.payment_id = p.id and b.status = 'MATCHED'
+                    and b.account_number = (select account_number from commune_bank_account) and b.amount = p.amount
                     and b.code = 'VSMT' || lpad(c.id::text, 6, '0'))""", Integer.class)).isZero();
         assertThat(demoDb.queryForList("select distinct reason from bank_transfers where status = 'UNMATCHED' order by 1",
                 String.class)).containsExactly("AMOUNT_MISMATCH", "CHARGE_NOT_COLLECTABLE", "NO_CODE", "WRONG_ACCOUNT");

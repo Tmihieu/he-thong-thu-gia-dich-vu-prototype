@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { api } from '../../api/client';
 import type { components } from '../../api/schema';
@@ -9,8 +9,7 @@ export type PaymentResult = components['schemas']['PaymentResultDto'];
 export type CashHeld = components['schemas']['CashHeldDto'];
 export type Handover = components['schemas']['HandoverDto'];
 export type Collector = components['schemas']['CollectorDto'];
-export type CollectorAssignment = components['schemas']['CollectorAssignmentDto'];
-export type AssignCollectorRequest = components['schemas']['AssignCollectorRequest'];
+export type CollectorPayment = components['schemas']['CollectorPaymentDto'];
 export type HistoryEntry = components['schemas']['HistoryEntryDto'];
 export type SubjectReportRequest = components['schemas']['SubjectReportRequest'];
 
@@ -21,11 +20,11 @@ export const collectionKeys = {
   handovers: ['collection', 'handovers'] as const,
   companyWork: ['collection', 'company-work'] as const,
   collectors: ['collection', 'collectors'] as const,
-  collectorAssignments: ['collection', 'collector-assignments'] as const,
+  collectorPayments: ['collection', 'collector-payments'] as const,
   history: ['collection', 'history'] as const,
 };
 
-/** Danh sách thu của người đi thu: khoản trong tổ được giao kèm đã thu. */
+/** Danh sách thu của người đi thu: mọi khoản của công ty kèm đã thu. */
 export function useMyWork(periodId: number | undefined) {
   return useQuery({
     queryKey: [...collectionKeys.myWork, periodId],
@@ -35,7 +34,7 @@ export function useMyWork(periodId: number | undefined) {
 }
 
 /** Khoản mọi kỳ của người đi thu, để đánh dấu các kỳ trước trên thẻ hộ. */
-// ponytail: API giới hạn 500 khoản/lần; tổ đông nhiều kỳ thì kỳ cũ nhất bị cắt, thêm API "khoản theo hộ" nếu cần đủ.
+// ponytail: API giới hạn 500 khoản/lần; công ty đông hộ nhiều kỳ thì kỳ cũ nhất bị cắt, thêm API "khoản theo hộ" nếu cần đủ.
 export function useMyWorkAllPeriods() {
   return useQuery({
     queryKey: [...collectionKeys.myWork, 'all'],
@@ -58,11 +57,11 @@ export function useHandovers() {
   });
 }
 
-/** Hộ được giao của công ty: khoản các tổ công ty phụ trách trong kỳ, kèm đã thu. */
-export function useCompanyWork(periodId: number | undefined) {
+/** Khoản của công ty trong kỳ, kèm đã thu; {@code collectorId}: chỉ khoản người đi thu đó đã thu (UC-33). */
+export function useCompanyWork(periodId: number | undefined, collectorId?: number) {
   return useQuery({
-    queryKey: [...collectionKeys.companyWork, periodId],
-    queryFn: () => api.get<CollectorCharge[]>('/api/collection/company-work', { params: { periodId } }),
+    queryKey: [...collectionKeys.companyWork, periodId, collectorId ?? null],
+    queryFn: () => api.get<CollectorCharge[]>('/api/collection/company-work', { params: { periodId, collectorId } }),
     enabled: periodId !== undefined,
   });
 }
@@ -71,28 +70,12 @@ export function useCollectors() {
   return useQuery({ queryKey: collectionKeys.collectors, queryFn: () => api.get<Collector[]>('/api/collection/collectors') });
 }
 
-/** Phân tổ đang hiệu lực hôm nay (phạm vi công ty người gọi). */
-export function useCollectorAssignments() {
+/** Lịch sử thu của một người đi thu của công ty, mới trước (UC-33); chỉ gọi khi {@code enabled}. */
+export function useCollectorPayments(collectorId: number, enabled = true) {
   return useQuery({
-    queryKey: collectionKeys.collectorAssignments,
-    queryFn: () => api.get<CollectorAssignment[]>('/api/collection/collector-assignments'),
-  });
-}
-
-export function useAssignCollector() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (body: AssignCollectorRequest) => api.post<CollectorAssignment[]>('/api/collection/collector-assignments', body),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: collectionKeys.all }),
-  });
-}
-
-export function useEndCollectorAssignment() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, endDate }: { id: number; endDate: string }) =>
-      api.post<CollectorAssignment>(`/api/collection/collector-assignments/${id}/end`, { endDate }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: collectionKeys.all }),
+    queryKey: [...collectionKeys.collectorPayments, collectorId],
+    queryFn: () => api.get<CollectorPayment[]>(`/api/collection/collectors/${collectorId}/payments`),
+    enabled,
   });
 }
 

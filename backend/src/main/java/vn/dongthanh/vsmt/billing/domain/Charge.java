@@ -89,9 +89,6 @@ public class Charge extends BaseEntity {
     @Column(nullable = false, updatable = false)
     private LocalDate coverageTo;
 
-    @Column(nullable = false)
-    private LocalDate dueDate;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private ChargeStatus status;
@@ -121,7 +118,6 @@ public class Charge extends BaseEntity {
         c.amount = amount.amount();
         c.coverageFrom = request.getPeriod().getStartDate();
         c.coverageTo = request.getPeriod().getEndDate();
-        c.dueDate = request.getDueDate();
         c.status = amount.exempt() ? ChargeStatus.EXEMPT : ChargeStatus.UNPAID;
         return c;
     }
@@ -172,8 +168,8 @@ public class Charge extends BaseEntity {
         amount = Math.multiplyExact(Math.multiplyExact(unitPrice, kg), (long) months);
     }
 
-    /** Quá hạn: chưa thu và đã qua hạn đóng (không lưu, tính khi đọc). */
+    /** Quá hạn: chưa thu và đã qua hạn nộp của kỳ (không lưu, tính khi đọc). */
     public boolean isOverdue(LocalDate today) {
-        return status == ChargeStatus.UNPAID && dueDate.isBefore(today);
+        return status == ChargeStatus.UNPAID && period.getDueDate().isBefore(today);
     }
 }

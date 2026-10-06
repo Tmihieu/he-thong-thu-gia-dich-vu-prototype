@@ -3,7 +3,7 @@ import { CheckCircleFilled } from '@ant-design/icons';
 import { Alert, App, Button, Drawer, Form, Select, Spin, Typography } from 'antd';
 import { useEffect } from 'react';
 
-import { api } from '../../../api/client';
+import { api, ApiError } from '../../../api/client';
 import { DEMO_LOGIN_ENABLED } from '../../../app/auth/demoAccounts';
 import { errorText } from '../../../shared/errorText';
 import { formatDate, formatMoney } from '../../../shared/format';
@@ -15,9 +15,9 @@ type TransferInfo = components['schemas']['TransferInfoDto'];
 
 /** Ảnh VietQR của SePay: quét bằng app ngân hàng bất kỳ là có sẵn tài khoản, số tiền và nội dung. */
 const qrImage = (t: TransferInfo) =>
-  `https://qr.sepay.vn/img?${new URLSearchParams({ acc: t.bankAccount ?? '', bank: t.bankName ?? '', amount: String(t.amount), des: t.code })}`;
+  `https://qr.sepay.vn/img?${new URLSearchParams({ acc: t.bankAccount, bank: t.bankName, amount: String(t.amount), des: t.code })}`;
 
-/** Hộ chỉ đóng tiền mặt cho người đi thu, hoặc chuyển khoản qua mã VietQR của công ty (ngân hàng báo về tự ghi nhận). */
+/** Hộ chỉ đóng tiền mặt cho người đi thu, hoặc chuyển khoản qua mã VietQR của xã (ngân hàng báo về tự ghi nhận). */
 export type Method = 'CASH' | 'TRANSFER';
 
 interface Values {
@@ -43,7 +43,7 @@ function requestIdFor(key: string): string {
 interface Props {
   item: CollectorCharge | null;
   onClose: () => void;
-  /** Quản lý công ty ghi thay (T28): chọn người đi thu đã nhận tiền, mặc định người phụ trách tổ. */
+  /** Quản lý công ty ghi thay (T28): chọn người đi thu đã nhận tiền. */
   collectors?: Collector[];
   defaultCollectorId?: number;
   /** Người đi thu bấm thẳng nút trên thẻ hộ: tiền mặt thì xác nhận số tiền, chuyển khoản thì hiện mã VietQR. */
@@ -52,7 +52,7 @@ interface Props {
 
 /**
  * Bottom sheet thu một hộ, đúng số cần đóng. Tiền mặt: người đi thu (hoặc quản lý ghi thay) xác nhận đã nhận tiền.
- * Chuyển khoản (góp ý 04/10): chỉ hiện mã VietQR của tài khoản công ty, đúng số tiền và mã khoản trong nội dung; hộ
+ * Chuyển khoản (góp ý 04/10): chỉ hiện mã VietQR của tài khoản của xã, đúng số tiền và mã khoản trong nội dung; hộ
  * chuyển bằng app ngân hàng, SePay báo về backend (webhook) ghi nhận, màn này tự hỏi lại máy chủ và tự đóng khi khoản
  * đã thu. Không ai tự bấm "đã chuyển khoản" và không có thanh toán mô phỏng.
  */
@@ -183,19 +183,19 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
         ) : qr && item ? (
           <>
             {transfer.isLoading && <Spin style={{ display: 'block', margin: '24px auto' }} />}
-            {transfer.error && (
-              <Alert type="error" showIcon style={{ marginBottom: 12 }} message={errorText(transfer.error, 'Không tải được thông tin chuyển khoản.')} />
-            )}
-            {transfer.data && !transfer.data.configured && (
-              <Alert
-                type="warning"
-                showIcon
-                style={{ marginBottom: 12 }}
-                message="Công ty chưa khai tài khoản ngân hàng"
-                description="Quản trị vào Cấu hình → Công ty & địa bàn, sửa công ty và điền ngân hàng, số tài khoản thì mới hiện được mã QR."
-              />
-            )}
-            {transfer.data?.configured && (
+            {transfer.error &&
+              (transfer.error instanceof ApiError && transfer.error.code === 'COMMUNE_BANK_ACCOUNT_MISSING' ? (
+                <Alert
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: 12 }}
+                  message="Xã chưa khai tài khoản nhận chuyển khoản"
+                  description="Báo quản trị viên khai tài khoản của xã thì mới hiện được mã QR. Hộ vẫn đóng được bằng tiền mặt."
+                />
+              ) : (
+                <Alert type="error" showIcon style={{ marginBottom: 12 }} message={errorText(transfer.error, 'Không tải được thông tin chuyển khoản.')} />
+              ))}
+            {transfer.data && (
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, marginBottom: 12 }}>
                   <img src={qrImage(transfer.data)} alt="Mã QR chuyển khoản" width={240} height={240} style={{ objectFit: 'contain' }} />
@@ -215,7 +215,7 @@ export function ResultSheet({ item, onClose, collectors, defaultCollectorId, ini
               </>
             )}
             <div className="clm-sheet-actions">
-              {DEMO_LOGIN_ENABLED && transfer.data?.configured && (
+              {DEMO_LOGIN_ENABLED && transfer.data && (
                 <Button size="large" loading={simulate.isPending} onClick={() => simulate.mutate()}>
                   Mô phỏng chuyển khoản
                 </Button>

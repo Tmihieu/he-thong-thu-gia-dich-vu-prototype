@@ -36,8 +36,6 @@ export function CompanyFormModal({ company, open, submitting, error, onSubmit, o
       address: optional(v.address),
       email: optional(v.email),
       communeContractNo: optional(v.communeContractNo),
-      bankAccount: optional(v.bankAccount),
-      bankName: optional(v.bankName),
     });
   }
 
@@ -121,12 +119,6 @@ export function CompanyFormModal({ company, open, submitting, error, onSubmit, o
         </Form.Item>
         <Form.Item label="Số hợp đồng với xã" name="communeContractNo">
           <Input maxLength={50} />
-        </Form.Item>
-        <Form.Item label="Tài khoản ngân hàng" name="bankAccount">
-          <Input maxLength={50} />
-        </Form.Item>
-        <Form.Item label="Ngân hàng" name="bankName">
-          <Input maxLength={100} />
         </Form.Item>
       </Form>
     </Modal>

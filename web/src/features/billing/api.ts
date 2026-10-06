@@ -69,14 +69,16 @@ export function usePublishCharges() {
 }
 
 /**
- * Xem trước các khoản sẽ lập khi mở kỳ dự thảo (chỉ đọc, không ghi khoản); {@code householdDueDate} trống thì theo
- * quy tắc của quản trị, kết quả trả lại hạn đã dùng.
+ * Xem trước các khoản sẽ lập khi mở kỳ dự thảo (chỉ đọc, không ghi khoản); {@code companyDueDate} (hạn nộp duy nhất của kỳ)
+ * trống thì giữ hạn của dự thảo.
  */
-export type DraftPreviewParams = Pick<PublishPeriodRequest, 'openDate' | 'companyDueDate' | 'householdDueDate'>;
+export type DraftPreviewParams = Omit<PublishPeriodRequest, 'note'>;
+/** Phạm vi phiếu cán bộ xã chọn khi mở kỳ dự thảo; trống = toàn xã. */
+export type DraftScope = Pick<PublishPeriodRequest, 'feeTypeId' | 'scopeType' | 'areaIds' | 'companyId' | 'unitPrice'>;
 
 export function useDraftPreview(periodId: number | null, params: DraftPreviewParams = {}) {
   return useQuery({
-    queryKey: [...billingKeys.draftPreview, periodId, params.openDate, params.companyDueDate, params.householdDueDate ?? 'default'],
+    queryKey: [...billingKeys.draftPreview, periodId, params],
     queryFn: () => api.post<DraftPreview>(`/api/billing/periods/${periodId}/draft-preview`, params),
     enabled: periodId !== null,
     placeholderData: (prev) => prev,
@@ -84,7 +86,7 @@ export function useDraftPreview(periodId: number | null, params: DraftPreviewPar
   });
 }
 
-/** Mở kỳ dự thảo và phát hành phiếu yêu cầu thu toàn xã trong một bước. */
+/** Mở kỳ dự thảo và phát hành phiếu yêu cầu thu (theo phạm vi chọn, mặc định toàn xã) trong một bước. */
 export function usePublishPeriod() {
   const qc = useQueryClient();
   return useMutation({

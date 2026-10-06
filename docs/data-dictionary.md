@@ -19,7 +19,7 @@ Câu trả lời của người duyệt ngày 24/09/2026 được tóm tắt ở
 
 1. [Cách đọc](#1-cách-đọc)
 2. [Phần A — platform, master-data, billing, collection, remittance](#2-phần-a) (21 entity)
-3. [Phần B — notifications, complaints, citizen-app, CollectionSchedule](#3-phần-b) (8 entity)
+3. [Phần B — notifications, complaints, citizen-app](#3-phần-b) (7 entity; `CollectionSchedule` đã bỏ, góp ý BA 05/10/2026)
 4. [Đối chiếu prototype](#4-đối-chiếu-prototype)
 5. [Câu hỏi cho người duyệt](#5-câu-hỏi-cho-người-duyệt)
 6. [Danh sách trường cần xin](#6-danh-sách-trường-cần-xin)
@@ -98,17 +98,18 @@ Lịch sử trước/sau của thao tác tạo/sửa tiền **không** nằm ở
 | 12  | CollectionPeriod    | `collection_periods`    | master-data   | A    |
 | 13  | ChargeRequest       | `charge_requests`       | billing       | A    |
 | 14  | Charge              | `charges`               | billing       | A    |
-| 15  | CollectorAssignment | `collector_assignments` | collection    | A    |
+| 15  | ~~CollectorAssignment~~ | ~~`collector_assignments`~~ | collection    | bỏ (góp ý BA 05/10) |
 | 16  | ~~CollectionVisit~~ | ~~`collection_visits`~~ | collection    | bỏ (V41) |
 | 17  | Payment             | `payments`              | collection    | A    |
 | 18  | CashHandover        | `cash_handovers`        | collection    | A    |
 | 19  | CompanyReceipt      | `company_receipts`      | remittance    | A    |
+| 19a | CommunePayout       | `commune_payouts`       | remittance    | A    |
 | 20  | ReceiptIssue        | `receipt_issues`        | remittance    | A    |
 | 21  | PaymentReminder     | `payment_reminders`     | remittance    | A    |
 | 22  | Notification        | `notifications`         | notifications | B    |
 | 23  | Complaint           | `complaints`            | complaints    | B    |
 | 24  | ComplaintEvent      | `complaint_events`      | complaints    | B    |
-| 25  | CollectionSchedule  | `collection_schedules`  | master-data   | B    |
+| 25  | ~~CollectionSchedule~~ | ~~`collection_schedules`~~ | master-data   | bỏ (góp ý BA 05/10) |
 | 26  | CitizenAccount      | `citizen_accounts`      | citizen-app   | B    |
 | 27  | MarketPost          | `market_posts`          | citizen-app   | B    |
 | 28  | MarketComment       | `market_comments`       | citizen-app   | B    |
@@ -204,8 +205,8 @@ Ba địa bàn sau sáp nhập của xã Đông Thạnh.
 | Địa bàn | `district_id` | `FK→District` | Có | Xã | 1 (DTH) | Demo | Prototype không có liên kết. Seed tạm: KV01–08 → DTH, KV09–16 → TTT, KV17–24 → NB, mã hộ seed sinh lại cho khớp tiền tố địa bàn (D2). Dữ liệu thật xin xã (X2) |
 | Trạng thái        | `status`      | `enum ActiveStatus` | Có       | Hệ thống | `ACTIVE`      | Thật | Demo mặc định `ACTIVE`               |
 | Ghi chú           | `note`        | `text`              | Không    | Xã       |               | Thật |                                      |
-| Vĩ độ             | `latitude`    | `double`            | Không    | OSM / cán bộ xã | 10.9117 | Demo | Điểm đại diện trên bản đồ Khu vực (WGS84); cán bộ xã kéo thả để sửa (`PUT /areas/{id}/location`, audit `MOVE_AREA`). V40 |
-| Kinh độ           | `longitude`   | `double`            | Không    | OSM / cán bộ xã | 106.6399 | Demo | Cùng `latitude`: hoặc cùng null hoặc cùng có giá trị |
+| ~~Vĩ độ~~ | ~~`latitude`~~ | ~~`double`~~ | Đã bỏ | | | | Đã bỏ (UC-14, góp ý BA 05/10): không còn bản đồ khu vực. Cột V40 và `PUT /areas/{id}/location` (audit `MOVE_AREA`) là việc của bản demo, chưa theo kịp |
+| ~~Kinh độ~~ | ~~`longitude`~~ | ~~`double`~~ | Đã bỏ | | | | Đã bỏ cùng `latitude` |
 
 
 **Enum `ActiveStatus`** (dùng chung): `ACTIVE` Hoạt động · `INACTIVE` Tạm ngưng
@@ -231,13 +232,23 @@ Ba địa bàn sau sáp nhập của xã Đông Thạnh.
 | Địa chỉ             | `address`             | `text(255)`          | Có       | Hệ thống      | 12/5 đường Số 1 | Demo | Ghép `house_no` + `street` khi lưu, chỉ đọc; dùng hiển thị và tìm kiếm |
 | Email               | `email`               | `text(100)`         | Không    | Công ty  |                  | Thật |                                           |
 | Số hợp đồng với xã  | `commune_contract_no` | `text(50)`          | Không    | Xã       | 12/2026/HĐ-UBND  | Thật |                                           |
-| Tài khoản ngân hàng | `bank_account`        | `text(50)`          | Không    | Công ty  |                  | Thật | Dùng đối chiếu tiền chuyển khoản về xã    |
-| Ngân hàng           | `bank_name`           | `text(100)`         | Không    | Công ty  |                  | Thật |                                           |
+| ~~Tài khoản ngân hàng~~ | ~~`bank_account`~~ | ~~`text(50)`~~ | Đã bỏ | | | | Đã bỏ (UC-15, góp ý BA 05/10): công ty không còn tài khoản nhận. Chuyển khoản vào tài khoản chung của xã (xem dưới) |
+| ~~Ngân hàng~~ | ~~`bank_name`~~ | ~~`text(100)`~~ | Đã bỏ | | | | Đã bỏ cùng `bank_account` |
 
 
 **Enum `CompanyType`:** `COMPANY` Công ty · `COOPERATIVE` Hợp tác xã · `PUBLIC_UNIT` Đơn vị sự nghiệp công
 
 **Khóa/ràng buộc:** `code` duy nhất; `valid_to ≥ valid_from`.
+
+**Tài khoản nhận chuyển khoản của xã (UC-54, góp ý BA 05/10/2026):** mọi khoản chuyển khoản/VietQR của hộ vào **một tài khoản chung của xã**, không còn tài khoản theo công ty. Quản trị viên khai báo ngân hàng, số tài khoản và tên chủ tài khoản; hệ thống dùng để tạo mã VietQR cho mọi khoản phải thu và đối chiếu giao dịch SePay báo về. Lưu ở bảng một dòng `commune_bank_account` (migration V43; cột `singleton` luôn `true` và duy nhất nên không có dòng thứ hai), ngoài ra có trường hệ thống chung (§1.3):
+
+| Trường | Cột | Kiểu | Bắt buộc | Ghi chú |
+|---|---|---|---|---|
+| Ngân hàng | `bank_name` | `text(100)` | Có | |
+| Số tài khoản | `account_number` | `text(50)` | Có | Lưu bỏ khoảng trắng; đối chiếu SePay so với số này |
+| Tên chủ tài khoản | `account_holder` | `text(150)` | Có | |
+
+Chỉ quản trị viên khai báo/sửa (`PUT /api/masterdata/commune-bank-account`, ghi nhật ký `SAVE_COMMUNE_BANK_ACCOUNT`); mọi vai trò nội bộ đọc được (`GET`, 404 nếu chưa khai). Chưa khai thì tạo VietQR trả 409 `COMMUNE_BANK_ACCOUNT_MISSING`, và giao dịch SePay báo về không tự khớp (lý do `WRONG_ACCOUNT`). `bank_transfers.company_id` giờ là công ty phụ trách khoản (không còn là chủ tài khoản).
 
 ### AreaAssignment — Phân công khu vực cho công ty · `area_assignments` · Phần A
 
@@ -255,7 +266,7 @@ Mỗi khu vực tối đa 1 công ty trong cùng khoảng hiệu lực; đổi c
 
 
 **Khóa/ràng buộc:** không chồng lấn hiệu lực trên cùng `area_id` — exclusion constraint `EXCLUDE USING gist (area_id WITH =, daterange(valid_from, valid_to, '[]') WITH &&)` hoặc kiểm tra trong transaction (T13). Không xóa bản ghi cũ.
-**Ảnh hưởng:** công ty của một khoản chụp theo phân công tại ngày phát hành (G3); khi đổi công ty, phân tổ người đi thu của công ty cũ tự kết thúc (G14).
+**Ảnh hưởng:** công ty của một khoản chụp theo phân công tại ngày phát hành (G3); không còn phân tổ người đi thu nên đổi công ty không kéo theo bản ghi nào khác (G14 đã bỏ).
 
 ### ServiceSubject — Đối tượng sử dụng dịch vụ · `service_subjects` · Phần A
 
@@ -312,6 +323,8 @@ Hộ gia đình / hộ kinh doanh / doanh nghiệp. Hiển thị chung form "H�
 | `SMALL_126_TO_250` | Chủ nguồn thải nhỏ 126–250 kg/tháng | 85.000 + 34.000 = 119.000 đ/tháng |
 | `SMALL_250_TO_500` | Chủ nguồn thải nhỏ 250–500 kg/tháng | 170.000 + 68.000 = 238.000 đ/tháng |
 | `BY_VOLUME` | Chủ nguồn thải lớn 500–9.000 kg/tháng | 453 + 180 = 633 đ/kg (chưa lập được khoản, chờ tính theo ký) |
+
+> **06/10, chưa sửa code:** nếu ngưỡng Điều 58 NĐ 08/2022 là 300 kg/ngày (≈ 9.000 kg/tháng) thì `BY_VOLUME` là **nguồn thải nhỏ** chọn như hộ gia đình (bảng b), nhãn "chủ nguồn thải lớn" ở trên là sai. Sắp thêm nhóm hộ gia đình theo nhân khẩu và nhóm cân theo bảng mục 3 (1.054 đ/kg). Xem [tasks/nhan-khau-tu-can-0610.md](../tasks/nhan-khau-tu-can-0610.md).
 
 **Khóa/ràng buộc:** `contract_no` duy nhất; mỗi `subject_id` tối đa 1 hợp đồng hiệu lực tại một thời điểm (exclusion constraint theo `daterange(valid_from, valid_to)`); `valid_to ≥ valid_from`.
 
@@ -377,7 +390,7 @@ Hộ gia đình / hộ kinh doanh / doanh nghiệp. Hiển thị chung form "H�
 | Ngày đầu kỳ        | `start_date`        | `date`              | Có       | Hệ thống | 2026-10-01            | Demo | Sinh từ mã; dùng kiểm tra trùng kỳ tháng–quý (R2) |
 | Ngày cuối kỳ       | `end_date`          | `date`              | Có       | Hệ thống | 2026-10-31            | Demo |                                                   |
 | Ngày mở            | `open_date`         | `date`              | Có       | Xã       | 2026-10-01            | Demo |                                                   |
-| Hạn công ty nộp xã | `due_date` | `date` | Có | Xã | 2026-10-31 | Demo | `≥ open_date`. Chỉ dùng cho công ty nộp xã; hạn hộ đóng nằm ở phiếu YCT (G16) |
+| Hạn công ty nộp xã | `due_date` | `date` | Có | Xã | 2026-10-31 | Demo | `≥ open_date`. **Hạn nộp duy nhất của kỳ** (góp ý BA 05/10): hạn công ty nộp về xã, cũng là hạn hộ đóng; không còn hạn hộ đóng riêng (G16) |
 | Biểu giá áp dụng   | `tariff_version_id` | `FK→TariffVersion`  | Có       | Hệ thống | 1                     | Demo | Mặc định phiên bản `ACTIVE` tại `start_date`      |
 | Trạng thái | `status` | `enum PeriodStatus` | Có | Hệ thống | `COLLECTING` | Demo | `DRAFT` (hệ thống tự tạo, P5) → `COLLECTING` khi cán bộ xã mở kỳ & phát hành; quản trị mở thủ công vào thẳng Đang thu (P1, §5.0); cán bộ xã khóa kỳ (G1) |
 | Khóa lúc           | `locked_at`         | `timestamp`         | Không    | Hệ thống |                       | Demo |                                                   |
@@ -406,7 +419,7 @@ Chỉ lưu khi phát hành; bước xem trước không ghi CSDL.
 | Các tổ được chọn  | `scope_areas`      | `list FK→Area`        | Có điều kiện | Xã       | KV07, KV09    | Demo | Bắt buộc khi `AREAS`; bảng nối `charge_request_areas(charge_request_id, area_id)` |
 | Công ty | `scope_company_id` | `FK→Company` | Có điều kiện | Xã | 1 (DV01) | Demo | Bắt buộc khi `COMPANY`. Các tổ của công ty lấy theo phân công hiệu lực tại ngày phát hành (G3) |
 | Ngày lập          | `issue_date`       | `date`                | Có           | Hệ thống | 2026-10-01    | Demo |                                                                                   |
-| Hạn hộ đóng | `due_date` | `date` | Có | Xã | 2026-10-25 | Demo | Không được sau `CollectionPeriod.due_date` (G16) |
+| ~~Hạn hộ đóng~~ | ~~`due_date`~~ | ~~`date`~~ | Đã bỏ | | | | Đã bỏ (góp ý BA 05/10): kỳ chỉ còn một hạn nộp, `CollectionPeriod.due_date` (G16) |
 | Đơn giá nhập      | `unit_price`       | `money`               | Không        | Xã       | 150000        | Demo | Chỉ với loại phí `FIXED`; null thì dùng `default_price` (R1)                      |
 | Ghi chú           | `note`             | `text`                | Không        | Xã       |               | Demo |                                                                                   |
 
@@ -436,33 +449,22 @@ Nguồn duy nhất cho "phải thu" của hộ.
 | Số tiền | `amount` | `money` | Có | Hệ thống | 80000 | Demo | = đơn giá × số tháng; 0 nếu miễn (R1). Không sửa sau khi phát hành; số thực thu nằm ở `Payment` (G4) |
 | Tháng bắt đầu        | `coverage_from`     | `date`                | Có           | Hệ thống | 2026-10-01        | Demo | = `start_date` của kỳ; dùng chặn trùng tháng/quý                         |
 | Tháng kết thúc       | `coverage_to`       | `date`                | Có           | Hệ thống | 2026-10-31        | Demo | = `end_date` của kỳ                                                      |
-| Hạn đóng | `due_date` | `date` | Có | Hệ thống | 2026-10-25 | Demo | Chép từ phiếu YCT (G16) |
-| Trạng thái | `status` | `enum ChargeStatus` | Có | Hệ thống | `UNPAID` | Demo | Chỉ `UNPAID` → `PAID` khi thu đúng số cần đóng (BR-COL-03). "Quá hạn" không lưu: `UNPAID` và `due_date < hôm nay` |
+| ~~Hạn đóng~~ | ~~`due_date`~~ | ~~`date`~~ | Đã bỏ | | | | Đã bỏ (góp ý BA 05/10): hạn của khoản là `CollectionPeriod.due_date` của kỳ (G16) |
+| Trạng thái | `status` | `enum ChargeStatus` | Có | Hệ thống | `UNPAID` | Demo | Chỉ `UNPAID` → `PAID` khi thu đúng số cần đóng (BR-COL-03). "Quá hạn" không lưu: `UNPAID` và `CollectionPeriod.due_date < hôm nay` |
 | Đã thu lúc           | `paid_at`           | `timestamp`           | Không        | Hệ thống |                   | Demo | Gán khi chuyển `PAID`                                                    |
 
 
-**Enum `ChargeStatus`:** `UNPAID` Chưa thu · `PAID` Đã thu · `EXEMPT` Miễn giảm (hiển thị thêm "Quá hạn" tính từ hạn)
+**Enum `ChargeStatus`:** `UNPAID` Chưa thu · `PAID` Đã thu · `EXEMPT` Miễn giảm (hiển thị thêm "Quá hạn" tính từ hạn nộp của kỳ)
+
+**Công nợ của hộ (góp ý BA 05/10):** khi khóa kỳ, khoản `UNPAID` thành **công nợ của hộ**, hộ nộp được ở kỳ sau (không chặn thu như trước); tiền tính vào kỳ đang thu. **Cách lưu (chốt 06/10/2026): không thêm bảng hay cột.** Công nợ của hộ là các khoản `UNPAID` của kỳ `LOCKED`, truy ra từ `charges` nối `collection_periods`. Khi hộ nộp, dòng `payments` mới có `ledger_period_id` = kỳ đang thu mới nhất (không có kỳ đang thu thì từ chối `NO_COLLECTING_PERIOD`) và khoản chuyển `PAID`; số của kỳ đã khóa giữ nguyên vì sổ công ty–kỳ tính thanh toán theo `coalesce(ledger_period_id, kỳ của khoản)`. Kỳ đã khóa vẫn chặn sửa khoản và lập phiếu thu cũ.
 
 **Khóa/ràng buộc:** `code` duy nhất; không chồng lấn `(subject_id, fee_type_id, daterange(coverage_from, coverage_to))` — exclusion constraint, chặn phát hành trùng kỳ tháng/quý (R2). Kỳ đã khóa thì không sửa.
 
 ## 2.4 collection
 
-### CollectorAssignment — Phân tổ cho người đi thu · `collector_assignments` · Phần A
+### ~~CollectorAssignment~~ — đã bỏ (góp ý BA 05/10/2026)
 
-Do công ty lập. Schema nhiều–nhiều: một người đi thu được phụ trách nhiều tổ (O4). **Tạm thời mỗi tổ tối đa 1 người đi thu đang hiệu lực**; quy tắc này kiểm tra ở service, không đặt ràng buộc CSDL, để sau này bỏ dễ.
-
-
-| Tên hiển thị (VI) | Tên kỹ thuật   | Kiểu         | Bắt buộc | Nguồn    | Ví dụ      | Mức  | Ghi chú                                            |
-| ----------------- | -------------- | ------------ | -------- | -------- | ---------- | ---- | -------------------------------------------------- |
-| Người đi thu      | `collector_id` | `FK→User`    | Có       | Công ty  | 21         | Demo | User vai trò `COLLECTOR` cùng công ty              |
-| Khu vực           | `area_id`      | `FK→Area`    | Có       | Công ty  | 7          | Demo | Phải đang được phân công cho công ty này           |
-| Công ty           | `company_id`   | `FK→Company` | Có       | Hệ thống | 1          | Demo | Lấy từ công ty của người lập, không nhận từ client |
-| Từ ngày           | `valid_from`   | `date`       | Có       | Công ty  | 2026-10-01 | Demo |                                                    |
-| Đến ngày | `valid_to` | `date` | Không | Công ty / Hệ thống |  | Demo | Khi khu vực đổi công ty, backend tự gán bằng ngày kết thúc phân công khu vực của công ty cũ (G14) |
-| Ghi chú           | `note`         | `text`       | Không    | Công ty  |            | Demo |                                                    |
-
-
-**Khóa/ràng buộc:** không trùng lặp cùng `(collector_id, area_id)` chồng hiệu lực. Seed demo 1 người/tổ.
+Bảng `collector_assignments` (phân tổ cho người đi thu, O4) bỏ theo UC-18: không còn phân tổ. Người đi thu thu được mọi hộ có khoản của công ty; hệ thống ghi ai đã thu khoản nào ở `Payment.collector_id`. Bản demo còn màn phân tổ, chưa theo kịp.
 
 ### ~~CollectionVisit~~ — đã bỏ (V41, 04/10)
 
@@ -478,7 +480,7 @@ Bảng `collection_visits` (lượt ghé vắng / hẹn / từ chối) đã xóa
 | Số tiền | `amount` | `money` | Có | Công ty / Người dân | 80000 | Demo | Đúng bằng số cần đóng của khoản (`Charge.amount` − Σ thanh toán trước); khác thì 422. Thu xong khoản Đã thu ngay (BR-COL-03) |
 | Hình thức                  | `method`             | `enum PaymentMethod` | Có           | Công ty / Người dân | `CASH`                    | Demo |                                                                                              |
 | Thời điểm thu              | `paid_at`            | `timestamp`          | Có           | Hệ thống            | 2026-10-12T17:40:00+07:00 | Demo |                                                                                              |
-| Người thu                  | `collector_id`       | `FK→User`            | Có điều kiện | Hệ thống            | 21                        | Demo | Bắt buộc với `CASH`; null với `TRANSFER` (ngân hàng báo về) và `APP_SIMULATED` cũ. Dùng tính tiền mặt đang giữ (R21) |
+| Người thu                  | `collector_id`       | `FK→User`            | Có điều kiện | Hệ thống            | 21                        | Demo | Bắt buộc với `CASH`; null với `TRANSFER` (ngân hàng báo về) và `APP_SIMULATED` cũ. Ghi ai đã thu khoản này, không giới hạn theo tổ (UC-23, UC-33); dùng tính tiền mặt đang giữ (R21) |
 | Người xác nhận             | `confirmed_by`       | `FK→User`            | Không        | Hệ thống            | 21                        | Demo | Người bấm ghi nhận (có thể là quản lý công ty ghi thay)                                      |
 | Tài khoản người dân        | `citizen_account_id` | `FK→CitizenAccount`  | Có điều kiện | Hệ thống            | 1                         | Demo | Chỉ có ở `APP_SIMULATED` cũ. FK thêm ở V18 (Phần B)                                          |
 | Số tham chiếu chuyển khoản | `bank_ref`           | `text(50)`           | Không        | Công ty             |                           | Thật |                                                                                              |
@@ -492,7 +494,7 @@ Bảng `collection_visits` (lượt ghé vắng / hẹn / từ chối) đã xóa
 
 ### CashHandover — Bàn giao tiền mặt · `cash_handovers` · Phần A
 
-Người đi thu nộp tiền mặt cho công ty. Chuyển khoản vào thẳng tài khoản công ty nên không bàn giao. Không gắn kỳ thu: tiền mặt đang giữ = Σ `Payment` tiền mặt của người đó − Σ đã bàn giao, tính trên mọi kỳ (D5).
+Người đi thu nộp tiền mặt cho công ty. Chuyển khoản vào tài khoản của xã nên không bàn giao. Không gắn kỳ thu: tiền mặt đang giữ = Σ `Payment` tiền mặt của người đó − Σ đã bàn giao, tính trên mọi kỳ (D5).
 
 
 | Tên hiển thị (VI) | Tên kỹ thuật    | Kiểu                  | Bắt buộc | Nguồn    | Ví dụ         | Mức  | Ghi chú                                  |
@@ -530,12 +532,28 @@ Người đi thu nộp tiền mặt cho công ty. Chuyển khoản vào thẳng 
 
 **Không lưu:** số tiền bằng chữ và lũy kế đã nộp đến phiếu — tính khi in (R29–R30).
 
+### CommunePayout — Phiếu chi trả công ty (xã trả lại tiền) · `commune_payouts` · Phần A (UC-55, V46)
+
+| Tên hiển thị (VI) | Tên kỹ thuật | Kiểu | Bắt buộc | Nguồn | Ví dụ | Mức | Ghi chú |
+| ----------------- | ------------ | ---- | -------- | ----- | ----- | --- | ------- |
+| Số phiếu chi | `code` | `text(20)` | Có | Hệ thống | `PC-CT-1026-001` | Demo | Duy nhất; `nnn` đếm theo kỳ |
+| Công ty | `company_id` | `FK→Company` | Có | Xã | 1 | Demo | |
+| Kỳ thu | `period_id` | `FK→CollectionPeriod` | Có | Xã | 5 | Demo | 1 phiếu 1 kỳ; 1 kỳ nhiều phiếu |
+| Số tiền | `amount` | `money` | Có | Xã | 175788 | Demo | 0 < số tiền ≤ số xã còn phải trả (BR-REM-17) |
+| Hình thức trả | `method` | `enum ReceiptMethod` | Có | Xã | `TRANSFER` | Demo | `CASH` Tiền mặt · `TRANSFER` Chuyển khoản, như phiếu thu (V47) |
+| Ngày trả | `payout_date` | `date` | Có | Xã | 2026-10-15 | Demo | Không sau hôm nay |
+| Số chứng từ | `document_ref` | `text(50)` | Không | Xã | UNC-0925 | Demo | Mã giao dịch ngân hàng hoặc số phiếu tiền mặt (V47) |
+| Ghi chú | `note` | `text(500)` | Không | Xã | Trả đợt 1 | Demo | |
+
+Ngoài ra có trường hệ thống chung (§1.3). Phiếu không sửa, không hủy; không có trạng thái; sai sót báo qua `receipt_issues.payout_id` (UC-56, UC-57). **Không lưu:** số tiền bằng chữ, lũy kế đã trả, số xã còn phải trả, tính khi xem/in từ sổ công ty–kỳ (`communePaid`, `communeOwed`).
+
 ### ReceiptIssue — Báo sai sót phiếu thu · `receipt_issues` · Phần A
 
 
 | Tên hiển thị (VI) | Tên kỹ thuật      | Kiểu                      | Bắt buộc     | Nguồn    | Ví dụ                                 | Mức  | Ghi chú                              |
 | ----------------- | ----------------- | ------------------------- | ------------ | -------- | ------------------------------------- | ---- | ------------------------------------ |
-| Phiếu thu         | `receipt_id`      | `FK→CompanyReceipt`       | Có           | Công ty  | 30                                    | Demo | Chỉ phiếu của công ty mình           |
+| Phiếu thu         | `receipt_id`      | `FK→CompanyReceipt`       | Có điều kiện | Công ty  | 30                                    | Demo | Phiếu thu; đúng một trong `receipt_id` / `payout_id`. Chỉ phiếu của công ty mình           |
+| Phiếu chi trả     | `payout_id`       | `FK→CommunePayout`        | Có điều kiện | Công ty  | 5                                     | Demo | Phiếu chi trả (V47, UC-56); đúng một trong `receipt_id` / `payout_id` |
 | Loại sai sót      | `issue_type`      | `enum ReceiptIssueType`   | Có           | Công ty  | `WRONG_AMOUNT`                        | Demo |                                      |
 | Số tiền đúng      | `correct_amount`  | `money`                   | Không        | Công ty  | 4500000                               | Demo | Nên nhập khi `WRONG_AMOUNT`          |
 | Mô tả             | `description`     | `text(1000)`              | Có           | Công ty  | Chuyển 4,5 triệu, phiếu ghi 4,2 triệu | Demo |                                      |
@@ -648,21 +666,9 @@ Timeline lưu nối tiếp, không ghi đè. Không có `updated_at`, `updated_b
 
 ## 3.3 master-data (lịch)
 
-### CollectionSchedule — Lịch thu gom · `collection_schedules` · Phần B
+### ~~CollectionSchedule~~ — đã bỏ (góp ý BA 05/10/2026)
 
-
-| Tên hiển thị (VI) | Tên kỹ thuật    | Kiểu             | Bắt buộc | Nguồn   | Ví dụ             | Mức  | Ghi chú                                                     |
-| ----------------- | --------------- | ---------------- | -------- | ------- | ----------------- | ---- | ----------------------------------------------------------- |
-| Khu vực           | `area_id`       | `FK→Area`        | Có       | Công ty | 7                 | Demo | Công ty thực hiện lấy từ `AreaAssignment`                   |
-| Thứ               | `weekday`       | `int`            | Có       | Công ty | 7                 | Demo | 1 = Thứ 2 … 7 = Chủ nhật (ISO)                              |
-| Tuần trong tháng  | `week_of_month` | `int`            | Không    | Công ty | 1                 | Demo | Null = hằng tuần; 1 = tuần đầu tháng ("Chủ nhật đầu tháng") |
-| Giờ bắt đầu       | `start_time`    | `time`           | Có       | Công ty | 17:00             | Demo |                                                             |
-| Giờ kết thúc      | `end_time`      | `time`           | Có       | Công ty | 19:00             | Demo | `> start_time`                                              |
-| Loại rác          | `waste_type`    | `enum WasteType` | Có       | Công ty | `HOUSEHOLD`       | Demo |                                                             |
-| Ghi chú           | `note`          | `text(255)`      | Không    | Công ty | Chỉ hộ đã đăng ký | Demo |                                                             |
-
-
-**Enum `WasteType`:** `HOUSEHOLD` Rác sinh hoạt · `HOUSEHOLD_RECYCLABLE` Rác sinh hoạt + tái chế · `BULKY` Rác cồng kềnh (đã đăng ký)
+Bảng `collection_schedules` (lịch thu gom theo tổ) bỏ theo UC-12: hộ chỉ xem thông tin hộ, không còn lịch thu gom; enum `WasteType` bỏ theo. Bản demo (V17_1, màn lịch thu gom ở app người dân) chưa theo kịp.
 
 ## 3.4 citizen-app
 
@@ -866,7 +872,7 @@ Chợ đồ cũ v2 (V25, [spec](cho-do-cu-spec.md)): thay tiêu đề/mô tả/l
 | feeType                 | → `ChargeRequest.fee_type_id`                                     |
 | scope (chuỗi tự do)     | → `scope_type` + `scope_areas` + `scope_company_id` (có cấu trúc) |
 | date                    | → `ChargeRequest.issue_date`                                      |
-| due                     | → `ChargeRequest.due_date`                                        |
+| due                     | bỏ — không còn hạn riêng của phiếu, dùng `CollectionPeriod.due_date` |
 | count, exempt, total    | bỏ — dẫn xuất, tính từ `Charge`                                   |
 | note                    | → `ChargeRequest.note`                                            |
 | (giá nhập của phí khác) | → `ChargeRequest.unit_price`                                      |
@@ -882,10 +888,10 @@ Chợ đồ cũ v2 (V25, [spec](cho-do-cu-spec.md)): thay tiêu đề/mô tả/l
 | feeType                          | → `Charge.fee_type_id`                                               |
 | subject                          | → `Charge.subject_id` (+ `contract_id`, `area_id` chụp)              |
 | period                           | → `Charge.period_id` (+ `coverage_from/to`)                          |
-| due                              | → `Charge.due_date`                                                  |
+| due                              | bỏ — dùng `CollectionPeriod.due_date`                                |
 | amount (người thu có thể ghi đè) | → `Charge.amount` cố định; số thực thu nằm ở `Payment.amount`, đúng bằng số cần đóng (BR-COL-03) |
 | status unpaid/paid/exempt        | → `Charge.status`                                                    |
-| status overdue                   | bỏ — không lưu, tính từ `due_date`                                   |
+| status overdue                   | bỏ — không lưu, tính từ `CollectionPeriod.due_date`                  |
 | paidAt                           | → `Charge.paid_at` (+ `Payment.paid_at`)                             |
 | method                           | → `Payment.method`                                                   |
 | note                             | → `Payment.note`                            |
@@ -963,7 +969,7 @@ Chợ đồ cũ v2 (V25, [spec](cho-do-cu-spec.md)): thay tiêu đề/mô tả/l
 | ---------------------------------------- | ------------------------------------------------------------------------------------- |
 | (phép chiếu của `CS_CHARGES`)            | bỏ — không phải entity; API trả view tính từ `Charge` + `Payment` |
 | status thăm hộ (appointment/absent)      | bỏ — hộ chỉ Đã đóng / Chưa đóng (BR-COL-04)                                            |
-| collector                                | → `CollectorAssignment` (người được phân) / `Payment.collector_id` (người đã thu)     |
+| collector                                | → `Payment.collector_id` (người đã thu; bỏ phân tổ)                                   |
 | confirmedBy                              | → `Payment.confirmed_by`                                                              |
 | receipt `BL-MMYY-nnnn` (sinh khi render) | → `Payment.code` ổn định `TT-MMYY-nnnnnn` (D4); tính pháp lý ⚠ O1 |
 
@@ -975,7 +981,7 @@ Chợ đồ cũ v2 (V25, [spec](cho-do-cu-spec.md)): thay tiêu đề/mô tả/l
 | ------------------------------- | --------------------------------------------------- |
 | username                        | → `User.username` (vai trò `COLLECTOR`)             |
 | name                            | → `User.full_name`                                  |
-| area (chuỗi tên tổ, 1 người/tổ) | → `CollectorAssignment.area_id` (nhiều–nhiều; tạm 1 người/tổ, O4) |
+| area (chuỗi tên tổ, 1 người/tổ) | bỏ — không còn phân tổ (UC-18, O4)                  |
 | phone                           | → `User.phone`                                      |
 
 
@@ -1045,7 +1051,7 @@ Chợ đồ cũ v2 (V25, [spec](cho-do-cu-spec.md)): thay tiêu đề/mô tả/l
 | `CITIZEN_BILL.period`, `due`, `total`                                | → `Charge` (`period_id`, `due_date`, `amount`)                                        |
 | `CITIZEN_BILL.lines` (45k/20k/12k/3k) | → 2 dòng thu gom + vận chuyển từ `TariffRate` (G9) |
 | `CITIZEN_BILL.history`                                               | → danh sách `Charge` các kỳ trước + `Payment`                                         |
-| `CITIZEN_SCHEDULE` \[thứ, khung giờ, loại rác\]                      | → `CollectionSchedule.weekday`/`week_of_month`, `start_time`/`end_time`, `waste_type` |
+| `CITIZEN_SCHEDULE` \[thứ, khung giờ, loại rác\]                      | bỏ — không còn lịch thu gom (UC-12) |
 | `CITIZEN_COMPLAINTS.id` (PA-…) | → `Complaint.code` (một mã chung `KN-MMYY-nnn`, D8) |
 | `CITIZEN_COMPLAINTS.csId`                                            | bỏ — app và web dùng chung bản ghi `Complaint`                                        |
 | `CITIZEN_COMPLAINTS.type` (5 loại)                                   | → `Complaint.category`                                                                |
@@ -1100,13 +1106,13 @@ Người duyệt trả lời trực tiếp trong mục 5.1–5.3; ba chỗ trả
 | G11 | Kỳ quý dùng `Q{quý}{YY}` thay MMYY, vd. `YCT-Q426-01` | các cột `code` |
 | G12 | Công ty chỉ thấy khiếu nại đã được chuyển cho mình | `Complaint` |
 | G13 | Bỏ `BULKY` khỏi `FeeType`; rác cồng kềnh không vào phiếu YCT | `FeeType` seed |
-| G14 | Khu vực đổi công ty → tự kết thúc phân tổ người đi thu của công ty cũ | `CollectorAssignment.valid_to` |
-| G15 | Khóa kỳ bị chặn khi bất kỳ công ty có phải thu − đã nộp > 0 cho kỳ, không cần quá hạn | T32 |
-| G16 | Khoản hộ dùng hạn của phiếu YCT; hạn kỳ chỉ cho công ty nộp xã; hạn YCT ≤ hạn kỳ | `Charge.due_date`, `ChargeRequest.due_date` |
+| G14 | ~~Khu vực đổi công ty → tự kết thúc phân tổ người đi thu~~ **Đã bỏ** (góp ý BA 05/10: bỏ phân tổ) | ~~`CollectorAssignment.valid_to`~~ |
+| G15 | Khóa kỳ: mọi công ty đã nộp đủ phải nộp xã (tính trên **đã thu**), **và** kỳ đã thu đủ mọi khoản **hoặc** đã đến hạn nộp; hộ chưa đóng thành công nợ của hộ (góp ý BA 05/10, thay cách cũ "phải thu − đã nộp > 0") | T32 |
+| G16 | Kỳ chỉ còn **một hạn nộp** (`CollectionPeriod.due_date`): hạn công ty nộp xã, cũng là hạn hộ đóng; bỏ hạn riêng của phiếu YCT và khoản (góp ý BA 05/10, thay cách cũ) | `CollectionPeriod.due_date` (bỏ `ChargeRequest.due_date`, `Charge.due_date`) |
 | O1 | **Còn mở.** Người duyệt hỏi thực tế ai phát biên lai: tùy bên bán dịch vụ theo pháp lý (công ty xuất hóa đơn nếu thu dưới tên mình; xã/đơn vị của xã phát nếu công ty chỉ thu hộ). Cần kế toán xã xác nhận. Demo giữ "Xác nhận thanh toán" | `Payment.code` |
 | O2 | Công ty nộp **toàn bộ** tiền đã thu về xã | sổ công ty–kỳ |
 | O3 | Chờ kết quả xin dữ liệu (mục 6) | — |
-| O4 | Một người thu được nhiều tổ; tạm mỗi tổ 1 người (kiểm tra ở service) | `CollectorAssignment` |
+| O4 | ~~Một người thu được nhiều tổ; tạm mỗi tổ 1 người~~ **Đã bỏ** (góp ý BA 05/10: bỏ phân tổ; người đi thu thu mọi hộ của công ty, ghi ai đã thu) | ~~`CollectorAssignment`~~ |
 | O5 | Phí rác cồng kềnh không thành khoản phải thu, không nộp về xã | `BulkyWasteRequest.quoted_fee` |
 | O6 | Chưa có vai trò kiểm duyệt; bỏ qua | `MarketPost.status` |
 | O7 | Giữ OTP cố định mô phỏng | `CitizenAccount` |
@@ -1126,11 +1132,11 @@ Người duyệt trả lời trực tiếp trong mục 5.1–5.3; ba chỗ trả
 | T47 (3, 4) | **27/09/2026.** Ảnh bài chợ **không bắt buộc** (theo data dictionary, không theo dấu * của prototype); tối đa 5 ảnh, ≤ 5 MB/ảnh, chỉ JPEG/PNG/WebP | `MarketPost.photo_urls` |
 | T53 | **27/09/2026.** Lịch sử hộ của người đi thu giữ theo **một kỳ** (một khoản), xem kỳ khác bằng ô chọn kỳ; không gộp các kỳ như prototype | T53 |
 | T51 (C1) | **27/09/2026** cắt màn quản trị tài khoản; **28/09/2026** người dùng cho làm lại cùng màn Công ty của cán bộ xã. Mặc định: mật khẩu 8–72 ký tự do quản trị đặt / đặt lại; quản trị không tự khóa hay tự đổi vai trò (422 `CANNOT_LOCK_SELF`, `CANNOT_CHANGE_OWN_ROLE`); người đi thu còn phân tổ (kể cả phân tổ bắt đầu sau hôm nay) hoặc còn giữ tiền mặt chưa bàn giao thì không đổi vai trò / công ty (422 `COLLECTOR_HAS_ASSIGNMENTS`, `COLLECTOR_HOLDS_CASH`); mật khẩu quá 72 byte → 422 `PASSWORD_TOO_LONG`; sửa công ty không gửi trạng thái thì giữ nguyên; khóa chỉ chặn từ lần đăng nhập sau (token cũ còn tới hết hạn). Công ty: mã `DVnn` tự sinh, chỉ cán bộ xã thêm / sửa; công ty Tạm ngưng không nhận phân công khu vực mới (422 `COMPANY_INACTIVE`); khu vực đang phụ trách giữ nguyên (**chưa chốt**, chờ người dùng) | `User`, `Company`, `AreaAssignment` |
-| T51 (C2) | **04/10/2026.** Chốt "chỉ ADMIN" của T51 làm công ty không tự có tài khoản người đi thu để phân tổ. Cho phép **quản lý công ty** tạo / sửa / khóa / đặt lại mật khẩu người đi thu của chính công ty mình (mục menu riêng "Người đi thu"); không tạo được vai trò khác, không đụng tài khoản công ty khác | BR-PLT-08 |
+| T51 (C2) | **04/10/2026**, **sửa 05/10/2026 (UC-04):** tài khoản người đi thu do **quản trị viên** tạo cho từng công ty; quản lý công ty không còn tạo / sửa / khóa / đặt lại mật khẩu người đi thu, mục menu "Người đi thu" của công ty và việc phân tổ không còn (bỏ phân tổ). Bản demo chưa theo kịp | BR-PLT-08 |
 | P1 | **28/09/2026.** Quản trị bấm mở kỳ là bắt đầu thu luôn: kỳ vào thẳng `COLLECTING`, bỏ trạng thái `OPEN` và bước "Bắt đầu thu" (API `POST /periods/{id}/start`). Kỳ `OPEN` trên CSDL cũ chuyển sang `COLLECTING` ở V22 | `CollectionPeriod.status` |
 | P2 | **28/09/2026.** Công ty báo sai sót phiếu thu sau khi kỳ đã khóa: chấp nhận cho demo là xã chỉ đóng sai sót kèm ghi chú, không lập được phiếu mới cho kỳ đã khóa (giới hạn đã biết của G6) | `ReceiptIssue`, G6 |
 | P3 | **28/09/2026.** Phí giá cố định: đơn giá nhập tay phải > 0; nhập 0 → 422 `CHARGE_PRICE_INVALID` (trước đây sinh khoản 0 đ "Chưa thu" không ai thu được). Không đặt trần đơn giá; tổng tiền tràn số → 422 `CHARGE_AMOUNT_TOO_LARGE` | `ChargeRequest.unit_price`, `Charge.amount` |
-| P5 | **04/10/2026.** Tự mở kỳ: bảng `period_auto_rule` (một dòng: bật/tắt, chu kỳ tháng/quý, ngày tạo kỳ 1–28, số ngày hộ đóng ≥ 1, số ngày công ty nộp xã ≥ 0). Tác vụ 7h30 hằng ngày (giờ VN) tạo kỳ kế tiếp trạng thái `DRAFT` (không tạo trùng, không tạo khi đã có kỳ chờ mở), báo cán bộ xã. `DRAFT` không hiện ở danh sách kỳ thường, chưa nhận khoản, chưa ghi thu (422 `PERIOD_DRAFT`). Cán bộ xã `POST /billing/periods/{id}/draft-preview` rồi `/publish` (khóa dòng kỳ, làm mới biểu giá, hạn hộ đóng mặc định = ngày phát hành + số ngày hộ đóng, không quá hạn công ty nộp xã). Seed chỉ có kỳ 09/2026 nên ngày 04/10 tự tạo kỳ 11/2026 (kỳ 10 mở thủ công). Tab 'Kỳ chờ mở' ở Khoản thu; nhật ký `CREATE_DRAFT_PERIOD`, `PUBLISH_PERIOD`, `UPDATE_PERIOD_RULE` | `PeriodAutoRule`, `CollectionPeriod.status` |
+| P5 | **04/10/2026.** Tự mở kỳ: bảng `period_auto_rule` (một dòng: bật/tắt, chu kỳ tháng/quý, ngày tạo kỳ 1–28, số ngày công ty nộp xã ≥ 0; cột `household_due_days` đã bỏ ở V45, góp ý BA 05/10). Tác vụ 7h30 hằng ngày (giờ VN) tạo kỳ kế tiếp trạng thái `DRAFT` (không tạo trùng, không tạo khi đã có kỳ chờ mở), báo cán bộ xã. `DRAFT` không hiện ở danh sách kỳ thường, chưa nhận khoản, chưa ghi thu (422 `PERIOD_DRAFT`). Cán bộ xã `POST /billing/periods/{id}/draft-preview` rồi `/publish` (khóa dòng kỳ, làm mới biểu giá, hạn nộp của kỳ mặc định theo quy tắc). Seed chỉ có kỳ 09/2026 nên ngày 04/10 tự tạo kỳ 11/2026 (kỳ 10 mở thủ công). Tab 'Kỳ chờ mở' ở Khoản thu; nhật ký `CREATE_DRAFT_PERIOD`, `PUBLISH_PERIOD`, `UPDATE_PERIOD_RULE` | `PeriodAutoRule`, `CollectionPeriod.status` |
 | P4 | **28/09/2026.** Cờ dưới 45% ở màn Tiến độ: cấp **công ty** theo đã nộp về xã / phải thu (như prototype), cấp **tổ** theo đã thu / phải thu; so bằng số nguyên, không so số đã làm tròn | R13, màn Tiến độ |
 
 ### 5.1 Khoảng trống trong SPEC (G1–G16, từ `tasks/plan.md` §9)
@@ -1222,24 +1228,24 @@ Cần duyệt từng mục: Lombok · JaCoCo (đo coverage 80%) · thư viện J
 - b) Giữ `BULKY` trong `FeeType` (khoản cố định lập qua phiếu YCT) tách biệt hoàn toàn với phí báo của yêu cầu rác cồng kềnh; đổi tên để khỏi lẫn
 - **Trả lời:** \_\_a\_\_
 
-**G14 — Khu vực đổi công ty: phân tổ người đi thu của công ty cũ?** · Phần A · chạm `CollectorAssignment.valid_to`; T13, T20
+**G14 — ~~Khu vực đổi công ty: phân tổ người đi thu của công ty cũ?~~** · **Đã bỏ (góp ý BA 05/10/2026: bỏ phân tổ)** · từng chạm `CollectorAssignment.valid_to`; T13, T20
 
 - a) Backend tự gán `valid_to` cho các phân tổ của công ty cũ bằng ngày kết thúc phân công khu vực (đề xuất)
 - b) Không tự động; công ty cũ tự kết thúc; hệ thống chỉ ẩn khoản không còn thuộc công ty
-- **Trả lời:** \_\_\_\_a
+- **Trả lời:** \_\_\_\_a *(không còn áp dụng)*
 
 **G15 — Khóa kỳ chặn "khi còn công ty nợ" tính thế nào?** · Phần A · T32
 
 - a) Chặn khi **bất kỳ** công ty có phải thu − đã nộp &gt; 0 cho kỳ đó, không cần quá hạn; khoản hộ chưa thu vẫn tính là phần công ty còn phải nộp (như prototype R9–R11, đề xuất)
 - b) "Phải thu" của công ty chỉ tính khoản hộ đã thu (công ty nộp đủ số đã thu là được khóa)
 - c) Như a nhưng chỉ chặn khi đã quá hạn nộp
-- **Trả lời:** \_\_\_\_a
+- **Trả lời:** \_\_\_\_a *(đã thay, góp ý BA 05/10/2026: khóa kỳ chặn khi công ty chưa nộp đủ số **đã thu**, hoặc kỳ chưa thu đủ mà chưa đến hạn nộp; hộ chưa đóng thành công nợ của hộ, nộp ở kỳ sau)*
 
-**G16 — Hai loại hạn: "quá hạn" của khoản hộ dùng hạn nào?** · Phần A · chạm `Charge.due_date`, `ChargeRequest.due_date`, `CollectionPeriod.due_date`; T17, T18
+**G16 — Hai loại hạn: "quá hạn" của khoản hộ dùng hạn nào?** · Phần A · từng chạm `Charge.due_date`, `ChargeRequest.due_date`, `CollectionPeriod.due_date` (nay chỉ còn hạn của kỳ); T17, T18
 
 - a) Khoản hộ dùng hạn của phiếu YCT sinh ra nó (chép vào `Charge.due_date`); hạn kỳ chỉ dùng cho công ty nộp xã; phiếu YCT hạn không được sau hạn kỳ (đề xuất)
 - b) Mọi khoản trong kỳ dùng chung hạn của kỳ; phiếu YCT không có hạn riêng
-- **Trả lời:** \_\_\_\_a
+- **Trả lời:** \_\_\_\_a *(đã thay, góp ý BA 05/10/2026: kỳ chỉ còn một hạn nộp; bỏ hạn hộ đóng riêng của phiếu YCT và khoản)*
 
 ### 5.2 Điểm mở chính thức (O1–O7, SPEC §11)
 
@@ -1251,7 +1257,7 @@ Demo đang theo mặc định ở cột "Mặc định demo". Chỉ cần trả 
 | O1  | Ai phát hành biên lai cho hộ, mẫu biên lai                   | "Xác nhận thanh toán" từ `Payment` với mã cố định, không gọi là biên lai pháp lý | `Payment.code`                 | \_\_\_\_thông thường ai là người phát hành biên lại trong thực tế     |
 | O2  | Luồng tiền: nộp toàn bộ hay phần xử lý                       | Công ty nộp toàn bộ (tạm chốt)                                                   | `CompanyReceipt`, ledger       | \_\_\_\_ toàn bộ                                                      |
 | O3  | Trường nào xã/công ty có dữ liệu thật                        | Chờ kết quả xin dữ liệu theo mục 6                                               | Cột "Nguồn", mục 6             | \_\_\_\_                                                              |
-| O4  | Một người thu mấy tổ, một tổ mấy người                       | Schema nhiều–nhiều; seed 1 người/tổ                                              | `CollectorAssignment`          | \_\_\_một người có thể thu nhiều tổ, và để phần 1 tổ tạm là 1 người\_ |
+| O4  | ~~Một người thu mấy tổ, một tổ mấy người~~ | ~~Schema nhiều–nhiều; seed 1 người/tổ~~ | ~~`CollectorAssignment`~~ | **Đã bỏ (góp ý BA 05/10/2026: bỏ phân tổ).** Trả lời cũ: \_\_\_một người có thể thu nhiều tổ, và để phần 1 tổ tạm là 1 người\_ |
 | O5  | Phí rác cồng kềnh có thành khoản phải thu và nộp về xã không | Chỉ lưu `quoted_fee`, không sinh `Charge`                                        | `BulkyWasteRequest.quoted_fee` | \_\_\_\_khồn                                                          |
 | O6  | Ai kiểm duyệt bài chợ đồ cũ                                  | Không kiểm duyệt                                                                 | `MarketPost.status`            | \_\_\_\_ hiện chưa có actor này tạm bỏ qua                            |
 | O7  | Đăng nhập người dân thật (VNeID / OTP SMS)                   | OTP cố định mô phỏng                                                             | `CitizenAccount.phone`         | \_\_\_\_                                                              |
@@ -1353,7 +1359,7 @@ Prototype có hai dạng: web `KN-2609-nnn` (YYMM) và app `PA-0926-nnn` (MMYY).
 | X9  | Miễn giảm        | Danh sách hộ được miễn 100%, lý do, số văn bản                                                                             | `ServiceContract.exempt`, `exempt_reason`, `exempt_decision_no` | 1       | Hộ nghèo, gia đình chính sách…                         |
 | X10 | Đăng ký dịch vụ | Hộ nào đang dùng dịch vụ, từ ngày nào, nhóm giá | `ServiceContract.valid_from`, `tariff_group` | 1 | Không có hợp đồng giấy; số đăng ký do hệ thống sinh (D10) |
 | X11 | Biểu giá | Toàn văn QĐ 65/2026/QĐ-UBND: nhóm giá, tiền thu gom và tiền xử lý từng nhóm, đơn vị tính nhóm theo khối lượng, hiệu lực | `TariffVersion.*`, `TariffRate.*` | 1 | G9 — thay số tạm |
-| X12 | Kỳ thu           | Kỳ thu theo tháng hay quý, hạn công ty nộp về xã, hạn hộ đóng                                                              | `CollectionPeriod.due_date`, `ChargeRequest.due_date`           | 1       | G16                                                    |
+| X12 | Kỳ thu           | Kỳ thu theo tháng hay quý, hạn nộp của kỳ (hạn công ty nộp về xã, cũng là hạn hộ đóng)                                     | `CollectionPeriod.due_date`                                     | 1       | G16                                                    |
 | X13 | Phiếu thu        | Mẫu phiếu thu xã lập cho công ty, quy tắc đánh số                                                                          | `CompanyReceipt.code`                                           | 2       | G11                                                    |
 | X14 | Tài khoản        | Danh sách cán bộ xã dùng hệ thống: họ tên, SĐT, email, đơn vị                                                              | `User.full_name`, `phone`, `email`, `organization`              | 2       |                                                        |
 | X15 | Khiếu nại        | Mẫu sổ tiếp nhận khiếu nại hiện tại (nếu có), các loại khiếu nại thường gặp                                                | `Complaint.category`                                            | 3       |                                                        |
@@ -1365,11 +1371,11 @@ Prototype có hai dạng: web `KN-2609-nnn` (YYMM) và app `PA-0926-nnn` (MMYY).
 | #   | Nhóm dữ liệu          | Trường                                                          | Entity → cột                                | Ưu tiên | Ghi chú                                                      |
 | --- | --------------------- | --------------------------------------------------------------- | ------------------------------------------- | ------- | ------------------------------------------------------------ |
 | C1  | Thông tin công ty     | Tên đầy đủ, người đầu mối, SĐT, MST, địa chỉ, email             | `Company.*`                                 | 1       |                                                              |
-| C2  | Thông tin công ty     | Tài khoản ngân hàng dùng nộp tiền về xã                         | `Company.bank_account`, `bank_name`         | 2       |                                                              |
+| C2  | ~~Thông tin công ty~~ | ~~Tài khoản ngân hàng dùng nộp tiền về xã~~                     | ~~`Company.bank_account`, `bank_name`~~     | bỏ      | Đã bỏ: tài khoản nhận chuyển khoản là của xã (UC-54), không xin công ty |
 | C3  | Người đi thu          | Họ tên, SĐT từng người đi thu                                   | `User.full_name`, `phone`                   | 1       |                                                              |
-| C4  | Phân tổ               | Người đi thu nào phụ trách tổ nào, từ ngày nào                  | `CollectorAssignment.*`                     | 1       | O4                                                           |
+| C4  | ~~Phân tổ~~           | ~~Người đi thu nào phụ trách tổ nào, từ ngày nào~~              | ~~`CollectorAssignment.*`~~                 | bỏ      | Đã bỏ: không còn phân tổ (O4)                                |
 | C5  | Danh sách hộ đang thu | Danh sách hộ công ty đang thu (tên, địa chỉ, SĐT, mức đang thu) | đối chiếu với X6/X10                        | 1       | Dùng đối chiếu với danh sách của xã, phát hiện hộ thiếu/lệch |
-| C7  | Lịch thu gom          | Theo từng tổ: thứ, tuần trong tháng, khung giờ, loại rác        | `CollectionSchedule.*`                      | 2       |                                                              |
+| C7  | ~~Lịch thu gom~~      | ~~Theo từng tổ: thứ, tuần trong tháng, khung giờ, loại rác~~    | ~~`CollectionSchedule.*`~~                  | bỏ      | Đã bỏ: không còn lịch thu gom (UC-12)                        |
 | C8  | Rác cồng kềnh         | Loại vật dụng nhận thu gom, bảng giá tham khảo                  | `BulkyWasteRequest.item_type`, `quoted_fee` | 3       | O5                                                           |
 | C9  | Tài khoản             | Người quản lý dùng hệ thống: họ tên, SĐT, email                 | `User.*` (`COMPANY_MANAGER`)                | 2       |                                                              |
 
@@ -1407,7 +1413,9 @@ Prototype có hai dạng: web `KN-2609-nnn` (YYMM) và app `PA-0926-nnn` (MMYY).
 
 **Hoàn tiền (T58):** một dòng `payments` với `method = REFUND`, `amount` **âm**, không có người đi thu; cột mới `ledger_period_id` = kỳ ghi nhận trong sổ công ty–kỳ (null với thanh toán thường = kỳ của khoản). Enum `PaymentMethod` thêm `REFUND` Hoàn tiền.
 
-**Sổ công ty–kỳ (`LedgerRowDto`):** thêm `adjustment` (Điều chỉnh kỳ trước: khoản kỳ đã khóa được xóa nợ, ghi ở kỳ này) và `refunded` (đã hoàn, ghi ở kỳ này). Còn phải nộp = phải thu − điều chỉnh − đã nộp; đã thu = Σ thanh toán (trừ hoàn) theo kỳ ghi nhận. O8, O9, O10 chốt 29/09/2026 (SPEC §11).
+**Sổ công ty–kỳ (`LedgerRowDto`):** thêm `adjustment` (Điều chỉnh kỳ trước: khoản kỳ đã khóa được xóa nợ, ghi ở kỳ này) và `refunded` (đã hoàn, ghi ở kỳ này). Đã thu = Σ thanh toán (tiền mặt và chuyển khoản, trừ hoàn) theo kỳ ghi nhận; thêm `cashCollected` (phần tiền mặt, hoàn tính vào đây). **Từ góp ý BA 05/10:** phải nộp xã `payable = cashCollected − adjustment − retained`; còn phải nộp = `payable` − đã nộp (xem mục "Phần công ty cầm lại" bên dưới). Chênh lệch `gap` = đã nộp − `payable`. O8, O9, O10 chốt 29/09/2026 (SPEC §11).
+
+**Công nợ hộ và thu công nợ kỳ cũ (UC-32, UI Tiến độ thu / Đối soát):** `LedgerRowDto.debtCollected` = phần của đã thu là thanh toán (trừ hoàn) cho khoản thuộc kỳ khác đã khóa, ghi vào kỳ đang xem qua `payments.ledger_period_id` (chỉ hiển thị). `AreaProgressDto.debtHouseholds` = số hộ của tổ (theo `charges.area_id` và `company_id` chụp trên khoản) còn khoản `UNPAID` của kỳ đã khóa. API mới `GET /api/remittance/household-debts?companyId=&areaId=&page=&size=` (chỉ `COMMUNE_OFFICER`, `LEADER`): `items` (khoản: hộ, địa chỉ, tổ, công ty, kỳ, số tiền, `debtPeriods` = số kỳ đã khóa hộ đó còn nợ), `total` (số khoản theo bộ lọc), `householdCount` (số hộ, đếm một lần), `totalAmount`. Không có bảng mới. `previousDebt` vẫn nằm trong DTO (để tính tiến độ, đối soát) nhưng web chỉ hiển thị ở cảnh báo đầu trang, không còn cột.
 
 ### HouseholdReminder — Nhật ký nhắc hộ dân nộp phí · `household_reminders` (V28)
 
@@ -1415,6 +1423,6 @@ Mỗi cặp `(charge_id, stage)` chỉ có một dòng nên mỗi mốc nhắc c
 
 ### Phần công ty cầm lại (thu gom) và đổi số nhân khẩu — chốt 03/10/2026
 
-- **Phần thu gom công ty cầm lại** không lưu thành cột: tính từ biểu giá của kỳ, mỗi khoản = `amount × collection_fee / monthly_total` của nhóm giá (làm tròn đồng). Sổ công ty–kỳ có thêm `retained` (Σ phần thu gom, đã trừ khoản kỳ khác xóa nợ ghi ở kỳ này) và `payable = due − adjustment − retained` (phải nộp xã). `remaining = payable − received`; nợ kỳ trước và nhắc nộp công ty cũng theo `payable`. Khoản không theo biểu giá (phí cố định) không có phần cầm lại. (Cột `companies.retained_percent` của V27 đã bỏ ở V30.)
+- **Phần thu gom công ty cầm lại (phí thu gom công ty được hưởng)** không lưu thành cột: tính từ biểu giá của kỳ **theo từng khoản đã thu** (góp ý BA 05/10): mỗi khoản = Σ thanh toán ròng của khoản ghi ở kỳ × `collection_fee / monthly_total` của nhóm giá, làm tròn đồng một lần theo khoản, rồi cộng lại; tính cho toàn bộ số đã thu, kể cả chuyển khoản vào tài khoản xã. Sổ công ty–kỳ có `retained` (Σ phần thu gom của số đã thu, trừ phần thu gom của khoản kỳ khác xóa nợ ghi ở kỳ này) và `payable = cashCollected − adjustment − retained` (phải nộp xã). **`payable` có thể âm**: xã trả lại công ty phần chênh, hệ thống giữ số âm, không cắt về 0. `remaining = payable − received`; nợ kỳ trước (Σ max(0, `payable` − đã nộp) các kỳ đã hết hạn) và nhắc nộp công ty cũng theo `payable`. Khoản không theo biểu giá (phí cố định) không có phần cầm lại. (Cột `companies.retained_percent` của V27 đã bỏ ở V30.)
 - **Phí xử lý** không thu và không đưa vào hệ thống (biểu giá chỉ có thu gom + vận chuyển).
 - **Đổi số người của hộ** áp từ kỳ sau: hợp đồng đang mở kết thúc hết kỳ đang chạy (`validTo` = ngày cuối kỳ), hợp đồng mới cùng nhóm giá mới bắt đầu ngày đầu kỳ kế tiếp, giữ nguyên miễn giảm và định mức. Không có kỳ nào đang chạy hoặc hợp đồng chưa bắt đầu thì đổi tại chỗ. Khoản đã phát hành giữ nhóm giá của nó.

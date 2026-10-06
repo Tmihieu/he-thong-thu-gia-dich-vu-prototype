@@ -41,6 +41,7 @@ class ReceiptIssueIT extends IntegrationTest {
     @BeforeEach
     void seed() {
         fx.build();
+        fx.collectAllCash(); // phải nộp xã tính trên số đã thu: DV01 thu tiền mặt 320.000 nên nộp được phiếu 200.000
         receipt = receipts.issue(new IssueReceiptCommand(fx.dv01.getId(), fx.october.getId(), 200_000,
                 ReceiptMethod.TRANSFER, null, null, "UNC-1", null), fx.actor(fx.officer));
     }

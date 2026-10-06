@@ -39,10 +39,6 @@ public class PeriodAutoRule {
     @Column(nullable = false)
     private int createDay;
 
-    /** Hạn hộ đóng mặc định = ngày phát hành + số ngày này. */
-    @Column(nullable = false)
-    private int householdDueDays;
-
     /** Hạn công ty nộp xã = ngày cuối kỳ + số ngày này. */
     @Column(nullable = false)
     private int remitDueDays;
@@ -52,7 +48,7 @@ public class PeriodAutoRule {
 
     private Long updatedBy;
 
-    public void update(boolean enabled, PeriodType periodType, int createDay, int householdDueDays,
+    public void update(boolean enabled, PeriodType periodType, int createDay,
             int remitDueDays, OffsetDateTime at, Long by) {
         if (periodType == null) {
             throw new BusinessRuleException("PERIOD_RULE_INVALID", "Phải chọn chu kỳ kỳ thu (tháng hoặc quý).");
@@ -60,16 +56,12 @@ public class PeriodAutoRule {
         if (createDay < 1 || createDay > 28) {
             throw new BusinessRuleException("PERIOD_RULE_INVALID", "Ngày tạo kỳ phải từ 1 đến 28.");
         }
-        if (householdDueDays < 1) {
-            throw new BusinessRuleException("PERIOD_RULE_INVALID", "Số ngày hộ đóng phải từ 1 ngày trở lên.");
-        }
         if (remitDueDays < 0) {
             throw new BusinessRuleException("PERIOD_RULE_INVALID", "Số ngày công ty nộp xã không được âm.");
         }
         this.enabled = enabled;
         this.periodType = periodType;
         this.createDay = createDay;
-        this.householdDueDays = householdDueDays;
         this.remitDueDays = remitDueDays;
         this.updatedAt = at;
         this.updatedBy = by;

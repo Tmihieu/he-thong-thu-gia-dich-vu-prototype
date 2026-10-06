@@ -16,6 +16,7 @@ const SCREENS: Record<string, (p: Params) => string> = {
   'company.households': () => '/company/assigned?tab=overview',
   'commune.subjects': () => '/commune/subjects',
   'remittance.receiptIssues': () => '/commune/charges?tab=receipt-issues',
+  'remittance.payoutIssues': () => '/commune/charges?tab=payout-issues',
   'remittance.receipts': () => '/commune/charges?tab=receipts',
   'commune.periodDrafts': () => '/commune/charges?tab=requests',
   'commune.complaints': (p) => withId('/commune/complaints', 'complaintId', p),

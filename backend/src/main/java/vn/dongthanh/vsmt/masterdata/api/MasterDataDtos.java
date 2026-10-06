@@ -1,12 +1,9 @@
 package vn.dongthanh.vsmt.masterdata.api;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
-import jakarta.validation.constraints.DecimalMax;
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -15,11 +12,9 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import vn.dongthanh.vsmt.masterdata.domain.ActiveStatus;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
-import vn.dongthanh.vsmt.masterdata.domain.CollectionSchedule;
 import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.masterdata.domain.CompanyType;
 import vn.dongthanh.vsmt.masterdata.domain.District;
-import vn.dongthanh.vsmt.masterdata.domain.WasteType;
 import vn.dongthanh.vsmt.masterdata.service.CompanyService.CompanyCommand;
 
 public final class MasterDataDtos {
@@ -36,11 +31,6 @@ public final class MasterDataDtos {
     public record AreaRequest(
             @NotBlank @Size(max = 100) String name,
             @NotNull ActiveStatus status) {
-    }
-
-    public record AreaLocationRequest(
-            @NotNull @DecimalMin("-90") @DecimalMax("90") Double latitude,
-            @NotNull @DecimalMin("-180") @DecimalMax("180") Double longitude) {
     }
 
     public record DistrictDto(
@@ -62,33 +52,11 @@ public final class MasterDataDtos {
             @Schema(requiredMode = RequiredMode.REQUIRED) Long districtId,
             @Schema(requiredMode = RequiredMode.REQUIRED, example = "DTH") String districtCode,
             @Schema(requiredMode = RequiredMode.REQUIRED) ActiveStatus status,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Số đối tượng chưa chấm dứt") long subjectCount,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true, description = "Vĩ độ điểm đại diện")
-            Double latitude,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true, description = "Kinh độ điểm đại diện")
-            Double longitude) {
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Số đối tượng chưa chấm dứt") long subjectCount) {
 
         static AreaDto of(Area a, long subjectCount) {
             return new AreaDto(a.getId(), a.getCode(), a.getName(), a.getDistrict().getId(),
-                    a.getDistrict().getCode(), a.getStatus(), subjectCount, a.getLatitude(), a.getLongitude());
-        }
-    }
-
-    public record CollectionScheduleDto(
-            @Schema(requiredMode = RequiredMode.REQUIRED) Long id,
-            @Schema(requiredMode = RequiredMode.REQUIRED) Long areaId,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "1 = Thứ 2 … 7 = Chủ nhật (ISO)", example = "3")
-            int weekday,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true,
-                    description = "Null = hằng tuần; 1 = tuần đầu tháng") Integer weekOfMonth,
-            @Schema(requiredMode = RequiredMode.REQUIRED, type = "string", example = "17:00:00") LocalTime startTime,
-            @Schema(requiredMode = RequiredMode.REQUIRED, type = "string", example = "19:00:00") LocalTime endTime,
-            @Schema(requiredMode = RequiredMode.REQUIRED) WasteType wasteType,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String note) {
-
-        static CollectionScheduleDto of(CollectionSchedule s) {
-            return new CollectionScheduleDto(s.getId(), s.getArea().getId(), s.getWeekday(), s.getWeekOfMonth(),
-                    s.getStartTime(), s.getEndTime(), s.getWasteType(), s.getNote());
+                    a.getDistrict().getCode(), a.getStatus(), subjectCount);
         }
     }
 
@@ -105,14 +73,12 @@ public final class MasterDataDtos {
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String taxCode,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String address,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String email,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String communeContractNo,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String bankAccount,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String bankName) {
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String communeContractNo) {
 
         static CompanyDto of(Company c) {
             return new CompanyDto(c.getId(), c.getCode(), c.getName(), c.getContactName(), c.getContactPhone(),
                     c.getStatus(), c.getValidFrom(), c.getValidTo(), c.getOrgType(), c.getTaxCode(), c.getAddress(),
-                    c.getEmail(), c.getCommuneContractNo(), c.getBankAccount(), c.getBankName());
+                    c.getEmail(), c.getCommuneContractNo());
         }
     }
 
@@ -128,13 +94,11 @@ public final class MasterDataDtos {
             @Pattern(regexp = "^$|^[0-9-]{10,14}$", message = "10–14 chữ số") String taxCode,
             @Size(max = 255) String address,
             @Email(message = "không đúng định dạng") @Size(max = 100) String email,
-            @Size(max = 50) String communeContractNo,
-            @Size(max = 50) String bankAccount,
-            @Size(max = 100) String bankName) {
+            @Size(max = 50) String communeContractNo) {
 
         public CompanyCommand toCommand() {
             return new CompanyCommand(name, contactName, contactPhone, status, validFrom, validTo, orgType, taxCode,
-                    address, email, communeContractNo, bankAccount, bankName);
+                    address, email, communeContractNo);
         }
     }
 }

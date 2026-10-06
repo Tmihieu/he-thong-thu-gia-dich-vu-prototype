@@ -6,7 +6,7 @@ import { errorTextOrNull } from '../../../shared/errorText';
 import { StatusTag } from '../../../shared/StatusTag';
 import { DateText } from '../../../shared/DateText';
 import { PERIOD_STATUS_LABELS, PERIOD_TYPE_LABELS, STATUS_COLORS } from '../../../shared/labels';
-import { type Period, useOpenPeriod, usePeriods, useTariffs } from '../api';
+import { newestFirst, type Period, useDraftPeriods, useOpenPeriod, usePeriods, useTariffs } from '../api';
 import { OpenPeriodForm } from './OpenPeriodForm';
 
 /**
@@ -16,6 +16,7 @@ import { OpenPeriodForm } from './OpenPeriodForm';
 export function PeriodsPage() {
   const { message } = App.useApp();
   const periods = usePeriods();
+  const drafts = useDraftPeriods();
   const tariffs = useTariffs();
   const openPeriod = useOpenPeriod();
   const [formOpen, setFormOpen] = useState(false);
@@ -35,23 +36,16 @@ export function PeriodsPage() {
       </Space>
       <Table<Period>
         rowKey="id"
-        loading={periods.isLoading}
-        dataSource={periods.data ?? []}
+        loading={periods.isLoading || drafts.isLoading}
+        dataSource={newestFirst(periods.data, drafts.data)}
         pagination={false}
         locale={{ emptyText: periods.error ? errorTextOrNull(periods.error) : 'Chưa có kỳ thu nào' }}
         columns={[
           { title: 'Kỳ', dataIndex: 'label', render: (label: string, p) => <span title={p.code}>{label}</span> },
           { title: 'Loại', dataIndex: 'periodType', render: (t: Period['periodType']) => PERIOD_TYPE_LABELS[t] },
-          {
-            title: 'Thời gian',
-            render: (_, p) => (
-              <>
-                <DateText value={p.startDate} /> – <DateText value={p.endDate} />
-              </>
-            ),
-          },
-          { title: 'Ngày mở', dataIndex: 'openDate', render: (d: string) => <DateText value={d} /> },
-          { title: 'Hạn công ty nộp', dataIndex: 'dueDate', render: (d: string) => <DateText value={d} /> },
+          // Kỳ dự thảo chưa có ngày mở / hạn nộp: cán bộ xã đặt khi mở kỳ.
+          { title: 'Ngày mở', dataIndex: 'openDate', render: (d: string, p) => (p.status === 'DRAFT' ? null : <DateText value={d} />) },
+          { title: 'Hạn công ty nộp', dataIndex: 'dueDate', render: (d: string, p) => (p.status === 'DRAFT' ? null : <DateText value={d} />) },
           { title: 'Biểu giá', dataIndex: 'tariffVersionCode' },
           {
             title: 'Trạng thái',

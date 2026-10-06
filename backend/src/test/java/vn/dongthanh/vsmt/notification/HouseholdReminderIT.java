@@ -73,12 +73,12 @@ class HouseholdReminderIT extends IntegrationTest {
     @Test
     void dueSoonThreeDaysBeforeAndOverdueOneDayAfter() {
         reminders.run(); // OPEN
-        clock.set(OffsetDateTime.parse("2026-10-21T08:00:00+07:00").toInstant());
+        clock.set(OffsetDateTime.parse("2026-10-27T08:00:00+07:00").toInstant());
         assertThat(reminders.run()).isZero(); // còn 4 ngày: chưa tới mốc
-        clock.set(OffsetDateTime.parse("2026-10-22T08:00:00+07:00").toInstant());
+        clock.set(OffsetDateTime.parse("2026-10-28T08:00:00+07:00").toInstant());
         assertThat(reminders.run()).isEqualTo(1); // đúng trước hạn 3 ngày
         assertThat(reminders.run()).isZero();
-        clock.set(OffsetDateTime.parse("2026-10-26T08:00:00+07:00").toInstant());
+        clock.set(OffsetDateTime.parse("2026-11-01T08:00:00+07:00").toInstant());
         assertThat(reminders.run()).isEqualTo(1); // quá hạn 1 ngày
         assertThat(unread()).isEqualTo(3);
     }
@@ -87,7 +87,7 @@ class HouseholdReminderIT extends IntegrationTest {
     void paidHouseholdIsNotReminded() {
         reminders.run(); // OPEN
         jdbc.update("update charges set status = 'PAID', paid_at = now() where id = ?", fx.chargeId("DTH-H000001"));
-        clock.set(OffsetDateTime.parse("2026-10-22T08:00:00+07:00").toInstant());
+        clock.set(OffsetDateTime.parse("2026-10-28T08:00:00+07:00").toInstant());
         assertThat(reminders.run()).isZero();
         assertThat(unread()).isEqualTo(1);
     }

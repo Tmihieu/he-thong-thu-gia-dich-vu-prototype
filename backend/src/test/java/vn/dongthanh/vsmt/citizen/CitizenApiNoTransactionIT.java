@@ -96,9 +96,8 @@ class CitizenApiNoTransactionIT extends IntegrationTest {
     }
 
     @Test
-    void householdProfileScheduleAndChargesLoadOutsideTestTransaction() throws Exception {
+    void householdProfileAndChargesLoadOutsideTestTransaction() throws Exception {
         ok(get("/api/citizen/me")).andExpect(jsonPath("$.subject.districtName").isNotEmpty());
-        ok(get("/api/citizen/schedule")).andExpect(jsonPath("$.areaCode").value("KV07"));
         ok(get("/api/citizen/charges")).andExpect(jsonPath("$[0].periodCode").value("2026-10"));
         ok(get("/api/citizen/charges/" + chargeId)).andExpect(jsonPath("$.feeTypeCode").isNotEmpty());
     }

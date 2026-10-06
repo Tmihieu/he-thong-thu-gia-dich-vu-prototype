@@ -8,7 +8,7 @@ import { errorTextOrNull } from '../../../shared/errorText';
 import { DateText } from '../../../shared/DateText';
 import { CHARGE_SCOPE_LABELS } from '../../../shared/labels';
 import { MoneyText } from '../../../shared/MoneyText';
-import { type Period, useAreas, useCompanies, useDraftPeriods, usePeriods } from '../../masterdata/api';
+import { newestFirst, type Period, useAreas, useCompanies, useDraftPeriods, usePeriods } from '../../masterdata/api';
 import { OpenDraftPanel } from '../PeriodDraftsPage/OpenDraftPanel';
 import {
   type ChargeRequestSummary,
@@ -22,7 +22,7 @@ import {
 import { ChargeRequestForm } from './ChargeRequestForm';
 import { PreviewPanel, SkippedList } from './PreviewPanel';
 
-type Step = { kind: 'form' } | { kind: 'start'; period: Period; householdDueDate: string; companyDueDate?: string } | { kind: 'preview'; req: IssueRequest; result: IssueResult } | { kind: 'done'; result: IssueResult };
+type Step = { kind: 'form' } | { kind: 'start'; period: Period; req: IssueRequest; companyDueDate?: string } | { kind: 'preview'; req: IssueRequest; result: IssueResult } | { kind: 'done'; result: IssueResult };
 
 /** Phiếu YCT: danh sách phiếu đã phát hành; lập phiếu mới trong ngăn kéo theo bước form → xem trước → phát hành. */
 export function ChargeRequestTab() {
@@ -72,7 +72,6 @@ export function ChargeRequestTab() {
           { title: 'Loại phí', dataIndex: 'feeTypeName' },
           { title: 'Phạm vi', dataIndex: 'scopeType', render: (s: ChargeRequestSummary['scopeType']) => CHARGE_SCOPE_LABELS[s] },
           { title: 'Ngày lập', dataIndex: 'issueDate', render: (d: string) => <DateText value={d} /> },
-          { title: 'Hạn đóng', dataIndex: 'dueDate', render: (d: string) => <DateText value={d} /> },
           { title: 'Số khoản', dataIndex: 'chargeCount', align: 'right' },
           { title: 'Tổng tiền', dataIndex: 'totalAmount', align: 'right', render: (v: number) => <MoneyText value={v} /> },
         ]}
@@ -87,7 +86,7 @@ export function ChargeRequestTab() {
         />
         {step.kind === 'form' && (
           <ChargeRequestForm
-            periods={[...(periods.data ?? []), ...(drafts.data ?? [])]}
+            periods={newestFirst(periods.data, drafts.data)}
             feeTypes={feeTypes.data ?? []}
             areas={areas.data ?? []}
             companies={companies.data ?? []}
@@ -96,10 +95,10 @@ export function ChargeRequestTab() {
             initial={draft}
             onPreview={(req, companyDueDate) => {
               setDraft(req);
-              // Kỳ do quản trị tạo, chưa bắt đầu: cán bộ xã đặt ngày, xem trước và bắt đầu kỳ (kèm phát hành phiếu toàn xã).
+              // Kỳ do quản trị tạo, chưa bắt đầu: cán bộ xã đặt ngày, xem trước và bắt đầu kỳ (kèm phát hành phiếu theo phạm vi đã chọn).
               const toStart = drafts.data?.find((d) => d.id === req.periodId);
               if (toStart) {
-                setStep({ kind: 'start', period: toStart, householdDueDate: req.dueDate, companyDueDate });
+                setStep({ kind: 'start', period: toStart, req, companyDueDate });
                 return;
               }
               preview.mutate(req, { onSuccess: (result) => setStep({ kind: 'preview', req, result }) });
@@ -113,7 +112,14 @@ export function ChargeRequestTab() {
             </Button>
             <OpenDraftPanel
               period={step.period}
-              initial={{ householdDueDate: step.householdDueDate, companyDueDate: step.companyDueDate }}
+              initial={{ companyDueDate: step.companyDueDate }}
+              scope={{
+                feeTypeId: step.req.feeTypeId,
+                scopeType: step.req.scopeType,
+                areaIds: step.req.areaIds,
+                companyId: step.req.companyId,
+                unitPrice: step.req.unitPrice,
+              }}
               onClose={() => setOpen(false)}
             />
           </>

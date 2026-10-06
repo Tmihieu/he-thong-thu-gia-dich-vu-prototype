@@ -61,15 +61,15 @@ public class HouseholdReminderService {
     public int run() {
         LocalDate today = LocalDate.now(clock);
         // ponytail: OVERDUE chỉ bắt đúng hạn+1 ngày; job tắt đúng ngày đó thì hộ không được nhắc quá hạn (thêm cửa sổ ngày nếu cần).
-        return send("OPEN", "c.due_date >= ?", today)
-                + send("DUE_SOON", "c.due_date = ?", today.plusDays(DUE_SOON_DAYS))
-                + send("OVERDUE", "c.due_date = ?", today.minusDays(1));
+        return send("OPEN", "per.due_date >= ?", today)
+                + send("DUE_SOON", "per.due_date = ?", today.plusDays(DUE_SOON_DAYS))
+                + send("OVERDUE", "per.due_date = ?", today.minusDays(1));
     }
 
     private int send(String stage, String dateCondition, LocalDate date) {
         List<Due> due = jdbc.query("select c.id, c.subject_id,"
                 + " c.amount - coalesce((select sum(p.amount) from payments p where p.charge_id = c.id), 0),"
-                + " c.due_date, per.code from charges c join collection_periods per on per.id = c.period_id"
+                + " per.due_date, per.code from charges c join collection_periods per on per.id = c.period_id"
                 + " where c.status = 'UNPAID' and " + dateCondition
                 + " and not exists (select 1 from household_reminders r where r.charge_id = c.id and r.stage = ?)",
                 (rs, i) -> new Due(rs.getLong(1), rs.getLong(2), rs.getLong(3), rs.getDate(4).toLocalDate(), rs.getString(5)),

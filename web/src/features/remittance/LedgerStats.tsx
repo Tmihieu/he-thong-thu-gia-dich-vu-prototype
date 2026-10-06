@@ -6,8 +6,8 @@ import type { LedgerRow } from './api';
 type Key = 'due' | 'collected' | 'retained' | 'payable' | 'received' | 'remaining' | 'previousDebt';
 const STATS: Record<Key, [string, keyof typeof semantic]> = {
   due: ['Phải thu', 'neutral'],
-  collected: ['Công ty đã thu', 'info'],
-  retained: ['Công ty cầm lại', 'neutral'],
+  collected: ['Đã thu (tiền mặt, chuyển khoản)', 'info'],
+  retained: ['Phí thu gom công ty hưởng', 'neutral'],
   payable: ['Phải nộp xã', 'info'],
   received: ['Đã nộp về xã', 'success'],
   remaining: ['Còn phải nộp', 'warning'],
@@ -21,9 +21,18 @@ export function LedgerStats({ rows, show = DEFAULT_KEYS }: { rows: LedgerRow[]; 
     <StatGrid>
       {show.map((key) => {
         const total = rows.reduce((t, r) => t + r[key], 0);
-        // QĐ-L12: còn phải nộp âm = nộp thừa.
+        // Còn phải nộp âm = xã trả lại công ty phần chênh (phải nộp xã tính trên đã thu).
         if (key === 'remaining' && total < 0) {
-          return <StatCard key={key} label="Nộp thừa" tone="warning" value={<MoneyText value={-total} />} />;
+          const paid = rows.reduce((t, r) => t + r.communePaid, 0);
+          return (
+            <StatCard
+              key={key}
+              label="Xã trả lại công ty"
+              tone="warning"
+              value={<MoneyText value={-total} />}
+              hint={paid > 0 && <>đã trả <MoneyText value={paid} />, còn <MoneyText value={rows.reduce((t, r) => t + r.communeOwed, 0)} /></>}
+            />
+          );
         }
         return (
           <StatCard

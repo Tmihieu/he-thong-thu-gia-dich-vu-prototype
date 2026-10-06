@@ -19,7 +19,6 @@ import vn.dongthanh.vsmt.citizen.api.CitizenDtos.CitizenAccountDto;
 import vn.dongthanh.vsmt.citizen.api.CitizenDtos.CitizenChargeDto;
 import vn.dongthanh.vsmt.citizen.api.CitizenDtos.CitizenLoginResponse;
 import vn.dongthanh.vsmt.citizen.api.CitizenDtos.CitizenProfileDto;
-import vn.dongthanh.vsmt.citizen.api.CitizenDtos.CitizenScheduleDto;
 import vn.dongthanh.vsmt.citizen.api.CitizenDtos.OtpRequest;
 import vn.dongthanh.vsmt.citizen.api.CitizenDtos.OtpRequestResponse;
 import vn.dongthanh.vsmt.citizen.api.CitizenDtos.OtpVerifyRequest;
@@ -66,12 +65,6 @@ public class CitizenController {
     @GetMapping("/me")
     public CitizenProfileDto me(@AuthenticationPrincipal CurrentCitizen citizen) {
         return CitizenProfileDto.of(query.me(citizen));
-    }
-
-    @Operation(summary = "Lịch thu gom của tổ hộ đang ở")
-    @GetMapping("/schedule")
-    public CitizenScheduleDto schedule(@AuthenticationPrincipal CurrentCitizen citizen) {
-        return CitizenScheduleDto.of(query.schedule(citizen));
     }
 
     @Operation(summary = "Các khoản của hộ (chưa đóng và lịch sử), kỳ mới trước")
