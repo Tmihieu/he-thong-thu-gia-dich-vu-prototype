@@ -5,8 +5,8 @@ String label(Map<String, String> map, String? key) => map[key] ?? key ?? '—';
 
 const subjectTypeLabels = {
   'HOUSEHOLD': 'Hộ gia đình',
-  'BUSINESS_HOUSEHOLD': 'Hộ kinh doanh',
-  'ENTERPRISE': 'Doanh nghiệp',
+  'SMALL_SOURCE': 'Nguồn thải nhỏ',
+  'LARGE_SOURCE': 'Nguồn thải lớn',
 };
 
 const subjectStatusLabels = {
@@ -18,10 +18,12 @@ const subjectStatusLabels = {
 const tariffGroupLabels = {
   'HH_UP_TO_2': 'Hộ gia đình ≤ 2 người',
   'HH_3_PLUS': 'Hộ gia đình ≥ 3 người',
+  'HH_PER_CAPITA': 'Hộ gia đình theo nhân khẩu',
   'SMALL_UP_TO_126': 'Chủ nguồn thải nhỏ ≤ 126 kg/tháng',
   'SMALL_126_TO_250': 'Chủ nguồn thải nhỏ 126–250 kg/tháng',
   'SMALL_250_TO_500': 'Chủ nguồn thải nhỏ 250–500 kg/tháng',
-  'BY_VOLUME': 'Chủ nguồn thải lớn 500–9.000 kg/tháng',
+  'BY_VOLUME': 'Chủ nguồn thải nhỏ 500–9.000 kg/tháng',
+  'FULL_COST_BY_KG': 'Đăng ký cân, có phí xử lý',
 };
 
 const chargeStatusLabels = {
