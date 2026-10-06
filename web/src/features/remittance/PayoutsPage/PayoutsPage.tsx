@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { api } from '../../../api/client';
 import { DateText } from '../../../shared/DateText';
+import { RECEIPT_METHOD_LABELS } from '../../../shared/labels';
 import { errorText as apiErrorText } from '../../../shared/errorText';
 import { MoneyText } from '../../../shared/MoneyText';
 import { ErrorBlock } from '../../../shared/StateBlock';
@@ -31,6 +32,8 @@ function CompanyPayouts({ periodId, companyId, onPrint }: { periodId: number; co
         { title: 'Số phiếu', dataIndex: 'code' },
         { title: 'Ngày trả', dataIndex: 'payoutDate', render: (d: string) => <DateText value={d} /> },
         { title: 'Số tiền', dataIndex: 'amount', render: (v: number) => <MoneyText value={v} /> },
+        { title: 'Hình thức', dataIndex: 'method', render: (m: Payout['method']) => RECEIPT_METHOD_LABELS[m] },
+        { title: 'Chứng từ', dataIndex: 'documentRef', render: (v: string | null) => v ?? '—' },
         { title: 'Lũy kế đã trả', dataIndex: 'cumulativePaid', render: (v: number) => <MoneyText value={v} /> },
         { title: 'Xã còn phải trả', dataIndex: 'remainingAfter', render: (v: number) => <MoneyText value={v} /> },
         {
@@ -48,9 +51,9 @@ function CompanyPayouts({ periodId, companyId, onPrint }: { periodId: number; co
 
 /**
  * Phiếu chi trả công ty (UC-55) của cán bộ xã: công ty có phải nộp xã âm trong kỳ (xã trả lại), lập phiếu chi,
- * lịch sử và bản in. Lãnh đạo xem qua API và số trên Tiến độ thu / Đối soát (không có tab này).
+ * lịch sử và bản in. Lãnh đạo xem ở chế độ chỉ đọc ({@code readOnly}): không có nút lập phiếu chi.
  */
-export function PayoutsPage() {
+export function PayoutsPage({ readOnly = false }: { readOnly?: boolean }) {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [periodId, setPeriodId] = useState<number>();
@@ -97,7 +100,7 @@ export function PayoutsPage() {
             render: (v: number, r) =>
               v > 0 ? <MoneyText value={v} strong /> : <RemainingText value={r.remaining} paid={r.communePaid} />,
           },
-          {
+          ...(readOnly ? [] : [{
             title: '',
             render: (_: unknown, r: LedgerRow) => (
               <Button
@@ -110,7 +113,7 @@ export function PayoutsPage() {
                 Lập phiếu chi
               </Button>
             ),
-          },
+          }]),
         ]}
       />
       <Typography.Paragraph type="secondary" style={{ marginTop: 12 }}>

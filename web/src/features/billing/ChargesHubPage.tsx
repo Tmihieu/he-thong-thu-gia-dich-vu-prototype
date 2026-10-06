@@ -2,13 +2,14 @@ import { Tabs } from 'antd';
 
 import { useTabParam } from '../../shared/useTabParam';
 import { PageHeader } from '../../shared/PageHeader';
+import { PayoutIssuesPage } from '../remittance/PayoutIssuesPage/PayoutIssuesPage';
 import { PayoutsPage } from '../remittance/PayoutsPage/PayoutsPage';
 import { ReceiptIssuesPage } from '../remittance/ReceiptIssuesPage/ReceiptIssuesPage';
 import { ReceiptsPage } from '../remittance/ReceiptsPage/ReceiptsPage';
 import { ChargeRequestTab } from './ChargeRequestPage/ChargeRequestTab';
 import { ChargesPage } from './ChargesPage/ChargesPage';
 
-const TABS = ['charges', 'requests', 'receipts', 'payouts', 'receipt-issues'] as const;
+const TABS = ['charges', 'requests', 'receipts', 'payouts', 'payout-issues', 'receipt-issues'] as const;
 
 /** Màn "Khoản thu" của cán bộ xã: danh sách khoản, phiếu YCT (kèm kỳ chờ mở hệ thống tự tạo), phiếu thu công ty (T30), phiếu chi trả công ty khi xã trả lại tiền (UC-55), sai sót phiếu thu công ty báo (T35). */
 export function ChargesHubPage() {
@@ -29,6 +30,7 @@ export function ChargesHubPage() {
           },
           { key: 'receipts', label: 'Phiếu thu công ty', children: <ReceiptsPage /> },
           { key: 'payouts', label: 'Phiếu chi trả công ty', children: <PayoutsPage /> },
+          { key: 'payout-issues', label: 'Sai sót phiếu chi trả', children: <PayoutIssuesPage /> },
           { key: 'receipt-issues', label: 'Sai sót phiếu thu', children: <ReceiptIssuesPage /> },
         ]}
       />

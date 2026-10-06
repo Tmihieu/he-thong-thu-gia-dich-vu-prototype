@@ -81,6 +81,7 @@ export const MENU: Record<Role, MenuEntry[]> = {
     { path: 'report', label: 'Báo cáo tổng hợp', icon: BarChartOutlined },
     { path: 'progress', label: 'Tiến độ thu', icon: FundOutlined },
     { path: 'reconciliation', label: 'Đối soát', icon: AuditOutlined },
+    { path: 'payouts', label: 'Phiếu chi trả', icon: AuditOutlined },
   ],
 };
 

@@ -42,11 +42,13 @@ describe('IssuePayoutForm', () => {
   it('gửi phiếu trả một phần, ngày mặc định hôm nay', async () => {
     const onSubmit = setup();
     await userEvent.type(screen.getByLabelText('Số tiền'), '28000');
+    await userEvent.type(screen.getByLabelText('Số ủy nhiệm chi / mã giao dịch'), 'UNC-77');
     await userEvent.click(screen.getByRole('button', { name: 'Lập phiếu' }));
 
     await waitFor(() =>
       expect(onSubmit).toHaveBeenCalledWith({
-        companyId: 2, periodId: 10, amount: 28_000, payoutDate: dayjs().format('YYYY-MM-DD'), note: undefined,
+        companyId: 2, periodId: 10, amount: 28_000, method: 'TRANSFER', payoutDate: dayjs().format('YYYY-MM-DD'), documentRef: 'UNC-77',
+        note: undefined,
       }),
     );
   });

@@ -320,6 +320,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/remittance/payout-issues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sai sót phiếu chi trả; công ty chỉ thấy sai sót trên phiếu của mình, lãnh đạo chỉ xem */
+        get: operations["list_4"];
+        put?: never;
+        /** Công ty báo sai sót trên phiếu chi trả xã lập cho mình; thông báo tới cán bộ xã */
+        post: operations["report_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/remittance/payout-issues/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Xã đánh dấu đã xử lý kèm ghi chú kết quả (không sửa phiếu); thông báo về công ty */
+        post: operations["resolve_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/users": {
         parameters: {
             query?: never;
@@ -637,7 +672,7 @@ export interface paths {
             cookie?: never;
         };
         /** Danh sách kỳ thu đã mở, mới nhất trước (không gồm kỳ dự thảo); có date thì chỉ các kỳ chứa ngày đó */
-        get: operations["list_4"];
+        get: operations["list_5"];
         put?: never;
         /** Tạo kỳ thu tháng/quý dự thảo (quản trị) và báo cán bộ xã; cán bộ xã đặt ngày mở, hạn nộp rồi mở kỳ */
         post: operations["open"];
@@ -760,7 +795,7 @@ export interface paths {
             cookie?: never;
         };
         /** Đề nghị (xã, lãnh đạo, quản trị); lọc trạng thái / loại; mới nhất trước */
-        get: operations["list_5"];
+        get: operations["list_6"];
         put?: never;
         /** Cán bộ xã lập đề nghị hoàn (khoản đã thu) hoặc xóa nợ (khoản chưa thu); thông báo lãnh đạo */
         post: operations["create_3"];
@@ -812,7 +847,7 @@ export interface paths {
             cookie?: never;
         };
         /** Danh sách khiếu nại, mới nhất trước; công ty chỉ thấy khiếu nại đã chuyển cho mình (G12) */
-        get: operations["list_6"];
+        get: operations["list_7"];
         put?: never;
         /** Cán bộ xã ghi nhận khiếu nại qua điện thoại / trực tiếp */
         post: operations["create_4"];
@@ -1037,7 +1072,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Báo cáo bài vi phạm; đã báo cáo (chưa xử lý) thì không ghi thêm */
-        post: operations["report_1"];
+        post: operations["report_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1086,7 +1121,7 @@ export interface paths {
             cookie?: never;
         };
         /** Phản ánh của hộ, mới nhất trước */
-        get: operations["list_7"];
+        get: operations["list_8"];
         put?: never;
         /** Gửi phản ánh (kênh APP); vị trí để trống thì lấy địa chỉ hộ */
         post: operations["submit"];
@@ -1326,7 +1361,7 @@ export interface paths {
             cookie?: never;
         };
         /** Danh sách tài khoản người đi thu của công ty mình (quản lý công ty) */
-        get: operations["list_8"];
+        get: operations["list_9"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1377,7 +1412,7 @@ export interface paths {
             cookie?: never;
         };
         /** Thông báo của người đang đăng nhập (theo vai trò, công ty, cá nhân), mới nhất trước */
-        get: operations["list_9"];
+        get: operations["list_10"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1666,7 +1701,7 @@ export interface paths {
             cookie?: never;
         };
         /** Mọi bài (kể cả ẩn, chờ duyệt, bị gỡ); reported=true chỉ bài có báo cáo chưa xử lý */
-        get: operations["list_10"];
+        get: operations["list_11"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1972,7 +2007,7 @@ export interface paths {
             cookie?: never;
         };
         /** Thông báo của tài khoản người dân, mới nhất trước; lọc theo loại (Phản ánh / Giao dịch) */
-        get: operations["list_11"];
+        get: operations["list_12"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2761,11 +2796,14 @@ export interface components {
             periodId: number;
             /** Format: int64 */
             amount: number;
+            /** @enum {string} */
+            method: "CASH" | "TRANSFER";
             /**
              * Format: date
              * @description Để trống thì lấy hôm nay
              */
             payoutDate?: string;
+            documentRef?: string;
             note?: string;
         };
         PayoutDto: {
@@ -2785,8 +2823,11 @@ export interface components {
             amount: number;
             /** @description Số tiền bằng chữ */
             amountInWords: string;
+            /** @enum {string} */
+            method: "CASH" | "TRANSFER";
             /** Format: date */
             payoutDate: string;
+            documentRef: string | null;
             note: string | null;
             /**
              * Format: int64
@@ -2803,6 +2844,44 @@ export interface components {
              * @description Xã còn phải trả sau phiếu này = số xã phải trả − lũy kế đã trả
              */
             remainingAfter: number;
+        };
+        ReportPayoutIssueRequest: {
+            /** Format: int64 */
+            payoutId: number;
+            /** @enum {string} */
+            issueType: "WRONG_AMOUNT" | "WRONG_PERIOD" | "WRONG_DOCUMENT" | "NOT_OURS";
+            /**
+             * Format: int64
+             * @description Nên nhập khi sai số tiền
+             */
+            correctAmount?: number;
+            description: string;
+        };
+        PayoutIssueDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            payoutId: number;
+            payoutCode: string;
+            /** Format: int64 */
+            payoutAmount: number;
+            /** Format: int64 */
+            companyId: number;
+            companyCode: string;
+            companyName: string;
+            periodLabel: string;
+            /** @enum {string} */
+            issueType: "WRONG_AMOUNT" | "WRONG_PERIOD" | "WRONG_DOCUMENT" | "NOT_OURS";
+            /** Format: int64 */
+            correctAmount: number | null;
+            description: string;
+            /** @enum {string} */
+            status: "PENDING" | "RESOLVED";
+            /** Format: date-time */
+            reportedAt: string;
+            /** Format: date-time */
+            resolvedAt: string | null;
+            resolutionNote: string | null;
         };
         CreateUserRequest: {
             /** @example thu07b */
@@ -4960,6 +5039,78 @@ export interface operations {
             };
         };
     };
+    list_4: {
+        parameters: {
+            query?: {
+                status?: "PENDING" | "RESOLVED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PayoutIssueDto"][];
+                };
+            };
+        };
+    };
+    report_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportPayoutIssueRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PayoutIssueDto"];
+                };
+            };
+        };
+    };
+    resolve_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveIssueRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PayoutIssueDto"];
+                };
+            };
+        };
+    };
     listUsers: {
         parameters: {
             query?: never;
@@ -5460,7 +5611,7 @@ export interface operations {
             };
         };
     };
-    list_4: {
+    list_5: {
         parameters: {
             query?: {
                 date?: string;
@@ -5712,7 +5863,7 @@ export interface operations {
             };
         };
     };
-    list_5: {
+    list_6: {
         parameters: {
             query?: {
                 status?: "PENDING" | "APPROVED" | "REJECTED";
@@ -5811,7 +5962,7 @@ export interface operations {
             };
         };
     };
-    list_6: {
+    list_7: {
         parameters: {
             query?: {
                 status?: "NEW" | "PROCESSING" | "RESOLVED";
@@ -6166,7 +6317,7 @@ export interface operations {
             };
         };
     };
-    report_1: {
+    report_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -6243,7 +6394,7 @@ export interface operations {
             };
         };
     };
-    list_7: {
+    list_8: {
         parameters: {
             query?: never;
             header?: never;
@@ -6618,7 +6769,7 @@ export interface operations {
             };
         };
     };
-    list_8: {
+    list_9: {
         parameters: {
             query?: never;
             header?: never;
@@ -6685,7 +6836,7 @@ export interface operations {
             };
         };
     };
-    list_9: {
+    list_10: {
         parameters: {
             query?: {
                 unreadOnly?: boolean;
@@ -7058,7 +7209,7 @@ export interface operations {
             };
         };
     };
-    list_10: {
+    list_11: {
         parameters: {
             query?: {
                 moderation?: "PUBLISHED" | "PENDING_REVIEW" | "REJECTED";
@@ -7465,7 +7616,7 @@ export interface operations {
             };
         };
     };
-    list_11: {
+    list_12: {
         parameters: {
             query?: {
                 unreadOnly?: boolean;

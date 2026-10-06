@@ -9,6 +9,7 @@ export type HouseholdDebt = components['schemas']['HouseholdDebtDto'];
 export type HouseholdDebtPage = components['schemas']['HouseholdDebtPageDto'];
 export type Receipt = components['schemas']['ReceiptDto'];
 export type Payout = components['schemas']['PayoutDto'];
+export type PayoutIssue = components['schemas']['PayoutIssueDto'];
 export type ReceiptIssue = components['schemas']['IssueDto'];
 
 export const remittanceKeys = {
@@ -17,6 +18,7 @@ export const remittanceKeys = {
   householdDebts: ['remittance', 'household-debts'] as const,
   receipts: ['remittance', 'receipts'] as const,
   payouts: ['remittance', 'payouts'] as const,
+  payoutIssues: ['remittance', 'payout-issues'] as const,
   receiptIssues: ['remittance', 'receipt-issues'] as const,
 };
 
@@ -62,6 +64,14 @@ export function usePayouts(periodId: number | undefined, companyId?: number) {
     queryKey: [...remittanceKeys.payouts, periodId, companyId],
     queryFn: () => api.get<Payout[]>('/api/remittance/payouts', { params: { periodId, companyId } }),
     enabled: periodId !== undefined,
+  });
+}
+
+/** Sai sót phiếu chi trả (UC-56, UC-57); công ty chỉ nhận sai sót trên phiếu của mình. */
+export function usePayoutIssues(status?: PayoutIssue['status']) {
+  return useQuery({
+    queryKey: [...remittanceKeys.payoutIssues, status],
+    queryFn: () => api.get<PayoutIssue[]>('/api/remittance/payout-issues', { params: { status } }),
   });
 }
 

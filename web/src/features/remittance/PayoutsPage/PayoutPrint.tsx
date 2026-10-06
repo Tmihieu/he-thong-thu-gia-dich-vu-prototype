@@ -3,6 +3,7 @@ import { Button, Modal } from 'antd';
 import type { ReactNode } from 'react';
 
 import { formatDate, formatMoney } from '../../../shared/format';
+import { RECEIPT_METHOD_LABELS } from '../../../shared/labels';
 import type { Payout } from '../api';
 
 const PRINT_CSS = `
@@ -64,6 +65,10 @@ export function PayoutPrint({ payout, onClose }: { payout: Payout | null; onClos
               </Line>
               <Line label="Bằng chữ">
                 <em>{payout.amountInWords}</em>
+              </Line>
+              <Line label="Hình thức">
+                {RECEIPT_METHOD_LABELS[payout.method]}
+                {payout.documentRef ? ` · chứng từ ${payout.documentRef}` : ''}
               </Line>
               <Line label="Xã phải trả kỳ này">{formatMoney(payout.periodOwed)}</Line>
               <Line label="Lũy kế xã đã trả kỳ này">{formatMoney(payout.cumulativePaid)}</Line>

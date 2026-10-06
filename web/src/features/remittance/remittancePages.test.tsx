@@ -278,6 +278,27 @@ describe('Khóa kỳ', () => {
   });
 });
 
+describe('Khóa kỳ khi xã còn phải trả lại công ty', () => {
+  it('hiện lý do PERIOD_COMMUNE_OWES trong cảnh báo của nút Khóa kỳ', async () => {
+    mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
+      'GET /api/masterdata/periods': () => jsonResponse(200, periods),
+      'GET /api/remittance/ledger': () => jsonResponse(200, [dv01]),
+      'POST /api/remittance/periods/10/lock': () =>
+        jsonResponse(422, {
+          code: 'PERIOD_COMMUNE_OWES',
+          message: 'Chưa khóa được kỳ 2026-10 vì xã còn phải trả lại 1 công ty: DV02: 128.000 đ.',
+        }),
+    });
+    renderApp('/commune/reconciliation');
+
+    await userEvent.click(await screen.findByRole('button', { name: /Khóa kỳ/ }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Khóa kỳ' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('xã còn phải trả lại 1 công ty: DV02: 128.000 đ');
+  });
+});
+
 describe('Khóa kỳ chưa đến hạn', () => {
   it('còn khoản hộ chưa đóng mà chưa đến hạn nộp thì hiện lý do PERIOD_NOT_DUE', async () => {
     mockApi({
@@ -408,7 +429,7 @@ describe('Phiếu chi trả công ty (xã trả lại)', () => {
         jsonResponse(201, {
           id: 5, code: 'PC-CT-1026-002', companyId: 2, companyCode: 'DV02', companyName: 'Công ty Hai', periodId: 10,
           periodCode: '2026-10', periodLabel: 'Tháng 10/2026', amount: 28_000, amountInWords: 'Hai mươi tám nghìn đồng',
-          payoutDate: '2026-10-20', note: null, cumulativePaid: 128_000, periodOwed: 228_000, remainingAfter: 100_000,
+          method: 'TRANSFER', payoutDate: '2026-10-20', documentRef: null, note: null, cumulativePaid: 128_000, periodOwed: 228_000, remainingAfter: 100_000,
         }),
     });
     renderApp('/commune/charges');

@@ -13,6 +13,7 @@ import { CompanyComplaintsPage } from '../features/complaints/CompanyComplaintsP
 import { MarketModerationPage, MarketModerationPostPage } from '../features/market/MarketPages';
 import { AreasPage } from '../features/masterdata/AreasPage/AreasPage';
 import { LeaderDashboardPage } from '../features/leadership/LeaderDashboardPage';
+import { LeaderPayoutsPage } from '../features/leadership/LeaderPayoutsPage';
 import { LeaderReportPage } from '../features/leadership/LeaderReportPage';
 import { CompaniesPage } from '../features/masterdata/CompaniesPage/CompaniesPage';
 import { ConfigPage } from '../features/masterdata/ConfigPage';
@@ -49,6 +50,7 @@ const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'LEADER:report': <LeaderReportPage />,
   'LEADER:progress': <ProgressPage />,
   'LEADER:reconciliation': <ReconciliationPage />,
+  'LEADER:payouts': <LeaderPayoutsPage />,
   'COMPANY_MANAGER:complaints': <CompanyComplaintsPage />,
   'COMPANY_MANAGER:assigned': <CompanyHubPage />,
   'COMPANY_MANAGER:collectors': <CollectorAccountsPage />,
