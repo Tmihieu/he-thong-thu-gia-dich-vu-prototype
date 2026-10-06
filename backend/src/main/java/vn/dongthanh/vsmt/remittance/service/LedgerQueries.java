@@ -206,17 +206,31 @@ public class LedgerQueries {
         return jdbc.query("select c.company_id, sum(c.amount - coalesce(p.paid, 0)), count(*)"
                 + " from charges c left join (select charge_id, sum(amount) as paid from payments group by charge_id) p"
                 + " on p.charge_id = c.id"
-                + " where c.status = 'UNPAID' and c.period_id = (select prev.id from collection_periods prev, collection_periods cur"
-                + " where cur.id = ? and prev.start_date < cur.start_date and prev.status <> 'DRAFT'"
-                + " order by prev.start_date desc limit 1)"
+                + " where c.status = 'UNPAID' and c.period_id = " + PREVIOUS_PERIOD
                 + " group by c.company_id",
                 (rs, i) -> new CompanyAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), periodId);
     }
 
-    /** Công nợ hộ = khoản Chưa thu của kỳ đã khóa (không có bảng riêng); lọc tùy chọn theo công ty, tổ. */
-    private static final String DEBT_FROM = " from charges c join collection_periods cp on cp.id = c.period_id"
-            + " and cp.status = 'LOCKED' where c.status = 'UNPAID'";
+    /** Kỳ liền trước kỳ {@code ?} theo ngày bắt đầu, bỏ kỳ nháp (null nếu không có). */
+    private static final String PREVIOUS_PERIOD = "(select prev.id from collection_periods prev, collection_periods cur"
+            + " where cur.id = ? and prev.start_date < cur.start_date and prev.status <> 'DRAFT'"
+            + " order by prev.start_date desc limit 1)";
 
+    /**
+     * Công nợ hộ = khoản Chưa thu (không có bảng riêng): của kỳ liền trước {@code previousOf} nếu có (góp ý 06/10, màn
+     * Tiến độ thu chỉ xem nợ một tháng trước), không thì của mọi kỳ đã khóa.
+     */
+    private static String debtFrom(Long previousOf, List<Object> args) {
+        if (previousOf == null) {
+            return " from charges c join collection_periods cp on cp.id = c.period_id and cp.status = 'LOCKED'"
+                    + " where c.status = 'UNPAID'";
+        }
+        args.add(previousOf);
+        return " from charges c join collection_periods cp on cp.id = c.period_id where c.status = 'UNPAID'"
+                + " and c.period_id = " + PREVIOUS_PERIOD;
+    }
+
+    /** Lọc tùy chọn theo công ty, tổ. */
     private static String debtFilter(Long companyId, Long areaId, List<Object> args) {
         StringBuilder sb = new StringBuilder();
         if (companyId != null) {
@@ -230,16 +244,21 @@ public class LedgerQueries {
         return sb.toString();
     }
 
-    public HouseholdDebtTotals householdDebtTotals(Long companyId, Long areaId) {
+    public HouseholdDebtTotals householdDebtTotals(Long previousOf, Long companyId, Long areaId) {
         List<Object> args = new java.util.ArrayList<>();
+        String from = debtFrom(previousOf, args);
         String where = debtFilter(companyId, areaId, args);
-        return jdbc.queryForObject("select count(distinct c.subject_id), count(*), coalesce(sum(c.amount), 0)" + DEBT_FROM + where,
+        return jdbc.queryForObject("select count(distinct c.subject_id), count(*), coalesce(sum(c.amount), 0)" + from + where,
                 (rs, i) -> new HouseholdDebtTotals(rs.getLong(1), rs.getLong(2), rs.getLong(3)), args.toArray());
     }
 
-    /** Khoản công nợ hộ, kỳ cũ trước rồi theo mã hộ; số kỳ nợ đếm trên mọi kỳ đã khóa, không phụ thuộc bộ lọc. */
-    public List<HouseholdDebtRow> householdDebts(Long companyId, Long areaId, int limit, long offset) {
+    /**
+     * Khoản công nợ hộ, kỳ cũ trước rồi theo mã hộ; số kỳ nợ đếm mọi khoản Chưa thu của hộ ở kỳ đã khóa hoặc ở kỳ của
+     * khoản, không phụ thuộc lọc công ty / tổ.
+     */
+    public List<HouseholdDebtRow> householdDebts(Long previousOf, Long companyId, Long areaId, int limit, long offset) {
         List<Object> args = new java.util.ArrayList<>();
+        String from = debtFrom(previousOf, args);
         String where = debtFilter(companyId, areaId, args).replace("c.", "x.");
         args.add(limit);
         args.add(offset);
@@ -247,10 +266,12 @@ public class LedgerQueries {
                 + " x.coname, x.period_id, x.label, x.amount, x.debt_periods from ("
                 + " select c.id, s.code as scode, s.name as sname, s.address, c.area_id, a.code as acode, a.name as aname,"
                 + " c.company_id, co.code as cocode, co.name as coname, c.period_id, cp.label, cp.start_date, c.amount,"
-                + " count(*) over (partition by c.subject_id) as debt_periods"
-                + " from charges c join collection_periods cp on cp.id = c.period_id and cp.status = 'LOCKED'"
-                + " join service_subjects s on s.id = c.subject_id join areas a on a.id = c.area_id"
-                + " join companies co on co.id = c.company_id where c.status = 'UNPAID') x where true" + where
+                + " (select count(*) from charges o join collection_periods op on op.id = o.period_id"
+                + " where o.subject_id = c.subject_id and o.status = 'UNPAID'"
+                + " and (op.status = 'LOCKED' or o.period_id = c.period_id)) as debt_periods"
+                + from.replaceFirst(" where ", " join service_subjects s on s.id = c.subject_id join areas a on a.id = c.area_id"
+                        + " join companies co on co.id = c.company_id where ")
+                + ") x where true" + where
                 + " order by x.start_date, x.scode, x.id limit ? offset ?",
                 (rs, i) -> new HouseholdDebtRow(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getLong(5),
                         rs.getString(6), rs.getString(7), rs.getLong(8), rs.getString(9), rs.getString(10), rs.getLong(11),
@@ -258,10 +279,11 @@ public class LedgerQueries {
                 args.toArray());
     }
 
-    /** Số hộ còn nợ kỳ đã khóa theo (tổ, công ty trên khoản), cho cột "Hộ còn nợ kỳ cũ" của tiến độ theo tổ. */
-    public List<AreaDebtRow> debtHouseholdsByArea() {
-        return jdbc.query("select c.area_id, c.company_id, count(distinct c.subject_id)" + DEBT_FROM
+    /** Số hộ còn nợ kỳ liền trước {@code periodId} theo (tổ, công ty trên khoản), cho cột hộ còn nợ của tiến độ theo tổ. */
+    public List<AreaDebtRow> debtHouseholdsByArea(long periodId) {
+        List<Object> args = new java.util.ArrayList<>();
+        return jdbc.query("select c.area_id, c.company_id, count(distinct c.subject_id)" + debtFrom(periodId, args)
                 + " group by c.area_id, c.company_id",
-                (rs, i) -> new AreaDebtRow(rs.getLong(1), rs.getLong(2), rs.getLong(3)));
+                (rs, i) -> new AreaDebtRow(rs.getLong(1), rs.getLong(2), rs.getLong(3)), args.toArray());
     }
 }

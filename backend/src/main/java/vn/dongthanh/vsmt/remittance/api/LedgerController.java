@@ -67,13 +67,14 @@ public class LedgerController {
         return areaProgress.progress(periodId, actor).stream().map(AreaProgressDto::of).toList();
     }
 
-    @Operation(summary = "Công nợ hộ: khoản Chưa thu của kỳ đã khóa (hộ nộp ở kỳ sau thì hết nợ), kèm tổng số hộ và tiền."
-            + " Lọc theo công ty, tổ; phân trang. Chỉ cán bộ xã và lãnh đạo")
+    @Operation(summary = "Công nợ hộ: khoản Chưa thu của kỳ liền trước kỳ previousOf, bỏ trống thì của mọi kỳ đã khóa"
+            + " (hộ nộp ở kỳ sau thì hết nợ), kèm tổng số hộ và tiền. Lọc theo công ty, tổ; phân trang. Chỉ cán bộ xã và lãnh đạo")
     @GetMapping("/household-debts")
-    public HouseholdDebtPageDto householdDebts(@RequestParam(required = false) Long companyId,
+    public HouseholdDebtPageDto householdDebts(@RequestParam(required = false) Long previousOf,
+            @RequestParam(required = false) Long companyId,
             @RequestParam(required = false) Long areaId, @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size, @AuthenticationPrincipal CurrentUser actor) {
-        return HouseholdDebtPageDto.of(householdDebts.list(companyId, areaId, page, size, actor));
+        return HouseholdDebtPageDto.of(householdDebts.list(previousOf, companyId, areaId, page, size, actor));
     }
 
     public record HouseholdDebtDto(
