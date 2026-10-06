@@ -5,12 +5,15 @@ import type { components } from '../../api/schema';
 
 export type LedgerRow = components['schemas']['LedgerRowDto'];
 export type AreaProgress = components['schemas']['AreaProgressDto'];
+export type HouseholdDebt = components['schemas']['HouseholdDebtDto'];
+export type HouseholdDebtPage = components['schemas']['HouseholdDebtPageDto'];
 export type Receipt = components['schemas']['ReceiptDto'];
 export type ReceiptIssue = components['schemas']['IssueDto'];
 
 export const remittanceKeys = {
   ledger: ['remittance', 'ledger'] as const,
   areaProgress: ['remittance', 'area-progress'] as const,
+  householdDebts: ['remittance', 'household-debts'] as const,
   receipts: ['remittance', 'receipts'] as const,
   receiptIssues: ['remittance', 'receipt-issues'] as const,
 };
@@ -55,5 +58,15 @@ export function useReceiptIssues(status?: ReceiptIssue['status']) {
   return useQuery({
     queryKey: [...remittanceKeys.receiptIssues, status],
     queryFn: () => api.get<ReceiptIssue[]>('/api/remittance/receipt-issues', { params: { status } }),
+  });
+}
+
+/** Công nợ hộ (khoản Chưa thu của kỳ đã khóa); chỉ cán bộ xã và lãnh đạo gọi được. */
+export function useHouseholdDebts(filter: { companyId?: number; areaId?: number; page: number; size: number }, enabled = true) {
+  return useQuery({
+    queryKey: [...remittanceKeys.householdDebts, filter],
+    queryFn: () => api.get<HouseholdDebtPage>('/api/remittance/household-debts', { params: filter }),
+    enabled,
+    placeholderData: (prev) => prev,
   });
 }

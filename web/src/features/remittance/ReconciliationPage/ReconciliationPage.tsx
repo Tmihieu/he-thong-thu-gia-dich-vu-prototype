@@ -9,7 +9,7 @@ import { ErrorBlock } from '../../../shared/StateBlock';
 import { StatusTag } from '../../../shared/StatusTag';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
 import { type LedgerRow, useCompanyLedger } from '../api';
-import { LedgerBreakdown } from '../LedgerBreakdown';
+import { PreviousDebtAlert } from '../PreviousDebtAlert';
 import { LockPeriodButton } from './LockPeriodButton';
 import { PeriodTrend } from './PeriodTrend';
 
@@ -27,10 +27,17 @@ function Gap({ gap }: { gap: number }) {
   );
 }
 
+/** Kết quả đối soát (R14) theo trạng thái backend: Khớp / Đang nộp (trong hạn) / Lệch (hết hạn còn thiếu hoặc kỳ trước còn nợ). */
+const RECONCILIATION: Record<LedgerRow['reconciliation'], { tone: 'success' | 'warning' | 'danger'; label: string }> = {
+  MATCHED: { tone: 'success', label: 'Khớp' },
+  PENDING: { tone: 'warning', label: 'Đang nộp' },
+  MISMATCH: { tone: 'danger', label: 'Lệch' },
+};
+
 /**
- * Đối soát (R14, UC-38): phải thu / đã thu (tiền mặt, chuyển khoản) / phí thu gom công ty hưởng / phải nộp xã / đã nộp về
- * xã / chênh lệch = đã nộp − phải nộp xã. Trong kỳ: Đang nộp; hết hạn còn chưa nộp hoặc nợ kỳ trước: Lệch. Cán bộ xã khóa kỳ
- * từ màn này (G1, UC-39).
+ * Đối soát (R14, UC-38): phải thu / đã thu tiền mặt / đã thu chuyển khoản / phí thu gom công ty hưởng / điều chỉnh / phải nộp
+ * xã / đã nộp về xã / chênh lệch = đã nộp − phải nộp xã / kết quả. Kỳ trước chưa khóa hiện ở cảnh báo đầu trang, không còn
+ * cột riêng. Cán bộ xã khóa kỳ từ màn này (G1, UC-39).
  */
 export function ReconciliationPage() {
   // Lãnh đạo xem màn này chỉ đọc: không khóa kỳ (SPEC §9.10).
@@ -54,6 +61,7 @@ export function ReconciliationPage() {
       />
       <PeriodTrend selectedId={periodId} onSelect={setPeriodId} />
       {ledger.error && <ErrorBlock error={ledger.error} onRetry={() => void ledger.refetch()} />}
+      <PreviousDebtAlert rows={rows} />
       <StatGrid>
         <StatCard label="Phải nộp xã" tone="info" value={<MoneyText value={rows.reduce((t, r) => t + r.payable, 0)} />} />
         <StatCard label="Đã thu (tiền mặt, chuyển khoản)" tone="info" value={<MoneyText value={rows.reduce((t, r) => t + r.collected, 0)} />} />
@@ -66,31 +74,17 @@ export function ReconciliationPage() {
         dataSource={rows}
         pagination={false}
         locale={{ emptyText: 'Kỳ này chưa có khoản phải thu' }}
+        scroll={{ x: 1300 }}
         columns={[
           { title: 'Công ty', dataIndex: 'companyName' },
+          { title: 'Phải thu', dataIndex: 'due', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           {
-            title: 'Phải thu',
-            dataIndex: 'due',
+            title: 'Đã thu tiền mặt',
+            dataIndex: 'cashCollected',
             align: 'right',
             render: (v: number, r) => (
               <>
                 <MoneyText value={v} />
-                <LedgerBreakdown row={r} />
-              </>
-            ),
-          },
-          {
-            title: 'Đã thu',
-            dataIndex: 'collected',
-            align: 'right',
-            render: (v: number, r) => (
-              <>
-                <MoneyText value={v} />
-                <div>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    tiền mặt <MoneyText value={r.cashCollected} /> · chuyển khoản <MoneyText value={v - r.cashCollected} />
-                  </Typography.Text>
-                </div>
                 {r.refunded > 0 && (
                   <div>
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -102,7 +96,15 @@ export function ReconciliationPage() {
             ),
           },
           {
-            title: 'Đã nộp về xã',
+            title: 'Đã thu chuyển khoản',
+            align: 'right',
+            render: (_, r) => <MoneyText value={r.collected - r.cashCollected} />,
+          },
+          { title: 'Phí thu gom công ty hưởng', dataIndex: 'retained', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Điều chỉnh', dataIndex: 'adjustment', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          { title: 'Phải nộp xã', dataIndex: 'payable', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          {
+            title: 'Đã nộp',
             align: 'right',
             render: (_, r) => (
               <Space direction="vertical" size={0}>
@@ -115,23 +117,9 @@ export function ReconciliationPage() {
           },
           { title: 'Chênh lệch', dataIndex: 'gap', align: 'right', render: (v: number) => <Gap gap={v} /> },
           {
-            title: 'Nợ kỳ trước',
-            dataIndex: 'previousDebt',
-            align: 'right',
-            render: (v: number) => (v > 0 ? <Typography.Text type="danger"><MoneyText value={v} /></Typography.Text> : '—'),
-          },
-          {
             title: 'Kết quả',
-            dataIndex: 'gap',
-            // Nhãn theo dấu của chênh lệch backend: 0 khớp, âm thu rồi chưa nộp, dương xã trả lại công ty.
-            render: (gap: number) =>
-              gap === 0 ? (
-                <StatusTag tone="success">Khớp</StatusTag>
-              ) : gap < 0 ? (
-                <StatusTag tone="warning">Thu rồi chưa nộp</StatusTag>
-              ) : (
-                <StatusTag tone="info">Xã trả lại công ty</StatusTag>
-              ),
+            dataIndex: 'reconciliation',
+            render: (v: LedgerRow['reconciliation']) => <StatusTag tone={RECONCILIATION[v].tone}>{RECONCILIATION[v].label}</StatusTag>,
           },
         ]}
       />

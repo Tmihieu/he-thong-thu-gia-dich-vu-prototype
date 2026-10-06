@@ -1249,6 +1249,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/remittance/household-debts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Công nợ hộ: khoản Chưa thu của kỳ đã khóa (hộ nộp ở kỳ sau thì hết nợ), kèm tổng số hộ và tiền. Lọc theo công ty, tổ; phân trang. Chỉ cán bộ xã và lãnh đạo */
+        get: operations["householdDebts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/remittance/area-progress": {
         parameters: {
             query?: never;
@@ -3578,6 +3595,58 @@ export interface components {
              * @description Phải nộp xã = tiền mặt đã thu − điều chỉnh kỳ trước − phí thu gom của toàn bộ số đã thu; âm thì xã trả lại công ty
              */
             payable: number;
+            /**
+             * Format: int64
+             * @description Trong đã thu: thu công nợ kỳ cũ (khoản thuộc kỳ khác đã khóa, tiền ghi vào kỳ này, đã trừ hoàn)
+             */
+            debtCollected: number;
+        };
+        HouseholdDebtDto: {
+            /** Format: int64 */
+            chargeId: number;
+            subjectCode: string;
+            subjectName: string;
+            subjectAddress: string;
+            /** Format: int64 */
+            areaId: number;
+            areaCode: string;
+            areaName: string;
+            /** Format: int64 */
+            companyId: number;
+            companyCode: string;
+            companyName: string;
+            /** Format: int64 */
+            periodId: number;
+            periodLabel: string;
+            /** Format: int64 */
+            amount: number;
+            /**
+             * Format: int64
+             * @description Số kỳ đã khóa hộ này còn nợ
+             */
+            debtPeriods: number;
+        };
+        HouseholdDebtPageDto: {
+            items: components["schemas"]["HouseholdDebtDto"][];
+            /**
+             * Format: int64
+             * @description Tổng số khoản nợ (theo bộ lọc)
+             */
+            total: number;
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
+            /**
+             * Format: int64
+             * @description Số hộ còn nợ (một hộ nợ nhiều kỳ đếm một lần)
+             */
+            householdCount: number;
+            /**
+             * Format: int64
+             * @description Tổng tiền các khoản còn nợ
+             */
+            totalAmount: number;
         };
         AreaProgressDto: {
             /** Format: int64 */
@@ -3608,6 +3677,11 @@ export interface components {
             lowCollectionRate: boolean;
             /** @description Tổ chưa có công ty (R13) */
             noCompany: boolean;
+            /**
+             * Format: int64
+             * @description Số hộ của tổ còn khoản Chưa thu của kỳ đã khóa (công nợ hộ)
+             */
+            debtHouseholds: number;
         };
         AuditLogDto: {
             /** Format: int64 */
@@ -6329,6 +6403,31 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["LedgerRowDto"][];
+                };
+            };
+        };
+    };
+    householdDebts: {
+        parameters: {
+            query?: {
+                companyId?: number;
+                areaId?: number;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["HouseholdDebtPageDto"];
                 };
             };
         };
