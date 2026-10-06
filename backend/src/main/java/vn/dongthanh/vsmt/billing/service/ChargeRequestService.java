@@ -80,7 +80,7 @@ public class ChargeRequestService {
     private final Clock clock;
 
     public record IssueCommand(Long periodId, Long feeTypeId, ChargeScope scopeType, List<Long> areaIds,
-            Long companyId, LocalDate dueDate, Long unitPrice, String note) {
+            Long companyId, Long unitPrice, String note) {
     }
 
     public record SkippedLine(Long subjectId, String subjectCode, String subjectName, String areaCode,
@@ -131,7 +131,7 @@ public class ChargeRequestService {
         String token = period.documentToken();
         String code = "YCT-%s-%02d".formatted(token, requests.countByPeriodId(period.getId()) + 1);
         ChargeRequest request = requests.save(ChargeRequest.issue(code, period, plan.feeType(), cmd.scopeType(),
-                plan.scopeAreas(), plan.scopeCompany(), plan.issueDate(), cmd.dueDate(), plan.unitPrice(),
+                plan.scopeAreas(), plan.scopeCompany(), plan.issueDate(), plan.unitPrice(),
                 cmd.note(), actor.id()));
         String suffix = "ENV".equals(plan.feeType().getCode()) ? "" : "-" + plan.feeType().getCode().substring(0, 2);
         List<Charge> created = plan.charges().stream()
@@ -148,7 +148,6 @@ public class ChargeRequestService {
         after.put("company", plan.scopeCompany() == null ? null : plan.scopeCompany().getCode());
         after.put("unitPrice", plan.unitPrice());
         after.put("issueDate", plan.issueDate());
-        after.put("dueDate", cmd.dueDate());
         after.put("chargeCount", result.chargeCount());
         after.put("exemptCount", result.exemptCount());
         after.put("totalAmount", result.totalAmount());
@@ -170,14 +169,6 @@ public class ChargeRequestService {
         FeeType feeType = feeTypes.findById(cmd.feeTypeId())
                 .filter(FeeType::isActive)
                 .orElseThrow(() -> new NotFoundException("FEE_TYPE_NOT_FOUND", "Không tìm thấy loại phí đang dùng."));
-        if (cmd.dueDate().isBefore(period.getOpenDate())) {
-            throw new BusinessRuleException("CHARGE_DUE_BEFORE_OPEN",
-                    "Hạn hộ đóng không được trước ngày mở kỳ " + period.getCode() + ".");
-        }
-        if (cmd.dueDate().isAfter(period.getDueDate())) {
-            throw new BusinessRuleException("CHARGE_DUE_AFTER_PERIOD",
-                    "Hạn hộ đóng không được sau hạn công ty nộp xã của kỳ " + period.getCode() + ".");
-        }
         LocalDate issueDate = LocalDate.now(clock);
         Long unitPrice = feeType.getPricingMode() == PricingMode.FIXED ? cmd.unitPrice() : null;
         if (unitPrice != null && unitPrice <= 0) {

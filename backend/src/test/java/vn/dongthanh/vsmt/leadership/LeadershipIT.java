@@ -216,7 +216,7 @@ class LeadershipIT extends IntegrationTest {
         CollectionPeriod november = periods.save(CollectionPeriod.open(PeriodType.MONTH, 2026, 11, null,
                 LocalDate.of(2026, 11, 30), fx.october.getTariffVersion()));
         chargeRequests.publish(new IssueCommand(november.getId(), fx.env.getId(), ChargeScope.ALL, null, null,
-                LocalDate.of(2026, 11, 25), null, null), fx.actor(fx.officer));
+                null, null), fx.actor(fx.officer));
         long novCharge = jdbc.queryForObject("select c.id from charges c join service_subjects s on s.id = c.subject_id"
                 + " where s.code = 'DTH-H000004' and c.period_id = ?", Long.class, november.getId());
         assertThat(chargeStatus(novCharge)).isEqualTo("EXEMPT");
@@ -247,7 +247,7 @@ class LeadershipIT extends IntegrationTest {
         CollectionPeriod november = periods.save(CollectionPeriod.open(PeriodType.MONTH, 2026, 11, null,
                 LocalDate.of(2026, 11, 30), fx.october.getTariffVersion()));
         chargeRequests.publish(new IssueCommand(november.getId(), fx.env.getId(), ChargeScope.ALL, null, null,
-                LocalDate.of(2026, 11, 25), null, null), fx.actor(fx.officer));
+                null, null), fx.actor(fx.officer));
         exempt(contract, false);
         exempt(contract, true);
         exempt(contract, false);

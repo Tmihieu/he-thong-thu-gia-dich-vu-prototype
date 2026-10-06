@@ -1,6 +1,5 @@
 package vn.dongthanh.vsmt.billing.service;
 
-import java.time.Clock;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -44,10 +43,8 @@ public class PeriodPublishService {
     private final TariffService tariffs;
     private final ChargeRequestService chargeRequests;
     private final AuditService audit;
-    private final Clock clock;
 
-    /** @param dueDate hạn hộ đóng đã dùng cho lần xem trước (mặc định theo quy tắc nếu người dùng chưa chọn) */
-    public record DraftPreview(CollectionPeriod period, LocalDate dueDate, IssueResult result) {
+    public record DraftPreview(CollectionPeriod period, IssueResult result) {
     }
 
     public record PublishResult(CollectionPeriod period, IssueResult result) {
@@ -61,18 +58,17 @@ public class PeriodPublishService {
      * Xem trước các khoản sẽ lập khi mở kỳ. Kỳ dự thảo lấy lại biểu giá hiệu lực tại ngày đầu kỳ (biểu giá có thể
      * vừa được ban hành sau lúc hệ thống tạo dự thảo), nên số tiền xem trước khớp với lúc mở kỳ.
      */
-    public DraftPreview preview(Long periodId, LocalDate openDate, LocalDate companyDueDate, LocalDate householdDueDate,
+    public DraftPreview preview(Long periodId, LocalDate openDate, LocalDate companyDueDate,
             Scope scope, CurrentUser actor) {
         actor.requireRole(Role.COMMUNE_OFFICER);
         CollectionPeriod period = periods.findByIdWithTariff(periodId).orElseThrow(PeriodPublishService::notFound);
         requireDraft(period);
         refreshTariff(period);
         schedule(period, openDate, companyDueDate);
-        LocalDate due = dueDate(period, householdDueDate);
-        return new DraftPreview(period, due, chargeRequests.previewDraft(command(period, due, null, scope), actor));
+        return new DraftPreview(period, chargeRequests.previewDraft(command(period, null, scope), actor));
     }
 
-    public PublishResult publish(Long periodId, LocalDate openDate, LocalDate companyDueDate, LocalDate householdDueDate,
+    public PublishResult publish(Long periodId, LocalDate openDate, LocalDate companyDueDate,
             String note, Scope scope, CurrentUser actor) {
         actor.requireRole(Role.COMMUNE_OFFICER);
         // Khóa dòng kỳ: hai cán bộ cùng bấm thì người sau thấy kỳ đã mở.
@@ -80,8 +76,7 @@ public class PeriodPublishService {
         requireDraft(period);
         TariffVersion tariff = refreshTariff(period);
         schedule(period, openDate, companyDueDate);
-        LocalDate due = dueDate(period, householdDueDate);
-        IssueCommand cmd = command(period, due, note, scope);
+        IssueCommand cmd = command(period, note, scope);
 
         period.publish();
         // Đẩy trạng thái COLLECTING xuống CSDL trước khi phát hành: PeriodGuard đọc lại trạng thái bằng FOR SHARE.
@@ -92,8 +87,7 @@ public class PeriodPublishService {
         after.put("status", period.getStatus());
         after.put("tariffVersion", tariff.getCode());
         after.put("openDate", period.getOpenDate());
-        after.put("companyDueDate", period.getDueDate());
-        after.put("dueDate", due);
+        after.put("dueDate", period.getDueDate());
         after.put("requestCode", result.requestCode());
         after.put("chargeCount", result.chargeCount());
         after.put("totalAmount", result.totalAmount());
@@ -101,7 +95,7 @@ public class PeriodPublishService {
         return new PublishResult(period, result);
     }
 
-    /** Cán bộ xã đặt ngày mở / hạn công ty nộp xã (trống thì giữ giá trị của dự thảo). */
+    /** Cán bộ xã đặt ngày mở / hạn nộp (hạn duy nhất của kỳ) (trống thì giữ giá trị của dự thảo). */
     private static void schedule(CollectionPeriod period, LocalDate openDate, LocalDate companyDueDate) {
         if (openDate != null || companyDueDate != null) {
             period.schedule(openDate != null ? openDate : period.getOpenDate(),
@@ -124,33 +118,13 @@ public class PeriodPublishService {
         return current;
     }
 
-    /**
-     * Hạn hộ đóng: người dùng chọn, hoặc gợi ý ngày 20 của kỳ (kỳ quý: tháng cuối quý). Đã quá ngày 20 khi mở thì lấy
-     * hạn công ty nộp xã. Luôn nằm giữa ngày mở kỳ và hạn công ty nộp xã.
-     */
-    private LocalDate dueDate(CollectionPeriod period, LocalDate requested) {
-        if (requested != null) {
-            if (requested.isBefore(period.getOpenDate()) || requested.isAfter(period.getDueDate())) {
-                throw new BusinessRuleException("HOUSEHOLD_DUE_OUT_OF_RANGE",
-                        "Hạn hộ đóng phải nằm giữa ngày mở kỳ và hạn công ty nộp xã.");
-            }
-            return requested;
-        }
-        LocalDate from = LocalDate.now(clock);
-        if (period.getOpenDate().isAfter(from)) {
-            from = period.getOpenDate();
-        }
-        LocalDate suggested = period.getEndDate().withDayOfMonth(20);
-        return suggested.isBefore(from) || suggested.isAfter(period.getDueDate()) ? period.getDueDate() : suggested;
-    }
-
-    private IssueCommand command(CollectionPeriod period, LocalDate due, String note, Scope scope) {
+    private IssueCommand command(CollectionPeriod period, String note, Scope scope) {
         if (scope != null && scope.scopeType() != null) {
             Long feeTypeId = scope.feeTypeId() != null ? scope.feeTypeId() : envFeeType().getId();
-            return new IssueCommand(period.getId(), feeTypeId, scope.scopeType(), scope.areaIds(), scope.companyId(), due,
+            return new IssueCommand(period.getId(), feeTypeId, scope.scopeType(), scope.areaIds(), scope.companyId(),
                     scope.unitPrice(), note);
         }
-        return new IssueCommand(period.getId(), envFeeType().getId(), ChargeScope.ALL, null, null, due, null, note);
+        return new IssueCommand(period.getId(), envFeeType().getId(), ChargeScope.ALL, null, null, null, note);
     }
 
     private FeeType envFeeType() {

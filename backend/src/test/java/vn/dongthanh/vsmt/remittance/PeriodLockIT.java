@@ -62,7 +62,7 @@ class PeriodLockIT extends IntegrationTest {
 
         String officer = fx.bearer(fx.officer);
         post("/api/billing/charge-requests", officer, """
-                {"periodId":%d,"feeTypeId":%d,"scopeType":"ALL","dueDate":"2026-10-25"}"""
+                {"periodId":%d,"feeTypeId":%d,"scopeType":"ALL"}"""
                 .formatted(fx.october.getId(), fx.env.getId()))
                 .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("PERIOD_LOCKED"));
         post("/api/collection/payments", fx.bearer(fx.thu07), """

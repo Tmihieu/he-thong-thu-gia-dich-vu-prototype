@@ -305,7 +305,7 @@ class CollectionServiceTest {
                 amount.exempt(), amount.exempt() ? "Hộ nghèo" : null, null);
         ChargeRequest req = ChargeRequest.issue("YCT-1026-01", october,
                 FeeType.create("ENV", "Phí", PricingMode.TARIFF, null), ChargeScope.ALL, java.util.Set.of(), null,
-                LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 25), null, null, 2L);
+                LocalDate.of(2026, 10, 1), null, null, 2L);
         return withId(Charge.issue("KT-1026-DTH-H000128", req, s, c, dv01, amount), id);
     }
 

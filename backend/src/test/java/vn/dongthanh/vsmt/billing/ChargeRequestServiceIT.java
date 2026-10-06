@@ -117,7 +117,7 @@ class ChargeRequestServiceIT extends IntegrationTest {
 
     @Test
     void previewAndPublishWholeCommuneGiveTheSameCountAndTotal() throws Exception {
-        String body = request(october, env, "ALL", "", "2026-10-25");
+        String body = request(october, env, "ALL", "");
 
         preview(officer, body)
                 .andExpect(status().isOk())
@@ -145,7 +145,7 @@ class ChargeRequestServiceIT extends IntegrationTest {
 
     @Test
     void publishingAgainCreatesNoDuplicates() throws Exception {
-        String body = request(october, env, "ALL", "", "2026-10-25");
+        String body = request(october, env, "ALL", "");
         publish(officer, body).andExpect(status().isCreated());
 
         publish(officer, body)
@@ -160,9 +160,9 @@ class ChargeRequestServiceIT extends IntegrationTest {
 
     @Test
     void quarterAfterMonthSkipsSubjectsAlreadyCharged() throws Exception {
-        publish(officer, request(october, env, "ALL", "", "2026-10-25")).andExpect(status().isCreated());
+        publish(officer, request(october, env, "ALL", "")).andExpect(status().isCreated());
 
-        preview(officer, request(q4, env, "ALL", "", "2026-12-20"))
+        preview(officer, request(q4, env, "ALL", ""))
                 .andExpect(jsonPath("$.chargeCount").value(0))
                 .andExpect(jsonPath("$.skipped[?(@.reason == 'DUPLICATE_CHARGE')].subjectCode",
                         contains("DTH-H000128", "DTH-H000129", "DTH-H000130", "DTH-H000133")));
@@ -170,8 +170,7 @@ class ChargeRequestServiceIT extends IntegrationTest {
 
     @Test
     void extraFeeUsesEnteredPriceAndItsOwnCodeSuffix() throws Exception {
-        publish(officer, request(october, extra, "AREAS", "\"areaIds\":[%d],\"unitPrice\":150000,".formatted(kv07.getId()),
-                "2026-10-25"))
+        publish(officer, request(october, extra, "AREAS", "\"areaIds\":[%d],\"unitPrice\":150000,".formatted(kv07.getId())))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.chargeCount").value(3))
                 .andExpect(jsonPath("$.totalAmount").value(300_000));
@@ -189,7 +188,7 @@ class ChargeRequestServiceIT extends IntegrationTest {
     @Test
     void totalOverflowIs422AlreadyInPreviewAndNothingIsIssued() throws Exception {
         // Mỗi khoản vừa kiểu long, nhưng cộng hai khoản không miễn là tràn.
-        String body = request(october, extra, "ALL", "\"unitPrice\":9223372036854775807,", "2026-10-25");
+        String body = request(october, extra, "ALL", "\"unitPrice\":9223372036854775807,");
         preview(officer, body)
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("CHARGE_AMOUNT_TOO_LARGE"))
@@ -204,14 +203,14 @@ class ChargeRequestServiceIT extends IntegrationTest {
     @Test
     void enteredPriceZeroIsReportedBeforeAnyScopeOrEligibilityCheck() throws Exception {
         // Phạm vi AREAS không có tổ nào cũng sẽ lỗi, nhưng lỗi giá phải đến trước (BR-BIL-09).
-        preview(officer, request(october, extra, "AREAS", "\"unitPrice\":0,", "2026-10-25"))
+        preview(officer, request(october, extra, "AREAS", "\"unitPrice\":0,"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("CHARGE_PRICE_INVALID"));
     }
 
     @Test
     void enteredPriceZeroIs422() throws Exception {
-        preview(officer, request(october, extra, "ALL", "\"unitPrice\":0,", "2026-10-25"))
+        preview(officer, request(october, extra, "ALL", "\"unitPrice\":0,"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("CHARGE_PRICE_INVALID"))
                 .andExpect(jsonPath("$.message").value("Đơn giá phải lớn hơn 0."));
@@ -219,13 +218,13 @@ class ChargeRequestServiceIT extends IntegrationTest {
 
     @Test
     void companyScopeUsesAssignmentsOnTheIssueDate() throws Exception {
-        preview(officer, request(october, env, "COMPANY", "\"companyId\":%d,".formatted(dv01.getId()), "2026-10-25"))
+        preview(officer, request(october, env, "COMPANY", "\"companyId\":%d,".formatted(dv01.getId())))
                 .andExpect(jsonPath("$.chargeCount").value(4));
     }
 
     @Test
     void lockedPeriodIs422AndOnlyCommuneOfficerMayIssue() throws Exception {
-        String body = request(october, env, "ALL", "", "2026-10-25");
+        String body = request(october, env, "ALL", "");
         preview(token("admin_it", Role.ADMIN, null), body).andExpect(status().isForbidden());
         publish(token("dv01_it", Role.COMPANY_MANAGER, dv01.getId()), body).andExpect(status().isForbidden());
 
@@ -237,23 +236,15 @@ class ChargeRequestServiceIT extends IntegrationTest {
     }
 
     @Test
-    void householdDueDateMustNotBeAfterPeriodDueDate() throws Exception {
-        preview(officer, request(october, env, "ALL", "", "2026-11-05"))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("CHARGE_DUE_AFTER_PERIOD"));
-        // Ngày mở kỳ 10/2026 là 01/10 (mở kỳ không nhập ngày mở): trước đó bị chặn như form web.
-        publish(officer, request(october, env, "ALL", "", "2026-09-30"))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("CHARGE_DUE_BEFORE_OPEN"));
-        preview(officer, request(october, env, "ALL", "", "2026-10-01")).andExpect(status().isOk());
-        preview(officer, request(october, env, "AREAS", "\"areaIds\":[],", "2026-10-25"))
+    void emptyAreaScopeIsRejected() throws Exception {
+        preview(officer, request(october, env, "AREAS", "\"areaIds\":[],"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("CHARGE_SCOPE_INVALID"));
     }
 
     @Test
     void chargeListIsFilteredAndScopedToTheCompany() throws Exception {
-        publish(officer, request(october, env, "ALL", "", "2026-10-25")).andExpect(status().isCreated());
+        publish(officer, request(october, env, "ALL", "")).andExpect(status().isCreated());
 
         mvc.perform(get("/api/billing/charges").param("periodId", october.getId().toString()).param("status", "UNPAID")
                         .header(HttpHeaders.AUTHORIZATION, officer))
@@ -283,9 +274,9 @@ class ChargeRequestServiceIT extends IntegrationTest {
         }
     }
 
-    private String request(CollectionPeriod period, FeeType fee, String scope, String extraFields, String due) {
-        return "{\"periodId\":%d,\"feeTypeId\":%d,\"scopeType\":\"%s\",%s\"dueDate\":\"%s\"}"
-                .formatted(period.getId(), fee.getId(), scope, extraFields, due);
+    private String request(CollectionPeriod period, FeeType fee, String scope, String extraFields) {
+        return "{\"periodId\":%d,\"feeTypeId\":%d,\"scopeType\":\"%s\"%s}"
+                .formatted(period.getId(), fee.getId(), scope, extraFields.isEmpty() ? "" : "," + extraFields.replaceAll(",$", ""));
     }
 
     private ResultActions preview(String token, String body) throws Exception {

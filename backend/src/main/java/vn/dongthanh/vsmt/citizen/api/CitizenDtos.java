@@ -161,16 +161,16 @@ public final class CitizenDtos {
             @Schema(requiredMode = RequiredMode.REQUIRED) long remainingAmount,
             @Schema(requiredMode = RequiredMode.REQUIRED) LocalDate coverageFrom,
             @Schema(requiredMode = RequiredMode.REQUIRED) LocalDate coverageTo,
-            @Schema(requiredMode = RequiredMode.REQUIRED) LocalDate dueDate,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Hạn nộp của kỳ (hạn duy nhất)") LocalDate dueDate,
             @Schema(requiredMode = RequiredMode.REQUIRED) ChargeStatus status,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Chưa thu và đã qua hạn đóng") boolean overdue,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Chưa thu và đã qua hạn nộp của kỳ") boolean overdue,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) OffsetDateTime paidAt) {
 
         static CitizenChargeDto of(ChargeView v) {
             Charge c = v.charge();
             return new CitizenChargeDto(c.getId(), c.getCode(), c.getPeriod().getId(), c.getPeriod().getCode(),
                     c.getPeriod().getLabel(), c.getFeeType().getCode(), c.getFeeType().getName(), c.getAmount(),
-                    v.paidAmount(), v.remainingAmount(), c.getCoverageFrom(), c.getCoverageTo(), c.getDueDate(),
+                    v.paidAmount(), v.remainingAmount(), c.getCoverageFrom(), c.getCoverageTo(), c.getPeriod().getDueDate(),
                     c.getStatus(), v.overdue(), c.getPaidAt());
         }
     }

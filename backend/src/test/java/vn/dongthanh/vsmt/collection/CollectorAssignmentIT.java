@@ -122,7 +122,7 @@ class CollectorAssignmentIT extends IntegrationTest {
         }
         User officer = users.save(User.create("canbo_it", "Cán bộ", Role.COMMUNE_OFFICER, null, "x"));
         chargeRequests.publish(new IssueCommand(october.getId(), env.getId(), ChargeScope.ALL, null, null,
-                LocalDate.of(2026, 10, 25), null, null), new CurrentUser(officer.getId(), "canbo_it", Role.COMMUNE_OFFICER, null));
+                null, null), new CurrentUser(officer.getId(), "canbo_it", Role.COMMUNE_OFFICER, null));
     }
 
     @Test

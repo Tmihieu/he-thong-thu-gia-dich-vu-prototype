@@ -24,7 +24,6 @@ class ChargeTest {
         when(period.getStartDate()).thenReturn(LocalDate.of(2026, 10, 1));
         when(period.getEndDate()).thenReturn(LocalDate.of(2026, 10, 31));
         when(request.getPeriod()).thenReturn(period);
-        when(request.getDueDate()).thenReturn(LocalDate.of(2026, 10, 25));
         ServiceSubject subject = mock(ServiceSubject.class);
         when(subject.getArea()).thenReturn(mock(Area.class));
         return Charge.issue("KT-1026-X", request, subject, mock(ServiceContract.class), null,

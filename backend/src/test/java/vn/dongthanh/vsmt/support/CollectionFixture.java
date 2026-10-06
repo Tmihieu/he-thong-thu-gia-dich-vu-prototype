@@ -122,7 +122,7 @@ public class CollectionFixture {
             }
         }
         chargeRequests.publish(new IssueCommand(october.getId(), env.getId(), ChargeScope.ALL, null, null,
-                LocalDate.of(2026, 10, 25), null, null), actor(officer));
+                null, null), actor(officer));
         return this;
     }
 

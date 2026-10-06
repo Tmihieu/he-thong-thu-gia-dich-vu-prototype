@@ -131,7 +131,7 @@ class MoneyConcurrencyIT extends IntegrationTest {
                 () -> periodLock.lock(fx.october.getId(), fx.actor(fx.officer)),
                 () -> pay(80_000, "during-lock"),
                 () -> post("/api/billing/charge-requests", officer,
-                        "{\"periodId\":%d,\"feeTypeId\":%d,\"scopeType\":\"ALL\",\"dueDate\":\"2026-10-25\"}"
+                        "{\"periodId\":%d,\"feeTypeId\":%d,\"scopeType\":\"ALL\"}"
                                 .formatted(fx.october.getId(), extra.getId())));
 
         assertRejected(waited.get(0), "PERIOD_LOCKED");
@@ -147,7 +147,7 @@ class MoneyConcurrencyIT extends IntegrationTest {
 
         List<MockHttpServletResponse> waited = whileHeldOpen(
                 () -> chargeRequests.publish(new IssueCommand(fx.october.getId(), extra.getId(), ChargeScope.ALL, null,
-                        null, LocalDate.of(2026, 10, 25), null, null), fx.actor(fx.officer)),
+                        null, null, null), fx.actor(fx.officer)),
                 () -> post("/api/remittance/periods/" + fx.october.getId() + "/lock", officer, "{}"));
 
         assertRejected(waited.get(0), "PERIOD_HAS_DEBT");
