@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 
 import { api } from '../../../api/client';
-import { semantic } from '../../../app/theme';
+import { brand, semantic } from '../../../app/theme';
 import { useAuth } from '../../../app/auth/authContext';
 import { errorText as apiErrorText } from '../../../shared/errorText';
 import { formatMoney } from '../../../shared/format';
@@ -121,7 +121,6 @@ export function ReconciliationPage() {
   const qrTotal = sum(rows, (r) => r.qrTotal);
   const counts = { all: rows.length, open: rows.filter((r) => !r.settled).length, settled: rows.filter((r) => r.settled).length };
   const shown = rows.filter((r) => filter === 'all' || (filter === 'settled') === r.settled);
-  const diffTone = diff > 0 ? semantic.info : diff < 0 ? semantic.warning : semantic.success;
   const qr = unidentified.data;
 
   const voucherCell = (r: LedgerRow) => {
@@ -205,25 +204,20 @@ export function ReconciliationPage() {
       {ledger.error && <ErrorBlock error={ledger.error} onRetry={() => void ledger.refetch()} />}
 
       <section aria-label="Tiền xã đang giữ trong kỳ">
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'baseline', gap: '0 16px', marginBottom: 8 }}>
-          <Typography.Title level={5} style={{ margin: 0 }}>
-            Tiền xã đang giữ trong kỳ
-          </Typography.Title>
-          <Typography.Text type="secondary">So với phần phí vận chuyển xã được hưởng</Typography.Text>
-        </div>
+        <h2 style={{ margin: '0 0 12px', padding: '10px 16px', background: brand.chrome, color: '#fff', fontSize: 18, fontWeight: 700 }}>Tiền xã đang giữ trong kỳ</h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', gap: 12 }}>
-          <Tile label="Xã đang giữ" value={holding} accent={semantic.info.fg}>
+          <Tile label="Xã đang giữ" value={holding}>
             <Line label="QR đã nhận" value={qrTotal} />
             <Line label="+ Đã thu từ Cty" value={sum(rows, (r) => r.received)} />
             <Line label="− Đã chi cho Cty" value={sum(rows, (r) => r.communePaid)} />
           </Tile>
           <Operator>−</Operator>
-          <Tile label="Xã được hưởng · phí vận chuyển" value={entitled} accent={semantic.warning.fg}>
+          <Tile label="Xã được hưởng · phí vận chuyển" value={entitled}>
             <Line label="Vận chuyển trong QR" value={sum(rows, (r) => r.qrTransport)} />
             <Line label="+ Vận chuyển trong tiền mặt" value={sum(rows, (r) => r.cashTransport)} />
           </Tile>
           <Operator>=</Operator>
-          <Tile label={diff > 0 ? 'Xã đang THỪA' : diff < 0 ? 'Xã đang THIẾU' : 'Đã cân'} value={Math.abs(diff)} accent={diffTone.fg} tint={diffTone.bg} tone={diffTone.fg}>
+          <Tile label={diff > 0 ? 'Xã đang THỪA' : diff < 0 ? 'Xã đang THIẾU' : 'Đã cân'} value={Math.abs(diff)}>
             <span style={{ fontSize: 13 }}>
               {diff > 0
                 ? 'Đây là tiền thu gom của Cty mà xã đang giữ hộ, phải chi trả.'
@@ -309,27 +303,25 @@ export function ReconciliationPage() {
 }
 
 /** Ô số lớn của phép tính: vạch màu trên đầu, nhãn, số, rồi các dòng diễn giải. */
-function Tile({ label, value, accent, tint, tone, children }: { label: string; value: number; accent: string; tint?: string; tone?: string; children: ReactNode }) {
+function Tile({ label, value, children }: { label: string; value: number; children: ReactNode }) {
   return (
     <div
       style={{
         flex: '1 1 280px',
         minWidth: 0,
         padding: '16px 20px 18px',
-        background: tint ?? '#fff',
-        color: tone,
+        background: '#fff',
         border: `1px solid ${BORDER}`,
-        borderTop: `4px solid ${accent}`,
         display: 'flex',
         flexDirection: 'column',
         gap: 6,
       }}
     >
-      <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.02em', color: tone ?? semantic.neutral.fg }}>{label}</span>
+      <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.02em', color: semantic.neutral.fg }}>{label}</span>
       <strong style={{ fontSize: 32, lineHeight: 1.2 }}>
         <MoneyText value={value} />
       </strong>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 6, paddingTop: 10, borderTop: `1px dashed ${tone ?? BORDER}`, fontSize: 13 }}>{children}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 6, paddingTop: 10, borderTop: `1px dashed ${BORDER}`, fontSize: 13 }}>{children}</div>
     </div>
   );
 }
@@ -345,10 +337,8 @@ function Line({ label, value }: { label: string; value: number }) {
 
 function Operator({ children }: { children: ReactNode }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto' }}>
-      <span style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, background: '#fff', border: `1px solid ${BORDER}`, color: semantic.neutral.fg }}>
-        {children}
-      </span>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 32px', fontSize: 31, fontWeight: 700, color: '#000' }}>
+      {children}
     </div>
   );
 }
