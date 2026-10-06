@@ -41,36 +41,6 @@ Cách hiểu (chờ xác nhận):
 4. Hồ sơ cũ chuyển loại: hộ kinh doanh, doanh nghiệp dưới 9.000 kg → nguồn thải nhỏ; từ 9.000 kg → nguồn thải lớn?
 5. Công tắc nhân khẩu đặt trong **biểu giá** (áp từ kỳ dùng biểu giá đó, khớp "từ kỳ sau")?
 6. Khi không bật nhân khẩu, cán bộ xã còn được chọn theo nhân khẩu cho từng hộ trong đăng ký thu phí không?
-7. "Tự cân" là **cân thực tế mỗi kỳ** hay **cân một lần lấy định mức kg/tháng** (như hiện nay, góp ý BA 03/10)? Nếu cân mỗi kỳ: ai nhập kg (người đi thu / công ty), ai duyệt, lập khoản có phải chờ số cân không.
-
-## 3b. Use case
-
-UC có thể thêm mới (tùy câu 5 và 7):
-- **UC-56 Cài đặt thu theo nhân khẩu** (quản trị viên: bật toàn xã / chọn địa bàn, đơn giá một người): chỉ thêm nếu công tắc nằm ngoài biểu giá; đặt trong biểu giá thì gộp vào UC-19.
-- **UC-57 Ghi nhận khối lượng cân theo kỳ**: chỉ thêm nếu tự cân là cân mỗi kỳ; cân một lần thì nằm trong UC-09.
-
-UC đang có phải sửa trong `docs/use-cases.md`:
-
-| UC | Sửa gì |
-|---|---|
-| UC-05 Nhập hộ từ Excel | Cột loại nguồn thải nhỏ / lớn; nguồn thải nhỏ có cột theo QĐ hay tự cân |
-| UC-06 Tạo hồ sơ | Loại mới; nguồn thải nhỏ chọn theo QĐ / tự cân; chủ nhà trọ xếp theo khối lượng |
-| UC-07 Tra cứu hồ sơ | Lọc theo loại mới |
-| UC-08 Cập nhật hồ sơ | Số nhân khẩu là căn cứ tính tiền khi tính theo nhân khẩu; đổi áp từ kỳ sau |
-| UC-09 Đăng ký thu phí | Nhóm cân theo bảng mục 3; đổi cách tính áp từ kỳ sau |
-| UC-19 Biểu giá | Đơn giá một người, ô theo nhân khẩu + phạm vi toàn xã / địa bàn, phí xử lý (nếu chốt) |
-| UC-21 Phát hành khoản | Tính theo nhân khẩu với hộ trong phạm vi bật; lưu số nhân khẩu trên khoản |
-| UC-22 Tra cứu khoản | Hiện cách tính (nhân khẩu × đơn giá, kg × đơn giá) |
-| UC-31 Người dân xem khoản | Hiện cách tính như UC-22 (không bắt buộc) |
-
-Phần thuật ngữ đầu `docs/use-cases.md`: "Hộ/cơ sở" đổi thành hộ gia đình / nguồn thải nhỏ / nguồn thải lớn; thêm "Tính theo nhân khẩu", "Tự cân". Nếu thêm UC-56 / UC-57 thì sửa cả `docs/phan-quyen.md`.
-
-## 3c. Việc chưa làm
-
-- [ ] Người dùng trả lời 7 câu ở mục 3.
-- [ ] Sửa `docs/use-cases.md`, `docs/phan-quyen.md`, `docs/kich-ban-kiem-thu.md` theo mục 3b.
-- [ ] Sửa data-dictionary chính thức (nhóm giá, loại đối tượng, biểu giá) thay cho ghi chú tạm ở dòng `BY_VOLUME`.
-- [ ] Code theo mục 4: backend → web → Flutter, mỗi lát một commit.
 
 ## 4. File cần sửa
 
