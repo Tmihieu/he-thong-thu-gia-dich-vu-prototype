@@ -1,4 +1,5 @@
 import { Space, Table, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { useState } from 'react';
 
 import { useAuth } from '../../../app/auth/authContext';
@@ -13,10 +14,14 @@ import { PreviousDebtAlert } from '../PreviousDebtAlert';
 import { LockPeriodButton } from './LockPeriodButton';
 import { PeriodTrend } from './PeriodTrend';
 
+/** Các cột số rộng bằng nhau; mọi ô căn giữa cả chiều ngang lẫn chiều dọc, kể cả ô hai dòng (đã nộp, đã trừ hoàn). */
+const centered = (cols: ColumnsType<LedgerRow>): ColumnsType<LedgerRow> =>
+  cols.map((c, i) => ({ ...c, align: 'center', width: i === 0 ? 200 : 140, onCell: () => ({ style: { verticalAlign: 'middle' } }) }));
+
 function Gap({ gap }: { gap: number }) {
   if (gap === 0) return <MoneyText value={0} />;
   return (
-    <Space direction="vertical" size={0} style={{ textAlign: 'right' }}>
+    <Space direction="vertical" size={0} style={{ textAlign: 'center' }}>
       <Typography.Text type={gap < 0 ? 'danger' : undefined}>
         <MoneyText value={gap} />
       </Typography.Text>
@@ -74,8 +79,9 @@ export function ReconciliationPage() {
         dataSource={rows}
         pagination={false}
         locale={{ emptyText: 'Kỳ này chưa có khoản phải thu' }}
-        scroll={{ x: 1300 }}
-        columns={[
+        tableLayout="fixed"
+        scroll={{ x: 1400 }}
+        columns={centered([
           { title: 'Công ty', dataIndex: 'companyName' },
           { title: 'Phải thu', dataIndex: 'due', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           {
@@ -121,7 +127,7 @@ export function ReconciliationPage() {
             dataIndex: 'reconciliation',
             render: (v: LedgerRow['reconciliation']) => <StatusTag tone={RECONCILIATION[v].tone}>{RECONCILIATION[v].label}</StatusTag>,
           },
-        ]}
+        ])}
       />
     </>
   );
