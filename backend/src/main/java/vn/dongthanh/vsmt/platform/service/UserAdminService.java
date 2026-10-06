@@ -25,8 +25,8 @@ import vn.dongthanh.vsmt.platform.domain.UserStatus;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
 
 /**
- * Quản trị tài khoản web (T51): ADMIN quản mọi tài khoản; quản lý công ty chỉ quản tài khoản người đi thu của chính
- * công ty mình (BR-PLT-08). Mọi thao tác ghi nhật ký, không bao giờ ghi mật khẩu.
+ * Quản trị tài khoản web (T51): chỉ ADMIN tạo / sửa / khóa / đặt lại mật khẩu (UC-04); quản lý công ty chỉ xem danh
+ * sách người đi thu của công ty mình (BR-PLT-08). Mọi thao tác ghi nhật ký, không bao giờ ghi mật khẩu.
  * Quản trị không tự khóa hay tự đổi vai trò của mình để khỏi mất quyền vào hệ thống.
  * ponytail: khóa/đổi vai trò chỉ chặn từ lần đăng nhập sau; token đang dùng còn hiệu lực tới hết hạn (8 giờ).
  * Cần chặn ngay thì kiểm trạng thái tài khoản mỗi request.
@@ -45,10 +45,6 @@ public class UserAdminService {
 
     public record UserCommand(String fullName, Role role, Long companyId, String phone, String email,
             String organization) {
-    }
-
-    /** Quản lý công ty chỉ nhập từng này; vai trò và công ty do máy chủ ép, không nhận từ client. */
-    public record CollectorCommand(String fullName, String phone, String email) {
     }
 
     @Transactional(readOnly = true)
@@ -123,28 +119,11 @@ public class UserAdminService {
         return user;
     }
 
-    // --- Quản lý công ty quản người đi thu của công ty mình (BR-PLT-08) ---
+    // --- Quản lý công ty chỉ xem người đi thu của công ty mình (BR-PLT-08) ---
 
     @Transactional(readOnly = true)
     public List<User> listCollectors(CurrentUser actor) {
         return users.findByCompanyIdAndRoleOrderByUsername(ownCompany(actor), Role.COLLECTOR);
-    }
-
-    public User createCollector(String username, String password, CollectorCommand cmd, CurrentUser actor) {
-        return doCreate(username, password, collectorCommand(cmd, null, actor), actor);
-    }
-
-    public User updateCollector(Long id, CollectorCommand cmd, CurrentUser actor) {
-        User user = findOwnCollector(id, actor);
-        return doUpdate(user, collectorCommand(cmd, user.getOrganization(), actor), actor);
-    }
-
-    public User setCollectorStatus(Long id, UserStatus status, CurrentUser actor) {
-        return doSetStatus(findOwnCollector(id, actor), status, actor);
-    }
-
-    public User resetCollectorPassword(Long id, String password, CurrentUser actor) {
-        return doResetPassword(findOwnCollector(id, actor), password, actor);
     }
 
     private static Long ownCompany(CurrentUser actor) {
@@ -153,20 +132,6 @@ public class UserAdminService {
             throw new AccessDeniedException("Tài khoản quản lý chưa gắn công ty");
         }
         return actor.companyId();
-    }
-
-    private static UserCommand collectorCommand(CollectorCommand cmd, String organization, CurrentUser actor) {
-        return new UserCommand(cmd.fullName(), Role.COLLECTOR, ownCompany(actor), cmd.phone(), cmd.email(), organization);
-    }
-
-    /** Tài khoản không phải người đi thu của công ty mình thì coi như không tồn tại, để không lộ tài khoản khác. */
-    private User findOwnCollector(Long id, CurrentUser actor) {
-        Long companyId = ownCompany(actor);
-        User user = find(id);
-        if (user.getRole() != Role.COLLECTOR || !Objects.equals(user.getCompanyId(), companyId)) {
-            throw new NotFoundException("USER_NOT_FOUND", "Không tìm thấy tài khoản.");
-        }
-        return user;
     }
 
     /** bcrypt chỉ nhận 72 byte; chữ có dấu chiếm 2–3 byte nên @Size(max = 72) ký tự chưa đủ chặn. */

@@ -24,12 +24,12 @@ Cột "Kiểm" để các lane điền khi rà: ✔ khớp · ✘ lệch (ghi s�
 |---|---|---|---|---|
 | BR-PLT-01 | Vai trò nội bộ: `ADMIN`, `COMMUNE_OFFICER`, `COMPANY_MANAGER`, `COLLECTOR`, `LEADER`. Người dân chỉ ở `CitizenAccount`, token riêng | DD G8, 29/09 | Chốt | |
 | BR-PLT-02 | Đăng nhập ra đúng menu theo vai trò; API sai vai trò → 403 | SPEC §9.2 | Chốt | |
-| BR-PLT-03 | Mật khẩu 8–72 ký tự, quá 72 byte → 422 `PASSWORD_TOO_LONG`; quản trị (hoặc quản lý công ty với người đi thu của mình, BR-PLT-08) đặt / đặt lại | DD T51 | Chốt | |
+| BR-PLT-03 | Mật khẩu 8–72 ký tự, quá 72 byte → 422 `PASSWORD_TOO_LONG`; quản trị đặt / đặt lại (kể cả mật khẩu người đi thu, BR-PLT-08) | DD T51 | Chốt | |
 | BR-PLT-04 | Quản trị không tự khóa, không tự đổi vai trò mình (`CANNOT_LOCK_SELF`, `CANNOT_CHANGE_OWN_ROLE`) | DD T51 | Chốt | |
 | BR-PLT-05 | Người đi thu còn giữ tiền mặt → không đổi vai trò / công ty (`COLLECTOR_HOLDS_CASH`). Đã bỏ phân tổ nên không còn điều kiện `COLLECTOR_HAS_ASSIGNMENTS` | DD T51, góp ý BA 05/10 | Chốt | |
 | BR-PLT-06 | Khóa tài khoản chỉ chặn từ lần đăng nhập sau (token cũ còn tới hết hạn) | DD T51 | Demo | |
 | BR-PLT-07 | Lãnh đạo: chỉ GET, trừ `/api/leadership/**` và `/api/notifications/**`. Không khóa kỳ, không cấu hình, không tài khoản | SPEC §9.10 | Chốt | |
-| BR-PLT-08 | Quản lý công ty tự tạo, sửa họ tên / liên hệ, khóa / mở khóa, đặt lại mật khẩu **chỉ tài khoản `COLLECTOR` của công ty mình** (`/api/platform/collector-accounts`). Vai trò và công ty do máy chủ ép, không nhận từ client; tài khoản ngoài phạm vi → 404 `USER_NOT_FOUND`. Quản trị vẫn quản mọi tài khoản; ghi nhật ký như BR-PLT-03..06 | Quyết định 04/10 (mở rộng T51) | Chốt | |
+| BR-PLT-08 | **Sửa 05/10/2026 (UC-04):** chỉ **quản trị viên** tạo, sửa họ tên / liên hệ, khóa / mở khóa, đặt lại mật khẩu tài khoản `COLLECTOR`, qua `/api/platform/users` (chọn công ty; mỗi người đi thu thuộc đúng một công ty). Quản lý công ty **không còn** các quyền này, chỉ **xem** danh sách người đi thu của công ty mình (`GET /api/platform/collector-accounts`, phục vụ UC-33); ghi nhật ký như BR-PLT-03..06 | Quyết định 04/10 (mở rộng T51), sửa theo góp ý BA 05/10 | Chốt | |
 
 ## 2. Dữ liệu gốc (`master-data`)
 
