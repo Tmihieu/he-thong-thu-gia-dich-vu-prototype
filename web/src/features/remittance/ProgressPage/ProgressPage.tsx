@@ -98,8 +98,8 @@ export function ProgressPage() {
         <StatCard
           label="Đã thu (tiền mặt, chuyển khoản)"
           tone="info"
-          value={<MoneyText value={sum('collected')} />}
-          hint={sum('debtCollected') > 0 && <>trong đó thu công nợ kỳ cũ: <MoneyText value={sum('debtCollected')} /></>}
+          value={<MoneyText value={thisPeriod} />}
+          hint={sum('debtCollected') > 0 && <>thu thêm công nợ kỳ cũ: <MoneyText value={sum('debtCollected')} /></>}
         />
         <StatCard
           label="Tỷ lệ đã thu"
@@ -193,7 +193,9 @@ export function ProgressPage() {
             ),
           },
           { title: 'Phải thu', dataIndex: 'due', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-          { title: 'Đã thu', dataIndex: 'collected', align: 'right', render: (v: number) => <MoneyText value={v} /> },
+          // Đã thu chỉ phần của kỳ này; tiền hộ đóng nợ kỳ trước làm giảm cột công nợ tháng trước.
+          { title: 'Đã thu', align: 'right', render: (_, r) => <MoneyText value={r.collected - r.debtCollected} /> },
+          { title: 'Công nợ tháng trước', dataIndex: 'lastPeriodDebt', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           // Phải nộp xã <= 0 thì chưa có gì để nộp: không chia cho 0 hay số âm.
           { title: 'Tỷ lệ nộp', render: (_, r) => (r.payable > 0 ? <Rate rate={r.remittedRate} /> : '—') },
           {

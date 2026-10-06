@@ -18,7 +18,7 @@ const dv01 = {
   companyId: 1, companyCode: 'DV01', companyName: 'Công ty MTĐT Đông Thạnh', periodId: 10, due: 1_600_000, chargeCount: 20,
   collected: 1_200_000, cashCollected: 1_200_000, received: 1_000_000, receiptCount: 1, remaining: 600_000, gap: -200_000, previousDebt: 0,
   overdue: false, collectionRate: 75, lowCollectionRate: false, remittedRate: 62.5, lowRemittedRate: false, progress: 'PARTIAL',
-  reconciliation: 'PENDING', adjustment: 0, refunded: 0, retained: 0, payable: 1_600_000, debtCollected: 0, communePaid: 0, communeOwed: 0,
+  reconciliation: 'PENDING', adjustment: 0, refunded: 0, retained: 0, payable: 1_600_000, debtCollected: 0, communePaid: 0, communeOwed: 0, lastPeriodDebt: 0,
 };
 const dv07 = { ...dv01, companyId: 7, companyCode: 'DV07', companyName: 'Công ty Xanh Sài Gòn', due: 800_000, collected: 200_000,
   received: 0, receiptCount: 0, remaining: 800_000, gap: -200_000, previousDebt: 150_000, collectionRate: 25,
@@ -72,7 +72,9 @@ describe('Tiến độ thu', () => {
     expect(await screen.findAllByLabelText('Chưa nộp đủ')).toHaveLength(2);
     expect(screen.getByText('1 tổ chưa có công ty thu: KV24')).toBeInTheDocument();
     const headers = screen.getAllByRole('columnheader').map((h) => h.textContent);
-    expect(headers).toEqual(expect.arrayContaining(['Công ty', 'Phải thu', 'Đã thu', 'Tỷ lệ nộp', 'Đã nộp đủ']));
+    expect(headers).toEqual(expect.arrayContaining(['Công ty', 'Phải thu', 'Đã thu', 'Công nợ tháng trước', 'Tỷ lệ nộp', 'Đã nộp đủ']));
+    // Công nợ tháng trước nằm ngay sau Đã thu.
+    expect(headers.indexOf('Công nợ tháng trước')).toBe(headers.indexOf('Đã thu') + 1);
     for (const removed of ['Phải nộp xã', 'Đã nộp', 'Còn phải nộp']) expect(headers).not.toContain(removed);
     expect(screen.queryByRole('columnheader', { name: 'Nợ kỳ trước' })).not.toBeInTheDocument();
     // Cảnh báo đầu trang thay cho cột: chỉ DV07 có previousDebt.
@@ -138,7 +140,9 @@ describe('Tiến độ thu', () => {
     expect(await within(debtCard).findByText('2 hộ')).toBeInTheDocument();
     expect(debtCard).toHaveTextContent('240.000 đ');
     const collectedCard = screen.getByText('Đã thu (tiền mặt, chuyển khoản)').closest('.stat-card') as HTMLElement;
-    await waitFor(() => expect(collectedCard).toHaveTextContent('trong đó thu công nợ kỳ cũ: 160.000 đ'));
+    // Đã thu chỉ phần của kỳ (1.200.000 − 160.000), nợ kỳ cũ ở dòng phụ.
+    await waitFor(() => expect(collectedCard).toHaveTextContent('thu thêm công nợ kỳ cũ: 160.000 đ'));
+    expect(collectedCard).toHaveTextContent('1.040.000 đ');
     // Tỷ lệ đã thu = (1.200.000 − 160.000 thu nợ kỳ cũ) / 1.600.000 = 65%.
     const rateCard = screen.getByText('Tỷ lệ đã thu').closest('.stat-card') as HTMLElement;
     expect(rateCard).toHaveTextContent('65%');
