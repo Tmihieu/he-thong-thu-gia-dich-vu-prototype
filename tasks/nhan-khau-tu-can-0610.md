@@ -1,6 +1,6 @@
 # Thu theo nhân khẩu, nguồn thải tự cân (họp công ty 05/10)
 
-Trạng thái: **chưa code**, đang chờ xác nhận các câu ở mục 3. Trả lời BR-MD-16 (thu theo hộ hay theo nhân khẩu).
+Trạng thái: **chưa code**; đã trả lời mục 3 (06/10), còn câu 8 và luồng phí xử lý. Trả lời BR-MD-16 (thu theo hộ hay theo nhân khẩu).
 
 ## 1. Đã chốt (06/10)
 
@@ -33,18 +33,26 @@ Cách hiểu (chờ xác nhận):
 | Nguồn thải nhỏ chọn như nguồn thải lớn (= "tự cân") | đ/kg, bảng mục 3 | 1.054 đ/kg |
 | Nguồn thải lớn (từ 9.000 kg/tháng) | đ/kg, bảng mục 3 | 1.054 đ/kg |
 
-## 3. Còn hỏi
+## 3. Đã trả lời (06/10)
 
-1. Ngưỡng Điều 58 NĐ 08 có đúng **300 kg/ngày (≈ 9.000 kg/tháng)** không? (nhớ từ văn bản, chưa đối chiếu). Nếu đúng thì nhóm `BY_VOLUME` 500 đến dưới 9.000 kg là **nguồn thải nhỏ**, nhãn "chủ nguồn thải lớn" trong data-dictionary là sai.
-2. Bảng đơn giá ở mục 2 có đúng không? Nếu đúng thì phải thêm **phí xử lý** vào biểu giá, trái với BR-MD-12 (chốt 03/10: không có phí xử lý).
-3. Chủ nhà trọ lập hồ sơ loại nguồn thải nhỏ / lớn (không phải hộ gia đình)?
-4. Hồ sơ cũ chuyển loại: hộ kinh doanh, doanh nghiệp dưới 9.000 kg → nguồn thải nhỏ; từ 9.000 kg → nguồn thải lớn?
-5. Công tắc nhân khẩu đặt trong **biểu giá** (áp từ kỳ dùng biểu giá đó, khớp "từ kỳ sau")?
-6. Khi không bật nhân khẩu, cán bộ xã còn được chọn theo nhân khẩu cho từng hộ trong đăng ký thu phí không?
-7. "Tự cân" là **cân một lần lấy định mức kg/tháng** (như `BY_VOLUME` hiện nay, cân tháng đầu) hay **cân mỗi kỳ, nhập số kg thực tế**? Ai nhập số kg (BR-BIL-04)?
-8. Đơn giá một người có tách **thu gom + vận chuyển** không? Phần công ty giữ lại (BR-REM-02, `LedgerQueries`) đang tính theo tỷ lệ thu gom / tổng của từng nhóm.
-9. Hộ đổi số nhân khẩu giữa kỳ: số mới áp **từ kỳ sau** như BR-MD-09, hay áp ngay cho khoản chưa lập của kỳ đang chạy?
-10. Mã đối tượng: hồ sơ cũ giữ mã `KD…` / `DN…`, hồ sơ mới dùng tiền tố gì cho nguồn thải nhỏ / lớn?
+1. Đúng: từ 9.000 kg/tháng (300 kg/ngày) là nguồn thải lớn, dưới là nhỏ. `BY_VOLUME` là nguồn thải nhỏ, sửa nhãn.
+2. Đúng bảng mục 2. Nguồn thải nhỏ đăng ký theo QĐ được hỗ trợ tiền xử lý (bậc 126/250/500, 633 đ/kg). Nguồn thải lớn và nguồn thải nhỏ đăng ký cân (= "như chủ nguồn thải lớn") **không** được hỗ trợ: 1.054 đ/kg gồm 421 phí xử lý. → Thêm phí xử lý vào biểu giá, sửa BR-MD-12.
+3. Đúng: chủ nhà trọ lập hồ sơ nguồn thải nhỏ / lớn.
+4. Đúng: hộ kinh doanh, doanh nghiệp dưới 9.000 kg → nhỏ; từ 9.000 kg → lớn.
+5. Đúng: công tắc nhân khẩu + phạm vi (toàn xã / địa bàn) đặt trong biểu giá.
+6. Có: khi biểu giá không bật cho địa bàn của hộ, cán bộ xã vẫn chọn được nhóm "theo nhân khẩu" cho từng hộ trong đăng ký thu phí.
+7. Cán bộ xã nhập số kg **một lần** làm định mức kg/tháng, giống `BY_VOLUME` hiện nay.
+8. **Chưa biết**: đơn giá một người có tách thu gom + vận chuyển không. Tạm để dòng biểu giá nhóm nhân khẩu có đủ ô thu gom / vận chuyển như nhóm khác, quản trị viên tự nhập.
+9. Số nhân khẩu đổi thì **áp ngay** cho khoản chưa lập (lấy số hiện tại lúc lập khoản). Nhóm ≤2 / ≥3 theo QĐ giữ luật cũ (từ kỳ sau).
+10. Mình chọn: hồ sơ cũ giữ mã `KD…` / `DN…`; hồ sơ mới nguồn thải nhỏ `NN` + 5 số, nguồn thải lớn `NL` + 5 số.
+
+### Thiết kế dự kiến
+- Nhóm giá mới: `HH_PER_CAPITA` (đ/người/tháng, hộ gia đình), `FULL_COST_BY_KG` (đ/kg có phí xử lý; nguồn thải nhỏ đăng ký cân và nguồn thải lớn). Nguồn thải lớn chỉ được chọn `FULL_COST_BY_KG`; nhỏ chọn `SMALL_*`, `BY_VOLUME` hoặc `FULL_COST_BY_KG`; hộ gia đình chọn `HH_*`.
+- `TariffRate` thêm `processing_fee`; `monthly_total` = thu gom + vận chuyển + xử lý.
+- `TariffVersion` thêm cờ nhân khẩu + phạm vi (toàn xã / danh sách địa bàn). Lúc lập khoản: hộ gia đình mà biểu giá của kỳ bật cho địa bàn của hộ thì tính `HH_PER_CAPITA` bất kể nhóm trên đăng ký; nhóm `HH_PER_CAPITA` trên đăng ký thì luôn theo nhân khẩu. Khoản chụp nhóm thực tính và số nhân khẩu.
+
+### Còn hỏi
+- Phí xử lý thu được đi đâu? Mặc định: như vận chuyển, công ty nộp về xã (công ty chỉ giữ phần thu gom, BR-REM-02).
 
 ## 4. File cần sửa
 
