@@ -15,3 +15,32 @@ Làm tuần tự từng lát, mỗi lát một commit, chỉ một việc nặng
 | S7 | Flutter theo các lát trên (bỏ lịch thu gom) | | chưa |
 | S8 | Trang Tiến độ thu và Đối soát theo thiết kế đã duyệt: bỏ cột Nợ kỳ trước (cảnh báo đầu trang), thêm phải nộp xã, tỷ lệ nộp trơn (không cờ đỏ 45%), thẻ và danh sách công nợ hộ, cột hộ còn nợ kỳ cũ theo tổ, đối soát tách tiền mặt/chuyển khoản | UC-32, UC-38, UC-39, UC-22 | xong backend (`GET /api/remittance/household-debts`, `LedgerRowDto.debtCollected`, `AreaProgressDto.debtHouseholds`) và web; cờ 45% ở dashboard lãnh đạo (UC-46) và `lowCollectionRate` backend để nguyên |
 | S9 | Phiếu chi trả công ty: xã trả lại tiền khi phải nộp xã của công ty âm; sổ công ty–kỳ thêm `communePaid`, `communeOwed`; Tiến độ thu, Đối soát hiện đã trả/còn phải trả; tab "Phiếu chi trả công ty" ở Khoản thu của cán bộ xã, công ty xem ở mục Phiếu xã trả lại. S9b: hình thức trả và số chứng từ (V47); khóa kỳ chặn khi xã còn phải trả (`PERIOD_COMMUNE_OWES`); báo và xử lý sai sót phiếu chi dùng chung `receipt_issues` (`/api/remittance/payout-issues`, tab "Sai sót phiếu chi trả"); màn lãnh đạo "Phiếu chi trả" chỉ xem | UC-39, UC-55, UC-56, UC-57 | xong backend (V46, V47) và web |
+
+## Còn sót (ghi 06/10, cập nhật theo từng lượt)
+
+### Chưa làm
+- **S7 Flutter:** bỏ màn lịch thu gom (`GET /api/citizen/schedule` đã xóa); xử lý 409 `COMMUNE_BANK_ACCOUNT_MISSING` khi lấy VietQR; bỏ đọc `configured`.
+- **Màn công ty** (`CompanyOverviewPage`, `LedgerStats`) còn thẻ "Nợ kỳ trước"; chưa quyết có bỏ như hai trang xã không.
+- **Màn sai sót phiếu chi cho lãnh đạo:** API cho phép, web chưa có; chưa quyết có thêm không.
+- **Chưa ai bấm thử trên trình duyệt thật:** CSS căn giữa mọi bảng, Tiến độ thu, Đối soát, phiếu chi trả (S8, S9), mới kiểm bằng test.
+
+### Chờ quyết nghiệp vụ
+1. "Đã đến hạn nộp" hiện hiểu là hôm nay ≥ ngày hạn; đúng ngày hạn có tính không?
+2. Xóa nợ một khoản chưa thu vẫn làm giảm phải nộp xã của kỳ đang thu; có bỏ khỏi "điều chỉnh" không?
+3. Cờ 45%: UC-32 đã bỏ, dashboard lãnh đạo (UC-46), BR-REM-10/13 và backend `lowCollectionRate` còn dùng.
+4. Seed demo: 10/11 công ty "xã trả lại", kỳ 09 không khóa được tới khi lập phiếu chi cho DV01 (175.788 đ); có thêm seed kịch bản công ty còn nợ không?
+5. Xã chưa khai tài khoản nhận chuyển khoản: hiện 409 khi tạo VietQR, giao dịch SePay vào `WRONG_ACCOUNT`; đúng ý chưa?
+6. Quản trị viên và lãnh đạo bị chặn xem giao dịch chờ đối chiếu (UC-27) theo `phan-quyen.md`; đúng chưa?
+7. Chỗ đặt màn mới: UC-54 là tab trong Cấu hình của quản trị viên, UC-27 là menu riêng cán bộ xã; duyệt chưa?
+8. Hoàn tiền luôn trừ vào cột tiền mặt, kể cả hoàn cho khoản chuyển khoản; có chia theo phương thức gốc không?
+9. Thẻ Công nợ hộ tính trên mọi kỳ đã khóa, kể cả kỳ đang xem; có loại kỳ đang xem không?
+10. Khoản chuyển khoản không có người thu nên không hiện trong tiến độ theo người đi thu (UC-33); hỏi chị BA.
+11. Cột Điều chỉnh ở trang Đối soát: giữ hay bỏ (người dùng nói cả hai).
+
+### Dọn dẹp / hạ tầng
+- Chưa push. Các file docs đã xóa từ trước (`docs/cho-do-cu-*`, `docs/ra-soat/*`, `docs/thay-doi-2026-10-03.md`) vẫn nằm ngoài commit; quyết giữ hay xóa.
+- Jmix build lỗi (gradle exit 2), container web trong Docker cần Jmix nên chưa dựng được; đang chạy web bằng Vite dev.
+- Seed cũ (`V9_1`, `V17_1`, `V40_*`) còn dữ liệu phân tổ, lịch, vị trí (không lỗi, không sửa được vì checksum Flyway).
+- `AreaReassignedEvent` còn được phát nhưng không còn ai nghe.
+- Comment cũ `PeriodPublishServiceTest.java:54` nhắc "hạn hộ đóng mặc định"; `docs/demo-runbook.md` ~dòng 110 còn câu "demo hiện còn ô hạn hộ đóng".
+- Khóa tài khoản chỉ có hiệu lực từ lần đăng nhập sau, token đang dùng còn sống tới 8 giờ.
