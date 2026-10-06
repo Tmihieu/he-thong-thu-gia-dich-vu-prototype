@@ -59,12 +59,6 @@ public class Company extends BaseEntity {
     @Column(length = 50)
     private String communeContractNo;
 
-    @Column(length = 50)
-    private String bankAccount;
-
-    @Column(length = 100)
-    private String bankName;
-
     public static Company create(String code, String name, String contactName, String contactPhone,
             LocalDate validFrom) {
         Company c = new Company();

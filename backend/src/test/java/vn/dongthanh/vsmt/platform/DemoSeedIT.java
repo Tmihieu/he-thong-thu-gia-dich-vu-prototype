@@ -299,10 +299,8 @@ class DemoSeedIT extends IntegrationTest {
         assertThat(demoDb.queryForObject("""
                 select count(*) from charges c join areas a on a.id = c.area_id where a.code = 'AP47'""", Integer.class))
                 .isZero();
-        // Cả 11 công ty có tài khoản ngân hàng tạm để màn người đi thu và app hiện VietQR.
-        assertThat(demoDb.queryForList(
-                "select code from companies where bank_name is null or bank_account is null", String.class))
-                .isEmpty();
+        // Xã có tài khoản nhận chuyển khoản tạm (V43_1) để màn người đi thu và app hiện VietQR.
+        assertThat(demoDb.queryForObject("select count(*) from commune_bank_account", Integer.class)).isEqualTo(1);
 
         // Sổ công ty có đủ trạng thái: DV02 và DV11 thu đủ 100%, DV10 dưới 45%, DV06 và DV10 chưa nộp đồng nào.
         LedgerQueries ledger = new LedgerQueries(demoDb);
@@ -319,8 +317,8 @@ class DemoSeedIT extends IntegrationTest {
         assertThat(demoDb.queryForObject("""
                 select count(*) from payments p where p.method = 'TRANSFER' and p.code > 'TT-0926-000008'
                 and not exists (select 1 from bank_transfers b join charges c on c.id = p.charge_id
-                    join companies co on co.id = c.company_id where b.payment_id = p.id and b.status = 'MATCHED'
-                    and b.account_number = co.bank_account and b.amount = p.amount
+                    where b.payment_id = p.id and b.status = 'MATCHED'
+                    and b.account_number = (select account_number from commune_bank_account) and b.amount = p.amount
                     and b.code = 'VSMT' || lpad(c.id::text, 6, '0'))""", Integer.class)).isZero();
         assertThat(demoDb.queryForList("select distinct reason from bank_transfers where status = 'UNMATCHED' order by 1",
                 String.class)).containsExactly("AMOUNT_MISMATCH", "CHARGE_NOT_COLLECTABLE", "NO_CODE", "WRONG_ACCOUNT");

@@ -3,6 +3,7 @@ package vn.dongthanh.vsmt.collection;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -24,7 +25,7 @@ import vn.dongthanh.vsmt.support.DatabaseCleaner;
 import vn.dongthanh.vsmt.support.FixedClockConfig;
 import vn.dongthanh.vsmt.support.IntegrationTest;
 
-/** Webhook SePay: đúng mã + đúng số tiền + đúng tài khoản công ty thì tự ghi đã thu; còn lại vào chờ đối chiếu. */
+/** Webhook SePay: đúng mã + đúng số tiền + đúng tài khoản của xã thì tự ghi đã thu; còn lại vào chờ đối chiếu. */
 @TestPropertySource(properties = "vsmt.sepay.webhook-api-key=khoa-thu")
 @Import({FixedClockConfig.class, CollectionFixture.class, DatabaseCleaner.class})
 class SepayWebhookIT extends IntegrationTest {
@@ -43,7 +44,7 @@ class SepayWebhookIT extends IntegrationTest {
     void seed() {
         cleaner.truncateAll();
         fx.build();
-        jdbc.update("update companies set bank_account = ?, bank_name = 'Vietcombank' where id = ?", ACCOUNT, fx.dv01.getId());
+        saveAccount();
         chargeId = jdbc.queryForObject("select id from charges where company_id = ? order by id limit 1", Long.class,
                 fx.dv01.getId());
         amount = jdbc.queryForObject("select amount from charges where id = ?", Long.class, chargeId);
@@ -81,11 +82,11 @@ class SepayWebhookIT extends IntegrationTest {
         assertThat(jdbc.queryForList("select reason from bank_transfers order by sepay_id", String.class))
                 .containsExactly("AMOUNT_MISMATCH", "NO_CODE", "WRONG_ACCOUNT");
 
-        // Công ty DV01 thấy giao dịch của mình; DV07 không thấy.
-        mvc.perform(get("/api/collection/bank-transfers/unmatched").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.dv01Manager)))
+        // Chỉ cán bộ xã xem được giao dịch chờ đối chiếu; công ty bị chặn.
+        mvc.perform(get("/api/collection/bank-transfers/unmatched").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(3));
-        mvc.perform(get("/api/collection/bank-transfers/unmatched").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.dv07Manager)))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+        mvc.perform(get("/api/collection/bank-transfers/unmatched").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.dv01Manager)))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -106,9 +107,36 @@ class SepayWebhookIT extends IntegrationTest {
         mvc.perform(get("/api/collection/charges/" + kv07Charge + "/transfer-info")
                         .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.thu07)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.configured").value(true))
                 .andExpect(jsonPath("$.bankAccount").value(ACCOUNT))
                 .andExpect(jsonPath("$.code").value(BankTransferService.codeOf(kv07Charge)));
+    }
+
+    @Test
+    void transferInfoIsConflictUntilAdminDeclaresCommuneAccount() throws Exception {
+        jdbc.update("delete from commune_bank_account");
+        mvc.perform(get("/api/collection/charges/" + chargeId + "/transfer-info")
+                        .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.thu07)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("COMMUNE_BANK_ACCOUNT_MISSING"));
+        // Chưa khai tài khoản thì giao dịch không tự khớp.
+        send(tx(401, ACCOUNT, BankTransferService.codeOf(chargeId), amount), "Apikey khoa-thu").andExpect(status().isOk());
+        assertThat(jdbc.queryForObject("select reason from bank_transfers where sepay_id = 401", String.class))
+                .isEqualTo("WRONG_ACCOUNT");
+
+        String body = "{\"bankName\":\"MBBank\",\"accountNumber\":\"0 3 3\",\"accountHolder\":\"UBND XA\"}";
+        mvc.perform(put("/api/masterdata/commune-bank-account").contentType(MediaType.APPLICATION_JSON).content(body)
+                        .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer)))
+                .andExpect(status().isForbidden());
+        mvc.perform(put("/api/masterdata/commune-bank-account").contentType(MediaType.APPLICATION_JSON).content(body)
+                        .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.admin)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.accountNumber").value("033"));
+        mvc.perform(get("/api/masterdata/commune-bank-account").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.thu07)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.bankName").value("MBBank"));
+    }
+
+    private void saveAccount() {
+        jdbc.update("insert into commune_bank_account (bank_name, account_number, account_holder) values ('Vietcombank', ?, 'UBND XA')",
+                ACCOUNT);
     }
 
     private static String tx(long id, String account, String content, long amount) {

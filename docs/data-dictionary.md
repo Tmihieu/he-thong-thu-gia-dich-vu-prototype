@@ -239,7 +239,15 @@ Ba địa bàn sau sáp nhập của xã Đông Thạnh.
 
 **Khóa/ràng buộc:** `code` duy nhất; `valid_to ≥ valid_from`.
 
-**Tài khoản nhận chuyển khoản của xã (UC-54, góp ý BA 05/10/2026):** mọi khoản chuyển khoản/VietQR của hộ vào **một tài khoản chung của xã**, không còn tài khoản theo công ty. Quản trị viên khai báo ngân hàng, số tài khoản và tên chủ tài khoản; hệ thống dùng để tạo mã VietQR cho mọi khoản phải thu và đối chiếu giao dịch SePay báo về. ⚠ Tên bảng/cột lưu thông tin này **chưa chốt** (use case chưa nêu) nên chưa có bảng trường; chốt khi viết migration. Bản demo hiện vẫn đọc `companies.bank_account`.
+**Tài khoản nhận chuyển khoản của xã (UC-54, góp ý BA 05/10/2026):** mọi khoản chuyển khoản/VietQR của hộ vào **một tài khoản chung của xã**, không còn tài khoản theo công ty. Quản trị viên khai báo ngân hàng, số tài khoản và tên chủ tài khoản; hệ thống dùng để tạo mã VietQR cho mọi khoản phải thu và đối chiếu giao dịch SePay báo về. Lưu ở bảng một dòng `commune_bank_account` (migration V43; cột `singleton` luôn `true` và duy nhất nên không có dòng thứ hai), ngoài ra có trường hệ thống chung (§1.3):
+
+| Trường | Cột | Kiểu | Bắt buộc | Ghi chú |
+|---|---|---|---|---|
+| Ngân hàng | `bank_name` | `text(100)` | Có | |
+| Số tài khoản | `account_number` | `text(50)` | Có | Lưu bỏ khoảng trắng; đối chiếu SePay so với số này |
+| Tên chủ tài khoản | `account_holder` | `text(150)` | Có | |
+
+Chỉ quản trị viên khai báo/sửa (`PUT /api/masterdata/commune-bank-account`, ghi nhật ký `SAVE_COMMUNE_BANK_ACCOUNT`); mọi vai trò nội bộ đọc được (`GET`, 404 nếu chưa khai). Chưa khai thì tạo VietQR trả 409 `COMMUNE_BANK_ACCOUNT_MISSING`, và giao dịch SePay báo về không tự khớp (lý do `WRONG_ACCOUNT`). `bank_transfers.company_id` giờ là công ty phụ trách khoản (không còn là chủ tài khoản).
 
 ### AreaAssignment — Phân công khu vực cho công ty · `area_assignments` · Phần A
 

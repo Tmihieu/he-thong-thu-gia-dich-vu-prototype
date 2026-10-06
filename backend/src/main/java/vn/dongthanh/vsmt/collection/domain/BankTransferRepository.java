@@ -9,6 +9,4 @@ public interface BankTransferRepository extends JpaRepository<BankTransfer, Long
     boolean existsBySepayId(long sepayId);
 
     List<BankTransfer> findTop200ByStatusOrderByCreatedAtDesc(BankTransfer.Status status);
-
-    List<BankTransfer> findTop200ByCompanyIdAndStatusOrderByCreatedAtDesc(Long companyId, BankTransfer.Status status);
 }

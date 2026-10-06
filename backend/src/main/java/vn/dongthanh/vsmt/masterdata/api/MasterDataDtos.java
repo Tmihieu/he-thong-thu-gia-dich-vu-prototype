@@ -105,14 +105,12 @@ public final class MasterDataDtos {
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String taxCode,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String address,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String email,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String communeContractNo,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String bankAccount,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String bankName) {
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String communeContractNo) {
 
         static CompanyDto of(Company c) {
             return new CompanyDto(c.getId(), c.getCode(), c.getName(), c.getContactName(), c.getContactPhone(),
                     c.getStatus(), c.getValidFrom(), c.getValidTo(), c.getOrgType(), c.getTaxCode(), c.getAddress(),
-                    c.getEmail(), c.getCommuneContractNo(), c.getBankAccount(), c.getBankName());
+                    c.getEmail(), c.getCommuneContractNo());
         }
     }
 
@@ -128,13 +126,11 @@ public final class MasterDataDtos {
             @Pattern(regexp = "^$|^[0-9-]{10,14}$", message = "10–14 chữ số") String taxCode,
             @Size(max = 255) String address,
             @Email(message = "không đúng định dạng") @Size(max = 100) String email,
-            @Size(max = 50) String communeContractNo,
-            @Size(max = 50) String bankAccount,
-            @Size(max = 100) String bankName) {
+            @Size(max = 50) String communeContractNo) {
 
         public CompanyCommand toCommand() {
             return new CompanyCommand(name, contactName, contactPhone, status, validFrom, validTo, orgType, taxCode,
-                    address, email, communeContractNo, bankAccount, bankName);
+                    address, email, communeContractNo);
         }
     }
 }
