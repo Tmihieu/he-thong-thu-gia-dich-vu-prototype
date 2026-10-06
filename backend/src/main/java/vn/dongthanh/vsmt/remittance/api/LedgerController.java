@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
@@ -19,6 +21,9 @@ import vn.dongthanh.vsmt.remittance.service.AreaProgressService;
 import vn.dongthanh.vsmt.remittance.service.AreaProgressService.AreaProgress;
 import vn.dongthanh.vsmt.remittance.service.CompanyLedgerService;
 import vn.dongthanh.vsmt.remittance.service.CompanyLedgerService.LedgerRow;
+import vn.dongthanh.vsmt.remittance.service.HouseholdDebtService;
+import vn.dongthanh.vsmt.remittance.service.HouseholdDebtService.HouseholdDebtPage;
+import vn.dongthanh.vsmt.remittance.service.LedgerQueries.HouseholdDebtRow;
 import vn.dongthanh.vsmt.remittance.service.LedgerStatus.Progress;
 import vn.dongthanh.vsmt.remittance.service.LedgerStatus.Reconciliation;
 
@@ -30,6 +35,7 @@ public class LedgerController {
 
     private final CompanyLedgerService ledger;
     private final AreaProgressService areaProgress;
+    private final HouseholdDebtService householdDebts;
 
     @Operation(summary = "Sổ công ty–kỳ: phải thu, đã thu (tiền mặt, chuyển khoản), phí thu gom giữ lại, phải nộp xã, đã nộp, còn nộp, nợ kỳ trước, tiến độ, đối soát."
             + " Xã và quản trị thấy mọi công ty; công ty chỉ thấy dòng của mình")
@@ -49,6 +55,52 @@ public class LedgerController {
         return areaProgress.progress(periodId, actor).stream().map(AreaProgressDto::of).toList();
     }
 
+    @Operation(summary = "Công nợ hộ: khoản Chưa thu của kỳ đã khóa (hộ nộp ở kỳ sau thì hết nợ), kèm tổng số hộ và tiền."
+            + " Lọc theo công ty, tổ; phân trang. Chỉ cán bộ xã và lãnh đạo")
+    @GetMapping("/household-debts")
+    public HouseholdDebtPageDto householdDebts(@RequestParam(required = false) Long companyId,
+            @RequestParam(required = false) Long areaId, @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size, @AuthenticationPrincipal CurrentUser actor) {
+        return HouseholdDebtPageDto.of(householdDebts.list(companyId, areaId, page, size, actor));
+    }
+
+    public record HouseholdDebtDto(
+            @Schema(requiredMode = RequiredMode.REQUIRED) Long chargeId,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String subjectCode,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String subjectName,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String subjectAddress,
+            @Schema(requiredMode = RequiredMode.REQUIRED) Long areaId,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String areaCode,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String areaName,
+            @Schema(requiredMode = RequiredMode.REQUIRED) Long companyId,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String companyCode,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String companyName,
+            @Schema(requiredMode = RequiredMode.REQUIRED) Long periodId,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String periodLabel,
+            @Schema(requiredMode = RequiredMode.REQUIRED) long amount,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Số kỳ đã khóa hộ này còn nợ") long debtPeriods) {
+
+        static HouseholdDebtDto of(HouseholdDebtRow r) {
+            return new HouseholdDebtDto(r.chargeId(), r.subjectCode(), r.subjectName(), r.address(), r.areaId(), r.areaCode(),
+                    r.areaName(), r.companyId(), r.companyCode(), r.companyName(), r.periodId(), r.periodLabel(), r.amount(),
+                    r.debtPeriods());
+        }
+    }
+
+    public record HouseholdDebtPageDto(
+            @Schema(requiredMode = RequiredMode.REQUIRED) List<HouseholdDebtDto> items,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Tổng số khoản nợ (theo bộ lọc)") long total,
+            @Schema(requiredMode = RequiredMode.REQUIRED) int page,
+            @Schema(requiredMode = RequiredMode.REQUIRED) int size,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Số hộ còn nợ (một hộ nợ nhiều kỳ đếm một lần)") long householdCount,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Tổng tiền các khoản còn nợ") long totalAmount) {
+
+        static HouseholdDebtPageDto of(HouseholdDebtPage p) {
+            return new HouseholdDebtPageDto(p.items().stream().map(HouseholdDebtDto::of).toList(), p.totals().charges(),
+                    p.page(), p.size(), p.totals().households(), p.totals().amount());
+        }
+    }
+
     public record AreaProgressDto(
             @Schema(requiredMode = RequiredMode.REQUIRED) Long areaId,
             @Schema(requiredMode = RequiredMode.REQUIRED) String areaCode,
@@ -64,13 +116,14 @@ public class LedgerController {
             @Schema(requiredMode = RequiredMode.REQUIRED) long subjectCount,
             @Schema(requiredMode = RequiredMode.REQUIRED) double collectionRate,
             @Schema(requiredMode = RequiredMode.REQUIRED) boolean lowCollectionRate,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Tổ chưa có công ty (R13)") boolean noCompany) {
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Tổ chưa có công ty (R13)") boolean noCompany,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Số hộ của tổ còn khoản Chưa thu của kỳ đã khóa (công nợ hộ)") long debtHouseholds) {
 
         static AreaProgressDto of(AreaProgress p) {
             return new AreaProgressDto(p.area().getId(), p.area().getCode(), p.area().getName(),
                     p.area().getDistrict().getCode(), p.company() == null ? null : p.company().getId(),
                     p.company() == null ? null : p.company().getCode(), p.due(), p.collected(), p.chargeCount(),
-                    p.paidCount(), p.exemptCount(), p.subjectCount(), p.collectionRate(), p.lowCollectionRate(), p.company() == null);
+                    p.paidCount(), p.exemptCount(), p.subjectCount(), p.collectionRate(), p.lowCollectionRate(), p.company() == null, p.debtHouseholds());
         }
     }
 
@@ -101,13 +154,14 @@ public class LedgerController {
             @Schema(requiredMode = RequiredMode.REQUIRED) Progress progress,
             @Schema(requiredMode = RequiredMode.REQUIRED) Reconciliation reconciliation,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phí thu gom công ty được hưởng: tính từ biểu giá trên toàn bộ số đã thu (cả chuyển khoản), làm tròn đồng theo từng khoản") long retained,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phải nộp xã = tiền mặt đã thu − điều chỉnh kỳ trước − phí thu gom của toàn bộ số đã thu; âm thì xã trả lại công ty") long payable) {
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phải nộp xã = tiền mặt đã thu − điều chỉnh kỳ trước − phí thu gom của toàn bộ số đã thu; âm thì xã trả lại công ty") long payable,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Trong đã thu: thu công nợ kỳ cũ (khoản thuộc kỳ khác đã khóa, tiền ghi vào kỳ này, đã trừ hoàn)") long debtCollected) {
 
         static LedgerRowDto of(LedgerRow r) {
             return new LedgerRowDto(r.companyId(), r.companyCode(), r.companyName(), r.periodId(), r.due(),
                     r.chargeCount(), r.adjustment(), r.refunded(), r.collected(), r.cashCollected(), r.received(), r.receiptCount(), r.remaining(), r.gap(),
                     r.previousDebt(), r.overdue(), r.collectionRate(), r.lowCollectionRate(), r.remittedRate(),
-                    r.lowRemittedRate(), r.progress(), r.reconciliation(), r.retained(), r.payable());
+                    r.lowRemittedRate(), r.progress(), r.reconciliation(), r.retained(), r.payable(), r.debtCollected());
         }
     }
 }

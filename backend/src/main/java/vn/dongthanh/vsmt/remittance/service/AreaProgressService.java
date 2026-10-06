@@ -25,7 +25,7 @@ import vn.dongthanh.vsmt.remittance.service.LedgerQueries.AreaProgressRow;
 
 /**
  * Tiến độ thu theo tổ trong một kỳ (R5): phải thu = Σ khoản, đã thu = Σ thanh toán; công ty lấy theo khoản đã phát
- * hành (G3). Tổ chưa có khoản thì lấy công ty đang phụ trách; không có thì là "Chưa có công ty".
+ * hành (G3). Số hộ còn nợ kỳ cũ = hộ còn khoản Chưa thu của kỳ đã khóa (mọi kỳ đã khóa). Tổ chưa có khoản thì lấy công ty đang phụ trách; không có thì là "Chưa có công ty".
  */
 @Service
 @RequiredArgsConstructor
@@ -40,7 +40,7 @@ public class AreaProgressService {
     private final Clock clock;
 
     public record AreaProgress(Area area, Company company, long due, long collected, long chargeCount, long paidCount, long exemptCount,
-            long subjectCount) {
+            long subjectCount, long debtHouseholds) {
 
         public double collectionRate() {
             return CompanyLedgerService.percent(collected, due);
@@ -61,6 +61,8 @@ public class AreaProgressService {
         }
         Map<Long, Company> companyById = new HashMap<>();
         companies.findAll().forEach(c -> companyById.put(c.getId(), c));
+        Map<String, Long> debtHouseholds = new HashMap<>();
+        queries.debtHouseholdsByArea().forEach(r -> debtHouseholds.put(r.areaId() + ":" + r.companyId(), r.households()));
         Map<Long, Long> subjectCounts = new HashMap<>();
         subjects.countActiveByArea().forEach(r -> subjectCounts.put((Long) r[0], (Long) r[1]));
 
@@ -69,12 +71,15 @@ public class AreaProgressService {
             long subjectsInArea = subjectCounts.getOrDefault(area.getId(), 0L);
             List<AreaProgressRow> rows = byArea.get(area.getId());
             if (rows == null) {
-                result.add(new AreaProgress(area, current.get(area.getId()), 0, 0, 0, 0, 0, subjectsInArea));
+                Company assigned = current.get(area.getId());
+                result.add(new AreaProgress(area, assigned, 0, 0, 0, 0, 0, subjectsInArea,
+                        assigned == null ? 0 : debtHouseholds.getOrDefault(area.getId() + ":" + assigned.getId(), 0L)));
             } else {
                 // Thường một dòng; nhiều dòng khi tổ đổi công ty giữa hai lần phát hành trong cùng kỳ.
                 for (AreaProgressRow r : rows) {
                     result.add(new AreaProgress(area, companyById.get(r.companyId()), r.due(), r.collected(),
-                            r.chargeCount(), r.paidCount(), r.exemptCount(), subjectsInArea));
+                            r.chargeCount(), r.paidCount(), r.exemptCount(), subjectsInArea,
+                            debtHouseholds.getOrDefault(area.getId() + ":" + r.companyId(), 0L)));
                 }
             }
         }

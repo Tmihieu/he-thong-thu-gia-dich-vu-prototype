@@ -35,6 +35,8 @@ import vn.dongthanh.vsmt.remittance.service.RemittedTotals.Received;
  * <li>Phải nộp xã (góp ý BA 05/10) = tiền mặt công ty đã thu − điều chỉnh kỳ trước − phí thu gom của TOÀN BỘ số đã thu
  * (cả chuyển khoản vào tài khoản xã). Âm thì xã trả lại công ty phần chênh, không cắt về 0. Còn phải nộp = phải nộp xã −
  * đã nộp.</li>
+ * <li>Thu công nợ kỳ cũ: phần của đã thu là thanh toán (trừ hoàn) cho khoản thuộc kỳ khác đã khóa, ghi vào kỳ này;
+ * chỉ để hiển thị.</li>
  * <li>Điều chỉnh kỳ trước (O10): khoản của kỳ đã khóa được xóa nợ, ghi nhận ở kỳ này. Đã thu đã trừ tiền hoàn ghi nhận
  * ở kỳ này (T58); cột "đã hoàn" chỉ để hiển thị.</li>
  * <li>Nợ kỳ trước (R9–R11): Σ max(0, phải nộp xã − đã nộp) các kỳ khác đã hết hạn. Quá hạn: hạn kỳ &lt; hôm nay và còn nộp.</li>
@@ -60,7 +62,7 @@ public class CompanyLedgerService {
             long chargeCount, long adjustment, long refunded, long collected, long cashCollected, long received, long receiptCount, long remaining, long gap,
             long previousDebt, boolean overdue, double collectionRate, boolean lowCollectionRate, double remittedRate,
             boolean lowRemittedRate, Progress progress, Reconciliation reconciliation,
-            long retained, long payable) {
+            long retained, long payable, long debtCollected) {
     }
 
     /** Mọi công ty có khoản, thanh toán, phiếu thu trong kỳ hoặc còn nợ kỳ trước; sắp theo mã công ty. */
@@ -73,6 +75,7 @@ public class CompanyLedgerService {
         Map<Long, CompanyAmount> refunded = byCompany(queries.refundedByCompany(periodId));
         Map<Long, CompanyAmount> retained = byCompany(queries.retainedByCompany(periodId));
         Map<Long, CompanyAmount> cash = byCompany(queries.cashCollectedByCompany(periodId));
+        Map<Long, CompanyAmount> debtCollected = byCompany(queries.debtCollectedByCompany(periodId));
         Map<Long, Received> received = remitted.receivedByCompany(periodId);
         Map<Long, Long> previousDebt = previousDebts(periodId, today);
 
@@ -96,7 +99,7 @@ public class CompanyLedgerService {
                 .filter(companyById::containsKey)
                 .map(id -> build(companyById.get(id), period, today, due.get(id), adjustment.get(id), refunded.get(id),
                         retained.get(id), cash.get(id), collected.get(id), received.get(id),
-                        previousDebt.getOrDefault(id, 0L)))
+                        previousDebt.getOrDefault(id, 0L), debtCollected.get(id)))
                 .sorted(Comparator.comparing(LedgerRow::companyCode))
                 .toList();
     }
@@ -108,7 +111,7 @@ public class CompanyLedgerService {
                     Company c = companies.findAllById(List.of(companyId)).stream()
                             .filter(x -> x.getId().equals(companyId)).findFirst()
                             .orElseThrow(() -> new NotFoundException("COMPANY_NOT_FOUND", "Không tìm thấy công ty."));
-                    return build(c, period(periodId), LocalDate.now(clock), null, null, null, null, null, null, null, 0L);
+                    return build(c, period(periodId), LocalDate.now(clock), null, null, null, null, null, null, null, 0L, null);
                 });
     }
 
@@ -154,7 +157,7 @@ public class CompanyLedgerService {
 
     private LedgerRow build(Company company, CollectionPeriod period, LocalDate today, CompanyAmount dueRow,
             CompanyAmount adjustmentRow, CompanyAmount refundedRow, CompanyAmount retainedRow, CompanyAmount cashRow, CompanyAmount collectedRow,
-            Received receivedRow, long previousDebt) {
+            Received receivedRow, long previousDebt, CompanyAmount debtCollectedRow) {
         long due = dueRow == null ? 0 : dueRow.amount();
         long adjustment = adjustmentRow == null ? 0 : adjustmentRow.amount();
         long refunded = refundedRow == null ? 0 : refundedRow.amount();
@@ -197,7 +200,7 @@ public class CompanyLedgerService {
         return new LedgerRow(company.getId(), company.getCode(), company.getName(), period.getId(), due, chargeCount,
                 adjustment, refunded, collected, cashCollected, received, receiptCount, remaining, gap, previousDebt, overdue, percent(collected, due),
                 due > 0 && lowRate(collected, due), percent(received, payable), payable > 0 && lowRate(received, payable),
-                progress, reconciliation, retained, payable);
+                progress, reconciliation, retained, payable, debtCollectedRow == null ? 0 : debtCollectedRow.amount());
     }
 
     /** Phần trăm làm tròn 1 chữ số để hiển thị; 0 khi phải thu 0. */

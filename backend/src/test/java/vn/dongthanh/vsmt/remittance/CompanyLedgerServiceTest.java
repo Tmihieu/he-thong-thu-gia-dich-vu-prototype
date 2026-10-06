@@ -114,6 +114,19 @@ class CompanyLedgerServiceTest {
     }
 
     @Test
+    void debtCollectedIsThePartOfCollectedThatPaidOldLockedPeriods() {
+        due(10L, 1L, 100_000, 2);
+        collect(10L, 1L, 60_000, 40_000);
+        when(queries.debtCollectedByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 50_000, 1)));
+
+        LedgerRow r = service("2026-10-15").row(1L, 10L);
+
+        assertThat(r.collected()).isEqualTo(100_000);
+        assertThat(r.debtCollected()).isEqualTo(50_000);
+        assertThat(service("2026-10-15").row(3L, 10L).debtCollected()).isZero();
+    }
+
+    @Test
     void noFlagWhenNothingIsPayableToTheCommune() {
         // BR-REM-13 (QĐ-L2): công ty cầm lại toàn bộ số thu thì payable = 0, không gắn cờ nộp thấp.
         due(10L, 1L, 100_000, 2);
@@ -150,9 +163,9 @@ class CompanyLedgerServiceTest {
         assertThat(service("2026-10-15").row(1L, 10L).lowCollectionRate()).isTrue();
 
         // Cấp tổ vẫn theo đã thu / phải thu.
-        assertThat(new AreaProgress(null, null, 800_000, 359_999, 10, 5, 0, 10).lowCollectionRate()).isTrue();
-        assertThat(new AreaProgress(null, null, 800_000, 360_000, 10, 5, 0, 10).lowCollectionRate()).isFalse();
-        assertThat(new AreaProgress(null, null, 0, 0, 0, 0, 0, 10).lowCollectionRate()).isFalse();
+        assertThat(new AreaProgress(null, null, 800_000, 359_999, 10, 5, 0, 10, 0).lowCollectionRate()).isTrue();
+        assertThat(new AreaProgress(null, null, 800_000, 360_000, 10, 5, 0, 10, 0).lowCollectionRate()).isFalse();
+        assertThat(new AreaProgress(null, null, 0, 0, 0, 0, 0, 10, 0).lowCollectionRate()).isFalse();
     }
 
     @Test
