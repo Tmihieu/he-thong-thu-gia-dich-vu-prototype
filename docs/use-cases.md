@@ -25,6 +25,7 @@ Bảng dưới liệt kê các UC theo góp ý ngày 05/10/2026. Một số UC b
 - **Khoản phải thu:** số tiền một hộ/cơ sở phải đóng trong một kỳ. Với người dân, đây là khoản phải trả.
 - **Phiếu yêu cầu thu (YCT):** đợt phát hành khoản phải thu của một kỳ cho công ty.
 - **Phiếu thu:** chứng từ cán bộ xã lập khi nhận tiền công ty nộp về xã. Mỗi kỳ công ty có thể nộp nhiều lần.
+- **Phiếu chi trả công ty:** chứng từ cán bộ xã lập khi xã trả lại tiền cho công ty, vì phải nộp xã của công ty trong kỳ âm (phí thu gom của số đã thu, kể cả chuyển khoản, lớn hơn tiền mặt công ty đã thu). Mỗi kỳ xã có thể trả nhiều lần.
 - **Phải nộp xã** = tiền mặt công ty đã thu − điều chỉnh kỳ trước − phần phí thu gom của toàn bộ số đã thu, gồm cả tiền hộ chuyển khoản vào tài khoản của xã (phí thu gom tính theo biểu giá). Nếu kết quả âm, xã trả lại công ty phần chênh.
 - **Hạn nộp:** hạn duy nhất của kỳ, là hạn công ty nộp tiền về xã. Hộ cũng phải đóng trong hạn này.
 - **Công nợ của hộ:** khoản hộ chưa đóng khi kỳ đã khóa. Hộ nộp được ở kỳ sau; tiền đó tính vào kỳ đang thu.
@@ -96,6 +97,7 @@ Luồng nghiệp vụ chính gồm các bước:
 | UC-52 | Tra cứu nhật ký thao tác | Quản trị | Quản trị viên tra cứu nhật ký thao tác, gồm người thực hiện, thời điểm và dữ liệu trước, sau khi thay đổi, để kiểm tra diễn biến và tìm nguyên nhân sai sót. |
 | UC-53 | Quản trị dữ liệu nền | Quản trị | Quản trị viên mở công cụ quản trị dữ liệu (Jmix) để xem và sửa trực tiếp dữ liệu nền như danh mục địa bàn, công ty, loại phí. |
 | UC-54 | Khai báo tài khoản nhận chuyển khoản của xã | Thu tiền | Quản trị viên nhập ngân hàng, số tài khoản và tên chủ tài khoản của xã. Hệ thống dùng tài khoản này để tạo mã VietQR cho mọi khoản phải thu và để đối chiếu giao dịch SePay báo về. |
+| UC-55 | Lập phiếu chi trả công ty khi xã trả lại tiền | Nộp tiền về xã và khóa kỳ | Khi phải nộp xã của công ty trong kỳ âm, xã phải trả lại công ty phần chênh. Khi trả tiền, cán bộ xã chọn công ty, kỳ, số tiền, ngày trả và ghi chú để lập phiếu chi trả, rồi in phiếu. Số tiền mỗi phiếu không được vượt số xã còn phải trả, ngày trả không sau hôm nay. Xã có thể trả nhiều lần trong một kỳ. Hệ thống cập nhật số xã đã trả và số còn phải trả (hiện ở Tiến độ thu, Đối soát) và báo cho công ty. Công ty xem phiếu của mình, lãnh đạo xã chỉ xem. Phiếu không sửa, không hủy; chưa có báo sai sót cho phiếu chi. |
 
 ## Có ở backend, chưa có màn hình
 

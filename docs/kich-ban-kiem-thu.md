@@ -114,6 +114,18 @@ Chuẩn (UC-18 bỏ): không phân tổ; người đi thu thu được mọi h�
 | 4.23 | `canbo_xa` | Kỳ 10 (đã ghi tiền mặt ≥ 4 hộ, xem ⚠) → Lập phiếu DV01 số **nhỏ hơn** còn phải nộp | Tiến độ thu: **Nộp một phần**; Đối soát: **Đang nộp** | |
 | 4.24 | `canbo_xa` → Tiến độ thu | So số DV01 kỳ 10 với `dv01` → Tổng quan và Đối soát | Phải thu / đã thu (tiền mặt + chuyển khoản) / phí thu gom công ty hưởng / phải nộp xã / đã nộp **khớp nhau** ở cả 3 màn (BR-REM-12). Phải nộp xã = tiền mặt công ty đã thu − điều chỉnh kỳ trước − phí thu gom của toàn bộ số đã thu (cả chuyển khoản); âm thì hiện "Xã trả lại công ty". Ví dụ: 2 hộ tiền mặt (160.000) + 1 hộ chuyển khoản (80.000): thu gom 3 × 57.000 = 171.000, phải nộp xã = 160.000 − 171.000 = −11.000 | |
 
+### 4d-2. Xã trả lại công ty (UC-55)
+
+| # | Vai trò | Thao tác | Kết quả mong đợi | Đạt |
+|---|---|---|---|---|
+| 4.39 | `canbo_xa` → Tiến độ thu / Đối soát | Kỳ 09/2026 (seed: DV01 phải nộp xã 24.212, đã nộp 200.000) | Hiện "Xã trả lại công ty 175.788 đ"; Đối soát hiện **Đang nộp** hoặc **Lệch** (xã còn phải trả) | |
+| 4.40 | `canbo_xa` → Khoản thu → Phiếu chi trả công ty → kỳ 09 → **Lập phiếu chi** DV01 | Số tiền 100.000, ngày hôm nay | Phiếu `PC-CT-0926-001`; **Bản in phiếu chi** có số tiền bằng chữ, lũy kế đã trả 100.000, xã còn phải trả 75.788; Tiến độ thu: "Xã trả lại công ty 175.788 đ, đã trả 100.000 đ, còn 75.788 đ" | |
+| 4.41 ✗ | `canbo_xa` | Lập phiếu chi DV01 số tiền 75.789 (lớn hơn xã còn phải trả) hoặc 0, hoặc ngày mai | Báo lỗi số tiền phải lớn hơn 0 và không vượt 75.788 đ; "Ngày trả không được sau hôm nay." | |
+| 4.42 | `canbo_xa` | Lập phiếu chi DV01 số 75.788 | Phiếu `PC-CT-0926-002`; xã còn phải trả 0; nhãn "Xã đã trả đủ"; Đối soát **Khớp**; nút Lập phiếu chi của DV01 bị khóa | |
+| 4.43 | `dv01` → Khu vực được giao → Phiếu thu xã lập | Xem mục Phiếu xã trả lại | Thấy hai phiếu chi của DV01, không thấy phiếu công ty khác; có thông báo "Xã đã lập phiếu chi trả …" ở chuông, bấm vào mở đúng màn | |
+| 4.44 ✗ | `dv01`, `admin`, người đi thu | Gọi `POST /api/remittance/payouts` | 403 (công ty, quản trị viên, người đi thu không lập được); `admin` không xem được danh sách | |
+| 4.45 | `lanhdao` / `admin` → Nhật ký | Xem phiếu chi | Lãnh đạo xem được phiếu chi nhưng không có nút lập; quản trị viên thấy dòng nhật ký `ISSUE_COMMUNE_PAYOUT` kèm trước/sau | |
+
 ### 4e. Sai sót phiếu thu
 
 | # | Vai trò | Thao tác | Kết quả mong đợi | Đạt |

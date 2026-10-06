@@ -103,6 +103,7 @@ Lịch sử trước/sau của thao tác tạo/sửa tiền **không** nằm ở
 | 17  | Payment             | `payments`              | collection    | A    |
 | 18  | CashHandover        | `cash_handovers`        | collection    | A    |
 | 19  | CompanyReceipt      | `company_receipts`      | remittance    | A    |
+| 19a | CommunePayout       | `commune_payouts`       | remittance    | A    |
 | 20  | ReceiptIssue        | `receipt_issues`        | remittance    | A    |
 | 21  | PaymentReminder     | `payment_reminders`     | remittance    | A    |
 | 22  | Notification        | `notifications`         | notifications | B    |
@@ -528,6 +529,19 @@ Người đi thu nộp tiền mặt cho công ty. Chuyển khoản vào tài kho
 **Enum `ReceiptStatus`:** `RECORDED` Xã đã ghi nhận (giá trị duy nhất trong demo, G6). Nhãn "Đã báo sai sót · chờ xã kiểm tra" tính từ `ReceiptIssue` đang `PENDING`, không lưu.
 
 **Không lưu:** số tiền bằng chữ và lũy kế đã nộp đến phiếu — tính khi in (R29–R30).
+
+### CommunePayout — Phiếu chi trả công ty (xã trả lại tiền) · `commune_payouts` · Phần A (UC-55, V46)
+
+| Tên hiển thị (VI) | Tên kỹ thuật | Kiểu | Bắt buộc | Nguồn | Ví dụ | Mức | Ghi chú |
+| ----------------- | ------------ | ---- | -------- | ----- | ----- | --- | ------- |
+| Số phiếu chi | `code` | `text(20)` | Có | Hệ thống | `PC-CT-1026-001` | Demo | Duy nhất; `nnn` đếm theo kỳ |
+| Công ty | `company_id` | `FK→Company` | Có | Xã | 1 | Demo | |
+| Kỳ thu | `period_id` | `FK→CollectionPeriod` | Có | Xã | 5 | Demo | 1 phiếu 1 kỳ; 1 kỳ nhiều phiếu |
+| Số tiền | `amount` | `money` | Có | Xã | 175788 | Demo | 0 < số tiền ≤ số xã còn phải trả (BR-REM-17) |
+| Ngày trả | `payout_date` | `date` | Có | Xã | 2026-10-15 | Demo | Không sau hôm nay |
+| Ghi chú | `note` | `text(500)` | Không | Xã | Trả đợt 1 | Demo | |
+
+Ngoài ra có trường hệ thống chung (§1.3). Phiếu không sửa, không hủy; không có trạng thái; chưa có báo sai sót. **Không lưu:** số tiền bằng chữ, lũy kế đã trả, số xã còn phải trả, tính khi xem/in từ sổ công ty–kỳ (`communePaid`, `communeOwed`).
 
 ### ReceiptIssue — Báo sai sót phiếu thu · `receipt_issues` · Phần A
 

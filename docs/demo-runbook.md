@@ -106,7 +106,7 @@ Mọi tên, SĐT, địa chỉ là dữ liệu giả ("Mẫu", đầu số `0902
 - Hộ kịch bản `DTH-H000128` đã đóng kỳ 09 bằng tiền mặt, nên app chỉ còn khoản kỳ 10 để thanh toán ở bước 4.
 - `thu07`, `thu09` đã bàn giao hết tiền mặt kỳ 09 (`BG-0926-01`, `BG-0926-02`): bước 3 bắt đầu với 0 đồng đang giữ.
 - Lịch sử hộ kỳ 09 cho màn người đi thu: `DTH-H000122` vắng 08/09 rồi thu 10/09; `DTH-H000124` hẹn lại 12/09, còn nợ.
-- Các thao tác trên có dòng nhật ký (mở kỳ, phát hành, ghi thu, bàn giao, lập phiếu thu).
+- Các thao tác trên có dòng nhật ký (mở kỳ, phát hành, ghi thu, bàn giao, lập phiếu thu, lập phiếu chi trả công ty).
 - Theo công thức mới DV01 **không còn nợ kỳ 09** nên ở kỳ 10/2026 dòng DV01 trên Tiến độ thu **không** hiện "Quá hạn nộp" hay cảnh báo "Kỳ trước chưa khóa" từ seed (trước đây hiện nợ 919.000 do phải nộp tính trên phải thu). Kỳ 09 vẫn còn các hộ chưa đóng (kể cả `TTT-H000221`, `NB-H000341` có app): khi khóa kỳ 09 họ thành **công nợ của hộ**, nộp được ở kỳ 10 và tiền tính vào kỳ 10 (bước 8). Sau khi khóa kỳ 09, thẻ **Công nợ hộ** ở Tiến độ thu hiện số hộ và tiền các khoản kỳ 09 chưa thu (bấm **Xem danh sách** để xem hộ); hộ nộp ở kỳ 10 thì hết nợ và phần đó hiện ở chú thích "trong đó thu công nợ kỳ cũ" của thẻ Đã thu.
 
 ## Kịch bản §10
@@ -123,6 +123,7 @@ Web mở ở http://localhost:5173; mỗi vai trò dùng một cửa sổ ẩn d
    2. DV01 nộp hết số còn phải nộp: `canbo_xa` → Khoản thu → Phiếu thu công ty → chọn **kỳ 10/2026** → **Lập phiếu** ở dòng DV01, số tiền đúng bằng "còn phải nộp" (số tiền mỗi phiếu không vượt số còn phải nộp) → DV01 Đã nộp đủ. Kỳ 09: DV01 đã nộp dư (xã trả lại 175.788 đ), lập phiếu bị chặn.
    3. DV01 nộp một phần: **Lập phiếu** số nhỏ hơn "còn phải nộp" → Tiến độ thu hiện **Nộp một phần**, Đối soát hiện **Đang nộp**.
    4. **`dv01`** → Khu vực được giao → Phiếu thu xã lập → **Báo sai sót** một phiếu → **`canbo_xa`** → Khoản thu → Sai sót phiếu thu → xử lý (đóng kèm ghi chú).
+   5. Xã trả lại công ty (UC-55): `canbo_xa` → Khoản thu → **Phiếu chi trả công ty** → kỳ 09/2026 (seed: DV01 phải nộp xã âm, xã trả lại 175.788) → **Lập phiếu chi** DV01, số tiền không vượt số xã còn phải trả → **In**. Tiến độ thu hiện "Xã trả lại công ty …, đã trả …, còn …"; trả đủ thì Đối soát **Khớp**. **`dv01`** thấy phiếu ở mục Phiếu xã trả lại và thông báo.
 6. **App** → Phản ánh, kiến nghị → gửi mới. **`canbo_xa`** → Khiếu nại → chuyển DV01. **`dv01`** → Khiếu nại → phản hồi. **`canbo_xa`** → đóng. App thấy timeline và thông báo.
 7. **App** → Rác cồng kềnh → Đăng ký: mô tả, **chọn ảnh** (tối đa 5 ảnh, mỗi ảnh ≤ 5 MB, JPEG/PNG/WebP) → gửi. **`dv01`** → Rác cồng kềnh → mở yêu cầu (có ảnh hộ gửi) → **Báo phí**; app thấy phí công ty báo (phí này không sinh khoản thu, O5).
    **App** → tab Chợ đồ cũ → đăng một bài (ảnh không bắt buộc) → bình luận ở bài khác; người đăng **đóng bài** được (không mở lại, bài đóng không nhận bình luận mới).
