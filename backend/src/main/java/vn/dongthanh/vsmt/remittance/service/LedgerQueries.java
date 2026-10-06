@@ -89,8 +89,9 @@ public class LedgerQueries {
     }
 
     /**
-     * Phần thu gom của một khoản = số tiền × thu gom / (thu gom + vận chuyển) của nhóm giá trong biểu giá của kỳ. Công ty
-     * cầm lại phần này, chỉ nộp phần vận chuyển về xã (xã chốt 03/10). Khoản không theo biểu giá thì không có phần giữ lại.
+     * Phần thu gom của một khoản = số tiền × thu gom / tổng đơn giá (thu gom + vận chuyển + xử lý) của nhóm giá trong biểu
+     * giá của kỳ. Công ty cầm lại phần này, nộp phần vận chuyển về xã (xã chốt 03/10); phí xử lý (nhóm cân) chưa rõ thuộc
+     * ai, tạm nộp xã cùng vận chuyển. Khoản không theo biểu giá thì không có phần giữ lại.
      */
     private static final String COLLECTION_PART =
             "coalesce(round(c.amount * r.collection_fee::numeric / nullif(r.monthly_total, 0)), 0)";

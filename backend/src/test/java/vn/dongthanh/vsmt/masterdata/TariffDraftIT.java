@@ -78,7 +78,7 @@ class TariffDraftIT extends IntegrationTest {
         String body = create(admin, "BG-70-2027", "2027-01-01", 45_000)
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("DRAFT"))
-                .andExpect(jsonPath("$.rates.length()").value(6))
+                .andExpect(jsonPath("$.rates.length()").value(7))
                 .andReturn().getResponse().getContentAsString();
         long id = ((Number) JsonPath.read(body, "$.id")).longValue();
 
@@ -177,10 +177,10 @@ class TariffDraftIT extends IntegrationTest {
 
     private static String draft(String validFrom, long fee) {
         return """
-                {"legalBasis":"QĐ 70/2026/QĐ-UBND","validFrom":"%s","rates":[%s,%s,%s,%s,%s,%s]}"""
+                {"legalBasis":"QĐ 70/2026/QĐ-UBND","validFrom":"%s","rates":[%s,%s,%s,%s,%s,%s,%s]}"""
                 .formatted(validFrom, rate("HH_UP_TO_2", fee), rate("HH_3_PLUS", fee), rate("SMALL_UP_TO_126", fee),
                         rate("SMALL_126_TO_250", fee), rate("SMALL_250_TO_500", fee),
-                        rate("BY_VOLUME", fee));
+                        rate("BY_VOLUME", fee), rate("FULL_COST_BY_KG", fee));
     }
 
     private static String rate(String group, long fee) {

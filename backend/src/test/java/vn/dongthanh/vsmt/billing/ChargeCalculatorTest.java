@@ -143,4 +143,27 @@ class ChargeCalculatorTest {
         assertThatThrownBy(() -> calculator.calculate(env, q, contract(TariffGroup.HH_3_PLUS, false), null))
                 .isInstanceOf(ArithmeticException.class);
     }
+
+    @Test
+    void perCapitaTariffChargesEveryHouseholdInScopeByMembers() {
+        bg65.addRate(TariffGroup.HH_PER_CAPITA, 15_000, 5_000, "đ/người/tháng");
+        subject.setMemberCount(4);
+        assertThat(calculator.calculate(env, october, contract(TariffGroup.HH_3_PLUS, false), null).amount())
+                .isEqualTo(80_000L); // biểu giá chưa bật cho địa bàn
+        assertThat(calculator.calculate(env, q4, contract(TariffGroup.HH_PER_CAPITA, false), null))
+                .isEqualTo(new ChargeAmount(TariffGroup.HH_PER_CAPITA, 20_000L, 3, 240_000L, false, null, 4));
+        bg65.setPerCapitaAll(true);
+        assertThat(calculator.calculate(env, october, contract(TariffGroup.HH_3_PLUS, false), null))
+                .isEqualTo(new ChargeAmount(TariffGroup.HH_PER_CAPITA, 20_000L, 1, 80_000L, false, null, 4));
+    }
+
+    @Test
+    void fullCostByKgIncludesProcessingFee() {
+        bg65.addRate(TariffGroup.FULL_COST_BY_KG, 453, 180, 421, "đ/kg");
+        ServiceContract c = contract(TariffGroup.FULL_COST_BY_KG, false);
+        assertThatThrownBy(() -> calculator.calculate(env, october, c, null)).extracting("code")
+                .isEqualTo("QUOTA_KG_REQUIRED");
+        c.setQuotaKg(1_000);
+        assertThat(calculator.calculate(env, october, c, null).amount()).isEqualTo(1_054_000L);
+    }
 }

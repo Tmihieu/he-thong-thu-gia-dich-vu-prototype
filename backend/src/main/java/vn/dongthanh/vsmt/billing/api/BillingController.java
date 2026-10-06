@@ -191,7 +191,7 @@ public class BillingController {
             @Schema(requiredMode = RequiredMode.REQUIRED,
                     description = "Tổng đã hoàn của khoản (số dương); chỉ điền ở GET /api/billing/charges, nơi khác là 0") long refunded,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true,
-                    description = "Số nhân khẩu hiện tại của hộ; hộ kinh doanh / doanh nghiệp là null") Integer memberCount,
+                    description = "Số nhân khẩu chụp trên khoản theo nhân khẩu, không có thì số hiện tại của hộ; nguồn thải là null") Integer memberCount,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true,
                     description = "Ngày giờ đóng (lần thu cuối); chỉ điền ở GET /api/billing/charges, khoản chưa thu là null")
             OffsetDateTime paidAt,
@@ -214,7 +214,7 @@ public class BillingController {
                     c.getArea().getCode(), c.getCompany().getId(), c.getCompany().getCode(), c.getPeriod().getId(),
                     c.getPeriod().getCode(), c.getFeeType().getCode(), c.getTariffGroup(), c.getUnitPrice(),
                     c.getMonths(), c.getAmount(), c.getPeriod().getDueDate(), c.getStatus(), c.isOverdue(today), refunded,
-                    c.getSubject().getMemberCount(), paidAt, paymentMethod);
+                    c.getMemberCount() != null ? c.getMemberCount() : c.getSubject().getMemberCount(), paidAt, paymentMethod);
         }
     }
 

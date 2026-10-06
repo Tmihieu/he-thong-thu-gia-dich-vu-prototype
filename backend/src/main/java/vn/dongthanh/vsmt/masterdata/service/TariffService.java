@@ -4,15 +4,19 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository;
+import vn.dongthanh.vsmt.masterdata.domain.District;
+import vn.dongthanh.vsmt.masterdata.domain.DistrictRepository;
 import vn.dongthanh.vsmt.masterdata.domain.FeeType;
 import vn.dongthanh.vsmt.masterdata.domain.FeeTypeRepository;
 import vn.dongthanh.vsmt.masterdata.domain.PeriodStatus;
@@ -44,14 +48,17 @@ public class TariffService {
     private final TariffVersionRepository versions;
     private final FeeTypeRepository feeTypes;
     private final CollectionPeriodRepository periods;
+    private final DistrictRepository districts;
     private final AuditService audit;
     private final Clock clock;
 
-    public record RateInput(TariffGroup group, long collectionFee, long transportFee, String unitLabel) {
+    public record RateInput(TariffGroup group, long collectionFee, long transportFee, long processingFee,
+            String unitLabel) {
     }
 
+    /** {@code perCapitaAll}: cả xã theo nhân khẩu; ngược lại {@code perCapitaDistrictIds} là các địa bàn bật (rỗng = không bật). */
     public record DraftCommand(String legalBasis, LocalDate validFrom, LocalDate validTo, String scopeNote,
-            String note, List<RateInput> rates) {
+            String note, List<RateInput> rates, boolean perCapitaAll, List<Long> perCapitaDistrictIds) {
     }
 
     public TariffVersion activeVersionOn(LocalDate date) {
@@ -165,21 +172,43 @@ public class TariffService {
         return v;
     }
 
-    private static void apply(TariffVersion v, DraftCommand cmd) {
+    private void apply(TariffVersion v, DraftCommand cmd) {
         if (cmd.validTo() != null && cmd.validTo().isBefore(cmd.validFrom())) {
             throw new BusinessRuleException("TARIFF_INVALID_RANGE", "Ngày hết hạn phải từ ngày hiệu lực trở đi.");
         }
         EnumSet<TariffGroup> given = EnumSet.noneOf(TariffGroup.class);
         cmd.rates().forEach(r -> given.add(r.group()));
-        if (given.size() != cmd.rates().size() || !given.equals(EnumSet.allOf(TariffGroup.class))) {
-            throw new BusinessRuleException("TARIFF_RATES_INCOMPLETE", "Biểu giá phải có đơn giá cho đủ các nhóm giá.");
+        // Đơn giá một người chưa có số chính thức: chỉ bắt buộc khi biểu giá bật thu theo nhân khẩu.
+        boolean perCapita = cmd.perCapitaAll() || !cmd.perCapitaDistrictIds().isEmpty();
+        EnumSet<TariffGroup> required = EnumSet.allOf(TariffGroup.class);
+        if (!perCapita) {
+            required.remove(TariffGroup.HH_PER_CAPITA);
+        }
+        if (given.size() != cmd.rates().size() || !given.containsAll(required)) {
+            throw new BusinessRuleException("TARIFF_RATES_INCOMPLETE", perCapita && !given.contains(TariffGroup.HH_PER_CAPITA)
+                    ? "Biểu giá thu theo nhân khẩu phải có đơn giá một người."
+                    : "Biểu giá phải có đơn giá cho đủ các nhóm giá.");
+        }
+        Set<District> scope = new HashSet<>();
+        if (!cmd.perCapitaAll()) {
+            for (Long id : new HashSet<>(cmd.perCapitaDistrictIds())) {
+                scope.add(districts.findById(id)
+                        .orElseThrow(() -> new NotFoundException("DISTRICT_NOT_FOUND", "Không tìm thấy địa bàn.")));
+            }
+        }
+        v.setPerCapitaAll(cmd.perCapitaAll());
+        v.getPerCapitaDistricts().clear();
+        v.getPerCapitaDistricts().addAll(scope);
+        if (!given.contains(TariffGroup.HH_PER_CAPITA)) {
+            v.removeRate(TariffGroup.HH_PER_CAPITA);
         }
         v.setLegalBasis(cmd.legalBasis().trim());
         v.setValidFrom(cmd.validFrom());
         v.setValidTo(cmd.validTo());
         v.setScopeNote(cmd.scopeNote());
         v.setNote(cmd.note());
-        cmd.rates().forEach(r -> v.putRate(r.group(), r.collectionFee(), r.transportFee(), r.unitLabel().trim()));
+        cmd.rates().forEach(r -> v.putRate(r.group(), r.collectionFee(), r.transportFee(), r.processingFee(),
+                r.unitLabel().trim()));
     }
 
     private static Map<String, Object> snapshot(TariffVersion v) {
@@ -191,9 +220,11 @@ public class TariffService {
         m.put("status", v.getStatus());
         m.put("scopeNote", v.getScopeNote());
         m.put("note", v.getNote());
+        m.put("perCapitaAll", v.isPerCapitaAll());
+        m.put("perCapitaDistricts", v.getPerCapitaDistricts().stream().map(District::getCode).sorted().toList());
         v.getRates().forEach(r -> m.put(r.getTariffGroup().name(), Map.of(
                 "collectionFee", r.getCollectionFee(), "transportFee", r.getTransportFee(),
-                "monthlyTotal", r.getMonthlyTotal(), "unitLabel", r.getUnitLabel())));
+                "processingFee", r.getProcessingFee(), "monthlyTotal", r.getMonthlyTotal(), "unitLabel", r.getUnitLabel())));
         return m;
     }
 

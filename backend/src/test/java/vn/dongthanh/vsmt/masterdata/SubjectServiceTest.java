@@ -46,8 +46,10 @@ class SubjectServiceTest {
     final vn.dongthanh.vsmt.masterdata.domain.StreetRepository streets = mock(vn.dongthanh.vsmt.masterdata.domain.StreetRepository.class);
     final AreaAssignmentService assignments = mock(AreaAssignmentService.class);
     final AuditService audit = mock(AuditService.class);
+    final vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository periods =
+            mock(vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository.class);
     final SubjectService service = new SubjectService(subjects, contracts, areas, streets, assignments, audit,
-            mock(ApplicationEventPublisher.class), mock(vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository.class),
+            mock(ApplicationEventPublisher.class), periods,
             java.time.Clock.fixed(java.time.Instant.parse("2026-10-15T05:00:00Z"), java.time.ZoneId.of("Asia/Ho_Chi_Minh")));
 
     final CurrentUser officer = new CurrentUser(2L, "canbo_xa", Role.COMMUNE_OFFICER, null);
@@ -82,10 +84,10 @@ class SubjectServiceTest {
     }
 
     @Test
-    void businessHouseholdCodeUsesKdPrefixWithFiveDigits() {
-        SubjectCommand kd = new SubjectCommand(SubjectType.BUSINESS_HOUSEHOLD, "Cửa hàng Mẫu", "Số 1", "đường Mẫu", 7L,
+    void smallSourceCodeUsesNnPrefixWithFiveDigits() {
+        SubjectCommand kd = new SubjectCommand(SubjectType.SMALL_SOURCE, "Cửa hàng Mẫu", "Số 1", "đường Mẫu", 7L,
                 null, null, "Người Mẫu", null, null, null, false, null, null, null);
-        assertThat(service.create(kd, null, officer).getCode()).isEqualTo("DTH-KD00001");
+        assertThat(service.create(kd, null, officer).getCode()).isEqualTo("DTH-NN00001");
     }
 
     @Test
@@ -161,7 +163,7 @@ class SubjectServiceTest {
                 null, null);
         assertThatThrownBy(() -> service.create(household(), upTo2, officer)).extracting("code")
                 .isEqualTo("TARIFF_GROUP_MISMATCH");
-        SubjectCommand shop = new SubjectCommand(SubjectType.BUSINESS_HOUSEHOLD, "Cửa hàng", null, "đường Mẫu", 7L, null,
+        SubjectCommand shop = new SubjectCommand(SubjectType.SMALL_SOURCE, "Cửa hàng", null, "đường Mẫu", 7L, null,
                 null, null, null, null, null, false, null, null, null);
         assertThatThrownBy(() -> service.create(shop, contract("2026-01-01", null), officer)).extracting("code")
                 .isEqualTo("TARIFF_GROUP_MISMATCH");
@@ -174,6 +176,25 @@ class SubjectServiceTest {
                 LocalDate.of(2026, 12, 31), false, null, null, null);
         assertThatThrownBy(() -> service.create(household(), upTo2UntilYearEnd, officer)).extracting("code")
                 .isEqualTo("TARIFF_GROUP_MISMATCH");
+    }
+
+    @Test
+    void changingGroupOfRunningContractAppliesFromNextPeriod() {
+        service.create(household(), contract("2026-01-01", null), officer);
+        ServiceContract running = withId(stored.get(0), 900L);
+        when(contracts.findById(900L)).thenReturn(Optional.of(running));
+        when(periods.findCovering(LocalDate.of(2026, 10, 15))).thenReturn(List.of(vn.dongthanh.vsmt.masterdata.domain
+                .CollectionPeriod.open(vn.dongthanh.vsmt.masterdata.domain.PeriodType.MONTH, 2026, 10, null,
+                        LocalDate.of(2026, 10, 31), null)));
+
+        ServiceContract next = service.updateContract(900L, new ContractCommand(TariffGroup.HH_PER_CAPITA,
+                LocalDate.of(2026, 1, 1), null, false, null, null, null), officer);
+
+        assertThat(running.getTariffGroup()).isEqualTo(TariffGroup.HH_3_PLUS);
+        assertThat(running.getValidTo()).isEqualTo(LocalDate.of(2026, 10, 31));
+        assertThat(next.getTariffGroup()).isEqualTo(TariffGroup.HH_PER_CAPITA);
+        assertThat(next.getValidFrom()).isEqualTo(LocalDate.of(2026, 11, 1));
+        assertThat(next.getValidTo()).isNull();
     }
 
     @Test

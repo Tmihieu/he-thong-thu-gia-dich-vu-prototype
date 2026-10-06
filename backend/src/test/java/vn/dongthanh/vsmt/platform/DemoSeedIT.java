@@ -90,16 +90,17 @@ class DemoSeedIT extends IntegrationTest {
                 String.class)).containsExactly("BG-67-2025:EXPIRED", "BG-65-2026:ACTIVE");
 
         List<Map<String, Object>> rates = demoDb.queryForList("""
-                select r.tariff_group, r.collection_fee, r.transport_fee, r.monthly_total
+                select r.tariff_group, r.collection_fee, r.transport_fee, r.processing_fee, r.monthly_total
                 from tariff_rates r join tariff_versions v on v.id = r.tariff_version_id
                 where v.code = 'BG-65-2026' order by r.monthly_total, r.tariff_group""");
         assertThat(rates).extracting(r -> r.get("tariff_group"))
-                .containsExactly("BY_VOLUME", "HH_UP_TO_2", "HH_3_PLUS", "SMALL_UP_TO_126", "SMALL_126_TO_250",
+                .containsExactly("BY_VOLUME", "FULL_COST_BY_KG", "HH_UP_TO_2", "HH_3_PLUS", "SMALL_UP_TO_126", "SMALL_126_TO_250",
                         "SMALL_250_TO_500");
         assertThat(rates).extracting(r -> ((Number) r.get("monthly_total")).longValue())
-                .containsExactly(633L, 40_000L, 80_000L, 80_000L, 119_000L, 238_000L);
+                .containsExactly(633L, 1_054L, 40_000L, 80_000L, 80_000L, 119_000L, 238_000L);
         assertThat(rates).allSatisfy(r -> assertThat(((Number) r.get("monthly_total")).longValue())
-                .isEqualTo(((Number) r.get("collection_fee")).longValue() + ((Number) r.get("transport_fee")).longValue()));
+                .isEqualTo(((Number) r.get("collection_fee")).longValue() + ((Number) r.get("transport_fee")).longValue()
+                        + ((Number) r.get("processing_fee")).longValue()));
 
         assertThat(demoDb.queryForList("select code from fee_types order by code", String.class))
                 .containsExactly("ENV", "EXTRA");
@@ -140,7 +141,7 @@ class DemoSeedIT extends IntegrationTest {
                 select count(*) from service_subjects s join service_contracts c on c.subject_id = s.id
                 where s.status = 'ENDED' and c.valid_to is not null""", Integer.class)).isPositive();
         assertThat(demoDb.queryForList("select distinct subject_type from service_subjects order by 1", String.class))
-                .containsExactly("BUSINESS_HOUSEHOLD", "ENTERPRISE", "HOUSEHOLD");
+                .containsExactly("HOUSEHOLD", "SMALL_SOURCE");
         assertThat(demoDb.queryForObject("select count(distinct area_id) from service_subjects", Integer.class)).isEqualTo(52);
         // Không có SĐT trùng giữa các hộ (SĐT dùng để gắn tài khoản app người dân).
         assertThat(demoDb.queryForObject("select count(*) - count(distinct phone) from service_subjects", Integer.class)).isZero();

@@ -43,7 +43,7 @@ import vn.dongthanh.vsmt.platform.security.CurrentUser;
 /**
  * Nhập hồ sơ hộ hàng loạt từ Excel (.xlsx). Xã chưa có CSDL hộ; bên thứ ba thu thập rồi bàn giao dạng bảng tính.
  * Hai bước: xem trước (không ghi gì, trả từng dòng kèm lỗi) rồi xác nhận (chỉ ghi khi không dòng nào lỗi, tất cả
- * hoặc không gì). Hộ gia đình được tạo kèm hợp đồng theo số người; hộ kinh doanh và doanh nghiệp tạo ở trạng thái
+ * hoặc không gì). Hộ gia đình được tạo kèm hợp đồng theo số người; nguồn thải nhỏ / lớn tạo ở trạng thái
  * Chờ hợp đồng để cán bộ xã chọn nhóm giá.
  * <p>Cột đường khớp danh mục đường của xã/phường (không phân biệt dấu, hoa thường, tiền tố "Đường"): khớp thì dùng đường
  * chuẩn và kiểm trùng địa chỉ như khi nhập tay (BR-MD-08); không khớp thì lưu tên đường "chờ xác minh".</p>
@@ -125,12 +125,12 @@ public class SubjectImportService {
             Sheet help = wb.createSheet("Hướng dẫn");
             String[] lines = {
                 "Mỗi dòng là một hộ / đơn vị. Xoá dòng ví dụ trước khi tải lên. Tối đa " + MAX_ROWS + " dòng.",
-                "Loại đối tượng: Hộ gia đình, Hộ kinh doanh hoặc Doanh nghiệp (để trống = Hộ gia đình).",
+                "Loại đối tượng: Hộ gia đình, Nguồn thải nhỏ hoặc Nguồn thải lớn (để trống = Hộ gia đình).",
                 "Mã khu vực: mã khu vực đang có trong hệ thống (ví dụ KV07).",
                 "Đường / hẻm: nên ghi đúng tên trong danh mục đường của xã; tên không có trong danh mục được lưu là 'chờ xác minh'.",
                 "Số người: bắt buộc với hộ gia đình; quyết định nhóm giá (≤2 người hoặc từ 3 người).",
                 "Số điện thoại: 9–15 chữ số, có thể để trống. Số nhà có thể để trống nếu nhà chưa có số.",
-                "Hộ kinh doanh và doanh nghiệp được tạo ở trạng thái Chờ hợp đồng; cán bộ xã chọn nhóm giá sau.",
+                "Nguồn thải nhỏ / lớn được tạo ở trạng thái Chờ hợp đồng; cán bộ xã chọn nhóm giá sau.",
                 "Nếu còn dòng lỗi, hệ thống không nhập hồ sơ nào; sửa file rồi tải lại." };
             for (int i = 0; i < lines.length; i++) {
                 help.createRow(i).createCell(0).setCellValue(lines[i]);
@@ -199,7 +199,7 @@ public class SubjectImportService {
             List<String> errors = new ArrayList<>(r.errors());
             SubjectType type = typeOf(r.type());
             if (type == null) {
-                errors.add("Loại đối tượng phải là Hộ gia đình, Hộ kinh doanh hoặc Doanh nghiệp");
+                errors.add("Loại đối tượng phải là Hộ gia đình, Nguồn thải nhỏ hoặc Nguồn thải lớn");
             }
             if (r.name().isEmpty()) {
                 errors.add("Thiếu họ tên / tên đơn vị");
@@ -276,8 +276,9 @@ public class SubjectImportService {
         String l = label == null ? "" : label.trim().toLowerCase(Locale.ROOT);
         return switch (l) {
             case "", "hộ gia đình", "ho gia dinh", "household" -> SubjectType.HOUSEHOLD;
-            case "hộ kinh doanh", "ho kinh doanh", "business_household" -> SubjectType.BUSINESS_HOUSEHOLD;
-            case "doanh nghiệp", "doanh nghiep", "enterprise" -> SubjectType.ENTERPRISE;
+            case "nguồn thải nhỏ", "nguon thai nho", "small_source", "hộ kinh doanh", "ho kinh doanh", "doanh nghiệp",
+                    "doanh nghiep" -> SubjectType.SMALL_SOURCE;
+            case "nguồn thải lớn", "nguon thai lon", "large_source" -> SubjectType.LARGE_SOURCE;
             default -> null;
         };
     }

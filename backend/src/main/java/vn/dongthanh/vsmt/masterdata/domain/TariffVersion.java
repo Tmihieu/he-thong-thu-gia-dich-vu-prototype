@@ -2,14 +2,20 @@ package vn.dongthanh.vsmt.masterdata.domain;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
@@ -50,6 +56,16 @@ public class TariffVersion extends BaseEntity {
 
     private String note;
 
+    /** Thu theo nhân khẩu cho mọi hộ gia đình toàn xã (áp từ kỳ dùng biểu giá này). */
+    @Column(nullable = false)
+    private boolean perCapitaAll;
+
+    /** Thu theo nhân khẩu cho mọi hộ gia đình trong các địa bàn này (khi không bật toàn xã). */
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "tariff_version_per_capita_districts", joinColumns = @JoinColumn(name = "tariff_version_id"),
+            inverseJoinColumns = @JoinColumn(name = "district_id"))
+    private Set<District> perCapitaDistricts = new HashSet<>();
+
     @Setter(AccessLevel.NONE)
     @OrderBy("monthlyTotal")
     @OneToMany(mappedBy = "tariffVersion", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -67,15 +83,35 @@ public class TariffVersion extends BaseEntity {
     }
 
     public TariffRate addRate(TariffGroup group, long collectionFee, long transportFee, String unitLabel) {
-        TariffRate rate = TariffRate.create(this, group, collectionFee, transportFee, unitLabel);
+        return addRate(group, collectionFee, transportFee, 0, unitLabel);
+    }
+
+    public TariffRate addRate(TariffGroup group, long collectionFee, long transportFee, long processingFee,
+            String unitLabel) {
+        TariffRate rate = TariffRate.create(this, group, collectionFee, transportFee, processingFee, unitLabel);
         rates.add(rate);
         return rate;
     }
 
     /** Đặt đơn giá một nhóm (dự thảo): có rồi thì sửa tại chỗ, chưa có thì thêm. */
-    public void putRate(TariffGroup group, long collectionFee, long transportFee, String unitLabel) {
-        rateFor(group).ifPresentOrElse(r -> r.update(collectionFee, transportFee, unitLabel),
-                () -> addRate(group, collectionFee, transportFee, unitLabel));
+    public void putRate(TariffGroup group, long collectionFee, long transportFee, long processingFee, String unitLabel) {
+        rateFor(group).ifPresentOrElse(r -> r.update(collectionFee, transportFee, processingFee, unitLabel),
+                () -> addRate(group, collectionFee, transportFee, processingFee, unitLabel));
+    }
+
+    /** Bỏ đơn giá một nhóm (dự thảo), dùng cho nhóm không bắt buộc. */
+    public void removeRate(TariffGroup group) {
+        rates.removeIf(r -> r.getTariffGroup() == group);
+    }
+
+    /** Hộ gia đình ở địa bàn {@code district} tính theo nhân khẩu theo biểu giá này. */
+    public boolean perCapitaIn(District district) {
+        return perCapitaAll || (district != null && perCapitaDistricts.stream().anyMatch(d -> d.getId() != null
+                ? d.getId().equals(district.getId()) : d == district));
+    }
+
+    public boolean hasPerCapita() {
+        return perCapitaAll || !perCapitaDistricts.isEmpty();
     }
 
     /** Ban hành dự thảo: chuyển sang Đang áp dụng, ghi ngày ban hành. */
