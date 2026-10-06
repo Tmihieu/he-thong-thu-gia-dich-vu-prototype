@@ -123,12 +123,16 @@ class HouseholdDebtIT extends IntegrationTest {
         // Kỳ 11: DV01 thu 80.000 công nợ kỳ cũ (đã thu 80.000, trong đó công nợ 80.000); kỳ 10 không có thu công nợ.
         ledger(november)
                 .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].collected").value(contains(80_000)))
-                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].debtCollected").value(contains(80_000)));
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].debtCollected").value(contains(80_000)))
+                // Công nợ tháng trước: kỳ 10 DV01 nợ 4 × 80.000, H1 vừa đóng nên còn 240.000; DV07 còn 2 hộ.
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].lastPeriodDebt").value(contains(240_000)))
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV07')].lastPeriodDebt").value(contains(160_000)));
         ledger(fx.october)
-                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].debtCollected").value(contains(0)));
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].debtCollected").value(contains(0)))
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].lastPeriodDebt").value(contains(0)));
 
-        // Đếm hộ còn nợ theo tổ: KV07 còn H2 (H1 đã nộp), KV09 còn 2, KV12 còn 2.
-        mvc.perform(get("/api/remittance/area-progress").param("periodId", fx.october.getId().toString())
+        // Đếm hộ còn nợ kỳ liền trước (kỳ 10) theo tổ ở kỳ 11: KV07 còn H2 (H1 đã nộp), KV09 còn 2, KV12 còn 2.
+        mvc.perform(get("/api/remittance/area-progress").param("periodId", november.getId().toString())
                         .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer)))
                 .andExpect(jsonPath("$[?(@.areaCode == 'KV07')].debtHouseholds").value(contains(1)))
                 .andExpect(jsonPath("$[?(@.areaCode == 'KV09')].debtHouseholds").value(contains(2)))
@@ -155,6 +159,35 @@ class HouseholdDebtIT extends IntegrationTest {
         mvc.perform(get("/api/remittance/area-progress").param("periodId", fx.october.getId().toString())
                         .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer)))
                 .andExpect(jsonPath("$[?(@.areaCode == 'KV07')].debtHouseholds").value(contains(2)));
+    }
+
+    @Test
+    void previousOfShowsOnlyTheDebtOfTheImmediatelyPreviousPeriodEvenWhenItIsNotLocked() throws Exception {
+        fx.collectCash("DTH-H000001"); // trước khi có kỳ 9 để mỗi hộ chỉ một khoản khi tra
+        CollectionPeriod september = periods.save(CollectionPeriod.open(PeriodType.MONTH, 2026, 9, null,
+                LocalDate.of(2026, 9, 30), fx.october.getTariffVersion()));
+        chargeRequests.publish(new IssueCommand(september.getId(), fx.env.getId(), ChargeScope.ALL, null, null, null, null),
+                fx.actor(fx.officer));
+        em.flush();
+        jdbc.update("update collection_periods set status = 'LOCKED', locked_at = now() where id = ?", september.getId());
+        CollectionPeriod november = periods.save(CollectionPeriod.open(PeriodType.MONTH, 2026, 11, null,
+                LocalDate.of(2026, 11, 30), fx.october.getTariffVersion()));
+        em.flush();
+
+        // Xem kỳ 11: chỉ nợ kỳ 10 (chưa khóa), không gồm nợ kỳ 9; H1 đã đóng kỳ 10 nên còn 5 hộ.
+        debts(fx.officer, "?previousOf=" + november.getId())
+                .andExpect(jsonPath("$.householdCount").value(5))
+                .andExpect(jsonPath("$.totalAmount").value(400_000))
+                .andExpect(jsonPath("$.items[0].periodLabel").value("Tháng 10/2026"))
+                // H2 nợ cả kỳ 9 (đã khóa) và kỳ 10: số kỳ nợ là 2.
+                .andExpect(jsonPath("$.items[0].subjectCode").value("DTH-H000002"))
+                .andExpect(jsonPath("$.items[0].debtPeriods").value(2));
+        // Xem kỳ 10: nợ kỳ 9 của cả 6 hộ.
+        debts(fx.officer, "?previousOf=" + fx.october.getId())
+                .andExpect(jsonPath("$.householdCount").value(6))
+                .andExpect(jsonPath("$.items[0].periodLabel").value("Tháng 09/2026"));
+        // Kỳ đầu tiên không có kỳ trước: không nợ.
+        debts(fx.officer, "?previousOf=" + september.getId()).andExpect(jsonPath("$.householdCount").value(0));
     }
 
     @Test

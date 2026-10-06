@@ -82,8 +82,11 @@ export function useReceiptIssues(status?: ReceiptIssue['status']) {
   });
 }
 
-/** Công nợ hộ (khoản Chưa thu của kỳ đã khóa); chỉ cán bộ xã và lãnh đạo gọi được. */
-export function useHouseholdDebts(filter: { companyId?: number; areaId?: number; page: number; size: number }, enabled = true) {
+/** Công nợ hộ: khoản Chưa thu của kỳ liền trước {@code previousOf}; chỉ cán bộ xã và lãnh đạo gọi được. */
+export function useHouseholdDebts(
+  filter: { previousOf?: number; companyId?: number; areaId?: number; page: number; size: number },
+  enabled = true,
+) {
   return useQuery({
     queryKey: [...remittanceKeys.householdDebts, filter],
     queryFn: () => api.get<HouseholdDebtPage>('/api/remittance/household-debts', { params: filter }),

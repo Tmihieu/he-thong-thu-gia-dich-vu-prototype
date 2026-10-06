@@ -62,7 +62,7 @@ public class AreaProgressService {
         Map<Long, Company> companyById = new HashMap<>();
         companies.findAll().forEach(c -> companyById.put(c.getId(), c));
         Map<String, Long> debtHouseholds = new HashMap<>();
-        queries.debtHouseholdsByArea().forEach(r -> debtHouseholds.put(r.areaId() + ":" + r.companyId(), r.households()));
+        queries.debtHouseholdsByArea(periodId).forEach(r -> debtHouseholds.put(r.areaId() + ":" + r.companyId(), r.households()));
         Map<Long, Long> subjectCounts = new HashMap<>();
         subjects.countActiveByArea().forEach(r -> subjectCounts.put((Long) r[0], (Long) r[1]));
 

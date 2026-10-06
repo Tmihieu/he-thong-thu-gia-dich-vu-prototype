@@ -25,10 +25,13 @@ public class HouseholdDebtService {
 
     private final LedgerQueries queries;
 
-    /** Tổng (số hộ, số khoản, tiền) và một trang khoản nợ, lọc tùy chọn theo công ty, tổ. */
-    public HouseholdDebtPage list(Long companyId, Long areaId, int page, int size, CurrentUser actor) {
+    /**
+     * Tổng (số hộ, số khoản, tiền) và một trang khoản nợ, lọc tùy chọn theo công ty, tổ. Có {@code previousOf} thì chỉ
+     * nợ của kỳ liền trước kỳ đó, không thì nợ mọi kỳ đã khóa.
+     */
+    public HouseholdDebtPage list(Long previousOf, Long companyId, Long areaId, int page, int size, CurrentUser actor) {
         actor.requireRole(Role.COMMUNE_OFFICER, Role.LEADER);
-        return new HouseholdDebtPage(queries.householdDebts(companyId, areaId, size, (long) page * size),
-                queries.householdDebtTotals(companyId, areaId), page, size);
+        return new HouseholdDebtPage(queries.householdDebts(previousOf, companyId, areaId, size, (long) page * size),
+                queries.householdDebtTotals(previousOf, companyId, areaId), page, size);
     }
 }
