@@ -26,7 +26,7 @@ import { LockPeriodButton } from './LockPeriodButton';
 import { VouchersModal } from './VouchersModal';
 
 /** Viền đậm hơn viền mặc định để bảng nhiều cột dễ đọc. */
-const BORDER = '#8793a3';
+const BORDER = '#5b6878';
 
 type Filter = 'all' | 'open' | 'settled';
 
@@ -154,8 +154,8 @@ export function ReconciliationPage() {
       semantic.info.bg,
       [
         { title: 'Tổng', key: 'qrTotal', width: 130, render: money((r) => r.qrTotal) },
-        { title: <>Vận chuyển<div style={{ fontWeight: 400 }}>Xã giữ</div></>, key: 'qrTransport', width: 130, render: money((r) => r.qrTransport) },
-        { title: <>Thu gom<div>→ Xã trả Cty</div></>, key: 'qrCollection', width: 140, render: money((r) => r.qrCollection, true) },
+        { title: 'Vận chuyển', key: 'qrTransport', width: 130, render: money((r) => r.qrTransport) },
+        { title: 'Thu gom', key: 'qrCollection', width: 140, render: money((r) => r.qrCollection, true) },
       ],
       'Xã nhận qua QR',
     ),
@@ -163,8 +163,8 @@ export function ReconciliationPage() {
       semantic.warning.bg,
       [
         { title: 'Tổng', key: 'cashTotal', width: 130, render: money((r) => r.cashCollected) },
-        { title: <>Vận chuyển<div>→ Cty nộp Xã</div></>, key: 'cashTransport', width: 140, render: money((r) => r.cashTransport, true) },
-        { title: <>Thu gom<div style={{ fontWeight: 400 }}>Cty giữ</div></>, key: 'cashCollection', width: 130, render: money((r) => r.cashCollection) },
+        { title: 'Vận chuyển', key: 'cashTransport', width: 140, render: money((r) => r.cashTransport, true) },
+        { title: 'Thu gom', key: 'cashCollection', width: 130, render: money((r) => r.cashCollection) },
       ],
       'Cty thu tiền mặt',
     ),
@@ -173,7 +173,7 @@ export function ReconciliationPage() {
       semantic.success.bg,
       [
         {
-          title: <>Xã đang giữ<div style={{ fontWeight: 400 }}>QR ± phiếu đã lập</div></>,
+          title: 'Xã đang giữ',
           key: 'holding',
           width: 160,
           render: (_, r) => (
@@ -185,7 +185,7 @@ export function ReconciliationPage() {
             </>
           ),
         },
-        { title: <>Xã được hưởng<div style={{ fontWeight: 400 }}>phí vận chuyển</div></>, key: 'entitled', width: 150, render: money((r) => r.entitled) },
+        { title: 'Xã được hưởng', key: 'entitled', width: 150, render: money((r) => r.entitled) },
       ],
       'Đối chiếu tiền xã',
     ),
@@ -206,7 +206,7 @@ export function ReconciliationPage() {
       />
       {ledger.error && <ErrorBlock error={ledger.error} onRetry={() => void ledger.refetch()} />}
 
-      <Card style={{ borderColor: BORDER }} title="Tiền xã đang giữ trong kỳ" extra={<Typography.Text type="secondary">So với phần phí vận chuyển xã được hưởng</Typography.Text>} styles={{ body: { padding: 0 } }}>
+      <Card style={{ borderColor: BORDER }} styles={{ header: { borderBottomColor: BORDER }, body: { padding: 0 } }} title="Tiền xã đang giữ trong kỳ" extra={<Typography.Text type="secondary">So với phần phí vận chuyển xã được hưởng</Typography.Text>}>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch' }}>
           <Cell label="Xã đang giữ" value={holding}>
             QR đã nhận <MoneyText value={qrTotal} />
@@ -233,7 +233,7 @@ export function ReconciliationPage() {
             </span>
           </div>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 24px', padding: '12px 20px', borderTop: `1px solid ${semantic.neutral.bg}`, background: '#f7f8f6' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 24px', padding: '12px 20px', borderTop: `1px solid ${BORDER}`, background: '#f7f8f6' }}>
           <span>
             Xã còn phải chi: <strong style={{ color: semantic.info.fg }}><MoneyText value={sum(toPay, (r) => r.communeOwed)} /></strong> cho {toPay.length} Cty
           </span>
@@ -264,7 +264,7 @@ export function ReconciliationPage() {
       )}
 
       <Card style={{ marginTop: 16, borderColor: BORDER }} styles={{ body: { padding: 0 } }}>
-        <div style={{ padding: '10px 12px', borderBottom: `1px solid ${semantic.neutral.bg}` }}>
+        <div style={{ padding: '10px 12px', borderBottom: `1px solid ${BORDER}` }}>
           <Segmented<Filter>
             value={filter}
             onChange={setFilter}
