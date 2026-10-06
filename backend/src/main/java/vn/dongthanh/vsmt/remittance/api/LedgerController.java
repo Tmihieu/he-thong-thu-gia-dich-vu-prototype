@@ -177,14 +177,15 @@ public class LedgerController {
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Công ty thu tiền mặt: phần thu gom, công ty giữ") long cashCollection,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Xã đang giữ = QR + đã nhận từ công ty − đã chi cho công ty") long holding,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Xã được hưởng = vận chuyển trong QR + vận chuyển trong tiền mặt") long entitled,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã khớp: công ty không còn phải nộp và xã không còn phải trả") boolean settled) {
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã khớp: công ty không còn phải nộp và xã không còn phải trả") boolean settled,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Công nợ tháng trước: hộ còn chưa đóng của kỳ liền trước, tính đến hiện tại") long lastPeriodDebt) {
 
         static LedgerRowDto of(LedgerRow r) {
             return new LedgerRowDto(r.companyId(), r.companyCode(), r.companyName(), r.periodId(), r.due(),
                     r.chargeCount(), r.adjustment(), r.refunded(), r.collected(), r.cashCollected(), r.received(), r.receiptCount(), r.remaining(), r.gap(),
                     r.previousDebt(), r.overdue(), r.collectionRate(), r.lowCollectionRate(), r.remittedRate(),
                     r.lowRemittedRate(), r.progress(), r.reconciliation(), r.retained(), r.payable(), r.debtCollected(), r.communePaid(), r.communeOwed(),
-                    r.qrTotal(), r.qrTransport(), r.qrCollection(), r.cashTransport(), r.cashCollection(), r.holding(), r.entitled(), r.settled());
+                    r.qrTotal(), r.qrTransport(), r.qrCollection(), r.cashTransport(), r.cashCollection(), r.holding(), r.entitled(), r.settled(), r.lastPeriodDebt());
         }
     }
 }

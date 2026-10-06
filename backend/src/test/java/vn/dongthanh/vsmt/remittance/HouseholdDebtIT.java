@@ -123,9 +123,13 @@ class HouseholdDebtIT extends IntegrationTest {
         // Kỳ 11: DV01 thu 80.000 công nợ kỳ cũ (đã thu 80.000, trong đó công nợ 80.000); kỳ 10 không có thu công nợ.
         ledger(november)
                 .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].collected").value(contains(80_000)))
-                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].debtCollected").value(contains(80_000)));
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].debtCollected").value(contains(80_000)))
+                // Công nợ tháng trước: kỳ 10 DV01 nợ 4 × 80.000, H1 vừa đóng nên còn 240.000; DV07 còn 2 hộ.
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].lastPeriodDebt").value(contains(240_000)))
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV07')].lastPeriodDebt").value(contains(160_000)));
         ledger(fx.october)
-                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].debtCollected").value(contains(0)));
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].debtCollected").value(contains(0)))
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].lastPeriodDebt").value(contains(0)));
 
         // Đếm hộ còn nợ theo tổ: KV07 còn H2 (H1 đã nộp), KV09 còn 2, KV12 còn 2.
         mvc.perform(get("/api/remittance/area-progress").param("periodId", fx.october.getId().toString())

@@ -198,6 +198,21 @@ public class LedgerQueries {
                 (rs, i) -> new CompanyAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), periodId);
     }
 
+    /**
+     * Công nợ tháng trước: khoản Chưa thu của kỳ liền trước kỳ đang xem (theo ngày bắt đầu, bỏ kỳ nháp), trừ số hộ đã
+     * đóng một phần; tính theo hiện tại nên hộ đóng nợ cũ thì số này giảm ngay. Nợ cũ hơn xem ở công nợ hộ.
+     */
+    public List<CompanyAmount> lastPeriodUnpaidByCompany(long periodId) {
+        return jdbc.query("select c.company_id, sum(c.amount - coalesce(p.paid, 0)), count(*)"
+                + " from charges c left join (select charge_id, sum(amount) as paid from payments group by charge_id) p"
+                + " on p.charge_id = c.id"
+                + " where c.status = 'UNPAID' and c.period_id = (select prev.id from collection_periods prev, collection_periods cur"
+                + " where cur.id = ? and prev.start_date < cur.start_date and prev.status <> 'DRAFT'"
+                + " order by prev.start_date desc limit 1)"
+                + " group by c.company_id",
+                (rs, i) -> new CompanyAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), periodId);
+    }
+
     /** Công nợ hộ = khoản Chưa thu của kỳ đã khóa (không có bảng riêng); lọc tùy chọn theo công ty, tổ. */
     private static final String DEBT_FROM = " from charges c join collection_periods cp on cp.id = c.period_id"
             + " and cp.status = 'LOCKED' where c.status = 'UNPAID'";

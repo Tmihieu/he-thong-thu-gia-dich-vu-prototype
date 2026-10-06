@@ -64,7 +64,7 @@ public class CompanyLedgerService {
             long chargeCount, long adjustment, long refunded, long collected, long cashCollected, long received, long receiptCount, long remaining, long gap,
             long previousDebt, boolean overdue, double collectionRate, boolean lowCollectionRate, double remittedRate,
             boolean lowRemittedRate, Progress progress, Reconciliation reconciliation,
-            long retained, long payable, long debtCollected, long communePaid, long communeOwed, long qrCollection) {
+            long retained, long payable, long debtCollected, long communePaid, long communeOwed, long qrCollection, long lastPeriodDebt) {
 
         /** Chuyển khoản vào tài khoản xã (đã trừ hoàn). */
         public long qrTotal() {
@@ -117,6 +117,7 @@ public class CompanyLedgerService {
         Map<Long, Received> received = remitted.receivedByCompany(periodId);
         Map<Long, Long> paidBack = remitted.paidBackByCompany(periodId);
         Map<Long, Long> previousDebt = previousDebts(periodId, today);
+        Map<Long, CompanyAmount> lastPeriodDebt = byCompany(queries.lastPeriodUnpaidByCompany(periodId));
 
         Set<Long> ids = new TreeSet<>();
         ids.addAll(due.keySet());
@@ -124,6 +125,7 @@ public class CompanyLedgerService {
         ids.addAll(adjustment.keySet());
         ids.addAll(refunded.keySet());
         ids.addAll(received.keySet());
+        ids.addAll(lastPeriodDebt.keySet());
         previousDebt.forEach((id, debt) -> {
             if (debt > 0) {
                 ids.add(id);
@@ -139,7 +141,8 @@ public class CompanyLedgerService {
                 .map(id -> build(companyById.get(id), period, today, due.get(id), adjustment.get(id), refunded.get(id),
                         retained.get(id), cash.get(id), collected.get(id), received.get(id),
                         previousDebt.getOrDefault(id, 0L), debtCollected.get(id), paidBack.getOrDefault(id, 0L),
-                        qrCollection.getOrDefault(id, 0L)))
+                        qrCollection.getOrDefault(id, 0L),
+                        lastPeriodDebt.containsKey(id) ? lastPeriodDebt.get(id).amount() : 0L))
                 .sorted(Comparator.comparing(LedgerRow::companyCode))
                 .toList();
     }
@@ -207,7 +210,8 @@ public class CompanyLedgerService {
 
     private LedgerRow build(Company company, CollectionPeriod period, LocalDate today, CompanyAmount dueRow,
             CompanyAmount adjustmentRow, CompanyAmount refundedRow, CompanyAmount retainedRow, CompanyAmount cashRow, CompanyAmount collectedRow,
-            Received receivedRow, long previousDebt, CompanyAmount debtCollectedRow, long communePaid, long qrCollection) {
+            Received receivedRow, long previousDebt, CompanyAmount debtCollectedRow, long communePaid, long qrCollection,
+            long lastPeriodDebt) {
         long due = dueRow == null ? 0 : dueRow.amount();
         long adjustment = adjustmentRow == null ? 0 : adjustmentRow.amount();
         long refunded = refundedRow == null ? 0 : refundedRow.amount();
@@ -253,7 +257,7 @@ public class CompanyLedgerService {
                 adjustment, refunded, collected, cashCollected, received, receiptCount, remaining, gap, previousDebt, overdue, percent(collected, due),
                 due > 0 && lowRate(collected, due), percent(received, payable), payable > 0 && lowRate(received, payable),
                 progress, reconciliation, retained, payable, debtCollectedRow == null ? 0 : debtCollectedRow.amount(), communePaid,
-                communeOwed, qrCollection);
+                communeOwed, qrCollection, lastPeriodDebt);
     }
 
     /** Phần trăm làm tròn 1 chữ số để hiển thị; 0 khi phải thu 0. */
