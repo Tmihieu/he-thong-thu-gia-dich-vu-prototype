@@ -1,6 +1,20 @@
 # Thu theo nhân khẩu, nguồn thải tự cân (họp công ty 05/10)
 
-Trạng thái: **chưa code**; đã trả lời mục 3 (06/10), còn câu 8 và luồng phí xử lý. Trả lời BR-MD-16 (thu theo hộ hay theo nhân khẩu).
+Trạng thái: **đã code (06/10)** backend (V48) + web + Flutter + tài liệu; còn câu 8 và luồng phí xử lý (code tạm, xem mục 6). Trả lời BR-MD-16 (thu theo hộ hay theo nhân khẩu).
+
+## 0. Tình hình (06/10, tối)
+
+Đã làm (nhánh `feat/nhan-khau-tu-can`):
+- Backend: loại `SMALL_SOURCE` / `LARGE_SOURCE` (mã mới `NN` / `NL`); nhóm `HH_PER_CAPITA`, `FULL_COST_BY_KG`; `processing_fee` trong biểu giá; biểu giá bật nhân khẩu toàn xã hoặc theo địa bàn; khoản chụp `member_count`; đổi nhóm giá của đăng ký đang chạy áp từ kỳ sau; chặn đổi loại khi đăng ký không hợp loại mới. V48 chuyển dữ liệu cũ và thêm `FULL_COST_BY_KG` (421 đ/kg xử lý) vào biểu giá có sẵn.
+- Web: form biểu giá (cột Xử lý, ô theo nhân khẩu + Toàn xã / chọn địa bàn), form hồ sơ lọc nhóm theo loại, định mức kg cho cả hai nhóm cân, khoản thu hiện "· N người"; `schema.d.ts` sinh lại.
+- Flutter: nhãn loại / nhóm mới.
+- Tài liệu: SPEC §9.3–9.4, business-rules, data-dictionary, use-cases, kịch bản kiểm thử, runbook.
+- Kiểm: `mvn verify` (255 test unit + IT) đạt, web `tsc` + `lint` + 163 test đạt, Flutter `analyze` + `test` đạt.
+
+Còn hở:
+- Câu 8 và phí xử lý thuộc ai (code tạm: phí xử lý nộp xã cùng vận chuyển, LedgerQueries chia theo thu gom / tổng đơn giá).
+- Chưa có BR cho lỗi `MEMBER_COUNT_REQUIRED` khi lập khoản theo nhân khẩu; `SPEC.md` §11 O2 lệch BR-REM-02 (có từ trước); `docs/phan-quyen.md:7`, `tasks/todo.md:796-797` chưa sửa.
+- Chưa có test web riêng cho ô theo nhân khẩu; chưa chạy thử giao diện thật.
 
 ## 1. Đã chốt (06/10)
 
@@ -143,5 +157,5 @@ Thuật ngữ: "Hộ/cơ sở" → hộ gia đình / nguồn thải nhỏ / ngu�
 **Việc chưa làm**
 - [ ] Hỏi câu 8: đơn giá một người có tách thu gom + vận chuyển không.
 - [ ] Hỏi: phí xử lý thu được thuộc về ai (đang code tạm: nộp xã như vận chuyển).
-- [ ] Sửa tài liệu theo mục 4, 5, 6: `SPEC.md`, `business-rules.md`, `data-dictionary.md` (thay ghi chú tạm ở `BY_VOLUME`), `use-cases.md`, `kich-ban-kiem-thu.md`, `demo-runbook.md`.
-- [ ] Code: backend (V48) → web → Flutter, mỗi lát một commit.
+- [x] Sửa tài liệu theo mục 4, 5, 6: `SPEC.md`, `business-rules.md`, `data-dictionary.md` (thay ghi chú tạm ở `BY_VOLUME`), `use-cases.md`, `kich-ban-kiem-thu.md`, `demo-runbook.md`.
+- [x] Code: backend (V48) → web → Flutter, mỗi lát một commit.

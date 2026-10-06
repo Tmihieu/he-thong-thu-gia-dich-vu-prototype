@@ -270,26 +270,26 @@ Mỗi khu vực tối đa 1 công ty trong cùng khoảng hiệu lực; đổi c
 
 ### ServiceSubject — Đối tượng sử dụng dịch vụ · `service_subjects` · Phần A
 
-Hộ gia đình / hộ kinh doanh / doanh nghiệp. Hiển thị chung form "Hồ sơ hộ" với `ServiceContract`.
+Hộ gia đình / nguồn thải nhỏ / nguồn thải lớn (06/10, V48; thay hộ kinh doanh / doanh nghiệp). Lớn từ 9.000 kg/tháng (300 kg/ngày, Điều 58 NĐ 08/2022), dưới là nhỏ; chủ nhà trọ lập hồ sơ nguồn thải. Hiển thị chung form "Hồ sơ hộ" với `ServiceContract`.
 
 
 | Tên hiển thị (VI)   | Tên kỹ thuật          | Kiểu                 | Bắt buộc | Nguồn         | Ví dụ           | Mức  | Ghi chú                                                                                                                                                            |
 | ------------------- | --------------------- | -------------------- | -------- | ------------- | --------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Mã đối tượng        | `code`                | `text(20)`           | Có       | Hệ thống / Xã | `DTH-H000128`   | Demo | Duy nhất. Dạng `{mã địa bàn}-{H|KD|DN}{số}` như prototype, tổng 7 ký tự sau dấu gạch (`H000128`, `KD00077`). Nếu xã đã có mã hộ riêng thì dùng mã xã (xin ở mục 6) |
+| Mã đối tượng        | `code`                | `text(20)`           | Có       | Hệ thống / Xã | `DTH-H000128`   | Demo | Duy nhất. Dạng `{mã địa bàn}-{H|NN|NL}{số}`, tổng 7 ký tự sau dấu gạch (`H000128`, `NN00077`). Hồ sơ cũ giữ mã `KD…` / `DN…` (V48). Nếu xã đã có mã hộ riêng thì dùng mã xã (xin ở mục 6) |
 | Loại đối tượng      | `subject_type`        | `enum SubjectType`   | Có       | Xã            | `HOUSEHOLD`     | Demo |                                                                                                                                                                    |
 | Tên chủ hộ / cơ sở  | `name`                | `text(200)`          | Có       | Xã            | Nguyễn Văn Mẫu  | Demo | Seed dùng tên giả                                                                                                                                                  |
 | Địa chỉ             | `address`             | `text(255)`          | Có       | Xã            | 12/5 đường Số 1 | Demo | Số nhà, hẻm, đường; tổ/địa bàn lấy từ `area_id`                                                                                                                    |
 | Tổ/Ấp/Thôn          | `area_id`             | `FK→Area`            | Có       | Xã            | 7 (KV07)        | Demo | Địa bàn suy ra từ khu vực                                                                                                                                          |
 | Số điện thoại       | `phone`               | `text(15)`           | Không    | Xã / Công ty  | 0900000128      | Demo | Dùng để gắn tài khoản app người dân                                                                                                                                |
 | Trạng thái          | `status`              | `enum SubjectStatus` | Có       | Xã            | `ACTIVE`        | Demo |                                                                                                                                                                    |
-| Số thành viên       | `member_count`        | `int`                | Có điều kiện | Xã        | 4               | Thật | Bắt buộc với `HOUSEHOLD` (CHECK), bỏ trống với loại khác. Hợp đồng chưa có ngày kết thúc phải khớp: ≤2 người → `HH_UP_TO_2`, ≥3 → `HH_3_PLUS` (`TARIFF_GROUP_MISMATCH`) |
-| Người đại diện      | `representative_name` | `text(100)`          | Không    | Xã            |                 | Thật | Với hộ kinh doanh / doanh nghiệp                                                                                                                                   |
-| Mã số thuế          | `tax_code`            | `text(14)`           | Không    | Xã            |                 | Thật | Với hộ kinh doanh / doanh nghiệp                                                                                                                                   |
+| Số thành viên       | `member_count`        | `int`                | Có điều kiện | Xã        | 4               | Thật | Bắt buộc với `HOUSEHOLD` (CHECK), bỏ trống với loại khác. Hợp đồng chưa có ngày kết thúc phải khớp: ≤2 người → `HH_UP_TO_2`, ≥3 → `HH_3_PLUS` (`TARIFF_GROUP_MISMATCH`); `HH_PER_CAPITA` không cần khớp. Theo nhân khẩu thì là căn cứ tính tiền, đổi áp ngay cho khoản chưa lập |
+| Người đại diện      | `representative_name` | `text(100)`          | Không    | Xã            |                 | Thật | Với nguồn thải nhỏ / lớn                                                                                                                                           |
+| Mã số thuế          | `tax_code`            | `text(14)`           | Không    | Xã            |                 | Thật | Với nguồn thải nhỏ / lớn                                                                                                                                           |
 | Số định danh chủ hộ | `national_id`         | `text(12)`           | Không    | Xã            |                 | Thật | Dữ liệu cá nhân nhạy cảm; chỉ xin nếu xã yêu cầu định danh (xem mục 6.3)                                                                                           |
 | Ghi chú             | `note`                | `text`               | Không    | Xã            |                 | Demo |                                                                                                                                                                    |
 
 
-**Enum `SubjectType`:** `HOUSEHOLD` Hộ gia đình · `BUSINESS_HOUSEHOLD` Hộ kinh doanh · `ENTERPRISE` Doanh nghiệp
+**Enum `SubjectType`:** `HOUSEHOLD` Hộ gia đình · `SMALL_SOURCE` Nguồn thải nhỏ · `LARGE_SOURCE` Nguồn thải lớn (V48: `BUSINESS_HOUSEHOLD` / `ENTERPRISE` có định mức ≥ 9.000 kg → lớn, còn lại → nhỏ)
 **Enum `SubjectStatus`:** `ACTIVE` Đang cung cấp · `PENDING` Chờ xử lý · `ENDED` Đã chấm dứt
 
 **Khóa/ràng buộc:** `code` duy nhất.
@@ -301,13 +301,13 @@ Hộ gia đình / hộ kinh doanh / doanh nghiệp. Hiển thị chung form "H�
 | ----------------- | -------------------- | ------------------- | ------------ | ------------------ | ------------- | ---- | ------------------------------------------------------------------- |
 | Số đăng ký | `contract_no` | `text(30)` | Có | Hệ thống | `ĐK-DTH-0128` | Demo | Duy nhất; hệ thống tự sinh `ĐK-{mã địa bàn}-{số 4 chữ số}`, đếm theo địa bàn (D10). Tên cột giữ `contract_no` để khớp tên entity |
 | Đối tượng         | `subject_id`         | `FK→ServiceSubject` | Có           | Hệ thống           | 128           | Demo |                                                                     |
-| Nhóm giá | `tariff_group` | `enum TariffGroup` | Có | Xã | `HH_3_PLUS` | Demo | Enum cố định (D3). Giá lấy từ `TariffRate` của phiên bản biểu giá gắn với kỳ |
+| Nhóm giá | `tariff_group` | `enum TariffGroup` | Có | Xã | `HH_3_PLUS` | Demo | Enum cố định (D3). Giá lấy từ `TariffRate` của phiên bản biểu giá gắn với kỳ. Phải hợp loại đối tượng (BR-MD-06). Đổi nhóm của đăng ký đang chạy áp từ kỳ sau (BR-MD-09) |
 | Hiệu lực từ | `valid_from` | `date` | Có | Xã | 2026-01-01 | Demo | Ngày bắt đầu sử dụng dịch vụ |
 | Hiệu lực đến | `valid_to` | `date` | Không | Xã |  | Demo | Null = không thời hạn |
 | Miễn 100%         | `exempt`             | `bool`              | Có           | Xã                 | false         | Demo | Mặc định false. Miễn giảm một phần ngoài phạm vi                    |
 | Lý do miễn        | `exempt_reason`      | `text(255)`         | Có điều kiện | Xã                 | Hộ nghèo      | Demo | Bắt buộc khi `exempt = true`                                        |
 | Số văn bản miễn   | `exempt_decision_no` | `text(50)`          | Không        | Xã                 |               | Thật |                                                                     |
-| Định mức kg/tháng | `quota_kg`           | `integer`           | Không        | Xã                 | 600           | Demo | `> 0`; dùng cho nhóm `BY_VOLUME`: tiền = đơn giá đ/kg × định mức × số tháng; NULL thì chưa lập được khoản (`QUOTA_KG_REQUIRED`) |
+| Định mức kg/tháng | `quota_kg`           | `integer`           | Không        | Xã                 | 600           | Demo | `> 0`; dùng cho nhóm `BY_VOLUME`, `FULL_COST_BY_KG`: tiền = đơn giá đ/kg × định mức × số tháng. Cán bộ xã nhập một lần; NULL thì bỏ qua khi lập khoản (`QUOTA_KG_REQUIRED`) |
 | Ghi chú           | `note`               | `text`              | Không        | Xã                 |               | Demo |                                                                     |
 
 
@@ -315,16 +315,18 @@ Hộ gia đình / hộ kinh doanh / doanh nghiệp. Hiển thị chung form "H�
 
 
 | Giá trị           | Nhãn               | Giá prototype (đ/tháng)      |
-| Giá trị | Nhãn | Đơn giá demo (thu gom + vận chuyển) |
+| Giá trị | Nhãn | Đơn giá demo (thu gom + vận chuyển + xử lý) |
 | ----------------- | ------------------------------------ | --------------------------------------- |
 | `HH_UP_TO_2` | HGĐ ≤ 2 người | 29.000 + 11.000 = 40.000 đ/hộ/tháng |
 | `HH_3_PLUS` | HGĐ ≥ 3 người | 57.000 + 23.000 = 80.000 đ/hộ/tháng |
+| `HH_PER_CAPITA` | HGĐ theo nhân khẩu | Chưa có số chính thức; quản trị nhập đ/người/tháng (× số nhân khẩu). Tách thu gom / vận chuyển hay không chưa biết (câu 8) |
 | `SMALL_UP_TO_126` | Chủ nguồn thải nhỏ ≤ 126 kg/tháng | 57.000 + 23.000 = 80.000 đ/tháng |
 | `SMALL_126_TO_250` | Chủ nguồn thải nhỏ 126–250 kg/tháng | 85.000 + 34.000 = 119.000 đ/tháng |
 | `SMALL_250_TO_500` | Chủ nguồn thải nhỏ 250–500 kg/tháng | 170.000 + 68.000 = 238.000 đ/tháng |
-| `BY_VOLUME` | Chủ nguồn thải lớn 500–9.000 kg/tháng | 453 + 180 = 633 đ/kg (chưa lập được khoản, chờ tính theo ký) |
+| `BY_VOLUME` | Nguồn thải nhỏ 500 đến dưới 9.000 kg/tháng (bảng b) | 453 + 180 = 633 đ/kg × định mức kg |
+| `FULL_COST_BY_KG` | Đăng ký cân, có phí xử lý (nguồn thải lớn; nguồn thải nhỏ chọn như nguồn thải lớn; bảng mục 3) | 453 + 180 + 421 = 1.054 đ/kg × định mức kg |
 
-> **06/10, chưa sửa code:** nếu ngưỡng Điều 58 NĐ 08/2022 là 300 kg/ngày (≈ 9.000 kg/tháng) thì `BY_VOLUME` là **nguồn thải nhỏ** chọn như hộ gia đình (bảng b), nhãn "chủ nguồn thải lớn" ở trên là sai. Sắp thêm nhóm hộ gia đình theo nhân khẩu và nhóm cân theo bảng mục 3 (1.054 đ/kg). Xem [tasks/nhan-khau-tu-can-0610.md](../tasks/nhan-khau-tu-can-0610.md).
+Hộ gia đình chọn `HH_*`; nguồn thải nhỏ chọn `SMALL_*`, `BY_VOLUME` hoặc `FULL_COST_BY_KG`; nguồn thải lớn chỉ `FULL_COST_BY_KG` (06/10, V48). Xem [tasks/nhan-khau-tu-can-0610.md](../tasks/nhan-khau-tu-can-0610.md).
 
 **Khóa/ràng buộc:** `contract_no` duy nhất; mỗi `subject_id` tối đa 1 hợp đồng hiệu lực tại một thời điểm (exclusion constraint theo `daterange(valid_from, valid_to)`); `valid_to ≥ valid_from`.
 
@@ -340,10 +342,13 @@ Hộ gia đình / hộ kinh doanh / doanh nghiệp. Hiển thị chung form "H�
 | Hiệu lực đến      | `valid_to`    | `date`              | Không    | Xã       | 2027-06-30         | Demo |                                     |
 | Trạng thái        | `status`      | `enum TariffStatus` | Có       | Hệ thống | `ACTIVE`           | Demo |                                     |
 | Phạm vi áp dụng | `scope_note` | `text(255)` | Không | Xã | Nhóm 2 | Demo | Mô tả tự do |
+| Theo nhân khẩu toàn xã | `per_capita_all` | `bool` | Có | Quản trị | false | Demo | V48. Bật: mọi hộ gia đình tính `HH_PER_CAPITA` (BR-MD-16) |
 | Ghi chú           | `note`        | `text`              | Không    | Xã       |                    | Demo |                                     |
 
 
 **Enum `TariffStatus`:** `DRAFT` Dự thảo · `ACTIVE` Đang áp dụng · `EXPIRED` Hết hiệu lực
+
+**Địa bàn theo nhân khẩu** `tariff_version_per_capita_districts` (`tariff_version_id`, `district_id`, khóa chính cả hai; V48): khi `per_capita_all = false`, hộ gia đình ở các địa bàn này tính theo nhân khẩu. Không bật thì đơn giá `HH_PER_CAPITA` không bắt buộc.
 
 **Khóa/ràng buộc:** `code` duy nhất; các phiên bản `ACTIVE` không chồng lấn hiệu lực. Seed: `BG-65-2026` (QĐ 65/2026, `ACTIVE`) và `BG-67-2025` (QĐ 67/2025, `EXPIRED`, cho kỳ 08/2026).
 
@@ -355,14 +360,15 @@ Hộ gia đình / hộ kinh doanh / doanh nghiệp. Hiển thị chung form "H�
 | Phiên bản biểu giá | `tariff_version_id` | `FK→TariffVersion` | Có       | Hệ thống | 1           | Demo |                                               |
 | Nhóm giá           | `tariff_group`      | `enum TariffGroup` | Có       | Xã       | `HH_3_PLUS` | Demo |                                               |
 | Thu gom | `collection_fee` | `money` | Có | Xã | 57000 | Demo | Số tạm cho tới khi có QĐ 65/2026 (G9) |
-| Vận chuyển | `transport_fee` | `money` | Có | Xã | 23000 | Demo | Số tạm (G9); trước đây gọi là "xử lý" |
-| Tổng mỗi tháng | `monthly_total` | `money` | Có | Hệ thống | 80000 | Demo | = thu gom + vận chuyển (CHECK); với nhóm đ/kg là tổng đơn giá mỗi kg |
-| Đơn vị tính | `unit_label` | `text(30)` | Có | Xã | đ/hộ/tháng | Demo | Cố định theo nhóm: `đ/hộ/tháng` (hộ gia đình), `đ/tháng` (chủ nguồn thải nhỏ), `đ/kg` (`BY_VOLUME`) |
+| Vận chuyển | `transport_fee` | `money` | Có | Xã | 23000 | Demo | Số tạm (G9); trước 01/10 gọi là "xử lý" |
+| Xử lý | `processing_fee` | `money` | Có | Xã | 0 | Demo | V48, mặc định 0; chỉ nhóm `FULL_COST_BY_KG` có (421 đ/kg, nhóm 2) |
+| Tổng mỗi tháng | `monthly_total` | `money` | Có | Hệ thống | 80000 | Demo | = thu gom + vận chuyển + xử lý (CHECK); nhóm đ/kg là tổng đơn giá mỗi kg, `HH_PER_CAPITA` là đơn giá một người |
+| Đơn vị tính | `unit_label` | `text(30)` | Có | Xã | đ/hộ/tháng | Demo | Cố định theo nhóm: `đ/hộ/tháng` (hộ ≤2 / ≥3), `đ/người/tháng` (`HH_PER_CAPITA`), `đ/tháng` (bậc nguồn thải nhỏ), `đ/kg` (`BY_VOLUME`, `FULL_COST_BY_KG`) |
 
 
-**Khóa/ràng buộc:** duy nhất `(tariff_version_id, tariff_group)`; `CHECK monthly_total = collection_fee + transport_fee`. Biểu giá chỉ gồm **2 thành phần** thu gom + vận chuyển, không có VAT (G9; thành phần thứ hai đổi tên từ "xử lý" sang "vận chuyển" ngày 01/10/2026).
+**Khóa/ràng buộc:** duy nhất `(tariff_version_id, tariff_group)`; `CHECK monthly_total = collection_fee + transport_fee + processing_fee`; ba thành phần không âm. Không có VAT (tạm bỏ). Thành phần thứ hai đổi tên từ "xử lý" sang "vận chuyển" ngày 01/10/2026; phí xử lý thật thêm 06/10 (BR-MD-12).
 
-**Seed `BG-65-2026`:** theo bảng QĐ 65/2026 như ở trên. Nhóm `BY_VOLUME` (500 đến dưới 9.000 kg/tháng) tính đ/kg × `quota_kg` của hợp đồng, chưa có định mức thì chưa lập được khoản (`QUOTA_KG_REQUIRED`); doanh nghiệp mẫu tạm áp bậc `SMALL_250_TO_500`.
+**Seed `BG-65-2026`:** theo bảng QĐ 65/2026 như ở trên. Nhóm `BY_VOLUME` (500 đến dưới 9.000 kg/tháng) tính đ/kg × `quota_kg` của hợp đồng, chưa có định mức thì bỏ qua khi lập khoản (`QUOTA_KG_REQUIRED`); doanh nghiệp mẫu tạm áp bậc `SMALL_250_TO_500` (V48 chuyển thành nguồn thải nhỏ). V48 thêm `FULL_COST_BY_KG` vào mọi biểu giá có sẵn: thu gom / vận chuyển như `BY_VOLUME` + 421 xử lý. Chưa có dòng `HH_PER_CAPITA` (chưa có đơn giá một người).
 
 ### FeeType — Loại phí · `fee_types` · Phần A
 
@@ -443,10 +449,11 @@ Nguồn duy nhất cho "phải thu" của hộ.
 | Loại phí             | `fee_type_id`       | `FK→FeeType`          | Có           | Hệ thống | 1                 | Demo |                                                                          |
 | Khu vực (chụp)       | `area_id`           | `FK→Area`             | Có           | Hệ thống | 7                 | Demo | Khu vực của hộ lúc phát hành; hộ chuyển tổ sau đó không làm đổi khoản    |
 | Công ty (chụp) | `company_id` | `FK→Company` | Có | Hệ thống | 1 | Demo | Công ty được phân công khu vực tại **ngày phát hành**; đổi công ty sau đó không đổi khoản đã phát hành (G3). Sổ công ty–kỳ tính theo cột này |
-| Nhóm giá (chụp)      | `tariff_group`      | `enum TariffGroup`    | Có điều kiện | Hệ thống | `HH_3_PLUS`       | Demo | Có khi loại phí `TARIFF`                                                 |
+| Nhóm giá (chụp)      | `tariff_group`      | `enum TariffGroup`    | Có điều kiện | Hệ thống | `HH_3_PLUS`       | Demo | Có khi loại phí `TARIFF`. Là nhóm **thực tính**: hộ gia đình ở địa bàn biểu giá bật nhân khẩu ghi `HH_PER_CAPITA` dù đăng ký ghi nhóm khác |
+| Số nhân khẩu (chụp)  | `member_count`      | `int`                 | Có điều kiện | Hệ thống | 4                 | Demo | V48. Có khi nhóm `HH_PER_CAPITA`: số nhân khẩu của hộ lúc lập khoản (`> 0`); dùng tính lại khi bỏ miễn giảm |
 | Đơn giá tháng (chụp) | `unit_price`        | `money`               | Có           | Hệ thống | 80000             | Demo |                                                                          |
 | Số tháng             | `months`            | `int`                 | Có           | Hệ thống | 1                 | Demo | 1 (tháng) hoặc 3 (quý) với `ENV`; 1 với phí khác                         |
-| Số tiền | `amount` | `money` | Có | Hệ thống | 80000 | Demo | = đơn giá × số tháng; 0 nếu miễn (R1). Không sửa sau khi phát hành; số thực thu nằm ở `Payment` (G4) |
+| Số tiền | `amount` | `money` | Có | Hệ thống | 80000 | Demo | = đơn giá × số tháng (nhóm đ/kg × định mức kg, `HH_PER_CAPITA` × số nhân khẩu); 0 nếu miễn (R1). Không sửa sau khi phát hành; số thực thu nằm ở `Payment` (G4) |
 | Tháng bắt đầu        | `coverage_from`     | `date`                | Có           | Hệ thống | 2026-10-01        | Demo | = `start_date` của kỳ; dùng chặn trùng tháng/quý                         |
 | Tháng kết thúc       | `coverage_to`       | `date`                | Có           | Hệ thống | 2026-10-31        | Demo | = `end_date` của kỳ                                                      |
 | ~~Hạn đóng~~ | ~~`due_date`~~ | ~~`date`~~ | Đã bỏ | | | | Đã bỏ (góp ý BA 05/10): hạn của khoản là `CollectionPeriod.due_date` của kỳ (G16) |
@@ -832,7 +839,7 @@ Chợ đồ cũ v2 (V25, [spec](cho-do-cu-spec.md)): thay tiêu đề/mô tả/l
 | code (BG-65-G2-H3, mỗi nhóm một mã) | → `TariffVersion.code` (một mã cho cả phiên bản) + `TariffRate` (mỗi nhóm một dòng)                             |
 | legal                               | → `TariffVersion.legal_basis`                                                                                   |
 | scope                               | → `TariffVersion.scope_note` + `TariffRate.tariff_group`                                                        |
-| collection / transport / processing | → `TariffRate.collection_fee` / `transport_fee` (tiền số); biểu giá chỉ 2 thành phần thu gom + vận chuyển (G9); "Theo định mức" bỏ |
+| collection / transport / processing | → `TariffRate.collection_fee` / `transport_fee` / `processing_fee` (tiền số; xử lý chỉ nhóm `FULL_COST_BY_KG`, 06/10); "Theo định mức" bỏ |
 | effective                           | → `TariffVersion.valid_from`, `valid_to`                                                                        |
 | status                              | → `TariffVersion.status`                                                                                        |
 | Không liên kết với giá tính tiền    | bỏ hành vi — giá tính tiền lấy từ `TariffRate` của phiên bản gắn kỳ                                             |
@@ -1424,5 +1431,5 @@ Mỗi cặp `(charge_id, stage)` chỉ có một dòng nên mỗi mốc nhắc c
 ### Phần công ty cầm lại (thu gom) và đổi số nhân khẩu — chốt 03/10/2026
 
 - **Phần thu gom công ty cầm lại (phí thu gom công ty được hưởng)** không lưu thành cột: tính từ biểu giá của kỳ **theo từng khoản đã thu** (góp ý BA 05/10): mỗi khoản = Σ thanh toán ròng của khoản ghi ở kỳ × `collection_fee / monthly_total` của nhóm giá, làm tròn đồng một lần theo khoản, rồi cộng lại; tính cho toàn bộ số đã thu, kể cả chuyển khoản vào tài khoản xã. Sổ công ty–kỳ có `retained` (Σ phần thu gom của số đã thu, trừ phần thu gom của khoản kỳ khác xóa nợ ghi ở kỳ này) và `payable = cashCollected − adjustment − retained` (phải nộp xã). **`payable` có thể âm**: xã trả lại công ty phần chênh, hệ thống giữ số âm, không cắt về 0. `remaining = payable − received`; nợ kỳ trước (Σ max(0, `payable` − đã nộp) các kỳ đã hết hạn) và nhắc nộp công ty cũng theo `payable`. Khoản không theo biểu giá (phí cố định) không có phần cầm lại. (Cột `companies.retained_percent` của V27 đã bỏ ở V30.)
-- **Phí xử lý** không thu và không đưa vào hệ thống (biểu giá chỉ có thu gom + vận chuyển).
-- **Đổi số người của hộ** áp từ kỳ sau: hợp đồng đang mở kết thúc hết kỳ đang chạy (`validTo` = ngày cuối kỳ), hợp đồng mới cùng nhóm giá mới bắt đầu ngày đầu kỳ kế tiếp, giữ nguyên miễn giảm và định mức. Không có kỳ nào đang chạy hoặc hợp đồng chưa bắt đầu thì đổi tại chỗ. Khoản đã phát hành giữ nhóm giá của nó.
+- **Phí xử lý** (06/10, thay ghi chú cũ "không thu"): chỉ nhóm `FULL_COST_BY_KG` có, nằm trong `monthly_total` nên phần thu gom công ty giữ = số đã thu × `collection_fee / monthly_total`; phí xử lý **tạm** nộp xã cùng vận chuyển, chưa chốt thuộc ai.
+- **Đổi số người của hộ** (nhóm ≤2 / ≥3) và **đổi nhóm giá** của đăng ký đang chạy áp từ kỳ sau (hộ theo nhân khẩu thì số mới áp ngay cho khoản chưa lập): hợp đồng đang mở kết thúc hết kỳ đang chạy (`validTo` = ngày cuối kỳ), hợp đồng mới cùng nhóm giá mới bắt đầu ngày đầu kỳ kế tiếp, giữ nguyên miễn giảm và định mức. Không có kỳ nào đang chạy hoặc hợp đồng chưa bắt đầu thì đổi tại chỗ. Khoản đã phát hành giữ nhóm giá của nó.

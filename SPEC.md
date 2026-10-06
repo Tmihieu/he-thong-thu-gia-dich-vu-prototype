@@ -236,15 +236,15 @@ Mục tiêu: service layer của `billing`, `collection`, `remittance` có cover
 ### 9.3 `master-data`
 - `District` (DTH/TTT/NB), `Area` (tổ, thuộc địa bàn), `Company` (tên, đầu mối, SĐT, trạng thái, hiệu lực).
 - `AreaAssignment` (khu vực, công ty, từ ngày, đến ngày, ghi chú): **mỗi khu vực tối đa 1 công ty trong cùng khoảng hiệu lực; đổi công ty tạo bản ghi mới và giữ lịch sử**. UI: **popup phân công đơn giản** (chọn công ty + ngày bắt đầu; có thể chọn nhiều tổ), backend tự đóng phân công cũ.
-- `ServiceSubject` (đối tượng: hộ gia đình / hộ kinh doanh / doanh nghiệp; tên, địa chỉ, SĐT, khu vực, trạng thái) và `ServiceContract` (số hợp đồng, nhóm giá, từ ngày, đến ngày, miễn 100% + lý do). **Hai bảng riêng, hiển thị gộp trên một form hồ sơ hộ**; mỗi đối tượng tối đa 1 hợp đồng hiệu lực tại một thời điểm.
-- `TariffVersion` (căn cứ pháp lý, hiệu lực, trạng thái) + `TariffRate` (nhóm giá, thu gom, vận chuyển, tổng; 6 nhóm giá theo QĐ 65/2026). **Giá tính tiền lấy từ phiên bản biểu giá đang hiệu lực của kỳ** (mặc định QĐ 65/2026/QĐ-UBND); số tiền được chụp lại vào khoản khi sinh.
+- `ServiceSubject` (đối tượng: hộ gia đình / nguồn thải nhỏ / nguồn thải lớn — lớn từ 9.000 kg/tháng, Điều 58 NĐ 08/2022; chủ nhà trọ lập hồ sơ nguồn thải; tên, địa chỉ, SĐT, khu vực, trạng thái) và `ServiceContract` (số hợp đồng, nhóm giá, định mức kg/tháng cho nhóm cân, từ ngày, đến ngày, miễn 100% + lý do; đổi nhóm giá áp từ kỳ sau). **Hai bảng riêng, hiển thị gộp trên một form hồ sơ hộ**; mỗi đối tượng tối đa 1 hợp đồng hiệu lực tại một thời điểm.
+- `TariffVersion` (căn cứ pháp lý, hiệu lực, trạng thái) + `TariffRate` (nhóm giá, thu gom, vận chuyển, xử lý, tổng; 8 nhóm giá theo QĐ 65/2026, Đông Thạnh nhóm 2, tạm bỏ VAT; phí xử lý chỉ nhóm đăng ký cân). Biểu giá có ô "thu hộ gia đình theo nhân khẩu": toàn xã hoặc chọn địa bàn. **Giá tính tiền lấy từ phiên bản biểu giá đang hiệu lực của kỳ** (mặc định QĐ 65/2026/QĐ-UBND); số tiền được chụp lại vào khoản khi sinh.
 - `FeeType` (vệ sinh môi trường, rác cồng kềnh, phụ phí), `CollectionPeriod` (tháng hoặc quý, ngày mở, hạn nộp, phiên bản biểu giá, trạng thái Đã mở → Đang thu → Đã khóa).
 - `CollectionSchedule` (khu vực, thứ, khung giờ, loại rác) cho màn lịch thu gom của dân.
 - **Nghiệm thu:** CRUD đối tượng + hợp đồng; phân công chồng lấn bị chặn; đổi công ty giữ lịch sử và báo cáo kỳ cũ vẫn tính cho công ty cũ; mở kỳ tháng/quý.
 
 ### 9.4 `billing`
 - `ChargeRequest` (phiếu yêu cầu thu: kỳ, loại phí, phạm vi toàn xã / chọn tổ / theo công ty — **lưu có cấu trúc**, hạn đóng, ghi chú) sinh `Charge` (đối tượng, hợp đồng, kỳ, loại phí, số tiền snapshot, hạn, trạng thái Chưa thu / Đã thu / Miễn giảm; "Quá hạn" tính từ hạn, không lưu).
-- Quy tắc từ prototype R1–R4: số tiền = giá tháng × (quý ? 3 : 1); miễn → 0; bỏ qua đối tượng không hợp đồng hiệu lực, khu vực chưa có công ty (cảnh báo), hoặc đã có khoản cùng loại phí trùng kỳ; chỉ kỳ chưa khóa.
+- Quy tắc từ prototype R1–R4: số tiền = giá tháng × (quý ? 3 : 1) (nhóm kg: × định mức kg; theo nhân khẩu: × số nhân khẩu; hộ gia đình ở địa bàn biểu giá bật nhân khẩu tính theo nhân khẩu, khoản chụp nhóm thực tính + số nhân khẩu); miễn → 0; bỏ qua đối tượng không hợp đồng hiệu lực, khu vực chưa có công ty (cảnh báo), hoặc đã có khoản cùng loại phí trùng kỳ; chỉ kỳ chưa khóa.
 - Có màn xem trước trước khi phát hành.
 - **Nghiệm thu:** unit test cho mọi quy tắc trên; phát hành lại cùng kỳ không sinh trùng.
 
