@@ -3834,6 +3834,11 @@ export interface components {
             entitled: number;
             /** @description Đã khớp: công ty không còn phải nộp và xã không còn phải trả */
             settled: boolean;
+            /**
+             * Format: int64
+             * @description Công nợ tháng trước: hộ còn chưa đóng của kỳ liền trước, tính đến hiện tại
+             */
+            lastPeriodDebt: number;
         };
         HouseholdDebtDto: {
             /** Format: int64 */

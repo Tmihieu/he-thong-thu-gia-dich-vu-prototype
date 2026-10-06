@@ -154,7 +154,7 @@ public class CompanyLedgerService {
                     Company c = companies.findAllById(List.of(companyId)).stream()
                             .filter(x -> x.getId().equals(companyId)).findFirst()
                             .orElseThrow(() -> new NotFoundException("COMPANY_NOT_FOUND", "Không tìm thấy công ty."));
-                    return build(c, period(periodId), LocalDate.now(clock), null, null, null, null, null, null, null, 0L, null, 0L, 0L);
+                    return build(c, period(periodId), LocalDate.now(clock), null, null, null, null, null, null, null, 0L, null, 0L, 0L, 0L);
                 });
     }
 

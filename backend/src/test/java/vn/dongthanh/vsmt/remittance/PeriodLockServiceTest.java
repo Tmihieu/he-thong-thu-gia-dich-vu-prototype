@@ -175,11 +175,11 @@ class PeriodLockServiceTest {
 
     private static LedgerRow owed(String code, long communeOwed) {
         return new LedgerRow(1L, code, "Công ty " + code, 10L, 0, 1, 0, 0, 0, 0, 0, 0, -communeOwed, communeOwed, 0, false, 0, true,
-                0, false, Progress.PAID_IN_FULL, Reconciliation.PENDING, 0, -communeOwed, 0, 0, communeOwed, 0);
+                0, false, Progress.PAID_IN_FULL, Reconciliation.PENDING, 0, -communeOwed, 0, 0, communeOwed, 0, 0);
     }
 
     private static LedgerRow debt(String code, long remaining) {
         return new LedgerRow(1L, code, "Công ty " + code, 10L, remaining, 1, 0, 0, remaining, remaining, 0, 0, remaining, 0, 0, false, 0, true,
-                0, true, Progress.NOT_PAID, Reconciliation.PENDING, 0, remaining, 0, 0, 0, 0);
+                0, true, Progress.NOT_PAID, Reconciliation.PENDING, 0, remaining, 0, 0, 0, 0, 0);
     }
 }
