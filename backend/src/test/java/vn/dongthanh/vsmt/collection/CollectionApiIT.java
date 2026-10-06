@@ -2,6 +2,8 @@ package vn.dongthanh.vsmt.collection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -117,8 +119,11 @@ class CollectionApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$[*].charge.areaCode", contains("KV09", "KV09")));
         mvc.perform(get("/api/collection/company-work").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.dv07Manager)))
                 .andExpect(jsonPath("$[*].charge.companyCode", contains("DV07", "DV07")));
+        // Người đi thu thu mọi hộ của công ty (UC-30, BR-GEN-04): thấy đúng các khoản của công ty mình, không có của công ty khác.
         mvc.perform(get("/api/collection/company-work").header(HttpHeaders.AUTHORIZATION, collector))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].charge.companyCode", everyItem(is("DV01"))))
+                .andExpect(jsonPath("$.length()").value(4));
 
         mvc.perform(get("/api/collection/charges/" + unpaid + "/activity").header(HttpHeaders.AUTHORIZATION,
                         fx.bearer(fx.officer)))

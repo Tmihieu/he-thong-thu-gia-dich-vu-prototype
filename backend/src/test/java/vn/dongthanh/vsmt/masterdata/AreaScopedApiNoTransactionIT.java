@@ -60,12 +60,12 @@ class AreaScopedApiNoTransactionIT extends IntegrationTest {
 
     @Test
     void companyStaffSubjectSearchReadsDistrictOutsideTransaction() throws Exception {
-        // Quản lý công ty thấy hộ của mọi tổ công ty phụ trách; người đi thu chỉ thấy hộ trong tổ mình (BR-GEN-04).
+        // Quản lý công ty thấy hộ của mọi tổ công ty phụ trách; người đi thu thu mọi hộ của công ty nên thấy cùng danh sách (BR-GEN-04).
         ok("/api/masterdata/subjects", fx.dv01Manager)
                 .andExpect(jsonPath("$.total").value(4))
                 .andExpect(jsonPath("$.items[*].districtCode", everyItem(is("DTH"))));
         ok("/api/masterdata/subjects", fx.thu07)
-                .andExpect(jsonPath("$.total").value(2))
+                .andExpect(jsonPath("$.total").value(4))
                 .andExpect(jsonPath("$.items[*].districtCode", everyItem(is("DTH"))));
     }
 

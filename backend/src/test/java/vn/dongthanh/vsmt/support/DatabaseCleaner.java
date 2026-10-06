@@ -22,5 +22,7 @@ public class DatabaseCleaner {
         if (!tables.isEmpty()) {
             jdbc.execute("truncate table " + String.join(", ", tables) + " restart identity cascade");
         }
+        // Dòng quy tắc tự tạo kỳ duy nhất do migration V36 gieo; bị TRUNCATE thì IT chạy sau không tạo được kỳ.
+        jdbc.update("insert into period_auto_rule (id) values (1) on conflict do nothing");
     }
 }
