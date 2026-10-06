@@ -377,6 +377,52 @@ class CompanyLedgerServiceTest {
         assertThat(s.companiesWithDebt(10L)).isEmpty();
     }
 
+    /** SPEC đối soát mẫu: mỗi khoản 60.000 = vận chuyển 20.000 + thu gom 40.000. Cty A: 620 tiền mặt, 260 QR. */
+    @Test
+    void reconciliationSplitsQrAndCashAndSettlesByReceipt() {
+        due(10L, 1L, 52_800_000, 880);
+        collect(10L, 1L, 37_200_000, 15_600_000);
+        retained(10L, 1L, 35_200_000);
+        when(queries.qrByCompany(10L)).thenReturn(List.of(new LedgerQueries.QrAmount(1L, 15_600_000, 10_400_000)));
+
+        LedgerRow open = service("2026-10-15").row(1L, 10L);
+
+        assertThat(open.qrTotal()).isEqualTo(15_600_000);
+        assertThat(open.qrTransport()).isEqualTo(5_200_000);
+        assertThat(open.qrCollection()).isEqualTo(10_400_000);
+        assertThat(open.cashTransport()).isEqualTo(12_400_000);
+        assertThat(open.cashCollection()).isEqualTo(24_800_000);
+        assertThat(open.payable()).isEqualTo(2_000_000);
+        assertThat(open.entitled()).isEqualTo(17_600_000);
+        assertThat(open.holding()).isEqualTo(15_600_000);
+        assertThat(open.settled()).isFalse();
+
+        received(10L, 1L, 2_000_000);
+        LedgerRow settled = service("2026-10-15").row(1L, 10L);
+        assertThat(settled.holding()).isEqualTo(17_600_000).isEqualTo(settled.entitled());
+        assertThat(settled.settled()).isTrue();
+    }
+
+    /** Cty B: 305 tiền mặt, 435 QR: net −11.300.000, xã trả công ty; trả đủ thì holding = entitled. */
+    @Test
+    void reconciliationCommunePaysWhenQrCollectionExceedsCashTransport() {
+        due(10L, 1L, 44_400_000, 740);
+        collect(10L, 1L, 18_300_000, 26_100_000);
+        retained(10L, 1L, 29_600_000);
+        when(queries.qrByCompany(10L)).thenReturn(List.of(new LedgerQueries.QrAmount(1L, 26_100_000, 17_400_000)));
+
+        LedgerRow open = service("2026-10-15").row(1L, 10L);
+        assertThat(open.payable()).isEqualTo(-11_300_000);
+        assertThat(open.cashTransport()).isEqualTo(6_100_000);
+        assertThat(open.holding() - open.entitled()).isEqualTo(11_300_000);
+        assertThat(open.settled()).isFalse();
+
+        when(remitted.paidBackByCompany(10L)).thenReturn(Map.of(1L, 11_300_000L));
+        LedgerRow paid = service("2026-10-15").row(1L, 10L);
+        assertThat(paid.holding()).isEqualTo(paid.entitled());
+        assertThat(paid.settled()).isTrue();
+    }
+
     @Test
     void periodWithoutChargesHasNoRows() {
         assertThat(service("2026-10-15").ledger(10L)).isEmpty();

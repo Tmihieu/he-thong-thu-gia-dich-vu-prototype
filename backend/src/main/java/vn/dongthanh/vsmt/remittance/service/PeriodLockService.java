@@ -64,6 +64,11 @@ public class PeriodLockService {
                     .collect(Collectors.joining("; "));
             communeReason = "xã còn phải trả lại " + owed.size() + " công ty: " + detail;
         }
+        var qr = ledger.unidentifiedQr();
+        if (qr.count() > 0) {
+            throw new BusinessRuleException("PERIOD_UNIDENTIFIED_QR", "Chưa khóa được kỳ " + period.getCode() + " vì còn "
+                    + qr.count() + " giao dịch chuyển khoản chưa xác định công ty (" + Money.format(qr.amount()) + ").");
+        }
         long unpaid = ledger.unpaidChargeCount(periodId);
         // "Đã đến hạn nộp": hôm nay đã tới ngày hạn nộp của kỳ (không đợi qua hạn).
         boolean due = !LocalDate.now(clock).isBefore(period.getDueDate());

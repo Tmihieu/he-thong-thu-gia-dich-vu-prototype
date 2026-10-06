@@ -19,6 +19,14 @@ public class LedgerQueries {
     public record CompanyPeriodAmount(long companyId, long periodId, long amount) {
     }
 
+    /** Chuyển khoản vào tài khoản xã đã khớp khoản: tổng ròng và phần thu gom của công ty trong đó. */
+    public record QrAmount(long companyId, long total, long collection) {
+    }
+
+    /** Giao dịch tiền vào chưa khớp được khoản nào: số giao dịch và tổng tiền. */
+    public record UnidentifiedQr(long count, long amount) {
+    }
+
     /** Tiến độ theo tổ của một kỳ: công ty chụp trên khoản, phải thu, đã thu, số khoản, số khoản đã thu đủ. */
     public record AreaProgressRow(long areaId, long companyId, long due, long collected, long chargeCount, long paidCount, long exemptCount) {
     }
@@ -115,6 +123,25 @@ public class LedgerQueries {
                 + " where c.written_off_period_id = ? and c.period_id <> c.written_off_period_id"
                 + ") x group by x.company_id",
                 (rs, i) -> new CompanyAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), periodId, periodId);
+    }
+
+    /**
+     * Chuyển khoản ghi nhận ở kỳ theo công ty: Σ thanh toán ròng và phần thu gom trong đó (cùng cách làm tròn theo khoản
+     * với {@link #retainedByCompany}). Xã giữ tiền này và phải trả lại phần thu gom cho công ty.
+     */
+    public List<QrAmount> qrByCompany(long periodId) {
+        return jdbc.query("select x.company_id, sum(x.t), sum(x.v) from ("
+                + " select c.company_id, sum(p.amount) as t, coalesce(round(sum(p.amount) * r.collection_fee::numeric"
+                + " / nullif(r.monthly_total, 0)), 0) as v from payments p join charges c on c.id = p.charge_id"
+                + COLLECTION_JOIN + " where " + PAYMENT_PERIOD + " = ? and p.method = 'TRANSFER'"
+                + " group by c.id, c.company_id, r.collection_fee, r.monthly_total) x group by x.company_id",
+                (rs, i) -> new QrAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), periodId);
+    }
+
+    /** Giao dịch chuyển khoản vào tài khoản xã chưa khớp khoản nào (chờ cán bộ xã xử lý). */
+    public UnidentifiedQr unidentifiedQr() {
+        return jdbc.queryForObject("select count(*), coalesce(sum(amount), 0) from bank_transfers where status = 'UNMATCHED'",
+                (rs, i) -> new UnidentifiedQr(rs.getLong(1), rs.getLong(2)));
     }
 
     /**

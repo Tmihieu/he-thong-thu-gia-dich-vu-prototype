@@ -183,46 +183,73 @@ describe('Tiến độ thu', () => {
 });
 
 describe('Đối soát', () => {
-  it('hiện đủ cột mới, không còn cột Nợ kỳ trước; cảnh báo kỳ trước chưa khóa và kết quả Khớp / Đang nộp / Lệch', async () => {
-    const dv02 = { ...dv01, companyId: 2, companyCode: 'DV02', companyName: 'Công ty Hai', gap: 0, remaining: 0, reconciliation: 'MATCHED' };
+  // Mỗi khoản 60.000 = vận chuyển 20.000 + thu gom 40.000 (SPEC đối soát). A: 620 tiền mặt, 260 QR, chưa nộp.
+  const split = { adjustment: 0, refunded: 0, previousDebt: 0, communePaid: 0, communeOwed: 0, retained: 35_200_000,
+    qrTotal: 15_600_000, qrTransport: 5_200_000, qrCollection: 10_400_000, cashCollected: 37_200_000, cashTransport: 12_400_000,
+    cashCollection: 24_800_000, collected: 52_800_000, payable: 2_000_000, received: 0, receiptCount: 0, remaining: 2_000_000,
+    holding: 15_600_000, entitled: 17_600_000, settled: false };
+  const cty1 = { ...dv01, ...split, companyName: 'Cty Thu gom A' };
+  // B đã nộp đủ phiếu thu: Khớp, xem được phiếu.
+  const cty2 = { ...cty1, companyId: 2, companyCode: 'DV02', companyName: 'Cty Thu gom B', received: 2_000_000, receiptCount: 1, remaining: 0,
+    holding: 17_600_000, settled: true };
+  // C: 305 tiền mặt, 435 QR: xã phải trả công ty 11.300.000.
+  const cty3 = { ...cty1, companyId: 3, companyCode: 'DV03', companyName: 'Cty Thu gom C', qrTotal: 26_100_000, qrTransport: 8_700_000,
+    qrCollection: 17_400_000, cashCollected: 18_300_000, cashTransport: 6_100_000, cashCollection: 12_200_000, payable: -11_300_000,
+    remaining: -11_300_000, communeOwed: 11_300_000, holding: 26_100_000, entitled: 14_800_000 };
+
+  function setup() {
     mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
       'GET /api/masterdata/periods': () => jsonResponse(200, periods),
-      'GET /api/remittance/ledger': () => jsonResponse(200, [dv01, dv02, dv07]),
+      'GET /api/remittance/ledger': () => jsonResponse(200, [cty1, cty2, cty3]),
+      'GET /api/remittance/unidentified-qr': () => jsonResponse(200, { count: 3, amount: 180_000 }),
+      'GET /api/remittance/receipts': () => jsonResponse(200, []),
+      'GET /api/remittance/payouts': () => jsonResponse(200, []),
     });
     renderApp('/commune/reconciliation');
+  }
 
-    const headers = (await screen.findAllByRole('columnheader')).map((h) => h.textContent);
-    expect(headers).toEqual(['Công ty', 'Phải thu', 'Đã thu tiền mặt', 'Đã thu chuyển khoản', 'Phí thu gom công ty hưởng', 'Điều chỉnh',
-      'Phải nộp xã', 'Đã nộp', 'Chênh lệch', 'Kết quả']);
-    expect(await screen.findByText(/Kỳ trước chưa khóa: Công ty Xanh Sài Gòn còn phải nộp/)).toHaveTextContent('150.000 đ');
-    const dv01Row = screen.getByRole('cell', { name: 'Công ty MTĐT Đông Thạnh' }).closest('tr')!;
-    expect(within(dv01Row).getByText('Đang nộp')).toBeInTheDocument();
-    expect(within(dv01Row).getByText('thu rồi chưa nộp')).toBeInTheDocument();
-    expect(within(dv01Row).getByText('1 phiếu thu')).toBeInTheDocument();
-    expect(within(screen.getByRole('cell', { name: 'Công ty Hai' }).closest('tr')!).getByText('Khớp')).toBeInTheDocument();
-    expect(within(screen.getByRole('cell', { name: 'Công ty Xanh Sài Gòn' }).closest('tr')!).getByText('Lệch')).toBeInTheDocument();
-    expect(screen.getAllByText('400.000 đ', norm).length).toBeGreaterThan(0);
+  it('tổng kỳ: xã đang giữ − được hưởng = thừa; còn phải chi / thu; cảnh báo QR chưa xác định', async () => {
+    setup();
+
+    // Giữ 59.300.000 − hưởng 50.000.000 = thừa 9.300.000 (= phải chi 11.300.000 − phải thu 2.000.000).
+    expect(await screen.findByText('Xã đang THỪA')).toBeInTheDocument();
+    const text = () => document.body.textContent!.replace(/\s+/g, ' ');
+    await waitFor(() => expect(text()).toContain('9.300.000'));
+    expect(text()).toContain('Xã còn phải chi: 11.300.000 đ cho 1 Cty');
+    expect(text()).toContain('Xã còn phải thu: 2.000.000 đ từ 1 Cty');
+    // Sao kê QR = QR của các công ty (57.300.000) + chưa xác định (180.000).
+    expect(await screen.findByText(/Sao kê QR/)).toHaveTextContent('57.480.000');
+    expect(screen.getByText(/3 giao dịch chưa xác định Cty/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Xử lý/ })).toBeInTheDocument();
   });
 
-  it('phải nộp xã âm: hiện "Xã trả lại công ty"; tiền mặt, chuyển khoản, phí thu gom, phải nộp xã nằm ở cột riêng', async () => {
-    // Hộ chuyển khoản 1.000.000 vào tài khoản xã, công ty không thu tiền mặt nhưng vẫn hưởng phí thu gom 228.000.
-    const dv02 = { ...dv01, companyId: 2, companyCode: 'DV02', companyName: 'Công ty Hai', due: 1_000_000, collected: 1_000_000,
-      cashCollected: 0, retained: 228_000, adjustment: 50_000, payable: -228_000, received: 0, receiptCount: 0, remaining: -228_000,
-      gap: 228_000, collectionRate: 100, remittedRate: 0, lowRemittedRate: false, progress: 'PAID_IN_FULL', reconciliation: 'MATCHED' };
-    mockApi({
-      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
-      'GET /api/masterdata/periods': () => jsonResponse(200, periods),
-      'GET /api/remittance/ledger': () => jsonResponse(200, [dv02]),
-    });
-    renderApp('/commune/reconciliation');
+  it('bảng 11 cột theo nhóm QR / tiền mặt / đối chiếu; nút phiếu theo kết quả; tab lọc Chưa khớp / Đã khớp', async () => {
+    setup();
 
-    const row = (await screen.findByRole('cell', { name: 'Công ty Hai' })).closest('tr')!;
-    const cells = within(row).getAllByRole('cell').map((c) => c.textContent?.replace(/\s+/g, ' ').trim());
-    // Công ty | Phải thu | Tiền mặt | Chuyển khoản | Phí thu gom | Điều chỉnh | Phải nộp xã | Đã nộp | Chênh lệch | Kết quả
-    expect(cells.slice(0, 8)).toEqual(['Công ty Hai', '1.000.000 đ', '0 đ', '1.000.000 đ', '228.000 đ', '50.000 đ', '-228.000 đ', '0 đ0 phiếu thu']);
-    expect(within(row).getByText('xã trả lại công ty')).toBeInTheDocument();
-    expect(within(row).getByText('Khớp')).toBeInTheDocument();
+    expect(await screen.findByText('Xã nhận qua QR')).toBeInTheDocument();
+    expect(screen.getByText('Cty thu tiền mặt')).toBeInTheDocument();
+    expect(screen.getByText('Đối chiếu tiền xã')).toBeInTheDocument();
+    await screen.findByRole('cell', { name: 'Cty Thu gom A' });
+    const rowOf = (name: string) => screen.getByRole('cell', { name }).closest('tr')!;
+    const a = rowOf('Cty Thu gom A');
+    expect(within(a).getByText('Cty nộp Xã 2.000.000 đ', norm)).toBeInTheDocument();
+    expect(within(a).getByText('Thiếu 2.000.000 đ', norm)).toBeInTheDocument();
+    expect(within(a).getByRole('button', { name: 'Lập phiếu thu DV01' })).toBeInTheDocument();
+    const b = rowOf('Cty Thu gom B');
+    expect(within(b).getByText('Khớp')).toBeInTheDocument();
+    expect(within(b).getByText('✓ Đủ')).toBeInTheDocument();
+    expect(within(b).getByRole('button', { name: 'Xem phiếu DV02' })).toBeInTheDocument();
+    const c = rowOf('Cty Thu gom C');
+    expect(within(c).getByText('Xã trả Cty 11.300.000 đ', norm)).toBeInTheDocument();
+    expect(within(c).getByRole('button', { name: 'Lập phiếu chi DV03' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('Đã khớp 1'));
+    await waitFor(() => expect(screen.queryByRole('cell', { name: 'Cty Thu gom A' })).not.toBeInTheDocument());
+    expect(screen.getByRole('cell', { name: 'Cty Thu gom B' })).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Chưa khớp 2'));
+    expect(await screen.findByRole('cell', { name: 'Cty Thu gom A' })).toBeInTheDocument();
+    expect(screen.queryByRole('cell', { name: 'Cty Thu gom B' })).not.toBeInTheDocument();
   });
 });
 
@@ -241,18 +268,6 @@ describe('Tiến độ thu: xã trả lại công ty', () => {
     // Một ở thẻ tổng, một ở ô "Còn phải nộp" của công ty.
     expect(await screen.findAllByText('Xã trả lại công ty')).toHaveLength(2);
     expect(screen.queryByText('Nộp thừa')).not.toBeInTheDocument();
-  });
-});
-
-describe('Thu 3 tháng gần nhất', () => {
-  it('tháng mới nhất bên trái', async () => {
-    const fetchFn = api();
-    renderApp('/commune/reconciliation');
-
-    const card = (await screen.findByText('Thu 3 tháng gần nhất')).closest('.ant-card')!;
-    const months = (await within(card as HTMLElement).findAllByText(/^Tháng \d{2}\/2026$/)).map((e) => e.textContent);
-    expect(months).toEqual(['Tháng 10/2026', 'Tháng 08/2026']);
-    expect(fetchFn.mock.calls.some(([url]) => String(url) === '/api/remittance/ledger?periodId=8')).toBe(true);
   });
 });
 

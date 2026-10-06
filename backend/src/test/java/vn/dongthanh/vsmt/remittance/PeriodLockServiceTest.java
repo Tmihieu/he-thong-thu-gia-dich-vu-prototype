@@ -31,6 +31,7 @@ import vn.dongthanh.vsmt.platform.domain.Role;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
 import vn.dongthanh.vsmt.remittance.service.CompanyLedgerService;
 import vn.dongthanh.vsmt.remittance.service.CompanyLedgerService.LedgerRow;
+import vn.dongthanh.vsmt.remittance.service.LedgerQueries;
 import vn.dongthanh.vsmt.remittance.service.LedgerStatus.Progress;
 import vn.dongthanh.vsmt.remittance.service.LedgerStatus.Reconciliation;
 import vn.dongthanh.vsmt.remittance.service.PeriodLockService;
@@ -58,6 +59,7 @@ class PeriodLockServiceTest {
         ReflectionTestUtils.setField(october, "id", 10L);
         when(periods.findByIdForUpdate(10L)).thenReturn(Optional.of(october));
         when(ledger.companiesWithDebt(10L)).thenReturn(List.of());
+        when(ledger.unidentifiedQr()).thenReturn(new LedgerQueries.UnidentifiedQr(0, 0));
         when(ledger.unpaidChargeCount(10L)).thenReturn(0L);
     }
 
@@ -164,13 +166,20 @@ class PeriodLockServiceTest {
         assertThat(service.lock(10L, officer)).isSameAs(october);
     }
 
+    @Test
+    void blocksWhileQrTransfersAreUnidentified() {
+        when(ledger.unidentifiedQr()).thenReturn(new LedgerQueries.UnidentifiedQr(3, 180_000));
+
+        assertThatThrownBy(() -> service.lock(10L, officer)).extracting("code").isEqualTo("PERIOD_UNIDENTIFIED_QR");
+    }
+
     private static LedgerRow owed(String code, long communeOwed) {
         return new LedgerRow(1L, code, "Công ty " + code, 10L, 0, 1, 0, 0, 0, 0, 0, 0, -communeOwed, communeOwed, 0, false, 0, true,
-                0, false, Progress.PAID_IN_FULL, Reconciliation.PENDING, 0, -communeOwed, 0, 0, communeOwed);
+                0, false, Progress.PAID_IN_FULL, Reconciliation.PENDING, 0, -communeOwed, 0, 0, communeOwed, 0);
     }
 
     private static LedgerRow debt(String code, long remaining) {
         return new LedgerRow(1L, code, "Công ty " + code, 10L, remaining, 1, 0, 0, remaining, remaining, 0, 0, remaining, 0, 0, false, 0, true,
-                0, true, Progress.NOT_PAID, Reconciliation.PENDING, 0, remaining, 0, 0, 0);
+                0, true, Progress.NOT_PAID, Reconciliation.PENDING, 0, remaining, 0, 0, 0, 0);
     }
 }

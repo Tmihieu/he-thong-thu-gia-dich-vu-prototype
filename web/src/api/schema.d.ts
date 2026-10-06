@@ -1251,6 +1251,23 @@ export interface paths {
         patch: operations["edit"];
         trace?: never;
     };
+    "/api/remittance/unidentified-qr": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Giao dịch chuyển khoản vào tài khoản xã chưa khớp khoản nào: số giao dịch và tổng tiền (đối soát, chặn khóa kỳ) */
+        get: operations["unidentifiedQr"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/remittance/reminders/draft": {
         parameters: {
             query?: never;
@@ -3653,6 +3670,12 @@ export interface components {
             /** Format: int32 */
             version: number;
         };
+        UnidentifiedQrDto: {
+            /** Format: int64 */
+            count: number;
+            /** Format: int64 */
+            amount: number;
+        };
         DebtDto: {
             /** Format: int64 */
             periodId: number;
@@ -3774,6 +3797,43 @@ export interface components {
              * @description Xã còn phải trả lại công ty = max(0, −còn phải nộp − đã trả)
              */
             communeOwed: number;
+            /**
+             * Format: int64
+             * @description Xã nhận qua QR: tổng (đã trừ hoàn)
+             */
+            qrTotal: number;
+            /**
+             * Format: int64
+             * @description Xã nhận qua QR: phần vận chuyển, xã giữ
+             */
+            qrTransport: number;
+            /**
+             * Format: int64
+             * @description Xã nhận qua QR: phần thu gom, xã trả công ty
+             */
+            qrCollection: number;
+            /**
+             * Format: int64
+             * @description Công ty thu tiền mặt: phần vận chuyển, công ty nộp xã (đã trừ điều chỉnh) = phải nộp xã + thu gom QR
+             */
+            cashTransport: number;
+            /**
+             * Format: int64
+             * @description Công ty thu tiền mặt: phần thu gom, công ty giữ
+             */
+            cashCollection: number;
+            /**
+             * Format: int64
+             * @description Xã đang giữ = QR + đã nhận từ công ty − đã chi cho công ty
+             */
+            holding: number;
+            /**
+             * Format: int64
+             * @description Xã được hưởng = vận chuyển trong QR + vận chuyển trong tiền mặt
+             */
+            entitled: number;
+            /** @description Đã khớp: công ty không còn phải nộp và xã không còn phải trả */
+            settled: boolean;
         };
         HouseholdDebtDto: {
             /** Format: int64 */
@@ -6630,6 +6690,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MarketPostDto"];
+                };
+            };
+        };
+    };
+    unidentifiedQr: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UnidentifiedQrDto"];
                 };
             };
         };
