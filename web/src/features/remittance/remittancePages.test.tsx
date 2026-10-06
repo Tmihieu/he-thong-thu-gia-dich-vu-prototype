@@ -88,7 +88,7 @@ describe('Tiến độ thu', () => {
     await userEvent.click(screen.getAllByRole('button', { name: /mở rộng|expand/i })[0]!);
     const area = (await screen.findByText('KV07 · Tổ dân phố 07')).closest('tr')!;
     expect(screen.getByText('8/10')).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Hộ còn nợ kỳ cũ' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Hộ còn nợ tháng trước' })).toBeInTheDocument();
     expect(fetchFn.mock.calls.some(([url]) => String(url).startsWith('/api/billing/charges'))).toBe(false);
     await userEvent.click(within(area).getByRole('button', { name: /mở rộng|expand/i }));
     const household = (await screen.findByText('DTH-H000128 · Nguyễn Văn Mẫu')).closest('tr')!;
@@ -136,7 +136,7 @@ describe('Tiến độ thu', () => {
     });
     renderApp('/commune/progress');
 
-    const debtCard = (await screen.findByText('Công nợ hộ')).closest('.stat-card') as HTMLElement;
+    const debtCard = (await screen.findByText('Công nợ tháng trước', { selector: '.stat-label' })).closest('.stat-card') as HTMLElement;
     expect(await within(debtCard).findByText('2 hộ')).toBeInTheDocument();
     expect(debtCard).toHaveTextContent('240.000 đ');
     const collectedCard = screen.getByText('Đã thu (tiền mặt, chuyển khoản)').closest('.stat-card') as HTMLElement;
@@ -157,24 +157,24 @@ describe('Tiến độ thu', () => {
     expect(within(row).getByText('Tháng 08/2026')).toBeInTheDocument();
     expect(within(row).getByText('KV07 · Tổ dân phố 07')).toBeInTheDocument();
     expect(within(row).getByText('80.000 đ', norm)).toBeInTheDocument();
-    expect(within(dialog).getByText('2 hộ, 3 khoản chưa thu của kỳ đã khóa')).toBeInTheDocument();
-    expect(fetchFn.mock.calls.some(([url]) => String(url) === '/api/remittance/household-debts?page=0&size=10')).toBe(true);
+    expect(within(dialog).getByText('2 hộ, 3 khoản chưa thu của kỳ trước')).toBeInTheDocument();
+    expect(fetchFn.mock.calls.some(([url]) => String(url) === '/api/remittance/household-debts?previousOf=10&page=0&size=10')).toBe(true);
   });
 
-  it('cột Hộ còn nợ kỳ cũ của tổ mở danh sách lọc theo tổ và công ty', async () => {
+  it('cột Hộ còn nợ tháng trước của tổ mở danh sách lọc theo tổ và công ty, chỉ nợ kỳ liền trước', async () => {
     const fetchFn = api();
     renderApp('/commune/progress');
 
     await userEvent.click((await screen.findAllByRole('button', { name: /mở rộng|expand/i }))[0]!);
-    await userEvent.click(await screen.findByRole('button', { name: 'Xem 2 hộ còn nợ kỳ cũ của KV07' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Xem 2 hộ còn nợ tháng trước của KV07' }));
 
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     await waitFor(() =>
-      expect(fetchFn.mock.calls.some(([url]) => String(url) === '/api/remittance/household-debts?companyId=1&areaId=7&page=0&size=10')).toBe(true),
+      expect(fetchFn.mock.calls.some(([url]) => String(url) === '/api/remittance/household-debts?previousOf=10&companyId=1&areaId=7&page=0&size=10')).toBe(true),
     );
   });
 
-  it('lãnh đạo xem được thẻ công nợ hộ nhưng không có nút nhắc nộp', async () => {
+  it('lãnh đạo xem được thẻ công nợ tháng trước nhưng không có nút nhắc nộp', async () => {
     mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, { ...officer, id: 9, username: 'lanhdao', role: 'LEADER' }),
       'GET /api/masterdata/periods': () => jsonResponse(200, periods),

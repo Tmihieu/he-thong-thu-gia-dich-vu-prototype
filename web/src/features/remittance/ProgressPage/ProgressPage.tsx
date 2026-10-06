@@ -55,7 +55,7 @@ function UnpaidHouseholds({ periodId, areaId, companyId }: { periodId: number; a
 
 /**
  * Tiến độ thu theo công ty và theo tổ (UC-32, R13): phải thu, đã thu, tỷ lệ đã thu của kỳ; số nộp xã xem ở Đối soát
- * (góp ý 06/10 bỏ thẻ và cột phải nộp xã, đã nộp, xã trả lại). Tổ theo đã thu / phải thu. Có thẻ công nợ hộ (khoản chưa thu của kỳ đã khóa). Kỳ trước chưa khóa hiện ở
+ * (góp ý 06/10 bỏ thẻ và cột phải nộp xã, đã nộp, xã trả lại). Tổ theo đã thu / phải thu. Có thẻ công nợ tháng trước (khoản chưa thu của kỳ liền trước). Kỳ trước chưa khóa hiện ở
  * cảnh báo đầu trang, không còn cột riêng.
  */
 export function ProgressPage() {
@@ -67,7 +67,8 @@ export function ProgressPage() {
   const readOnly = useAuth().user?.role === 'LEADER';
   const ledger = useCompanyLedger(periodId);
   const areas = useAreaProgress(periodId);
-  const debts = useHouseholdDebts({ page: 0, size: 1 });
+  // Chỉ nợ của kỳ liền trước kỳ đang xem (góp ý 06/10), khớp cột công nợ tháng trước.
+  const debts = useHouseholdDebts({ previousOf: periodId, page: 0, size: 1 }, periodId !== undefined);
   const rows = ledger.data ?? [];
   const unassigned = (areas.data ?? []).filter((a) => a.noCompany && a.subjectCount > 0);
   const overdue = rows.filter((r) => r.progress === 'OVERDUE');
@@ -108,13 +109,13 @@ export function ProgressPage() {
           hint="đã thu của kỳ / phải thu (không tính thu công nợ kỳ cũ)"
         />
         <StatCard
-          label="Công nợ hộ"
+          label="Công nợ tháng trước"
           tone={debts.data && debts.data.householdCount > 0 ? 'danger' : 'neutral'}
           value={debts.data ? `${debts.data.householdCount} hộ` : '—'}
           hint={
             debts.data && (
               <>
-                <MoneyText value={debts.data.totalAmount} /> chưa thu của kỳ đã khóa{' '}
+                <MoneyText value={debts.data.totalAmount} /> chưa thu của kỳ trước{' '}
                 {debts.data.householdCount > 0 && (
                   <Button type="link" size="small" style={{ padding: 0 }} onClick={() => setDebtFilter({})}>
                     Xem danh sách
@@ -161,7 +162,7 @@ export function ProgressPage() {
                 { title: 'Đã thu', dataIndex: 'collected', align: 'right', render: (v: number) => <MoneyText value={v} /> },
                 { title: 'Tỷ lệ thu', render: (_, a) => <Rate rate={a.collectionRate} /> },
                 {
-                  title: 'Hộ còn nợ kỳ cũ',
+                  title: 'Hộ còn nợ tháng trước',
                   dataIndex: 'debtHouseholds',
                   align: 'right',
                   render: (v: number, a) =>
@@ -169,7 +170,7 @@ export function ProgressPage() {
                       <Button
                         type="link"
                         size="small"
-                        aria-label={`Xem ${v} hộ còn nợ kỳ cũ của ${a.areaCode}`}
+                        aria-label={`Xem ${v} hộ còn nợ tháng trước của ${a.areaCode}`}
                         onClick={() => setDebtFilter({ areaId: a.areaId, companyId: r.companyId })}
                       >
                         {v}
@@ -214,6 +215,7 @@ export function ProgressPage() {
       <HouseholdDebtModal
         open={debtFilter !== undefined}
         onClose={() => setDebtFilter(undefined)}
+        previousOf={periodId}
         companyId={debtFilter?.companyId}
         areaId={debtFilter?.areaId}
       />

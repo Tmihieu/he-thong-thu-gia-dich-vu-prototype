@@ -1343,7 +1343,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Công nợ hộ: khoản Chưa thu của kỳ đã khóa (hộ nộp ở kỳ sau thì hết nợ), kèm tổng số hộ và tiền. Lọc theo công ty, tổ; phân trang. Chỉ cán bộ xã và lãnh đạo */
+        /** Công nợ hộ: khoản Chưa thu của kỳ liền trước kỳ previousOf, bỏ trống thì của mọi kỳ đã khóa (hộ nộp ở kỳ sau thì hết nợ), kèm tổng số hộ và tiền. Lọc theo công ty, tổ; phân trang. Chỉ cán bộ xã và lãnh đạo */
         get: operations["householdDebts"];
         put?: never;
         post?: never;
@@ -6805,6 +6805,7 @@ export interface operations {
     householdDebts: {
         parameters: {
             query?: {
+                previousOf?: number;
                 companyId?: number;
                 areaId?: number;
                 page?: number;
