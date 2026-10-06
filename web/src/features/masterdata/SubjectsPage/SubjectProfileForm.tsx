@@ -223,7 +223,8 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
         if (!current && 'memberCount' in changed && all.type === 'HOUSEHOLD' && all.memberCount && (group === 'HH_UP_TO_2' || group === 'HH_3_PLUS')) {
           form.setFieldValue('tariffGroup', all.memberCount <= 2 ? 'HH_UP_TO_2' : 'HH_3_PLUS');
         }
-        if ('type' in changed && group && !groupsFor(all.type).includes(group)) {
+        // Nguồn thải lớn chỉ có nhóm cân: chọn sẵn; loại khác thì bỏ nhóm không hợp.
+        if ('type' in changed && (all.type === 'LARGE_SOURCE' || (group && !groupsFor(all.type).includes(group)))) {
           form.setFieldValue('tariffGroup', all.type === 'LARGE_SOURCE' ? 'FULL_COST_BY_KG' : undefined);
         }
         if ('areaId' in changed) {

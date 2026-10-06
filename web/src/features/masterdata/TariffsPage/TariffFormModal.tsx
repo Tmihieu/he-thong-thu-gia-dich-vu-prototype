@@ -174,12 +174,12 @@ export function TariffFormModal({ draft, template, open, submitting, error, onCr
 
         <Typography.Text strong>Đơn giá theo nhóm</Typography.Text>
         <Row gutter={12} style={{ margin: '8px 0 4px', color: 'rgba(0,0,0,.55)', fontSize: 12 }}>
-          <Col span={6}>Nhóm giá</Col>
+          <Col span={5}>Nhóm giá</Col>
           <Col span={4}>Thu gom (đ)</Col>
           <Col span={4}>Vận chuyển (đ)</Col>
           <Col span={3}>Xử lý (đ)</Col>
-          <Col span={3}>Đơn vị tính</Col>
-          <Col span={4} style={{ textAlign: 'right' }}>Tổng cộng</Col>
+          <Col span={4}>Đơn vị tính</Col>
+          <Col span={3} style={{ textAlign: 'right' }}>Tổng cộng</Col>
         </Row>
         <Form.List name="rates">
           {(fields) =>
@@ -190,7 +190,7 @@ export function TariffFormModal({ draft, template, open, submitting, error, onCr
               const rule = g === 'HH_PER_CAPITA' && !perCapita ? [] : required('Nhập số');
               return (
                 <Row key={f.key} gutter={12} align="top">
-                  <Col span={6} style={{ paddingTop: 5 }}>
+                  <Col span={5} style={{ paddingTop: 5 }}>
                     {TARIFF_GROUP_LABELS[g]}
                   </Col>
                   <Col span={4}>
@@ -210,12 +210,12 @@ export function TariffFormModal({ draft, template, open, submitting, error, onCr
                       </Form.Item>
                     ) : <div style={{ paddingTop: 5 }}>—</div>}
                   </Col>
-                  <Col span={3}>
+                  <Col span={4}>
                     <Form.Item name={[f.name, 'unitLabel']} rules={[{ required: true, whitespace: true, message: 'Nhập' }]}>
                       <Input maxLength={30} disabled />
                     </Form.Item>
                   </Col>
-                  <Col span={4} style={{ paddingTop: 5, textAlign: 'right' }}>
+                  <Col span={3} style={{ paddingTop: 5, textAlign: 'right' }}>
                     <MoneyText value={(r?.collectionFee ?? 0) + (r?.transportFee ?? 0) + (hasProcessing(g) ? (r?.processingFee ?? 0) : 0)} strong />
                   </Col>
                 </Row>
