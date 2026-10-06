@@ -300,6 +300,12 @@ body { font-size: 15px; line-height: 1.5; color: var(--gray-950); -webkit-font-s
 .ant-table-wrapper .ant-table-container { border-radius: var(--radius-lg); }
 .ant-table-wrapper .ant-table-tbody > tr > td { font-variant-numeric: tabular-nums; }
 .ant-table-wrapper .ant-table-cell .ant-btn-link { height: auto; font-weight: 600; }
+/* Mọi bảng: ô căn giữa cả ngang lẫn dọc; cột đầu (sau cột mở rộng/chọn nếu có) căn trái sát mép. */
+.ant-table-wrapper .ant-table-cell { text-align: center !important; vertical-align: middle !important; }
+.ant-table-wrapper .ant-table-tbody > tr > td.ant-table-cell:first-child,
+.ant-table-wrapper .ant-table-thead > tr > th.ant-table-cell:first-child,
+.ant-table-wrapper .ant-table-row-expand-icon-cell + .ant-table-cell,
+.ant-table-wrapper .ant-table-selection-column + .ant-table-cell { text-align: left !important; }
 
 /* Form, modal, drawer */
 .ant-modal .ant-modal-header { padding-bottom: 12px; border-bottom: 1px solid var(--gray-200); margin-bottom: 16px; }
