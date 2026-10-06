@@ -1,6 +1,6 @@
 import { CheckOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, Card, ConfigProvider, Segmented, Space, Table, Typography } from 'antd';
+import { Alert, App, Button, ConfigProvider, Segmented, Space, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
@@ -204,24 +204,26 @@ export function ReconciliationPage() {
       />
       {ledger.error && <ErrorBlock error={ledger.error} onRetry={() => void ledger.refetch()} />}
 
-      <Card style={{ borderColor: BORDER }} styles={{ header: { borderBottomColor: BORDER }, body: { padding: 0 } }} title="Tiền xã đang giữ trong kỳ" extra={<Typography.Text type="secondary">So với phần phí vận chuyển xã được hưởng</Typography.Text>}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch' }}>
-          <Cell label="Xã đang giữ" value={holding}>
-            QR đã nhận <MoneyText value={qrTotal} />
-            <br />+ đã thu từ Cty <MoneyText value={sum(rows, (r) => r.received)} />
-            <br />− đã chi cho Cty <MoneyText value={sum(rows, (r) => r.communePaid)} />
-          </Cell>
+      <section aria-label="Tiền xã đang giữ trong kỳ">
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'baseline', gap: '0 16px', marginBottom: 8 }}>
+          <Typography.Title level={5} style={{ margin: 0 }}>
+            Tiền xã đang giữ trong kỳ
+          </Typography.Title>
+          <Typography.Text type="secondary">So với phần phí vận chuyển xã được hưởng</Typography.Text>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', gap: 12 }}>
+          <Tile label="Xã đang giữ" value={holding} accent={semantic.info.fg}>
+            <Line label="QR đã nhận" value={qrTotal} />
+            <Line label="+ Đã thu từ Cty" value={sum(rows, (r) => r.received)} />
+            <Line label="− Đã chi cho Cty" value={sum(rows, (r) => r.communePaid)} />
+          </Tile>
           <Operator>−</Operator>
-          <Cell label="Xã được hưởng · phí vận chuyển" value={entitled}>
-            vận chuyển trong QR <MoneyText value={sum(rows, (r) => r.qrTransport)} />
-            <br />+ vận chuyển trong tiền mặt <MoneyText value={sum(rows, (r) => r.cashTransport)} />
-          </Cell>
+          <Tile label="Xã được hưởng · phí vận chuyển" value={entitled} accent={semantic.warning.fg}>
+            <Line label="Vận chuyển trong QR" value={sum(rows, (r) => r.qrTransport)} />
+            <Line label="+ Vận chuyển trong tiền mặt" value={sum(rows, (r) => r.cashTransport)} />
+          </Tile>
           <Operator>=</Operator>
-          <div style={{ flex: '1 1 300px', padding: 20, background: diffTone.bg, color: diffTone.fg, display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <strong>{diff > 0 ? 'Xã đang THỪA' : diff < 0 ? 'Xã đang THIẾU' : 'Đã cân'}</strong>
-            <strong style={{ fontSize: 30 }}>
-              <MoneyText value={Math.abs(diff)} />
-            </strong>
+          <Tile label={diff > 0 ? 'Xã đang THỪA' : diff < 0 ? 'Xã đang THIẾU' : 'Đã cân'} value={Math.abs(diff)} accent={diffTone.fg} tint={diffTone.bg} tone={diffTone.fg}>
             <span style={{ fontSize: 13 }}>
               {diff > 0
                 ? 'Đây là tiền thu gom của Cty mà xã đang giữ hộ, phải chi trả.'
@@ -229,9 +231,9 @@ export function ReconciliationPage() {
                   ? 'Cty còn giữ tiền vận chuyển của xã, phải thu về.'
                   : 'Xã giữ đúng bằng phần vận chuyển được hưởng.'}
             </span>
-          </div>
+          </Tile>
         </div>
-      </Card>
+      </section>
 
       {qr && qr.count > 0 && (
         <Alert
@@ -306,20 +308,47 @@ export function ReconciliationPage() {
   );
 }
 
-function Cell({ label, value, children }: { label: string; value: number; children: ReactNode }) {
+/** Ô số lớn của phép tính: vạch màu trên đầu, nhãn, số, rồi các dòng diễn giải. */
+function Tile({ label, value, accent, tint, tone, children }: { label: string; value: number; accent: string; tint?: string; tone?: string; children: ReactNode }) {
   return (
-    <div style={{ flex: '1 1 260px', padding: 20, display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <Typography.Text type="secondary">{label}</Typography.Text>
-      <strong style={{ fontSize: 30 }}>
+    <div
+      style={{
+        flex: '1 1 280px',
+        minWidth: 0,
+        padding: '16px 20px 18px',
+        background: tint ?? '#fff',
+        color: tone,
+        border: `1px solid ${BORDER}`,
+        borderTop: `4px solid ${accent}`,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+      }}
+    >
+      <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.02em', color: tone ?? semantic.neutral.fg }}>{label}</span>
+      <strong style={{ fontSize: 32, lineHeight: 1.2 }}>
         <MoneyText value={value} />
       </strong>
-      <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-        {children}
-      </Typography.Text>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 6, paddingTop: 10, borderTop: `1px dashed ${tone ?? BORDER}`, fontSize: 13 }}>{children}</div>
+    </div>
+  );
+}
+
+function Line({ label, value }: { label: string; value: number }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, color: semantic.neutral.fg }}>
+      <span>{label}</span>
+      <MoneyText value={value} />
     </div>
   );
 }
 
 function Operator({ children }: { children: ReactNode }) {
-  return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 48, flex: '0 0 48px', fontSize: 28, color: semantic.neutral.fg }}>{children}</div>;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto' }}>
+      <span style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, background: '#fff', border: `1px solid ${BORDER}`, color: semantic.neutral.fg }}>
+        {children}
+      </span>
+    </div>
+  );
 }
