@@ -51,8 +51,12 @@ Cách hiểu (chờ xác nhận):
 - `TariffRate` thêm `processing_fee`; `monthly_total` = thu gom + vận chuyển + xử lý.
 - `TariffVersion` thêm cờ nhân khẩu + phạm vi (toàn xã / danh sách địa bàn). Lúc lập khoản: hộ gia đình mà biểu giá của kỳ bật cho địa bàn của hộ thì tính `HH_PER_CAPITA` bất kể nhóm trên đăng ký; nhóm `HH_PER_CAPITA` trên đăng ký thì luôn theo nhân khẩu. Khoản chụp nhóm thực tính và số nhân khẩu.
 
-### Còn hỏi
-- Phí xử lý thu được đi đâu? Mặc định: như vận chuyển, công ty nộp về xã (công ty chỉ giữ phần thu gom, BR-REM-02).
+### Chưa biết (ghi lại, code tạm)
+- Câu 8: đơn giá một người có tách thu gom + vận chuyển không.
+- Phí xử lý thu được thuộc về ai. Code tạm: công ty chỉ giữ phần thu gom (BR-REM-02), phí xử lý đi cùng vận chuyển nộp về xã.
+
+### Chốt thêm
+- Hộ tính theo nhóm ≤2 / ≥3 người đổi số người: nhóm mới vẫn áp từ kỳ sau (BR-MD-09 giữ nguyên). Chỉ hộ theo nhân khẩu lấy số mới ngay khi khoản chưa lập.
 
 ## 4. File cần sửa
 
