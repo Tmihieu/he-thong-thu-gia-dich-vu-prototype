@@ -519,7 +519,7 @@ export interface paths {
         /** Các phiên bản biểu giá kèm đơn giá theo nhóm, mới nhất trước */
         get: operations["tariffs"];
         put?: never;
-        /** Tạo dự thảo biểu giá (quản trị); phải đủ đơn giá 4 nhóm */
+        /** Tạo dự thảo biểu giá (quản trị); phải đủ đơn giá các nhóm (đơn giá một người chỉ bắt buộc khi bật theo nhân khẩu) */
         post: operations["createDraft"];
         delete?: never;
         options?: never;
@@ -2305,11 +2305,16 @@ export interface components {
         };
         RateRequest: {
             /** @enum {string} */
-            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME";
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "HH_PER_CAPITA" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME" | "FULL_COST_BY_KG";
             /** Format: int64 */
             collectionFee: number;
             /** Format: int64 */
             transportFee: number;
+            /**
+             * Format: int64
+             * @description Phí xử lý, chỉ nhóm cân; bỏ trống = 0
+             */
+            processingFee?: number;
             /** @example đ/hộ/tháng */
             unitLabel: string;
         };
@@ -2326,14 +2331,20 @@ export interface components {
             scopeNote?: string;
             note?: string;
             rates: components["schemas"]["RateRequest"][];
+            /** @description Mọi hộ gia đình toàn xã tính theo nhân khẩu */
+            perCapitaAll?: boolean;
+            /** @description Các địa bàn tính theo nhân khẩu (khi không bật toàn xã) */
+            perCapitaDistrictIds?: number[];
         };
         TariffRateDto: {
             /** @enum {string} */
-            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME";
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "HH_PER_CAPITA" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME" | "FULL_COST_BY_KG";
             /** Format: int64 */
             collectionFee: number;
             /** Format: int64 */
             transportFee: number;
+            /** Format: int64 */
+            processingFee: number;
             /** Format: int64 */
             monthlyTotal: number;
             /** @example đ/hộ/tháng */
@@ -2356,10 +2367,12 @@ export interface components {
             scopeNote: string | null;
             note: string | null;
             rates: components["schemas"]["TariffRateDto"][];
+            perCapitaAll: boolean;
+            perCapitaDistrictIds: number[];
         };
         ContractRequest: {
             /** @enum {string} */
-            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME";
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "HH_PER_CAPITA" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME" | "FULL_COST_BY_KG";
             /** Format: date */
             validFrom: string;
             /** Format: date */
@@ -2376,7 +2389,7 @@ export interface components {
         };
         SubjectRequest: {
             /** @enum {string} */
-            type: "HOUSEHOLD" | "BUSINESS_HOUSEHOLD" | "ENTERPRISE";
+            type: "HOUSEHOLD" | "SMALL_SOURCE" | "LARGE_SOURCE";
             name: string;
             /** @description Số nhà; bỏ trống nếu nhà chưa có số */
             houseNo?: string;
@@ -2412,7 +2425,7 @@ export interface components {
             /** @example ĐK-DTH-0128 */
             contractNo: string;
             /** @enum {string} */
-            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME";
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "HH_PER_CAPITA" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME" | "FULL_COST_BY_KG";
             /** Format: date */
             validFrom: string;
             /** Format: date */
@@ -2433,7 +2446,7 @@ export interface components {
             /** @example DTH-H000128 */
             code: string;
             /** @enum {string} */
-            subjectType: "HOUSEHOLD" | "BUSINESS_HOUSEHOLD" | "ENTERPRISE";
+            subjectType: "HOUSEHOLD" | "SMALL_SOURCE" | "LARGE_SOURCE";
             name: string;
             /** @description Số nhà + đường, ghép sẵn */
             address: string;
@@ -4097,7 +4110,7 @@ export interface components {
             periodCode: string;
             feeTypeCode: string;
             /** @enum {string|null} */
-            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME" | null;
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "HH_PER_CAPITA" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME" | "FULL_COST_BY_KG" | null;
             /** Format: int64 */
             unitPrice: number;
             /** Format: int32 */
@@ -4120,7 +4133,7 @@ export interface components {
             refunded: number;
             /**
              * Format: int32
-             * @description Số nhân khẩu hiện tại của hộ; hộ kinh doanh / doanh nghiệp là null
+             * @description Số nhân khẩu chụp trên khoản theo nhân khẩu, không có thì số hiện tại của hộ; nguồn thải là null
              */
             memberCount: number | null;
             /**
@@ -4291,7 +4304,7 @@ export interface components {
         HouseholdContractDto: {
             contractNo: string;
             /** @enum {string} */
-            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME";
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "HH_PER_CAPITA" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME" | "FULL_COST_BY_KG";
             /** Format: date */
             validFrom: string;
             /** Format: date */
@@ -4306,7 +4319,7 @@ export interface components {
             code: string;
             name: string;
             /** @enum {string} */
-            subjectType: "HOUSEHOLD" | "BUSINESS_HOUSEHOLD" | "ENTERPRISE";
+            subjectType: "HOUSEHOLD" | "SMALL_SOURCE" | "LARGE_SOURCE";
             address: string;
             phone: string | null;
             /** @enum {string} */
@@ -5476,7 +5489,7 @@ export interface operations {
                 districtId?: number;
                 areaId?: number;
                 status?: "ACTIVE" | "PENDING" | "ENDED";
-                subjectType?: "HOUSEHOLD" | "BUSINESS_HOUSEHOLD" | "ENTERPRISE";
+                subjectType?: "HOUSEHOLD" | "SMALL_SOURCE" | "LARGE_SOURCE";
                 q?: string;
                 page?: number;
                 size?: number;

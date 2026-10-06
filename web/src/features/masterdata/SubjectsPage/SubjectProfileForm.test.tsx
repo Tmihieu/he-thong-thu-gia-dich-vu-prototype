@@ -161,10 +161,10 @@ describe('SubjectProfileForm', () => {
     expect(onSubmit.mock.calls[0]![0].contract).toMatchObject({ tariffGroup: 'HH_3_PLUS', validTo: undefined });
   });
 
-  it('nhóm nguồn thải lớn có ô định mức kg và gửi quotaKg; nhóm khác không gửi', async () => {
+  it('nhóm theo ký có ô định mức kg và gửi quotaKg; nhóm khác không gửi', async () => {
     const onSubmit = vi.fn();
     const enterprise: Subject = {
-      ...existing, subjectType: 'ENTERPRISE', memberCount: null, representativeName: 'Giám Đốc Mẫu',
+      ...existing, subjectType: 'SMALL_SOURCE', memberCount: null, representativeName: 'Giám Đốc Mẫu',
       currentContract: { ...existing.currentContract!, tariffGroup: 'BY_VOLUME', exempt: false, exemptReason: null, quotaKg: 600 },
     };
     render(<SubjectProfileForm subject={enterprise} areas={areas} onSubmit={onSubmit} />);

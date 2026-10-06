@@ -45,13 +45,26 @@ const DATE_FORMAT = 'DD/MM/YYYY';
 const iso = (d: Dayjs | null | undefined) => (d ? d.format('YYYY-MM-DD') : undefined);
 const trimmed = (s: string | undefined) => (s && s.trim() ? s.trim() : undefined);
 
-/** Như máy chủ (TARIFF_GROUP_MISMATCH): hợp đồng đang mở theo nhóm số người phải khớp số thành viên hiện tại. */
+const HOUSEHOLD_GROUPS: TariffGroup[] = ['HH_UP_TO_2', 'HH_3_PLUS', 'HH_PER_CAPITA'];
+/** Nhóm tính đ/kg × định mức kg/tháng. */
+const perKg = (g?: TariffGroup) => g === 'BY_VOLUME' || g === 'FULL_COST_BY_KG';
+
+/** Nhóm giá dùng được theo loại (như SubjectType.allows ở máy chủ). */
+function groupsFor(type: SubjectType): TariffGroup[] {
+  const all = Object.keys(TARIFF_GROUP_LABELS) as TariffGroup[];
+  if (type === 'HOUSEHOLD') return HOUSEHOLD_GROUPS;
+  if (type === 'LARGE_SOURCE') return ['FULL_COST_BY_KG'];
+  return all.filter((g) => !HOUSEHOLD_GROUPS.includes(g));
+}
+
+/** Như máy chủ (TARIFF_GROUP_MISMATCH): nhóm giá hợp loại; nhóm theo số người phải khớp số thành viên hiện tại. */
 const groupFitsMembers = ({ getFieldValue }: { getFieldValue: (name: keyof FormValues) => unknown }) => ({
   validator(_: unknown, group: TariffGroup | undefined) {
-    if ((group !== 'HH_UP_TO_2' && group !== 'HH_3_PLUS') || getFieldValue('validTo')) return Promise.resolve();
-    if (getFieldValue('type') !== 'HOUSEHOLD') {
-      return Promise.reject(new Error('Nhóm giá theo số người chỉ dùng cho hộ gia đình'));
+    if (!group || getFieldValue('validTo')) return Promise.resolve();
+    if (!groupsFor(getFieldValue('type') as SubjectType).includes(group)) {
+      return Promise.reject(new Error('Nhóm giá không dùng cho loại đối tượng này'));
     }
+    if (group !== 'HH_UP_TO_2' && group !== 'HH_3_PLUS') return Promise.resolve();
     const members = getFieldValue('memberCount') as number | null | undefined;
     const expected: TariffGroup = members && members <= 2 ? 'HH_UP_TO_2' : 'HH_3_PLUS';
     if (!members || group === expected) return Promise.resolve();
@@ -84,8 +97,11 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
   const tariffGroup = Form.useWatch('tariffGroup', form);
   const current = subject?.currentContract ?? null;
   const showContract = current !== null || hasContract;
-  // Hộ gia đình đã có đăng ký: nhóm giá do số người quyết định và máy chủ tự đổi từ kỳ sau, không sửa tay ở đây.
-  const householdGroupLocked = current !== null && (current.tariffGroup === 'HH_UP_TO_2' || current.tariffGroup === 'HH_3_PLUS');
+  // Hộ gia đình đã có đăng ký theo số người: nhóm ≤2 / ≥3 do số người quyết định (máy chủ tự đổi từ kỳ sau), chỉ được
+  // chuyển sang theo nhân khẩu. Đổi nhóm của đăng ký đang chạy áp dụng từ kỳ sau.
+  const byMembersLocked = current !== null && (current.tariffGroup === 'HH_UP_TO_2' || current.tariffGroup === 'HH_3_PLUS');
+  const groupOptions = (byMembersLocked && current ? [current.tariffGroup, 'HH_PER_CAPITA' as TariffGroup] : groupsFor(type))
+    .map((value) => ({ value, label: TARIFF_GROUP_LABELS[value] }));
 
   const initialValues: Partial<FormValues> = subject
     ? {
@@ -186,7 +202,7 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
             exempt: current?.exempt ?? false,
             exemptReason: current?.exemptReason ?? undefined,
             exemptDecisionNo: current?.exemptDecisionNo ?? undefined,
-            quotaKg: v.tariffGroup === 'BY_VOLUME' ? (v.quotaKg ?? undefined) : undefined,
+            quotaKg: perKg(v.tariffGroup) ? (v.quotaKg ?? undefined) : undefined,
           }
         : null;
     onSubmit({ subject: subjectReq, contract, contractId: current?.id ?? null });
@@ -206,6 +222,9 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
         const group = all.tariffGroup;
         if (!current && 'memberCount' in changed && all.type === 'HOUSEHOLD' && all.memberCount && (group === 'HH_UP_TO_2' || group === 'HH_3_PLUS')) {
           form.setFieldValue('tariffGroup', all.memberCount <= 2 ? 'HH_UP_TO_2' : 'HH_3_PLUS');
+        }
+        if ('type' in changed && group && !groupsFor(all.type).includes(group)) {
+          form.setFieldValue('tariffGroup', all.type === 'LARGE_SOURCE' ? 'FULL_COST_BY_KG' : undefined);
         }
         if ('areaId' in changed) {
           // Đường thuộc xã/phường khác tổ/ấp mới chọn thì bỏ chọn (backend cũng từ chối).
@@ -354,7 +373,11 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
               label="Số thành viên"
               name="memberCount"
               rules={[{ required: true, message: 'Vui lòng nhập số thành viên' }]}
-              extra={current ? 'Đổi số người thì nhóm giá mới áp dụng từ kỳ thu sau.' : undefined}
+              extra={
+                tariffGroup === 'HH_PER_CAPITA'
+                  ? 'Tính theo nhân khẩu: khoản lập sau khi lưu lấy số người mới.'
+                  : current ? 'Đổi số người thì nhóm giá mới áp dụng từ kỳ thu sau.' : undefined
+              }
             >
               <InputNumber min={1} max={99} style={{ width: '100%' }} />
             </Form.Item>
@@ -391,22 +414,19 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
               label="Nhóm giá"
               name="tariffGroup"
               dependencies={['type', 'memberCount', 'validTo']}
-              rules={[{ required: true, message: 'Vui lòng chọn nhóm giá' }, ...(current ? [] : [groupFitsMembers])]}
+              rules={[{ required: true, message: 'Vui lòng chọn nhóm giá' }, ...(byMembersLocked ? [] : [groupFitsMembers])]}
+              extra={current && tariffGroup !== current.tariffGroup ? 'Đổi nhóm giá áp dụng từ kỳ thu sau.' : undefined}
             >
-              <Select
-                aria-label="Nhóm giá"
-                disabled={householdGroupLocked}
-                placeholder="Chọn nhóm"
-                options={Object.entries(TARIFF_GROUP_LABELS).map(([value, label]) => ({ value, label }))}
-              />
+              <Select aria-label="Nhóm giá" placeholder="Chọn nhóm" options={groupOptions} />
             </Form.Item>
           </Col>
-          {tariffGroup === 'BY_VOLUME' && (
+          {perKg(tariffGroup) && (
             <Col xs={24}>
               <Form.Item
                 label="Định mức (kg/tháng)"
                 name="quotaKg"
-                extra="Cân tháng đầu để lấy định mức; tiền mỗi tháng = đơn giá đ/kg × định mức. Chưa nhập thì chưa lập được khoản."
+                extra={`Cán bộ xã cân một lần để lấy định mức; tiền mỗi tháng = đơn giá đ/kg × định mức${
+                  tariffGroup === 'FULL_COST_BY_KG' ? ' (có phí xử lý)' : ''}. Chưa nhập thì chưa lập được khoản.`}
               >
                 <InputNumber<number> aria-label="Định mức kg/tháng" min={1} precision={0} addonAfter="kg" style={{ width: '100%' }} />
               </Form.Item>

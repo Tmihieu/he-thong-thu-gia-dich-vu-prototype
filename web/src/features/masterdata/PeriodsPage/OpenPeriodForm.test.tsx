@@ -9,11 +9,11 @@ import { OpenPeriodForm } from './OpenPeriodForm';
 const tariffs: TariffVersion[] = [
   {
     id: 1, code: 'BG-65-2026', legalBasis: 'QĐ 65/2026/QĐ-UBND', issuedDate: null, validFrom: '2026-09-01',
-    validTo: '2027-06-30', status: 'ACTIVE', scopeNote: null, note: null, rates: [],
+    validTo: '2027-06-30', status: 'ACTIVE', scopeNote: null, note: null, rates: [], perCapitaAll: false, perCapitaDistrictIds: [],
   },
   {
     id: 2, code: 'BG-67-2025', legalBasis: 'QĐ 67/2025/QĐ-UBND', issuedDate: null, validFrom: '2025-06-01',
-    validTo: '2026-08-31', status: 'EXPIRED', scopeNote: null, note: null, rates: [],
+    validTo: '2026-08-31', status: 'EXPIRED', scopeNote: null, note: null, rates: [], perCapitaAll: false, perCapitaDistrictIds: [],
   },
 ];
 

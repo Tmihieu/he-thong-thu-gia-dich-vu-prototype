@@ -34,6 +34,7 @@ const ENUM_LABELS: Record<string, string> = {
   ...PERIOD_STATUS_LABELS, ...SUBJECT_TYPE_LABELS, ...SUBJECT_STATUS_LABELS, ...CHARGE_STATUS_LABELS,
   ACTIVE: 'Hoạt động', INACTIVE: 'Tạm ngưng', LOCKED: 'Đã khóa', SYSTEM: 'Hệ thống', CITIZEN: 'Người dân',
   REFUND: 'Hoàn tiền', WRITE_OFF: 'Xóa nợ', EXEMPTION: 'Miễn giảm', PENDING: 'Chờ duyệt', APPROVED: 'Đã duyệt',
+  BUSINESS_HOUSEHOLD: 'Hộ kinh doanh', ENTERPRISE: 'Doanh nghiệp', // loại cũ trong nhật ký trước V48
   REJECTED: 'Từ chối', CASH: 'Tiền mặt', TRANSFER: 'Chuyển khoản', ALL: 'Toàn xã', AREAS: 'Chọn tổ', COMPANY: 'Theo công ty',
 };
 
