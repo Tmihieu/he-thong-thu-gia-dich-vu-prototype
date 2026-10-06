@@ -324,6 +324,8 @@ Hộ gia đình / hộ kinh doanh / doanh nghiệp. Hiển thị chung form "H�
 | `SMALL_250_TO_500` | Chủ nguồn thải nhỏ 250–500 kg/tháng | 170.000 + 68.000 = 238.000 đ/tháng |
 | `BY_VOLUME` | Chủ nguồn thải lớn 500–9.000 kg/tháng | 453 + 180 = 633 đ/kg (chưa lập được khoản, chờ tính theo ký) |
 
+> **06/10, chưa sửa code:** nếu ngưỡng Điều 58 NĐ 08/2022 là 300 kg/ngày (≈ 9.000 kg/tháng) thì `BY_VOLUME` là **nguồn thải nhỏ** chọn như hộ gia đình (bảng b), nhãn "chủ nguồn thải lớn" ở trên là sai. Sắp thêm nhóm hộ gia đình theo nhân khẩu và nhóm cân theo bảng mục 3 (1.054 đ/kg). Xem [tasks/nhan-khau-tu-can-0610.md](../tasks/nhan-khau-tu-can-0610.md).
+
 **Khóa/ràng buộc:** `contract_no` duy nhất; mỗi `subject_id` tối đa 1 hợp đồng hiệu lực tại một thời điểm (exclusion constraint theo `daterange(valid_from, valid_to)`); `valid_to ≥ valid_from`.
 
 ### TariffVersion — Phiên bản biểu giá · `tariff_versions` · Phần A

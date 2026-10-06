@@ -40,22 +40,24 @@ Cột "Kiểm" để các lane điền khi rà: ✔ khớp · ✘ lệch (ghi s�
 | BR-MD-03 | Công ty mã `DVnn` tự sinh; **chỉ quản trị thêm/sửa được** (ở `/admin/config`; cán bộ xã chỉ xem và phân công khu vực, từ 04/10 theo góp ý người dùng, thay QĐ-L1); vai trò khác 403; trạng thái **Đang hợp tác / Ngừng hợp tác** | DD T51, 29/09, QĐ-L1 04/10 | Chốt | |
 | BR-MD-04 | Công ty Ngừng hợp tác không nhận phân công khu vực mới (`COMPANY_INACTIVE`) | DD T51 | Chốt | |
 | BR-MD-05 | Công ty Ngừng hợp tác: khu vực đang phụ trách xử lý thế nào | DD T51 | **Chờ xã** (hiện giữ nguyên) | |
-| BR-MD-06 | Đối tượng: hộ gia đình / hộ kinh doanh / doanh nghiệp. Địa chỉ tách số nhà + đường (đường theo danh mục), khu vực. Hộ gia đình bắt buộc số thành viên; nhóm giá HGĐ phải khớp số thành viên (≤2 / ≥3) | 28/09, V23, V31 | Chốt | |
+| BR-MD-06 | Đối tượng: hộ gia đình / hộ kinh doanh / doanh nghiệp. Địa chỉ tách số nhà + đường (đường theo danh mục), khu vực. Hộ gia đình bắt buộc số thành viên; nhóm giá HGĐ phải khớp số thành viên (≤2 / ≥3) | 28/09, V23, V31 | Chốt — **sắp đổi** (06/10): loại thành hộ gia đình / nguồn thải nhỏ / nguồn thải lớn (BR-MD-22); khớp số thành viên bỏ qua khi tính theo nhân khẩu (BR-MD-16) | |
 | BR-MD-07 | Mỗi đối tượng tối đa 1 đăng ký hiệu lực tại một thời điểm; số đăng ký tự sinh `ĐK-{địa bàn}-{nnnn}`, không có "ngày ký" | SPEC §9.3, DD D10 | Chốt | |
 | BR-MD-08 | Cảnh báo nghi trùng hộ khi tạo/sửa (cùng địa chỉ chuẩn hóa) — cảnh báo, không chặn | V31 | Chốt | |
 | BR-MD-09 | Đổi số người của hộ áp **từ kỳ sau**: đăng ký cũ kết thúc ngày cuối kỳ đang chạy, đăng ký mới (nhóm giá mới) từ ngày đầu kỳ kế tiếp, giữ miễn giảm + định mức. Không có kỳ đang chạy / đăng ký chưa bắt đầu → đổi tại chỗ. Khoản đã phát hành giữ nhóm giá cũ, không truy thu/hoàn | 03/10 | Chốt | |
 | BR-MD-10 | Có lịch sử số nhân khẩu của hộ | 03/10 | Chốt | |
 | BR-MD-11 | Biểu giá theo phiên bản: soạn dự thảo (đủ đơn giá các nhóm) → sửa khi còn dự thảo → Ban hành; bản đã ban hành không sửa. Ban hành: bản đang áp dụng kết thúc ngay trước ngày hiệu lực mới; chặn khi đã mở kỳ bắt đầu từ ngày hiệu lực trở đi, khi bản cũ bị thay hết hoặc bị cắt đôi | 29/09 | Chốt | |
-| BR-MD-12 | Biểu giá chỉ gồm **thu gom + vận chuyển**; không có phí xử lý, không VAT | DD G9, 03/10 | Chốt | |
+| BR-MD-12 | Biểu giá chỉ gồm **thu gom + vận chuyển**; không có phí xử lý, không VAT | DD G9, 03/10 | Chốt — **có thể đổi**: bảng mục 3 QĐ (nguồn thải lớn, nguồn thải nhỏ chọn như nguồn thải lớn) có phí xử lý 421 đ/kg, chờ xác nhận (BR-MD-23) | |
 | BR-MD-13 | Quản trị mở kỳ thủ công (tháng hoặc quý); mở là **Đang thu** luôn (không có trạng thái Đã mở). Kỳ tự tạo đi qua **Dự thảo** (BR-MD-20). Cán bộ xã khóa kỳ | DD G1, P1, P5 | Chốt | |
 | BR-MD-14 | Kỳ gắn phiên bản biểu giá đang hiệu lực của kỳ | SPEC §9.3 | Chốt | |
 | BR-MD-15 | Miễn giảm = cờ miễn 100% trên đăng ký + lý do; xã bật trực tiếp (xem BR-LD-04) | 28/09, 29/09 | Chốt | |
-| BR-MD-16 | Thu theo hộ hay theo nhân khẩu | 03/10 | **Chờ xã** (hiện: theo hộ, số người chỉ chọn nhóm) | |
+| BR-MD-16 | Thu theo hộ hay theo nhân khẩu: hộ gia đình có 2 cách, theo QĐ (nhóm ≤2 / ≥3) hoặc theo nhân khẩu (đơn giá một người do quản trị cài × số nhân khẩu × số tháng). Quản trị bật theo nhân khẩu cho toàn xã hoặc một / nhiều địa bàn; trong phạm vi bật thì mọi hộ gia đình tính theo nhân khẩu. Số nhân khẩu chụp trên khoản. Đổi cách tính áp từ kỳ sau | 03/10, họp công ty 05/10, chốt 06/10 | **Chốt hướng, chưa code** (hiện: theo hộ, số người chỉ chọn nhóm); câu còn hỏi ở [tasks/nhan-khau-tu-can-0610.md](../tasks/nhan-khau-tu-can-0610.md) | |
 | BR-MD-17 | Hộ không khai đổi nhân khẩu: nhắc hay truy thu, mấy tháng | 03/10 | **Chờ xã** | |
 | BR-MD-18 | Nhà vắng dài ngày: miễn, giảm hay vẫn tính | 03/10 | **Chờ xã** | |
 | BR-MD-19 | Ai duyệt đổi nhân khẩu, rà soát định kỳ bao lâu | 03/10 | **Chờ xã** | |
 | BR-MD-20 | Tự tạo kỳ: quản trị đặt quy tắc một lần (bật/tắt, tháng hoặc quý, ngày tạo kỳ 1–28, số ngày công ty nộp xã). Tác vụ 7h30 hằng ngày tạo kỳ kế tiếp ở trạng thái **Dự thảo** (không tạo trùng, mỗi lần một kỳ chờ mở), báo cán bộ xã. Dự thảo chưa có khoản, chưa ghi thu (422 `PERIOD_DRAFT`). Cán bộ xã xem trước rồi **Mở kỳ & phát hành** (hạn nộp của kỳ mặc định theo quy tắc, sửa được). Quản trị vẫn mở thủ công được | 04/10 (xã chốt), P5 | **Demo** (chờ leader duyệt, thêm migration V36) | |
 | BR-MD-21 | Nhập hồ sơ hộ hàng loạt từ file Excel (.xlsx): xem trước từng dòng + lỗi, chỉ ghi khi mọi dòng hợp lệ (tất cả hoặc không gì). Cột đường khớp danh mục đường của xã (BR-MD-08); không khớp thì lưu tên đường "chờ xác minh". Hộ gia đình tạo kèm đăng ký theo số người, hộ kinh doanh / doanh nghiệp ở trạng thái Chờ hợp đồng | 04/10 | **Demo** (cần leader duyệt thư viện Apache POI) | |
+| BR-MD-22 | Loại đối tượng: hộ gia đình / **nguồn thải nhỏ** / **nguồn thải lớn** (thay hộ kinh doanh / doanh nghiệp), theo Điều 3 QĐ và Điều 58 NĐ 08/2022. Chủ nhà trọ xếp nhỏ / lớn theo khối lượng. Ngưỡng nhỏ / lớn và cách chuyển hồ sơ cũ chờ xác nhận | họp công ty 05/10, 06/10 | **Chốt hướng, chưa code** | |
+| BR-MD-23 | Nguồn thải nhỏ: cán bộ xã chọn trong hồ sơ **theo QĐ** (bậc 126 / 250 / 500 kg, 633 đ/kg từ 500 kg) hoặc **tự cân** (như nguồn thải lớn). Nguồn thải lớn chỉ cân. Đông Thạnh nhóm 2; đơn giá cân theo bảng mục 3 = 453 + 180 + 421 = 1.054 đ/kg (chờ xác nhận). Đổi cách tính áp từ kỳ sau | họp công ty 05/10, 06/10 | **Chốt hướng, chưa code** | |
 
 ## 3. Lập khoản thu (`billing`)
 
