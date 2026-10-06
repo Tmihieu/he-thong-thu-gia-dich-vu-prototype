@@ -70,8 +70,8 @@ class CollectionApiIT extends IntegrationTest {
     }
 
     @Test
-    void chargeOutsideAssignedAreaIs404AndOtherCompanyManagerToo() throws Exception {
-        pay(collector, fx.chargeId("DTH-H000003"), 80_000, "req-1")
+    void chargeOfAnotherCompanyIs404AndOtherCompanyManagerToo() throws Exception {
+        pay(collector, fx.chargeId("DTH-H000005"), 80_000, "req-1")
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("CHARGE_NOT_FOUND"));
         pay(fx.bearer(fx.dv07Manager), fx.chargeId("DTH-H000001"), 80_000, "req-2")
@@ -100,7 +100,7 @@ class CollectionApiIT extends IntegrationTest {
 
         mvc.perform(get("/api/collection/my-work").header(HttpHeaders.AUTHORIZATION, collector))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].charge.subjectCode", contains("DTH-H000001", "DTH-H000002")))
+                .andExpect(jsonPath("$[*].charge.subjectCode", contains("DTH-H000001", "DTH-H000002", "DTH-H000003", "DTH-H000004")))
                 .andExpect(jsonPath("$[0].charge.status").value("PAID"))
                 .andExpect(jsonPath("$[0].paidAmount").value(80_000))
                 .andExpect(jsonPath("$[0].lastPaidAt").isNotEmpty())

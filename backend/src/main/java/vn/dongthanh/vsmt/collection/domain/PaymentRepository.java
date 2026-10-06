@@ -24,6 +24,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("select coalesce(sum(p.amount), 0) from Payment p where p.charge.id = :chargeId")
     long sumByChargeId(Long chargeId);
 
+    /** Lần thu (không tính hoàn) của một người đi thu cho khoản của công ty, mới trước. */
+    @Query("select p from Payment p join fetch p.charge c join fetch c.subject s join fetch c.period"
+            + " join fetch c.feeType join fetch c.company co where co.id = :companyId and p.collectorId = :collectorId"
+            + " and p.method <> 'REFUND' order by p.paidAt desc, p.id desc")
+    List<Payment> findByCollectorWithCharge(Long companyId, Long collectorId);
+
     /** Tiền mặt người đi thu đã thu (mọi kỳ, D5), dùng tính tiền đang giữ (R21). */
     @Query("select coalesce(sum(p.amount), 0) from Payment p where p.collectorId = :collectorId and p.method = 'CASH'")
     long sumCashByCollector(Long collectorId);

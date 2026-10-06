@@ -95,8 +95,6 @@ class LeadershipIT extends IntegrationTest {
         send("/api/leadership/approvals", lead, writeOff(fx.chargeId("DTH-H000001"))).andExpect(status().isForbidden());
         mvc.perform(put("/api/masterdata/subjects/1").header(HttpHeaders.AUTHORIZATION, lead)
                 .contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isForbidden());
-        mvc.perform(delete("/api/collection/collector-assignments/1").header(HttpHeaders.AUTHORIZATION, lead))
-                .andExpect(status().isForbidden());
     }
 
     @Test

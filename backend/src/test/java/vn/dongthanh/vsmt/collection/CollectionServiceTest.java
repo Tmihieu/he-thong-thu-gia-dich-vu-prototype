@@ -38,7 +38,7 @@ import vn.dongthanh.vsmt.collection.domain.PaymentRepository;
 import vn.dongthanh.vsmt.collection.service.CollectionService;
 import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentCommand;
 import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentOutcome;
-import vn.dongthanh.vsmt.collection.service.CollectorAssignmentService;
+import vn.dongthanh.vsmt.collection.service.CollectorWorkService;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository;
@@ -70,7 +70,7 @@ class CollectionServiceTest {
 
     final PaymentRepository payments = mock(PaymentRepository.class);
     final ChargeRepository charges = mock(ChargeRepository.class);
-    final CollectorAssignmentService scope = mock(CollectorAssignmentService.class);
+    final CollectorWorkService scope = mock(CollectorWorkService.class);
     final UserRepository users = mock(UserRepository.class);
     final CollectionPeriodRepository periods = mock(CollectionPeriodRepository.class);
     final CitizenAccountRepository citizenAccounts = mock(CitizenAccountRepository.class);
@@ -257,7 +257,7 @@ class CollectionServiceTest {
     }
 
     @Test
-    void collectorOutsideAssignedAreaIsRejectedAndCommuneCannotRecord() {
+    void collectorOfAnotherCompanyIsRejectedAndCommuneCannotRecord() {
         doThrow(new NotFoundException("CHARGE_NOT_FOUND", "x")).when(scope).requireInScope(charge, collector);
         assertThatThrownBy(() -> service.recordPayment(cash(80_000, "req-1"), collector))
                 .isInstanceOf(NotFoundException.class);

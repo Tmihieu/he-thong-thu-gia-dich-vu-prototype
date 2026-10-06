@@ -2,7 +2,6 @@ package vn.dongthanh.vsmt.citizen.api;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -13,19 +12,16 @@ import jakarta.validation.constraints.Pattern;
 import vn.dongthanh.vsmt.billing.domain.Charge;
 import vn.dongthanh.vsmt.billing.domain.ChargeStatus;
 import vn.dongthanh.vsmt.citizen.domain.CitizenAccount;
-import vn.dongthanh.vsmt.citizen.service.CitizenQueryService.AreaSchedule;
 import vn.dongthanh.vsmt.citizen.service.CitizenQueryService.ChargeView;
 import vn.dongthanh.vsmt.citizen.service.CitizenQueryService.Profile;
 import vn.dongthanh.vsmt.collection.domain.Payment;
 import vn.dongthanh.vsmt.collection.domain.PaymentMethod;
-import vn.dongthanh.vsmt.masterdata.domain.CollectionSchedule;
 import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceContract;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubject;
 import vn.dongthanh.vsmt.masterdata.domain.SubjectStatus;
 import vn.dongthanh.vsmt.masterdata.domain.SubjectType;
 import vn.dongthanh.vsmt.masterdata.domain.TariffGroup;
-import vn.dongthanh.vsmt.masterdata.domain.WasteType;
 
 public final class CitizenDtos {
 
@@ -201,34 +197,6 @@ public final class CitizenDtos {
                     c.getId(), c.getCode(), c.getStatus(), c.getAmount(), c.getPeriod().getCode(),
                     c.getPeriod().getLabel(), c.getFeeType().getName(), s.getCode(), s.getName(), s.getAddress(),
                     c.getCompany().getName());
-        }
-    }
-
-    public record ScheduleLineDto(
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "1 = Thứ 2 … 7 = Chủ nhật (ISO)") int weekday,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true,
-                    description = "Null = hằng tuần; 1 = tuần đầu tháng") Integer weekOfMonth,
-            @Schema(requiredMode = RequiredMode.REQUIRED, type = "string", example = "17:00:00") LocalTime startTime,
-            @Schema(requiredMode = RequiredMode.REQUIRED, type = "string", example = "19:00:00") LocalTime endTime,
-            @Schema(requiredMode = RequiredMode.REQUIRED) WasteType wasteType,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String note) {
-
-        static ScheduleLineDto of(CollectionSchedule s) {
-            return new ScheduleLineDto(s.getWeekday(), s.getWeekOfMonth(), s.getStartTime(), s.getEndTime(),
-                    s.getWasteType(), s.getNote());
-        }
-    }
-
-    public record CitizenScheduleDto(
-            @Schema(requiredMode = RequiredMode.REQUIRED, example = "KV07") String areaCode,
-            @Schema(requiredMode = RequiredMode.REQUIRED) String areaName,
-            @Schema(requiredMode = RequiredMode.REQUIRED) String districtName,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) ServingCompanyDto company,
-            @Schema(requiredMode = RequiredMode.REQUIRED) List<ScheduleLineDto> lines) {
-
-        static CitizenScheduleDto of(AreaSchedule s) {
-            return new CitizenScheduleDto(s.area().getCode(), s.area().getName(), s.area().getDistrict().getName(),
-                    ServingCompanyDto.of(s.company()), s.lines().stream().map(ScheduleLineDto::of).toList());
         }
     }
 }

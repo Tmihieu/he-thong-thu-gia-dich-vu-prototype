@@ -19,10 +19,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.AreaDto;
-import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.AreaLocationRequest;
 import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.AreaRequest;
 import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.DistrictRequest;
-import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.CollectionScheduleDto;
 import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.CompanyDto;
 import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.CompanyRequest;
 import vn.dongthanh.vsmt.masterdata.api.MasterDataDtos.DistrictDto;
@@ -56,14 +54,6 @@ public class MasterDataController {
         return AreaDto.of(area, query.subjectCountByArea().getOrDefault(id, 0L));
     }
 
-    @Operation(summary = "Đặt vị trí khu vực trên bản đồ (cán bộ xã, quản trị)")
-    @PutMapping("/areas/{id}/location")
-    public AreaDto moveArea(@PathVariable Long id, @Valid @RequestBody AreaLocationRequest req,
-            @AuthenticationPrincipal CurrentUser actor) {
-        var area = locations.moveArea(id, req.latitude(), req.longitude(), actor);
-        return AreaDto.of(area, query.subjectCountByArea().getOrDefault(id, 0L));
-    }
-
     @Operation(summary = "Danh sách địa bàn")
     @GetMapping("/districts")
     public List<DistrictDto> districts() {
@@ -75,12 +65,6 @@ public class MasterDataController {
     public List<AreaDto> areas(@RequestParam(required = false) Long districtId) {
         var counts = query.subjectCountByArea();
         return query.areas(districtId).stream().map(a -> AreaDto.of(a, counts.getOrDefault(a.getId(), 0L))).toList();
-    }
-
-    @Operation(summary = "Lịch thu gom của khu vực")
-    @GetMapping("/areas/{id}/schedules")
-    public List<CollectionScheduleDto> schedules(@PathVariable Long id) {
-        return query.schedulesOf(id).stream().map(CollectionScheduleDto::of).toList();
     }
 
     @Operation(summary = "Danh sách công ty (công ty chỉ thấy công ty của mình)")

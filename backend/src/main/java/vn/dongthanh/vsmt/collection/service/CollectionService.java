@@ -53,7 +53,7 @@ public class CollectionService {
 
     private final PaymentRepository payments;
     private final ChargeRepository charges;
-    private final CollectorAssignmentService scope;
+    private final CollectorWorkService scope;
     private final UserRepository users;
     private final PeriodGuard periodGuard;
     private final CitizenAccountRepository citizenAccounts;

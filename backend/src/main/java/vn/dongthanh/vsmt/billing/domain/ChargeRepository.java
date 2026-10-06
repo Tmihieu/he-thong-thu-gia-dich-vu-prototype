@@ -33,15 +33,16 @@ public interface ChargeRepository extends JpaRepository<Charge, Long> {
     Page<Charge> search(Long periodId, Long areaId, ChargeStatus status, Long subjectId, Long companyId, String q,
             Pageable page);
 
-    /** Khoản của công ty trong các tổ {@code areaIds} (phạm vi người đi thu). */
+    /** Khoản của công ty mà {@code collectorId} đã thu ít nhất một lần (không tính hoàn), theo payments.collector_id. */
     @Query(value = "select c from Charge c join fetch c.subject s join fetch c.area a join fetch c.company co"
             + " join fetch c.period p join fetch c.feeType f join fetch c.chargeRequest r"
-            + " where co.id = :companyId and a.id in :areaIds and (:periodId is null or p.id = :periodId)"
-            + " and (:status is null or c.status = :status)",
-            countQuery = "select count(c) from Charge c where c.company.id = :companyId and c.area.id in :areaIds"
-            + " and (:periodId is null or c.period.id = :periodId) and (:status is null or c.status = :status)")
-    Page<Charge> searchInAreas(Long companyId, Collection<Long> areaIds, Long periodId, ChargeStatus status,
-            Pageable page);
+            + " where co.id = :companyId and (:periodId is null or p.id = :periodId)"
+            + " and (:status is null or c.status = :status)"
+            + " and exists (select 1 from Payment x where x.charge = c and x.collectorId = :collectorId and x.method <> 'REFUND')",
+            countQuery = "select count(c) from Charge c where c.company.id = :companyId"
+            + " and (:periodId is null or c.period.id = :periodId) and (:status is null or c.status = :status)"
+            + " and exists (select 1 from Payment x where x.charge = c and x.collectorId = :collectorId and x.method <> 'REFUND')")
+    Page<Charge> searchCollectedBy(Long companyId, Long collectorId, Long periodId, ChargeStatus status, Pageable page);
 
     @Query("select c from Charge c join fetch c.subject s join fetch c.area a join fetch c.company co"
             + " join fetch c.period p join fetch c.feeType f join fetch c.chargeRequest r where c.id = :id")

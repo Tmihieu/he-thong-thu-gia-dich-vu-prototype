@@ -1,11 +1,11 @@
 package vn.dongthanh.vsmt.collection;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.time.LocalDate;
+
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,8 +24,8 @@ import vn.dongthanh.vsmt.support.FixedClockConfig;
 import vn.dongthanh.vsmt.support.IntegrationTest;
 
 /**
- * Gọi API phân tổ như server thật: dữ liệu đã commit, không có transaction của test bao ngoài.
- * {@code CollectorAssignmentIT} chạy trong {@code @Transactional} nên session Hibernate mở suốt request và che lỗi
+ * Gọi API người đi thu như server thật: dữ liệu đã commit, không có transaction của test bao ngoài.
+ * {@code CollectorWorkIT} chạy trong {@code @Transactional} nên session Hibernate mở suốt request và che lỗi
  * đọc proxy lười khi controller dựng DTO (server thật {@code open-in-view: false} trả 500).
  */
 @Import({FixedClockConfig.class, CollectionFixture.class, DatabaseCleaner.class})
@@ -49,25 +49,30 @@ class CollectionNoTransactionIT extends IntegrationTest {
     }
 
     @Test
-    void companyEndsCollectorAssignmentOutsideTestTransaction() throws Exception {
-        long id = jdbc.queryForObject("select id from collector_assignments where collector_id = ?", Long.class,
-                fx.thu07.getId());
+    void collectorWorkEndpointsBuildDtosOutsideTestTransaction() throws Exception {
+        long charge = fx.chargeId("DTH-H000001");
+        mvc.perform(post("/api/collection/payments").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.thu07))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"chargeId\":%d,\"amount\":80000,\"method\":\"CASH\",\"clientRequestId\":\"nt-1\"}"
+                                .formatted(charge)))
+                .andExpect(status().isCreated());
+        String manager = fx.bearer(fx.dv01Manager);
 
-        mvc.perform(post("/api/collection/collector-assignments/{id}/end", id)
-                        .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.dv01Manager))
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"endDate\":\"2026-10-31\"}"))
+        mvc.perform(get("/api/collection/company-work").param("collectorId", fx.thu07.getId().toString())
+                        .header(HttpHeaders.AUTHORIZATION, manager))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(id))
-                .andExpect(jsonPath("$.collectorId").value(fx.thu07.getId()))
-                .andExpect(jsonPath("$.collectorUsername").value("thu07_fx"))
-                .andExpect(jsonPath("$.collectorName").value("Người thu 07"))
-                .andExpect(jsonPath("$.areaCode").value("KV07"))
-                .andExpect(jsonPath("$.areaName").value("Tổ 07"))
-                .andExpect(jsonPath("$.companyId").value(fx.dv01.getId()))
-                .andExpect(jsonPath("$.validFrom").value("2026-09-01"))
-                .andExpect(jsonPath("$.validTo").value("2026-10-31"));
-
-        assertThat(jdbc.queryForObject("select valid_to from collector_assignments where id = ?", LocalDate.class, id))
-                .isEqualTo(LocalDate.of(2026, 10, 31));
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].charge.subjectCode").value("DTH-H000001"))
+                .andExpect(jsonPath("$[0].paidAmount").value(80_000));
+        mvc.perform(get("/api/collection/collectors/{id}/payments", fx.thu07.getId())
+                        .header(HttpHeaders.AUTHORIZATION, manager))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].subjectCode").value("DTH-H000001"))
+                .andExpect(jsonPath("$[0].periodCode").value("2026-10"))
+                .andExpect(jsonPath("$[0].amount").value(80_000));
+        mvc.perform(get("/api/collection/my-charges").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.thu09)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(4));
     }
 }

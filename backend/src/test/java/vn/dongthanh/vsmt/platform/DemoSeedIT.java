@@ -71,9 +71,6 @@ class DemoSeedIT extends IntegrationTest {
                 "select d.code from areas a join districts d on d.id = a.district_id"
                         + " where a.code in ('AP02', 'AP22', 'AP27', 'AP42', 'AP47', 'AP48') order by a.code",
                 String.class)).containsExactly("TTT", "TTT", "DTH", "DTH", "DTH", "NB");
-        // Mọi ấp đều có vị trí để vẽ ghim trên bản đồ Khu vực.
-        assertThat(demoDb.queryForObject("select count(*) from areas where latitude is null or longitude is null",
-                Integer.class)).isZero();
         assertThat(demoDb.queryForList("select code from companies order by code", String.class))
                 .hasSize(11).startsWith("DV01").endsWith("DV11");
 
@@ -150,37 +147,19 @@ class DemoSeedIT extends IntegrationTest {
     }
 
     @Test
-    void demoProfileSeedsOneCollectorPerAssignedArea() {
+    void demoProfileSeedsCollectorsWithoutAreaAssignments() {
         assertThat(demoDb.queryForObject("select count(*) from users where role = 'COLLECTOR'", Integer.class)).isEqualTo(51);
-        assertThat(demoDb.queryForObject("select count(*) from collector_assignments", Integer.class)).isEqualTo(51);
-        // Ấp thêm mới (V40_2) có người thu thuap{số ấp} cùng công ty đang phụ trách.
+        // Ấp thêm mới (V40_2) có người thu thuap{số ấp}; phân tổ đã bỏ (V44), người thu thuộc công ty qua users.company_id.
+        assertThat(demoDb.queryForObject("select count(*) from users where username like 'thuap%'", Integer.class))
+                .isEqualTo(28);
         assertThat(demoDb.queryForObject("""
-                select count(*) from collector_assignments ca join users u on u.id = ca.collector_id
-                join area_assignments aa on aa.area_id = ca.area_id
-                where u.username like 'thuap%' and aa.company_id = ca.company_id and u.company_id = ca.company_id""",
-                Integer.class)).isEqualTo(28);
-        assertThat(demoDb.queryForObject("""
-                select u.username || ':' || a.code || ':' || c.code from collector_assignments ca
-                join users u on u.id = ca.collector_id join areas a on a.id = ca.area_id
-                join companies c on c.id = ca.company_id where u.username = 'thu07'""", String.class))
-                .isEqualTo("thu07:AP39:DV01");
+                select c.code from users u join companies c on c.id = u.company_id where u.username = 'thu07'""",
+                String.class)).isEqualTo("DV01");
+        assertThat(demoDb.queryForObject("select count(*) from information_schema.tables where table_name in"
+                + " ('collector_assignments', 'collection_schedules')", Integer.class)).isZero();
+        assertThat(demoDb.queryForObject("select count(*) from information_schema.columns where table_name = 'areas'"
+                + " and column_name in ('latitude', 'longitude')", Integer.class)).isZero();
         assertThat(demoDb.queryForObject("select count(*) from users where username = 'thu24'", Integer.class)).isZero();
-    }
-
-    @Test
-    void demoProfileSeedsCollectionSchedulesForEveryArea() {
-        assertThat(demoDb.queryForObject("""
-                select count(*) from areas a
-                where not exists (select 1 from collection_schedules s where s.area_id = a.id)""", Integer.class))
-                .isZero();
-        // Ấp 39 (DTH, tổ KV07 cũ) theo lịch prototype: thứ 3 – 5 – 7 buổi chiều, Chủ nhật đầu tháng rác cồng kềnh.
-        assertThat(demoDb.queryForList("""
-                select s.weekday || ':' || coalesce(s.week_of_month::text, '-') || ':' || to_char(s.start_time, 'HH24:MI')
-                       || ':' || s.waste_type
-                from collection_schedules s join areas a on a.id = s.area_id
-                where a.code = 'AP39' order by s.weekday""", String.class))
-                .containsExactly("2:-:17:00:HOUSEHOLD", "4:-:17:00:HOUSEHOLD", "6:-:17:00:HOUSEHOLD_RECYCLABLE",
-                        "7:1:08:00:BULKY");
     }
 
     @Test

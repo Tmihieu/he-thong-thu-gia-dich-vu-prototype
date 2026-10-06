@@ -29,12 +29,12 @@ public class SubjectReportService {
 
     static final String ENTITY = "ServiceSubject";
 
-    private final CollectorAssignmentService collectorAssignments;
+    private final CollectorWorkService collectorWork;
     private final NotificationService notifications;
     private final AuditService audit;
 
     public void report(Long chargeId, SubjectReportType type, String description, CurrentUser actor) {
-        Charge charge = collectorAssignments.myCharge(chargeId, actor);
+        Charge charge = collectorWork.myCharge(chargeId, actor);
         ServiceSubject subject = charge.getSubject();
         String text = description.trim();
         String areaCode = charge.getArea().getCode();

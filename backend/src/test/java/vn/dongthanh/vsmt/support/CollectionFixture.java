@@ -10,8 +10,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import vn.dongthanh.vsmt.billing.domain.ChargeScope;
 import vn.dongthanh.vsmt.billing.service.ChargeRequestService;
 import vn.dongthanh.vsmt.billing.service.ChargeRequestService.IssueCommand;
-import vn.dongthanh.vsmt.collection.domain.CollectorAssignment;
-import vn.dongthanh.vsmt.collection.domain.CollectorAssignmentRepository;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
 import vn.dongthanh.vsmt.masterdata.domain.AreaAssignment;
 import vn.dongthanh.vsmt.masterdata.domain.AreaAssignmentRepository;
@@ -45,7 +43,7 @@ import vn.dongthanh.vsmt.platform.security.JwtService;
 /**
  * Kịch bản thu dùng chung cho IT của collection/remittance (chạy trong transaction của test, dùng
  * {@link FixedClockConfig}): KV07, KV09 của DV01; KV12 của DV07; mỗi tổ 2 hộ HGĐ ≥ 3 người (80.000 đ/tháng);
- * người thu thu07 (KV07), thu09 (KV09) của DV01, thu12 (KV12) của DV07; kỳ 10/2026 đã phát hành phí ENV.
+ * người thu thu07, thu09 của DV01 (thu mọi hộ của công ty), thu12 của DV07; kỳ 10/2026 đã phát hành phí ENV.
  */
 @TestComponent
 public class CollectionFixture {
@@ -59,7 +57,6 @@ public class CollectionFixture {
     @Autowired FeeTypeRepository feeTypes;
     @Autowired ServiceSubjectRepository subjects;
     @Autowired ServiceContractRepository contracts;
-    @Autowired CollectorAssignmentRepository collectorAssignments;
     @Autowired ChargeRequestService chargeRequests;
     @Autowired UserRepository users;
     @Autowired JwtService jwt;
@@ -98,9 +95,6 @@ public class CollectionFixture {
         thu07 = users.save(User.create("thu07_fx", "Người thu 07", Role.COLLECTOR, dv01.getId(), "x"));
         thu09 = users.save(User.create("thu09_fx", "Người thu 09", Role.COLLECTOR, dv01.getId(), "x"));
         thu12 = users.save(User.create("thu12_fx", "Người thu 12", Role.COLLECTOR, dv07.getId(), "x"));
-        collectorAssignments.save(CollectorAssignment.create(thu07, kv07, dv01, LocalDate.of(2026, 9, 1), null, null));
-        collectorAssignments.save(CollectorAssignment.create(thu09, kv09, dv01, LocalDate.of(2026, 9, 1), null, null));
-        collectorAssignments.save(CollectorAssignment.create(thu12, kv12, dv07, LocalDate.of(2026, 9, 1), null, null));
 
         TariffVersion bg = TariffVersion.create("BG-FX", "QĐ thử", LocalDate.of(2026, 9, 1), null, TariffStatus.ACTIVE);
         // Phần thu gom = 0: công ty không cầm lại gì, "nộp đủ" = phải thu, để các IT thu/nộp không phải tính lại.

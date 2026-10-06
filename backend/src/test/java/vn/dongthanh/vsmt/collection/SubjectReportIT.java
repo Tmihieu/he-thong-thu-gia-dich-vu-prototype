@@ -69,11 +69,11 @@ class SubjectReportIT extends IntegrationTest {
     }
 
     @Test
-    void collectorOfAnotherAreaOrCompanyCannotSeeHistory() throws Exception {
+    void collectorOfAnotherCompanyCannotSeeHistory() throws Exception {
         long charge = fx.chargeId("DTH-H000001");
         pay(charge, 80_000, "p-1");
 
-        for (User other : new User[] {fx.thu09, fx.thu12}) {
+        for (User other : new User[] {fx.thu12}) {
             mvc.perform(get("/api/collection/charges/" + charge + "/history")
                             .header(HttpHeaders.AUTHORIZATION, fx.bearer(other)))
                     .andExpect(status().isNotFound())
@@ -111,13 +111,11 @@ class SubjectReportIT extends IntegrationTest {
     }
 
     @Test
-    void chargeOutsideAssignedAreaIs404AndOtherRolesAreForbidden() throws Exception {
+    void chargeOfAnotherCompanyIs404AndOtherRolesAreForbidden() throws Exception {
         long kv07Charge = fx.chargeId("DTH-H000001");
-        report(fx.bearer(fx.thu09), kv07Charge, "WRONG_INFO", "\"Sai số nhà\"")
+        report(fx.bearer(fx.thu12), kv07Charge, "WRONG_INFO", "\"Sai số nhà\"")
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("CHARGE_NOT_FOUND"));
-        report(fx.bearer(fx.thu12), kv07Charge, "WRONG_INFO", "\"Sai số nhà\"")
-                .andExpect(status().isNotFound());
         report(fx.bearer(fx.dv01Manager), kv07Charge, "WRONG_INFO", "\"Sai số nhà\"")
                 .andExpect(status().isForbidden());
         assertThat(notificationCount()).isZero();
