@@ -119,12 +119,16 @@ Chuẩn (UC-18 bỏ): không phân tổ; người đi thu thu được mọi h�
 | # | Vai trò | Thao tác | Kết quả mong đợi | Đạt |
 |---|---|---|---|---|
 | 4.39 | `canbo_xa` → Tiến độ thu / Đối soát | Kỳ 09/2026 (seed: DV01 phải nộp xã 24.212, đã nộp 200.000) | Hiện "Xã trả lại công ty 175.788 đ"; Đối soát hiện **Đang nộp** hoặc **Lệch** (xã còn phải trả) | |
-| 4.40 | `canbo_xa` → Khoản thu → Phiếu chi trả công ty → kỳ 09 → **Lập phiếu chi** DV01 | Số tiền 100.000, ngày hôm nay | Phiếu `PC-CT-0926-001`; **Bản in phiếu chi** có số tiền bằng chữ, lũy kế đã trả 100.000, xã còn phải trả 75.788; Tiến độ thu: "Xã trả lại công ty 175.788 đ, đã trả 100.000 đ, còn 75.788 đ" | |
+| 4.40 | `canbo_xa` → Khoản thu → Phiếu chi trả công ty → kỳ 09 → **Lập phiếu chi** DV01 | Số tiền 100.000, hình thức **Chuyển khoản**, số chứng từ `UNC-01`, ngày hôm nay | Phiếu `PC-CT-0926-001`; **Bản in phiếu chi** có số tiền bằng chữ, hình thức, chứng từ, lũy kế đã trả 100.000, xã còn phải trả 75.788; Tiến độ thu: "Xã trả lại công ty 175.788 đ, đã trả 100.000 đ, còn 75.788 đ" | |
 | 4.41 ✗ | `canbo_xa` | Lập phiếu chi DV01 số tiền 75.789 (lớn hơn xã còn phải trả) hoặc 0, hoặc ngày mai | Báo lỗi số tiền phải lớn hơn 0 và không vượt 75.788 đ; "Ngày trả không được sau hôm nay." | |
 | 4.42 | `canbo_xa` | Lập phiếu chi DV01 số 75.788 | Phiếu `PC-CT-0926-002`; xã còn phải trả 0; nhãn "Xã đã trả đủ"; Đối soát **Khớp**; nút Lập phiếu chi của DV01 bị khóa | |
 | 4.43 | `dv01` → Khu vực được giao → Phiếu thu xã lập | Xem mục Phiếu xã trả lại | Thấy hai phiếu chi của DV01, không thấy phiếu công ty khác; có thông báo "Xã đã lập phiếu chi trả …" ở chuông, bấm vào mở đúng màn | |
 | 4.44 ✗ | `dv01`, `admin`, người đi thu | Gọi `POST /api/remittance/payouts` | 403 (công ty, quản trị viên, người đi thu không lập được); `admin` không xem được danh sách | |
-| 4.45 | `lanhdao` / `admin` → Nhật ký | Xem phiếu chi | Lãnh đạo xem được phiếu chi nhưng không có nút lập; quản trị viên thấy dòng nhật ký `ISSUE_COMMUNE_PAYOUT` kèm trước/sau | |
+| 4.45 | `lanhdao` → menu **Phiếu chi trả** | Chọn kỳ 09/2026 | Thấy danh sách công ty xã phải trả, đã trả, còn phải trả và lịch sử phiếu; **không** có nút Lập phiếu chi. `admin` → Nhật ký thấy dòng `ISSUE_COMMUNE_PAYOUT` kèm trước/sau | |
+| 4.46 ✗ | `canbo_xa` → Đối soát → **Khóa kỳ** | Kỳ 09/2026 khi xã còn phải trả lại DV01 (chưa lập đủ phiếu chi), kể cả khi mọi công ty đã nộp đủ và kỳ đã hết hạn | Cảnh báo đỏ "Chưa khóa được kỳ … vì xã còn phải trả lại 1 công ty: DV01: …" (mã `PERIOD_COMMUNE_OWES`); lập đủ phiếu chi rồi khóa lại thì khóa được | |
+| 4.47 ✗ | `canbo_xa` → Phiếu chi trả công ty | Kỳ đã khóa: nút **Lập phiếu chi** bị khóa | Kỳ đã khóa thì không lập thêm phiếu chi (xã đã trả đủ trước khi khóa) | |
+| 4.48 | `dv01` → Phiếu thu xã lập → mục Phiếu xã trả lại → **Báo sai sót** một phiếu chi | Chọn loại, ghi mô tả → **Gửi báo sai sót** | Phiếu hiện "Đã báo sai sót · chờ xã kiểm tra"; `canbo_xa` có thông báo (UC-56) | |
+| 4.49 | `canbo_xa` → Khoản thu → Sai sót phiếu chi trả | **Xử lý** → ghi kết quả → **Đánh dấu đã xử lý** | Chuyển sang lọc **Đã xử lý**; phiếu chi gốc không bị sửa; `dv01` có thông báo kết quả (UC-57) | |
 
 ### 4e. Sai sót phiếu thu
 

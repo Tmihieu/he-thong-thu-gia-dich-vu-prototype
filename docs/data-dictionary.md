@@ -540,17 +540,20 @@ Người đi thu nộp tiền mặt cho công ty. Chuyển khoản vào tài kho
 | Công ty | `company_id` | `FK→Company` | Có | Xã | 1 | Demo | |
 | Kỳ thu | `period_id` | `FK→CollectionPeriod` | Có | Xã | 5 | Demo | 1 phiếu 1 kỳ; 1 kỳ nhiều phiếu |
 | Số tiền | `amount` | `money` | Có | Xã | 175788 | Demo | 0 < số tiền ≤ số xã còn phải trả (BR-REM-17) |
+| Hình thức trả | `method` | `enum ReceiptMethod` | Có | Xã | `TRANSFER` | Demo | `CASH` Tiền mặt · `TRANSFER` Chuyển khoản, như phiếu thu (V47) |
 | Ngày trả | `payout_date` | `date` | Có | Xã | 2026-10-15 | Demo | Không sau hôm nay |
+| Số chứng từ | `document_ref` | `text(50)` | Không | Xã | UNC-0925 | Demo | Mã giao dịch ngân hàng hoặc số phiếu tiền mặt (V47) |
 | Ghi chú | `note` | `text(500)` | Không | Xã | Trả đợt 1 | Demo | |
 
-Ngoài ra có trường hệ thống chung (§1.3). Phiếu không sửa, không hủy; không có trạng thái; chưa có báo sai sót. **Không lưu:** số tiền bằng chữ, lũy kế đã trả, số xã còn phải trả, tính khi xem/in từ sổ công ty–kỳ (`communePaid`, `communeOwed`).
+Ngoài ra có trường hệ thống chung (§1.3). Phiếu không sửa, không hủy; không có trạng thái; sai sót báo qua `receipt_issues.payout_id` (UC-56, UC-57). **Không lưu:** số tiền bằng chữ, lũy kế đã trả, số xã còn phải trả, tính khi xem/in từ sổ công ty–kỳ (`communePaid`, `communeOwed`).
 
 ### ReceiptIssue — Báo sai sót phiếu thu · `receipt_issues` · Phần A
 
 
 | Tên hiển thị (VI) | Tên kỹ thuật      | Kiểu                      | Bắt buộc     | Nguồn    | Ví dụ                                 | Mức  | Ghi chú                              |
 | ----------------- | ----------------- | ------------------------- | ------------ | -------- | ------------------------------------- | ---- | ------------------------------------ |
-| Phiếu thu         | `receipt_id`      | `FK→CompanyReceipt`       | Có           | Công ty  | 30                                    | Demo | Chỉ phiếu của công ty mình           |
+| Phiếu thu         | `receipt_id`      | `FK→CompanyReceipt`       | Có điều kiện | Công ty  | 30                                    | Demo | Phiếu thu; đúng một trong `receipt_id` / `payout_id`. Chỉ phiếu của công ty mình           |
+| Phiếu chi trả     | `payout_id`       | `FK→CommunePayout`        | Có điều kiện | Công ty  | 5                                     | Demo | Phiếu chi trả (V47, UC-56); đúng một trong `receipt_id` / `payout_id` |
 | Loại sai sót      | `issue_type`      | `enum ReceiptIssueType`   | Có           | Công ty  | `WRONG_AMOUNT`                        | Demo |                                      |
 | Số tiền đúng      | `correct_amount`  | `money`                   | Không        | Công ty  | 4500000                               | Demo | Nên nhập khi `WRONG_AMOUNT`          |
 | Mô tả             | `description`     | `text(1000)`              | Có           | Công ty  | Chuyển 4,5 triệu, phiếu ghi 4,2 triệu | Demo |                                      |
