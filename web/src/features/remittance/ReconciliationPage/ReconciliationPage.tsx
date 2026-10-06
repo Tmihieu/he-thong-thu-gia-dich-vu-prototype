@@ -16,7 +16,7 @@ import { PeriodTrend } from './PeriodTrend';
 
 /** Các cột số rộng bằng nhau; mọi ô căn giữa cả chiều ngang lẫn chiều dọc, kể cả ô hai dòng (đã nộp, đã trừ hoàn). */
 const centered = (cols: ColumnsType<LedgerRow>): ColumnsType<LedgerRow> =>
-  cols.map((c, i) => ({ ...c, align: 'center', width: i === 0 ? 200 : 140, onCell: () => ({ style: { verticalAlign: 'middle' } }) }));
+  cols.map((c, i) => ({ ...c, align: i === 0 ? 'left' : 'center', width: i === 0 ? 200 : 140, onCell: () => ({ style: { verticalAlign: 'middle' } }) }));
 
 function Gap({ gap }: { gap: number }) {
   if (gap === 0) return <MoneyText value={0} />;
