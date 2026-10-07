@@ -8,7 +8,7 @@ import { jsonResponse, mockApi, renderApp } from '../../../test/renderApp';
 const officer = { id: 2, username: 'canbo_xa', fullName: 'Nguyễn Thị Mẫu', role: 'COMMUNE_OFFICER', companyId: null };
 const draft = {
   id: 9, code: '2026-11', periodType: 'MONTH', label: 'Tháng 11/2026', startDate: '2026-11-01', endDate: '2026-11-30',
-  openDate: '2026-11-01', dueDate: '2026-12-10', tariffVersionId: 1, tariffVersionCode: 'BG-65-2026', status: 'DRAFT',
+  openDate: '2026-11-01', dueDate: '2026-11-25', settlementDueDate: '2026-12-05', tariffVersionId: 1, tariffVersionCode: 'BG-65-2026', status: 'DRAFT',
   lockedAt: null, note: null,
 };
 const preview = {
@@ -59,7 +59,7 @@ describe('Khoản thu · kỳ chờ mở', () => {
     expect(await within(drawer).findByText('211')).toBeInTheDocument();
     expect(within(drawer).getByText(/14\.394\.000/)).toBeInTheDocument();
     expect(within(drawer).getByText('Tổ chưa có công ty phụ trách: 9 hộ')).toBeInTheDocument();
-    expect(within(drawer).getByLabelText('Hạn nộp')).toHaveValue('10/12/2026');
+    expect(within(drawer).getByLabelText('Hạn dân đóng')).toHaveValue('25/11/2026');
     expect(bodyOf(fetchFn, '/api/billing/periods/9/draft-preview')).toEqual({});
 
     await userEvent.click(within(drawer).getByRole('button', { name: /Mở kỳ & phát hành 211 khoản/ }));

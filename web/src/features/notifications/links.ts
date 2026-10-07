@@ -11,13 +11,12 @@ function withId(path: string, key: string, params: Params) {
 
 /** `link.screen` do backend gửi → đường dẫn web. Thêm màn mới thì thêm vào đây. */
 const SCREENS: Record<string, (p: Params) => string> = {
-  'company.receipts': () => '/company/assigned?tab=receipts',
+  'company.settlements': () => '/company/assigned?tab=settlements',
+  // Nhắc nộp tiền vẫn gửi màn cũ company.receipts.
+  'company.receipts': () => '/company/assigned?tab=settlements',
   // Hộ được giao nằm dưới tab Tổng quan.
   'company.households': () => '/company/assigned?tab=overview',
   'commune.subjects': () => '/commune/subjects',
-  'remittance.receiptIssues': () => '/commune/charges?tab=receipt-issues',
-  'remittance.payoutIssues': () => '/commune/charges?tab=payout-issues',
-  'remittance.receipts': () => '/commune/charges?tab=receipts',
   'commune.periodDrafts': () => '/commune/charges?tab=requests',
   'commune.complaints': (p) => withId('/commune/complaints', 'complaintId', p),
   'company.complaints': (p) => withId('/company/complaints', 'complaintId', p),

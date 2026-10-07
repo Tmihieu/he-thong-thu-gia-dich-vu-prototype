@@ -7,19 +7,13 @@ export type LedgerRow = components['schemas']['LedgerRowDto'];
 export type AreaProgress = components['schemas']['AreaProgressDto'];
 export type HouseholdDebt = components['schemas']['HouseholdDebtDto'];
 export type HouseholdDebtPage = components['schemas']['HouseholdDebtPageDto'];
-export type Receipt = components['schemas']['ReceiptDto'];
-export type Payout = components['schemas']['PayoutDto'];
-export type PayoutIssue = components['schemas']['PayoutIssueDto'];
-export type ReceiptIssue = components['schemas']['IssueDto'];
+export type Settlement = components['schemas']['SettlementDto'];
 
 export const remittanceKeys = {
   ledger: ['remittance', 'ledger'] as const,
   areaProgress: ['remittance', 'area-progress'] as const,
   householdDebts: ['remittance', 'household-debts'] as const,
-  receipts: ['remittance', 'receipts'] as const,
-  payouts: ['remittance', 'payouts'] as const,
-  payoutIssues: ['remittance', 'payout-issues'] as const,
-  receiptIssues: ['remittance', 'receipt-issues'] as const,
+  settlements: ['remittance', 'settlements'] as const,
 };
 
 /** Sổ công ty–kỳ: nguồn số liệu duy nhất cho tiến độ, đối soát, màn công ty (T24). */
@@ -49,36 +43,12 @@ export function useAreaProgress(periodId: number | undefined) {
   });
 }
 
-/** Phiếu thu theo kỳ; công ty chỉ nhận phiếu của mình (backend lọc). */
-export function useReceipts(periodId: number | undefined, companyId?: number) {
+/** Phiếu quyết toán theo kỳ, mỗi công ty một phiếu; công ty chỉ nhận phiếu của mình (backend lọc). */
+export function useSettlements(periodId: number | undefined, companyId?: number) {
   return useQuery({
-    queryKey: [...remittanceKeys.receipts, periodId, companyId],
-    queryFn: () => api.get<Receipt[]>('/api/remittance/receipts', { params: { periodId, companyId } }),
+    queryKey: [...remittanceKeys.settlements, periodId, companyId],
+    queryFn: () => api.get<Settlement[]>('/api/remittance/settlements', { params: { periodId, companyId } }),
     enabled: periodId !== undefined,
-  });
-}
-
-/** Phiếu chi trả công ty (xã trả lại tiền, UC-55); công ty chỉ nhận phiếu của mình (backend lọc). */
-export function usePayouts(periodId: number | undefined, companyId?: number) {
-  return useQuery({
-    queryKey: [...remittanceKeys.payouts, periodId, companyId],
-    queryFn: () => api.get<Payout[]>('/api/remittance/payouts', { params: { periodId, companyId } }),
-    enabled: periodId !== undefined,
-  });
-}
-
-/** Sai sót phiếu chi trả (UC-56, UC-57); công ty chỉ nhận sai sót trên phiếu của mình. */
-export function usePayoutIssues(status?: PayoutIssue['status']) {
-  return useQuery({
-    queryKey: [...remittanceKeys.payoutIssues, status],
-    queryFn: () => api.get<PayoutIssue[]>('/api/remittance/payout-issues', { params: { status } }),
-  });
-}
-
-export function useReceiptIssues(status?: ReceiptIssue['status']) {
-  return useQuery({
-    queryKey: [...remittanceKeys.receiptIssues, status],
-    queryFn: () => api.get<ReceiptIssue[]>('/api/remittance/receipt-issues', { params: { status } }),
   });
 }
 

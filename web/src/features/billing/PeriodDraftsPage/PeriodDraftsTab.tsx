@@ -27,7 +27,7 @@ export function PeriodDraftsTab() {
     <div style={{ marginBottom: 24 }}>
       <Typography.Title level={5}>Kỳ chờ mở</Typography.Title>
       <Typography.Paragraph type="secondary">
-        Kỳ thu do quản trị tạo. Đặt ngày mở, hạn nộp, xem trước các khoản rồi mở kỳ để hộ dân nhận khoản thu.
+        Kỳ thu do quản trị tạo. Đặt ngày mở, hạn dân đóng, xem trước các khoản rồi mở kỳ để hộ dân nhận khoản thu.
       </Typography.Paragraph>
       <Table<Period>
         rowKey="id"
@@ -44,7 +44,8 @@ export function PeriodDraftsTab() {
               </>
             ),
           },
-          { title: 'Hạn công ty nộp', dataIndex: 'dueDate', render: (d: string) => <DateText value={d} /> },
+          { title: 'Hạn dân đóng', dataIndex: 'dueDate', render: (d: string) => <DateText value={d} /> },
+          { title: 'Hạn quyết toán', dataIndex: 'settlementDueDate', render: (d: string) => <DateText value={d} /> },
           { title: 'Biểu giá', dataIndex: 'tariffVersionCode' },
           {
             title: '',

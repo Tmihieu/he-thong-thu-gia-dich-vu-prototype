@@ -8,6 +8,7 @@ import {
   BankOutlined,
   CommentOutlined,
   EnvironmentOutlined,
+  FileDoneOutlined,
   FileSearchOutlined,
   FundOutlined,
   HomeOutlined,
@@ -55,6 +56,7 @@ export const MENU: Record<Role, MenuEntry[]> = {
     { path: 'companies', label: 'Công ty', icon: BankOutlined },
     { path: 'progress', label: 'Tiến độ thu', icon: FundOutlined },
     { path: 'reconciliation', label: 'Đối soát', icon: AuditOutlined },
+    { path: 'settlements', label: 'Phiếu quyết toán', icon: FileDoneOutlined },
     { path: 'transfers', label: 'Chuyển khoản chờ đối chiếu', icon: SwapOutlined },
     { path: 'complaints', label: 'Khiếu nại', icon: CommentOutlined },
     { path: 'market', label: 'Chợ cộng đồng', icon: ShopOutlined },
@@ -82,7 +84,7 @@ export const MENU: Record<Role, MenuEntry[]> = {
     { path: 'report', label: 'Báo cáo tổng hợp', icon: BarChartOutlined },
     { path: 'progress', label: 'Tiến độ thu', icon: FundOutlined },
     { path: 'reconciliation', label: 'Đối soát', icon: AuditOutlined },
-    { path: 'payouts', label: 'Phiếu chi trả', icon: AuditOutlined },
+    { path: 'settlements', label: 'Phiếu quyết toán', icon: FileDoneOutlined },
   ],
 };
 

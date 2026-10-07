@@ -52,7 +52,7 @@ public class PeriodAutoService {
     private final NotificationService notifications;
     private final Clock clock;
 
-    public record RuleCommand(boolean enabled, PeriodType periodType, int createDay, int remitDueDays) {
+    public record RuleCommand(boolean enabled, PeriodType periodType, int createDay) {
     }
 
     /** Kết quả một lần chạy: {@code created} null kèm lý do khi chưa tạo kỳ nào. */
@@ -79,8 +79,7 @@ public class PeriodAutoService {
         actor.requireRole(Role.ADMIN);
         PeriodAutoRule rule = loadRule();
         Map<String, Object> before = snapshot(rule);
-        rule.update(cmd.enabled(), cmd.periodType(), cmd.createDay(), cmd.remitDueDays(),
-                OffsetDateTime.now(clock), actor.id());
+        rule.update(cmd.enabled(), cmd.periodType(), cmd.createDay(), OffsetDateTime.now(clock), actor.id());
         audit.record(actor, "UPDATE_PERIOD_RULE", RULE_ENTITY, PeriodAutoRule.ID, before, snapshot(rule));
         return rule;
     }
@@ -124,7 +123,7 @@ public class PeriodAutoService {
         }
         Target t = due.get();
         // Dựng kỳ tạm để sinh mã trước khi tra biểu giá (cùng cách PeriodService.open).
-        CollectionPeriod probe = CollectionPeriod.draft(t.type(), t.year(), t.number(), t.end(), null);
+        CollectionPeriod probe = CollectionPeriod.draft(t.type(), t.year(), t.number(), null, null);
         if (periods.existsByCode(probe.getCode())) {
             return new DraftRun(null, "Kỳ " + probe.getCode() + " đã có, không tạo thêm.");
         }
@@ -134,29 +133,28 @@ public class PeriodAutoService {
         } catch (BusinessRuleException e) {
             return new DraftRun(null, "Chưa tạo được " + probe.getLabel() + ": " + e.getMessage());
         }
-        CollectionPeriod draft = saveDraft(t.type(), t.year(), t.number(), t.end(), rule, tariff, actor);
+        CollectionPeriod draft = saveDraft(t.type(), t.year(), t.number(), tariff, actor);
         return new DraftRun(draft, "Đã tạo kỳ dự thảo " + draft.getLabel() + ".");
     }
 
     /**
-     * Quản trị tạo kỳ dự thảo bằng tay chỉ chọn loại kỳ, năm, tháng/quý; ngày mở và hạn công ty nộp xã do cán bộ xã
-     * đặt khi mở kỳ (mặc định: ngày đầu kỳ, cuối kỳ cộng số ngày nộp xã theo quy tắc). Báo cán bộ xã như kỳ tự tạo.
+     * Quản trị tạo kỳ dự thảo bằng tay chỉ chọn loại kỳ, năm, tháng/quý; ngày mở và hạn dân đóng do cán bộ xã đặt
+     * khi mở kỳ (mặc định: ngày đầu kỳ, ngày 25 tháng cuối kỳ; hạn quyết toán là ngày 5 tháng sau kỳ). Báo cán bộ xã như kỳ tự tạo.
      */
     public CollectionPeriod createDraft(PeriodType type, int year, int number, CurrentUser actor) {
         actor.requireRole(Role.ADMIN);
         // Dựng kỳ tạm để kiểm tra số tháng/quý, sinh mã và ngày cuối kỳ trước khi tra biểu giá.
-        CollectionPeriod probe = CollectionPeriod.draft(type, year, number, LocalDate.of(year, 12, 31), null);
+        CollectionPeriod probe = CollectionPeriod.draft(type, year, number, null, null);
         if (periods.existsByCode(probe.getCode())) {
             throw new ConflictException("PERIOD_ALREADY_EXISTS", "Kỳ " + probe.getCode() + " đã được tạo trước đó.");
         }
         TariffVersion tariff = tariffs.activeVersionOn(probe.getStartDate());
-        return saveDraft(type, year, number, probe.getEndDate(), loadRule(), tariff, actor);
+        return saveDraft(type, year, number, tariff, actor);
     }
 
-    private CollectionPeriod saveDraft(PeriodType type, int year, int number, LocalDate periodEnd, PeriodAutoRule rule,
+    private CollectionPeriod saveDraft(PeriodType type, int year, int number,
             TariffVersion tariff, CurrentUser actor) {
-        CollectionPeriod draft = periods.save(CollectionPeriod.draft(type, year, number,
-                periodEnd.withDayOfMonth(25), tariff));
+        CollectionPeriod draft = periods.save(CollectionPeriod.draft(type, year, number, null, tariff));
         Map<String, Object> after = new LinkedHashMap<>();
         after.put("code", draft.getCode());
         after.put("type", draft.getPeriodType());
@@ -219,7 +217,6 @@ public class PeriodAutoService {
     }
 
     private static Map<String, Object> snapshot(PeriodAutoRule r) {
-        return Map.of("enabled", r.isEnabled(), "periodType", r.getPeriodType(), "createDay", r.getCreateDay(),
-                "remitDueDays", r.getRemitDueDays());
+        return Map.of("enabled", r.isEnabled(), "periodType", r.getPeriodType(), "createDay", r.getCreateDay());
     }
 }

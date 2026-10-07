@@ -21,8 +21,8 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import vn.dongthanh.vsmt.remittance.domain.ReceiptMethod;
-import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService;
-import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService.IssueReceiptCommand;
+import vn.dongthanh.vsmt.remittance.service.SettlementService;
+import vn.dongthanh.vsmt.remittance.service.SettlementService.IssueSettlementCommand;
 import vn.dongthanh.vsmt.support.CollectionFixture;
 import vn.dongthanh.vsmt.support.FixedClockConfig;
 import vn.dongthanh.vsmt.support.IntegrationTest;
@@ -36,15 +36,17 @@ class ReminderIT extends IntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired CollectionFixture fx;
     @Autowired MutableClock clock;
-    @Autowired CompanyReceiptService receipts;
+    @Autowired SettlementService settlements;
 
     @BeforeEach
     void seed() {
         fx.build();
-        // Đã thu đủ tiền mặt cả hai công ty (phải nộp xã tính trên đã thu); DV07 nộp đủ kỳ 10, DV01 chưa nộp.
+        // Đã thu đủ tiền mặt cả hai công ty (phải nộp xã tính trên đã thu); DV07 quyết toán kỳ 10 ngày 01/11, DV01 chưa.
         fx.collectAllCash();
-        receipts.issue(new IssueReceiptCommand(fx.dv07.getId(), fx.october.getId(), 160_000, ReceiptMethod.CASH, null,
+        clock.set(Instant.parse("2026-11-01T03:00:00Z"));
+        settlements.issue(new IssueSettlementCommand(fx.dv07.getId(), fx.october.getId(), ReceiptMethod.CASH, null,
                 null, null, null), fx.actor(fx.officer));
+        clock.reset();
     }
 
     @AfterEach
@@ -53,7 +55,9 @@ class ReminderIT extends IntegrationTest {
     }
 
     @Test
-    void remindingBeforeTheDueDateIs422() throws Exception {
+    void remindingBeforeTheSettlementDueDateIs422() throws Exception {
+        // Đúng hạn quyết toán 05/11 vẫn chưa quá hạn.
+        clock.set(Instant.parse("2026-11-05T03:00:00Z"));
         remind(fx.dv01.getId())
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("NO_OVERDUE_DEBT"));
@@ -61,12 +65,12 @@ class ReminderIT extends IntegrationTest {
 
     @Test
     void overdueCompanyIsRemindedAndSeesItOnTheBell() throws Exception {
-        clock.set(Instant.parse("2026-11-03T03:00:00Z"));
+        clock.set(Instant.parse("2026-11-06T03:00:00Z"));
 
         mvc.perform(get("/api/remittance/reminders/draft").param("companyId", fx.dv01.getId().toString())
                         .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer)))
                 .andExpect(jsonPath("$.amount").value(320_000))
-                .andExpect(jsonPath("$.dueDate").value("2026-11-08"))
+                .andExpect(jsonPath("$.dueDate").value("2026-11-11"))
                 .andExpect(jsonPath("$.debts[0].periodLabel").value("Tháng 10/2026"));
 
         remind(fx.dv01.getId())

@@ -80,7 +80,7 @@ class PeriodPublishServiceTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(env, "id", 1L);
-        draft = CollectionPeriod.draft(PeriodType.MONTH, 2026, 11, LocalDate.of(2026, 12, 10), bg65);
+        draft = CollectionPeriod.draft(PeriodType.MONTH, 2026, 11, LocalDate.of(2026, 11, 25), bg65);
         ReflectionTestUtils.setField(draft, "id", 77L);
         when(periods.findByIdForUpdate(77L)).thenAnswer(inv -> Optional.of(draft));
         when(periods.findByIdWithTariff(77L)).thenAnswer(inv -> Optional.of(draft));
@@ -208,10 +208,10 @@ class PeriodPublishServiceTest {
 
     @Test
     void officerSetsOpenDateAndCompanyDueDateBeforePublishing() {
-        service.publish(77L, LocalDate.of(2026, 11, 5), LocalDate.of(2026, 12, 20), null, null, officer);
+        service.publish(77L, LocalDate.of(2026, 11, 5), LocalDate.of(2026, 11, 28), null, null, officer);
 
         assertThat(draft.getOpenDate()).isEqualTo(LocalDate.of(2026, 11, 5));
-        assertThat(draft.getDueDate()).isEqualTo(LocalDate.of(2026, 12, 20));
+        assertThat(draft.getDueDate()).isEqualTo(LocalDate.of(2026, 11, 28));
     }
 
     @Test

@@ -82,7 +82,7 @@ export interface paths {
         };
         /** Quy tắc tự tạo kỳ thu dự thảo (quản trị) */
         get: operations["get_1"];
-        /** Sửa quy tắc tự tạo kỳ thu: bật/tắt, chu kỳ, ngày tạo, số ngày hạn (quản trị) */
+        /** Sửa quy tắc tự tạo kỳ thu: bật/tắt, chu kỳ, ngày tạo (quản trị) */
         put: operations["update_2"];
         post?: never;
         delete?: never;
@@ -231,6 +231,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/remittance/settlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Phiếu quyết toán theo kỳ/công ty; công ty chỉ thấy phiếu của mình */
+        get: operations["list"];
+        put?: never;
+        /** Lập phiếu quyết toán (cán bộ xã) sau hạn dân đóng; số tiền hệ thống tính từ sổ công ty–kỳ. Mỗi công ty mỗi kỳ một phiếu (409 nếu đã có) */
+        post: operations["issue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/remittance/reminders": {
         parameters: {
             query?: never;
@@ -239,63 +257,10 @@ export interface paths {
             cookie?: never;
         };
         /** Lịch sử nhắc nộp; công ty chỉ thấy của mình; settled = đã hết nợ các kỳ được nhắc */
-        get: operations["list"];
+        get: operations["list_1"];
         put?: never;
         /** Gửi nhắc nộp (cán bộ xã); công ty không có nợ quá hạn → 422 */
         post: operations["create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/remittance/receipts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Phiếu thu theo kỳ/công ty, kèm lũy kế đã nộp tới từng phiếu; công ty chỉ thấy phiếu của mình */
-        get: operations["list_1"];
-        put?: never;
-        /** Lập phiếu thu khi công ty nộp tiền (cán bộ xã); số tiền ≤ còn phải nộp của kỳ */
-        post: operations["issue"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/remittance/receipt-issues": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Sai sót phiếu thu; công ty chỉ thấy sai sót trên phiếu của mình */
-        get: operations["list_2"];
-        put?: never;
-        /** Công ty báo sai sót trên phiếu thu của mình; thông báo tới cán bộ xã */
-        post: operations["report"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/remittance/receipt-issues/{id}/resolve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Xã đánh dấu đã xử lý kèm ghi chú kết quả (không sửa phiếu, G6); thông báo về công ty */
-        post: operations["resolve"];
         delete?: never;
         options?: never;
         head?: never;
@@ -313,59 +278,6 @@ export interface paths {
         put?: never;
         /** Khóa kỳ (cán bộ xã); 422 nêu lý do khi còn công ty chưa nộp đủ phải nộp xã, hoặc kỳ còn khoản hộ chưa đóng mà chưa đến hạn nộp. Khoản hộ chưa đóng khi khóa thành công nợ của hộ */
         post: operations["lock"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/remittance/payouts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Phiếu chi trả công ty theo kỳ/công ty, kèm lũy kế xã đã trả; công ty chỉ thấy phiếu của mình */
-        get: operations["list_3"];
-        put?: never;
-        /** Lập phiếu chi trả công ty khi xã trả lại tiền (cán bộ xã); số tiền ≤ số xã còn phải trả của kỳ */
-        post: operations["issue_1"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/remittance/payout-issues": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Sai sót phiếu chi trả; công ty chỉ thấy sai sót trên phiếu của mình, lãnh đạo chỉ xem */
-        get: operations["list_4"];
-        put?: never;
-        /** Công ty báo sai sót trên phiếu chi trả xã lập cho mình; thông báo tới cán bộ xã */
-        post: operations["report_1"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/remittance/payout-issues/{id}/resolve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Xã đánh dấu đã xử lý kèm ghi chú kết quả (không sửa phiếu); thông báo về công ty */
-        post: operations["resolve_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -554,7 +466,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Ban hành dự thảo (quản trị); bản đang áp dụng kết thúc ngay trước ngày hiệu lực mới */
-        post: operations["issue_2"];
+        post: operations["issue_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -758,7 +670,7 @@ export interface paths {
             cookie?: never;
         };
         /** Danh sách kỳ thu đã mở, mới nhất trước (không gồm kỳ dự thảo); có date thì chỉ các kỳ chứa ngày đó */
-        get: operations["list_5"];
+        get: operations["list_2"];
         put?: never;
         /** Tạo kỳ thu tháng/quý dự thảo (quản trị) và báo cán bộ xã; cán bộ xã đặt ngày mở, hạn nộp rồi mở kỳ */
         post: operations["open"];
@@ -881,7 +793,7 @@ export interface paths {
             cookie?: never;
         };
         /** Đề nghị (xã, lãnh đạo, quản trị); lọc trạng thái / loại; mới nhất trước */
-        get: operations["list_6"];
+        get: operations["list_3"];
         put?: never;
         /** Cán bộ xã lập đề nghị hoàn (khoản đã thu) hoặc xóa nợ (khoản chưa thu); thông báo lãnh đạo */
         post: operations["create_3"];
@@ -933,7 +845,7 @@ export interface paths {
             cookie?: never;
         };
         /** Danh sách khiếu nại, mới nhất trước; công ty chỉ thấy khiếu nại đã chuyển cho mình (G12) */
-        get: operations["list_7"];
+        get: operations["list_4"];
         put?: never;
         /** Cán bộ xã ghi nhận khiếu nại qua điện thoại / trực tiếp */
         post: operations["create_4"];
@@ -1022,6 +934,23 @@ export interface paths {
         put?: never;
         /** Ghi nhận hộ đã đóng tiền mặt (đúng số cần đóng); chuyển khoản chỉ ghi tự động khi ngân hàng báo về qua VietQR. Gửi lại cùng clientRequestId trả kết quả cũ (200) */
         post: operations["pay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/collection/charges/{id}/simulate-transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Demo: giả lập ngân hàng báo hộ đã chuyển đúng số còn phải đóng của khoản */
+        post: operations["simulate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1141,7 +1070,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Báo cáo bài vi phạm; đã báo cáo (chưa xử lý) thì không ghi thêm */
-        post: operations["report_2"];
+        post: operations["report"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1190,7 +1119,7 @@ export interface paths {
             cookie?: never;
         };
         /** Phản ánh của hộ, mới nhất trước */
-        get: operations["list_8"];
+        get: operations["list_5"];
         put?: never;
         /** Gửi phản ánh (kênh APP); vị trí để trống thì lấy địa chỉ hộ */
         post: operations["submit"];
@@ -1337,31 +1266,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/remittance/reminders/draft": {
+    "/api/remittance/settlements/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Bản nháp nhắc nộp: các kỳ quá hạn còn nợ, tổng tiền, hạn mới (+5 ngày), nội dung soạn sẵn */
-        get: operations["draft"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/remittance/receipts/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Một phiếu thu (để in: số tiền bằng chữ, lũy kế, còn phải nộp) */
+        /** Một phiếu quyết toán (để in: số tiền bằng chữ) */
         get: operations["get_3"];
         put?: never;
         post?: never;
@@ -1371,15 +1283,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/remittance/payouts/{id}": {
+    "/api/remittance/reminders/draft": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Một phiếu chi trả công ty (để in: số tiền bằng chữ, lũy kế, xã còn phải trả) */
-        get: operations["get_4"];
+        /** Bản nháp nhắc nộp: các kỳ quá hạn còn nợ, tổng tiền, hạn mới (+5 ngày), nội dung soạn sẵn */
+        get: operations["draft"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1447,7 +1359,7 @@ export interface paths {
             cookie?: never;
         };
         /** Danh sách tài khoản người đi thu của công ty mình (quản lý công ty) */
-        get: operations["list_9"];
+        get: operations["list_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1498,7 +1410,7 @@ export interface paths {
             cookie?: never;
         };
         /** Thông báo của người đang đăng nhập (theo vai trò, công ty, cá nhân), mới nhất trước */
-        get: operations["list_10"];
+        get: operations["list_7"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1617,7 +1529,7 @@ export interface paths {
             cookie?: never;
         };
         /** Chi tiết kỳ thu */
-        get: operations["get_5"];
+        get: operations["get_4"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1821,7 +1733,7 @@ export interface paths {
             cookie?: never;
         };
         /** Mọi bài (kể cả ẩn, chờ duyệt, bị gỡ); reported=true chỉ bài có báo cáo chưa xử lý */
-        get: operations["list_11"];
+        get: operations["list_8"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1872,7 +1784,7 @@ export interface paths {
             cookie?: never;
         };
         /** Chi tiết khiếu nại kèm timeline */
-        get: operations["get_6"];
+        get: operations["get_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2127,7 +2039,7 @@ export interface paths {
             cookie?: never;
         };
         /** Thông báo của tài khoản người dân, mới nhất trước; lọc theo loại (Phản ánh / Giao dịch) */
-        get: operations["list_12"];
+        get: operations["list_9"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2280,7 +2192,7 @@ export interface paths {
             cookie?: never;
         };
         /** Chi tiết phản ánh kèm timeline (của hộ khác trả 404) */
-        get: operations["get_7"];
+        get: operations["get_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2623,12 +2535,6 @@ export interface components {
              * @example 25
              */
             createDay: number;
-            /**
-             * Format: int32
-             * @description Hạn công ty nộp xã = ngày cuối kỳ + số ngày này
-             * @example 10
-             */
-            remitDueDays: number;
         };
         PeriodRuleDto: {
             enabled: boolean;
@@ -2636,8 +2542,6 @@ export interface components {
             periodType: "MONTH" | "QUARTER";
             /** Format: int32 */
             createDay: number;
-            /** Format: int32 */
-            remitDueDays: number;
             /** Format: date-time */
             updatedAt: string;
         };
@@ -2794,6 +2698,67 @@ export interface components {
         BlockStateDto: {
             blocked: boolean;
         };
+        IssueSettlementRequest: {
+            /** Format: int64 */
+            companyId: number;
+            /** Format: int64 */
+            periodId: number;
+            /**
+             * @description Bắt buộc khi chênh lệch khác 0
+             * @enum {string}
+             */
+            method?: "CASH" | "TRANSFER";
+            /**
+             * Format: date
+             * @description Để trống thì lấy hôm nay
+             */
+            settleDate?: string;
+            /** @description Người đại diện công ty; để trống thì lấy người đầu mối công ty */
+            representativeName?: string;
+            documentRef?: string;
+            note?: string;
+        };
+        SettlementDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example QT-0926-001 */
+            code: string;
+            /** Format: int64 */
+            companyId: number;
+            companyCode: string;
+            companyName: string;
+            /** Format: int64 */
+            periodId: number;
+            periodCode: string;
+            periodLabel: string;
+            /**
+             * Format: int64
+             * @description Công ty phải nộp xã: vận chuyển + xử lý trong tiền mặt
+             */
+            companyOwes: number;
+            /**
+             * Format: int64
+             * @description Xã phải trả công ty: thu gom trong QR
+             */
+            communeOwes: number;
+            /**
+             * Format: int64
+             * @description Chênh lệch = công ty phải nộp − xã phải trả; dương công ty nộp xã, âm xã trả công ty
+             */
+            amount: number;
+            /** @description Số tiền chuyển (trị tuyệt đối của chênh lệch) bằng chữ */
+            amountInWords: string;
+            /**
+             * @description Null khi chênh lệch bằng 0
+             * @enum {string|null}
+             */
+            method: "CASH" | "TRANSFER" | null;
+            /** Format: date */
+            settleDate: string;
+            representativeName: string;
+            documentRef: string | null;
+            note: string | null;
+        };
         CreateReminderRequest: {
             /** Format: int64 */
             companyId: number;
@@ -2826,108 +2791,6 @@ export interface components {
             /** @description Đã hết nợ các kỳ được nhắc */
             settled: boolean;
         };
-        IssueReceiptRequest: {
-            /** Format: int64 */
-            companyId: number;
-            /** Format: int64 */
-            periodId: number;
-            /** Format: int64 */
-            amount: number;
-            /** @enum {string} */
-            method: "CASH" | "TRANSFER";
-            /**
-             * Format: date
-             * @description Để trống thì lấy hôm nay
-             */
-            receiptDate?: string;
-            /** @description Để trống thì lấy người đầu mối công ty */
-            payerName?: string;
-            documentRef?: string;
-            note?: string;
-        };
-        ReceiptDto: {
-            /** Format: int64 */
-            id: number;
-            /** @example PT-CT-1026-001 */
-            code: string;
-            /** Format: int64 */
-            companyId: number;
-            companyCode: string;
-            companyName: string;
-            /** Format: int64 */
-            periodId: number;
-            periodCode: string;
-            periodLabel: string;
-            /** Format: int64 */
-            amount: number;
-            /** @description Số tiền bằng chữ (R29) */
-            amountInWords: string;
-            /** @enum {string} */
-            method: "CASH" | "TRANSFER";
-            /** Format: date */
-            receiptDate: string;
-            payerName: string;
-            documentRef: string | null;
-            note: string | null;
-            /** @enum {string} */
-            status: "RECORDED";
-            /**
-             * Format: int64
-             * @description Lũy kế đã nộp tới phiếu này (R30)
-             */
-            cumulativePaid: number;
-            /**
-             * Format: int64
-             * @description Phải thu của công ty trong kỳ
-             */
-            periodDue: number;
-            /**
-             * Format: int64
-             * @description Còn phải nộp xã sau phiếu này = phải nộp xã − lũy kế đã nộp
-             */
-            remainingAfter: number;
-        };
-        ReportIssueRequest: {
-            /** Format: int64 */
-            receiptId: number;
-            /** @enum {string} */
-            issueType: "WRONG_AMOUNT" | "WRONG_PERIOD" | "WRONG_DOCUMENT" | "NOT_OURS";
-            /**
-             * Format: int64
-             * @description Nên nhập khi sai số tiền
-             */
-            correctAmount?: number;
-            description: string;
-        };
-        IssueDto: {
-            /** Format: int64 */
-            id: number;
-            /** Format: int64 */
-            receiptId: number;
-            receiptCode: string;
-            /** Format: int64 */
-            receiptAmount: number;
-            /** Format: int64 */
-            companyId: number;
-            companyCode: string;
-            companyName: string;
-            periodLabel: string;
-            /** @enum {string} */
-            issueType: "WRONG_AMOUNT" | "WRONG_PERIOD" | "WRONG_DOCUMENT" | "NOT_OURS";
-            /** Format: int64 */
-            correctAmount: number | null;
-            description: string;
-            /** @enum {string} */
-            status: "PENDING" | "RESOLVED";
-            /** Format: date-time */
-            reportedAt: string;
-            /** Format: date-time */
-            resolvedAt: string | null;
-            resolutionNote: string | null;
-        };
-        ResolveIssueRequest: {
-            resolutionNote: string;
-        };
         PeriodDto: {
             /** Format: int64 */
             id: number;
@@ -2943,8 +2806,16 @@ export interface components {
             endDate: string;
             /** Format: date */
             openDate: string;
-            /** Format: date */
+            /**
+             * Format: date
+             * @description Hạn dân đóng
+             */
             dueDate: string;
+            /**
+             * Format: date
+             * @description Hạn quyết toán: ngày 5 tháng sau kỳ
+             */
+            settlementDueDate: string;
             /** Format: int64 */
             tariffVersionId: number;
             /** @example BG-65-2026 */
@@ -2954,100 +2825,6 @@ export interface components {
             /** Format: date-time */
             lockedAt: string | null;
             note: string | null;
-        };
-        IssuePayoutRequest: {
-            /** Format: int64 */
-            companyId: number;
-            /** Format: int64 */
-            periodId: number;
-            /** Format: int64 */
-            amount: number;
-            /** @enum {string} */
-            method: "CASH" | "TRANSFER";
-            /**
-             * Format: date
-             * @description Để trống thì lấy hôm nay
-             */
-            payoutDate?: string;
-            documentRef?: string;
-            note?: string;
-        };
-        PayoutDto: {
-            /** Format: int64 */
-            id: number;
-            /** @example PC-CT-1026-001 */
-            code: string;
-            /** Format: int64 */
-            companyId: number;
-            companyCode: string;
-            companyName: string;
-            /** Format: int64 */
-            periodId: number;
-            periodCode: string;
-            periodLabel: string;
-            /** Format: int64 */
-            amount: number;
-            /** @description Số tiền bằng chữ */
-            amountInWords: string;
-            /** @enum {string} */
-            method: "CASH" | "TRANSFER";
-            /** Format: date */
-            payoutDate: string;
-            documentRef: string | null;
-            note: string | null;
-            /**
-             * Format: int64
-             * @description Lũy kế xã đã trả tới phiếu này
-             */
-            cumulativePaid: number;
-            /**
-             * Format: int64
-             * @description Số xã phải trả lại công ty của kỳ (= −còn phải nộp)
-             */
-            periodOwed: number;
-            /**
-             * Format: int64
-             * @description Xã còn phải trả sau phiếu này = số xã phải trả − lũy kế đã trả
-             */
-            remainingAfter: number;
-        };
-        ReportPayoutIssueRequest: {
-            /** Format: int64 */
-            payoutId: number;
-            /** @enum {string} */
-            issueType: "WRONG_AMOUNT" | "WRONG_PERIOD" | "WRONG_DOCUMENT" | "NOT_OURS";
-            /**
-             * Format: int64
-             * @description Nên nhập khi sai số tiền
-             */
-            correctAmount?: number;
-            description: string;
-        };
-        PayoutIssueDto: {
-            /** Format: int64 */
-            id: number;
-            /** Format: int64 */
-            payoutId: number;
-            payoutCode: string;
-            /** Format: int64 */
-            payoutAmount: number;
-            /** Format: int64 */
-            companyId: number;
-            companyCode: string;
-            companyName: string;
-            periodLabel: string;
-            /** @enum {string} */
-            issueType: "WRONG_AMOUNT" | "WRONG_PERIOD" | "WRONG_DOCUMENT" | "NOT_OURS";
-            /** Format: int64 */
-            correctAmount: number | null;
-            description: string;
-            /** @enum {string} */
-            status: "PENDING" | "RESOLVED";
-            /** Format: date-time */
-            reportedAt: string;
-            /** Format: date-time */
-            resolvedAt: string | null;
-            resolutionNote: string | null;
         };
         CreateUserRequest: {
             /** @example thu07b */
@@ -3721,9 +3498,9 @@ export interface components {
             openDate?: string;
             /**
              * Format: date
-             * @description Hạn nộp (hạn duy nhất của kỳ); trống thì giữ hạn của dự thảo
+             * @description Hạn dân đóng; trống thì giữ hạn của dự thảo (ngày 25 tháng cuối kỳ)
              */
-            companyDueDate?: string;
+            dueDate?: string;
             /**
              * Format: int64
              * @description Loại phí; trống thì phí vệ sinh môi trường
@@ -3788,9 +3565,9 @@ export interface components {
             openDate?: string;
             /**
              * Format: date
-             * @description Hạn nộp (hạn duy nhất của kỳ); trống thì giữ hạn của dự thảo
+             * @description Hạn dân đóng; trống thì giữ hạn của dự thảo (ngày 25 tháng cuối kỳ)
              */
-            companyDueDate?: string;
+            dueDate?: string;
             /**
              * Format: int64
              * @description Loại phí; trống thì phí vệ sinh môi trường
@@ -3913,11 +3690,15 @@ export interface components {
             cashCollected: number;
             /**
              * Format: int64
-             * @description Đã nộp về xã
+             * @description Đã nộp về xã: chênh lệch dương của phiếu quyết toán
              */
             received: number;
-            /** Format: int64 */
-            receiptCount: number;
+            /**
+             * Format: int64
+             * @description Phiếu quyết toán của công ty trong kỳ
+             */
+            settlementId: number | null;
+            settlementCode: string | null;
             /**
              * Format: int64
              * @description Còn phải nộp = phải nộp xã − đã nộp; âm là xã trả lại công ty phần chênh
@@ -3949,7 +3730,7 @@ export interface components {
             /** @description Tỷ lệ đã nộp dưới 45% phải nộp xã; phải nộp xã = 0 thì không gắn cờ */
             lowRemittedRate: boolean;
             /** @enum {string} */
-            progress: "NO_COMPANY" | "PAID_IN_FULL" | "OVERDUE" | "PARTIAL" | "NOT_PAID";
+            progress: "NO_COMPANY" | "PAID_IN_FULL" | "OVERDUE" | "NOT_PAID";
             /** @enum {string} */
             reconciliation: "MATCHED" | "PENDING" | "MISMATCH";
             /**
@@ -3969,7 +3750,7 @@ export interface components {
             debtCollected: number;
             /**
              * Format: int64
-             * @description Xã đã trả lại công ty trong kỳ (Σ phiếu chi trả công ty)
+             * @description Xã đã trả công ty trong kỳ: chênh lệch âm của phiếu quyết toán
              */
             communePaid: number;
             /**
@@ -4022,7 +3803,7 @@ export interface components {
              * @description Xã được hưởng = vận chuyển + phí xử lý, trong QR và trong tiền mặt
              */
             entitled: number;
-            /** @description Đã khớp: công ty không còn phải nộp và xã không còn phải trả */
+            /** @description Đã quyết toán, hoặc không có số liệu phải quyết toán */
             settled: boolean;
             /**
              * Format: int64
@@ -5111,6 +4892,53 @@ export interface operations {
     list: {
         parameters: {
             query?: {
+                periodId?: number;
+                companyId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SettlementDto"][];
+                };
+            };
+        };
+    };
+    issue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IssueSettlementRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SettlementDto"];
+                };
+            };
+        };
+    };
+    list_1: {
+        parameters: {
+            query?: {
                 companyId?: number;
             };
             header?: never;
@@ -5154,125 +4982,6 @@ export interface operations {
             };
         };
     };
-    list_1: {
-        parameters: {
-            query?: {
-                periodId?: number;
-                companyId?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ReceiptDto"][];
-                };
-            };
-        };
-    };
-    issue: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["IssueReceiptRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ReceiptDto"];
-                };
-            };
-        };
-    };
-    list_2: {
-        parameters: {
-            query?: {
-                status?: "PENDING" | "RESOLVED";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["IssueDto"][];
-                };
-            };
-        };
-    };
-    report: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ReportIssueRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["IssueDto"];
-                };
-            };
-        };
-    };
-    resolve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ResolveIssueRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["IssueDto"];
-                };
-            };
-        };
-    };
     lock: {
         parameters: {
             query?: never;
@@ -5291,125 +5000,6 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PeriodDto"];
-                };
-            };
-        };
-    };
-    list_3: {
-        parameters: {
-            query?: {
-                periodId?: number;
-                companyId?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["PayoutDto"][];
-                };
-            };
-        };
-    };
-    issue_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["IssuePayoutRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["PayoutDto"];
-                };
-            };
-        };
-    };
-    list_4: {
-        parameters: {
-            query?: {
-                status?: "PENDING" | "RESOLVED";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["PayoutIssueDto"][];
-                };
-            };
-        };
-    };
-    report_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ReportPayoutIssueRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["PayoutIssueDto"];
-                };
-            };
-        };
-    };
-    resolve_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ResolveIssueRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["PayoutIssueDto"];
                 };
             };
         };
@@ -5686,7 +5276,7 @@ export interface operations {
             };
         };
     };
-    issue_2: {
+    issue_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -6032,7 +5622,7 @@ export interface operations {
             };
         };
     };
-    list_5: {
+    list_2: {
         parameters: {
             query?: {
                 date?: string;
@@ -6284,7 +5874,7 @@ export interface operations {
             };
         };
     };
-    list_6: {
+    list_3: {
         parameters: {
             query?: {
                 status?: "PENDING" | "APPROVED" | "REJECTED";
@@ -6383,7 +5973,7 @@ export interface operations {
             };
         };
     };
-    list_7: {
+    list_4: {
         parameters: {
             query?: {
                 status?: "NEW" | "PROCESSING" | "RESOLVED";
@@ -6553,6 +6143,26 @@ export interface operations {
             };
         };
     };
+    simulate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     handovers: {
         parameters: {
             query?: {
@@ -6718,7 +6328,7 @@ export interface operations {
             };
         };
     };
-    report_2: {
+    report: {
         parameters: {
             query?: never;
             header?: never;
@@ -6795,7 +6405,7 @@ export interface operations {
             };
         };
     };
-    list_8: {
+    list_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -7055,6 +6665,28 @@ export interface operations {
             };
         };
     };
+    get_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SettlementDto"];
+                };
+            };
+        };
+    };
     draft: {
         parameters: {
             query: {
@@ -7073,50 +6705,6 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["DraftDto"];
-                };
-            };
-        };
-    };
-    get_3: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ReceiptDto"];
-                };
-            };
-        };
-    };
-    get_4: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["PayoutDto"];
                 };
             };
         };
@@ -7191,7 +6779,7 @@ export interface operations {
             };
         };
     };
-    list_9: {
+    list_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -7258,7 +6846,7 @@ export interface operations {
             };
         };
     };
-    list_10: {
+    list_7: {
         parameters: {
             query?: {
                 unreadOnly?: boolean;
@@ -7407,7 +6995,7 @@ export interface operations {
             };
         };
     };
-    get_5: {
+    get_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -7670,7 +7258,7 @@ export interface operations {
             };
         };
     };
-    list_11: {
+    list_8: {
         parameters: {
             query?: {
                 moderation?: "PUBLISHED" | "PENDING_REVIEW" | "REJECTED";
@@ -7742,7 +7330,7 @@ export interface operations {
             };
         };
     };
-    get_6: {
+    get_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -8077,7 +7665,7 @@ export interface operations {
             };
         };
     };
-    list_12: {
+    list_9: {
         parameters: {
             query?: {
                 unreadOnly?: boolean;
@@ -8279,7 +7867,7 @@ export interface operations {
             };
         };
     };
-    get_7: {
+    get_6: {
         parameters: {
             query?: never;
             header?: never;

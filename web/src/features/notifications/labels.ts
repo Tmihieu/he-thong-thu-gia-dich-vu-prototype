@@ -3,7 +3,7 @@ import type { NotificationKind } from './api';
 export const NOTIFICATION_KIND_LABELS: Record<NotificationKind, string> = {
   REMINDER: 'Nhắc nộp',
   COMPLAINT: 'Khiếu nại',
-  RECEIPT: 'Phiếu thu',
+  RECEIPT: 'Phiếu quyết toán',
   INFO: 'Thông tin',
   TRANSACTION: 'Giao dịch',
 };

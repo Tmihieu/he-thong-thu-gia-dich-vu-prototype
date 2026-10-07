@@ -1,7 +1,6 @@
 package vn.dongthanh.vsmt.remittance;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -30,16 +29,16 @@ import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository;
 import vn.dongthanh.vsmt.masterdata.domain.PeriodType;
 import vn.dongthanh.vsmt.platform.domain.User;
 import vn.dongthanh.vsmt.remittance.domain.ReceiptMethod;
-import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService;
-import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService.IssueReceiptCommand;
+import vn.dongthanh.vsmt.remittance.service.SettlementService;
+import vn.dongthanh.vsmt.remittance.service.SettlementService.IssueSettlementCommand;
 import vn.dongthanh.vsmt.support.CollectionFixture;
 import vn.dongthanh.vsmt.support.FixedClockConfig;
 import vn.dongthanh.vsmt.support.IntegrationTest;
 import vn.dongthanh.vsmt.support.MutableClock;
 
 /**
- * Khóa kỳ (UC-39, góp ý BA 05/10). Kỳ 10/2026 có hạn nộp 31/10/2026; "hôm nay" mặc định 01/10/2026. Điều kiện khóa: mọi
- * công ty đã nộp đủ phải nộp xã (tính trên đã thu) VÀ (kỳ đã thu đủ mọi khoản HOẶC đã đến hạn nộp).
+ * Khóa kỳ (UC-39, 07/10). Kỳ 10/2026 hạn dân đóng 31/10/2026, hạn quyết toán 05/11; "hôm nay" mặc định 01/10/2026.
+ * Điều kiện khóa: không còn chuyển khoản chưa xác định và mọi công ty có số liệu trong kỳ đã có phiếu quyết toán.
  */
 @Transactional
 @Import({FixedClockConfig.class, CollectionFixture.class})
@@ -48,7 +47,7 @@ class PeriodLockIT extends IntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
     @Autowired CollectionFixture fx;
-    @Autowired CompanyReceiptService receipts;
+    @Autowired SettlementService settlements;
     @Autowired CollectionPeriodRepository periods;
     @Autowired MutableClock clock;
     @Autowired CollectionService collection;
@@ -65,26 +64,32 @@ class PeriodLockIT extends IntegrationTest {
     }
 
     @Test
-    void lockingWithDebtIs422ListingCompaniesAndAmounts() throws Exception {
+    void lockingBeforeEveryCompanySettledIs422ListingCompanies() throws Exception {
         fx.collectAllCash();
         lock(fx.officer)
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("PERIOD_HAS_DEBT"))
-                .andExpect(jsonPath("$.message").value(allOf(containsString("DV01: 320.000 đ"),
-                        containsString("DV07: 160.000 đ"))));
+                .andExpect(jsonPath("$.code").value("PERIOD_NOT_SETTLED"))
+                .andExpect(jsonPath("$.message").value("Chưa khóa được kỳ 2026-10 vì còn 2 công ty chưa quyết toán: DV01, DV07."));
         lock(fx.admin).andExpect(status().isForbidden());
+
+        // Một công ty quyết toán vẫn chặn vì công ty kia.
+        afterHouseholdDue();
+        settle(fx.dv01.getId());
+        lock(fx.officer).andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.message").value(containsString("1 công ty chưa quyết toán: DV07")));
     }
 
     @Test
     void afterLockingNothingCanChangeThePeriod() throws Exception {
         fx.collectAllCash();
-        remit(fx.dv01.getId(), 320_000);
-        remit(fx.dv07.getId(), 160_000);
+        afterHouseholdDue();
+        settle(fx.dv01.getId());
+        settle(fx.dv07.getId());
         lock(fx.officer)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("LOCKED"))
                 .andExpect(jsonPath("$.lockedAt").isNotEmpty());
-        assertThat(jdbc.queryForObject("select count(*) from audit_logs where action = 'LOCK_PERIOD'", Integer.class))
+        assertThat(jdbc.queryForObject("select count(*) from audit_logs where action = 'LOCK_PERIOD' and entity_id = ?", Integer.class, fx.october.getCode()))
                 .isEqualTo(1);
 
         String officer = fx.bearer(fx.officer);
@@ -97,8 +102,8 @@ class PeriodLockIT extends IntegrationTest {
                 {"chargeId":%d,"amount":80000,"method":"CASH","clientRequestId":"after-lock"}"""
                 .formatted(fx.chargeId("DTH-H000001")))
                 .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("NO_COLLECTING_PERIOD"));
-        post("/api/remittance/receipts", officer, """
-                {"companyId":%d,"periodId":%d,"amount":1000,"method":"CASH"}"""
+        post("/api/remittance/settlements", officer, """
+                {"companyId":%d,"periodId":%d,"method":"CASH"}"""
                 .formatted(fx.dv01.getId(), fx.october.getId()))
                 .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("PERIOD_LOCKED"));
         lock(fx.officer).andExpect(status().isUnprocessableEntity())
@@ -106,21 +111,8 @@ class PeriodLockIT extends IntegrationTest {
     }
 
     @Test
-    void uncollectedChargesBlockLockingBeforeTheDueDateEvenWhenCompaniesPaidInFull() throws Exception {
-        // Còn 1 hộ (DTH-H000006) chưa đóng, chưa đến hạn nộp 31/10: dù hai công ty đã nộp đủ phần đã thu vẫn không khóa được.
-        collectAllButOneAndRemit();
-        lock(fx.officer)
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("PERIOD_NOT_DUE"))
-                .andExpect(jsonPath("$.message").value(allOf(containsString("còn 1 khoản hộ chưa đóng"),
-                        containsString("chưa đến hạn nộp (31/10/2026)"))));
-        assertThat(periodStatus()).isEqualTo("COLLECTING");
-    }
-
-    @Test
-    void onTheDueDateUncollectedChargesDoNotBlockAndBecomeHouseholdDebtPaidIntoTheNextPeriod() throws Exception {
-        collectAllButOneAndRemit();
-        clock.set(Instant.parse("2026-10-31T03:00:00Z"));
+    void uncollectedChargesDoNotBlockAndBecomeHouseholdDebtPaidIntoTheNextPeriod() throws Exception {
+        collectAllButOneAndSettle();
         lock(fx.officer).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("LOCKED"));
 
         // Công nợ của hộ: khoản Chưa thu của kỳ đã khóa. Chưa có kỳ đang thu thì chưa nộp được.
@@ -138,7 +130,7 @@ class PeriodLockIT extends IntegrationTest {
         assertThat(jdbc.queryForObject("select ledger_period_id from payments where charge_id = ?", Long.class, debtCharge))
                 .isEqualTo(november.getId());
 
-        // Kỳ 10 (đã khóa): đã thu, phải nộp xã, đã nộp không đổi (DV07: thu 80.000, nộp 80.000).
+        // Kỳ 10 (đã khóa): đã thu, phải nộp xã, đã nộp không đổi (DV07: thu 80.000, quyết toán nộp 80.000).
         ledger(fx.officer, fx.october.getId())
                 .andExpect(jsonPath("$[?(@.companyCode == 'DV07')].collected").value(contains(80_000)))
                 .andExpect(jsonPath("$[?(@.companyCode == 'DV07')].payable").value(contains(80_000)))
@@ -150,15 +142,7 @@ class PeriodLockIT extends IntegrationTest {
                 .andExpect(jsonPath("$[?(@.companyCode == 'DV07')].cashCollected").value(contains(80_000)))
                 .andExpect(jsonPath("$[?(@.companyCode == 'DV07')].payable").value(contains(80_000)))
                 .andExpect(jsonPath("$[?(@.companyCode == 'DV07')].remaining").value(contains(80_000)));
-        post("/api/remittance/receipts", fx.bearer(fx.officer), """
-                {"companyId":%d,"periodId":%d,"amount":80000,"method":"CASH"}"""
-                .formatted(fx.dv07.getId(), november.getId())).andExpect(status().isCreated());
 
-        // Kỳ đã khóa vẫn chặn sửa khoản và phiếu thu cũ.
-        post("/api/remittance/receipts", fx.bearer(fx.officer), """
-                {"companyId":%d,"periodId":%d,"amount":1000,"method":"CASH"}"""
-                .formatted(fx.dv07.getId(), fx.october.getId()))
-                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("PERIOD_LOCKED"));
         post("/api/billing/charge-requests", fx.bearer(fx.officer), """
                 {"periodId":%d,"feeTypeId":%d,"scopeType":"ALL"}"""
                 .formatted(fx.october.getId(), fx.env.getId()))
@@ -166,36 +150,22 @@ class PeriodLockIT extends IntegrationTest {
     }
 
     @Test
-    void companyDebtStillBlocksLockingAfterTheDueDate() throws Exception {
-        fx.collectAllCash();
-        clock.set(Instant.parse("2026-11-02T03:00:00Z"));
-        // Hết hạn nộp và đã thu đủ, nhưng hai công ty chưa nộp: vẫn chặn.
-        lock(fx.officer)
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("PERIOD_HAS_DEBT"));
-    }
-
-    @Test
-    void communeOwingACompanyBlocksLockingUntilItHasPaidInFull() throws Exception {
-        // DV01 có 2 hộ chuyển khoản 160.000 vào tài khoản xã, không thu tiền mặt: phí thu gom của số đã thu (114.000) vượt tiền
-        // mặt (0), phải nộp xã âm (xã trả lại công ty) nên không còn nợ xã, không chặn khóa kỳ khi đã đến hạn nộp.
+    void negativeDifferenceAlsoNeedsASettlementBeforeLocking() throws Exception {
+        // DV01 có 2 hộ chuyển khoản 160.000 vào tài khoản xã, không thu tiền mặt: chênh lệch −114.000 (xã trả công ty).
         jdbc.update("update tariff_rates set collection_fee = 57000, transport_fee = 23000 where tariff_group = 'HH_3_PLUS'");
         collectionTransfer("DTH-H000001", "t-1");
         collectionTransfer("DTH-H000002", "t-2");
-        clock.set(Instant.parse("2026-10-31T03:00:00Z"));
+        afterHouseholdDue();
         ledger(fx.officer, fx.october.getId())
                 .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].payable").value(contains(-114_000)))
-                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].remaining").value(contains(-114_000)));
-        // Xã còn phải trả lại DV01 114.000 thì chặn khóa kỳ, nêu rõ lý do; trả đủ rồi mới khóa được (UC-39, UC-55).
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].communeOwed").value(contains(114_000)));
         lock(fx.officer).andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("PERIOD_COMMUNE_OWES"))
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("DV01: 114.000 đ")));
-        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/remittance/payouts")
-                        .header(org.springframework.http.HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer))
-                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
-                        .content("{\"companyId\":%d,\"periodId\":%d,\"amount\":114000,\"method\":\"TRANSFER\"}"
-                                .formatted(fx.dv01.getId(), fx.october.getId())))
-                .andExpect(status().isCreated());
+                .andExpect(jsonPath("$.code").value("PERIOD_NOT_SETTLED"));
+        settle(fx.dv01.getId());
+        settle(fx.dv07.getId());
+        ledger(fx.officer, fx.october.getId())
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].communePaid").value(contains(114_000)))
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].communeOwed").value(contains(0)));
         lock(fx.officer).andExpect(status().isOk());
     }
 
@@ -203,20 +173,22 @@ class PeriodLockIT extends IntegrationTest {
         collection.recordBankTransfer(fx.chargeId(subject), 80_000, "FT-" + key, key);
     }
 
-    private void collectAllButOneAndRemit() {
+    /** Thu tiền mặt 5 hộ (trừ DTH-H000006), qua hạn dân đóng rồi hai công ty quyết toán: DV01 nộp 320.000, DV07 80.000. */
+    private void collectAllButOneAndSettle() {
         fx.collectCash("DTH-H000001", "DTH-H000002", "DTH-H000003", "DTH-H000004", "DTH-H000005");
-        remit(fx.dv01.getId(), 320_000);
-        remit(fx.dv07.getId(), 80_000);
+        afterHouseholdDue();
+        settle(fx.dv01.getId());
+        settle(fx.dv07.getId());
     }
 
-    private void remit(Long companyId, long amount) {
-        receipts.issue(new IssueReceiptCommand(companyId, fx.october.getId(), amount, ReceiptMethod.TRANSFER,
-                null, null, null, null), fx.actor(fx.officer));
+    /** 01/11/2026: qua hạn dân đóng 31/10. */
+    private void afterHouseholdDue() {
+        clock.set(Instant.parse("2026-11-01T03:00:00Z"));
     }
 
-    private String periodStatus() {
-        return jdbc.queryForObject("select status from collection_periods where id = ?", String.class,
-                fx.october.getId());
+    private void settle(Long companyId) {
+        settlements.issue(new IssueSettlementCommand(companyId, fx.october.getId(), ReceiptMethod.TRANSFER, null, null,
+                null, null), fx.actor(fx.officer));
     }
 
     private ResultActions pay(long chargeId, String requestId) throws Exception {

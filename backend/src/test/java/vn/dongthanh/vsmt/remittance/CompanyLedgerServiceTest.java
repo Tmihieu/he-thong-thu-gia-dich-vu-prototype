@@ -10,8 +10,8 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +25,9 @@ import vn.dongthanh.vsmt.masterdata.domain.CompanyRepository;
 import vn.dongthanh.vsmt.masterdata.domain.PeriodType;
 import vn.dongthanh.vsmt.masterdata.domain.TariffStatus;
 import vn.dongthanh.vsmt.masterdata.domain.TariffVersion;
+import vn.dongthanh.vsmt.remittance.domain.ReceiptMethod;
+import vn.dongthanh.vsmt.remittance.domain.Settlement;
+import vn.dongthanh.vsmt.remittance.domain.SettlementRepository;
 import vn.dongthanh.vsmt.remittance.service.AreaProgressService.AreaProgress;
 import vn.dongthanh.vsmt.remittance.service.CompanyLedgerService;
 import vn.dongthanh.vsmt.remittance.service.CompanyLedgerService.LedgerRow;
@@ -32,13 +35,16 @@ import vn.dongthanh.vsmt.remittance.service.LedgerQueries;
 import vn.dongthanh.vsmt.remittance.service.LedgerQueries.CompanyPeriodAmount;
 import vn.dongthanh.vsmt.remittance.service.LedgerStatus.Progress;
 import vn.dongthanh.vsmt.remittance.service.LedgerStatus.Reconciliation;
-import vn.dongthanh.vsmt.remittance.service.RemittedTotals;
 
-/** Công thức sổ công ty–kỳ (R6–R14, góp ý BA 05/10: phải nộp xã tính trên đã thu) và mỗi nhánh trạng thái. */
+/**
+ * Công thức sổ công ty–kỳ (R6–R14, góp ý BA 05/10: phải nộp xã tính trên đã thu), phiếu quyết toán (07/10) và mỗi nhánh
+ * trạng thái. Hạn quyết toán của kỳ 10 là 05/11.
+ */
 class CompanyLedgerServiceTest {
 
     final LedgerQueries queries = mock(LedgerQueries.class);
-    final RemittedTotals remitted = mock(RemittedTotals.class);
+    final SettlementRepository settlementRepo = mock(SettlementRepository.class);
+    final List<Settlement> settlements = new ArrayList<>();
     final CollectionPeriodRepository periods = mock(CollectionPeriodRepository.class);
     final CompanyRepository companies = mock(CompanyRepository.class);
 
@@ -50,7 +56,7 @@ class CompanyLedgerServiceTest {
 
     CompanyLedgerService service(String today) {
         Clock clock = Clock.fixed(Instant.parse(today + "T05:00:00Z"), ZoneId.of("Asia/Ho_Chi_Minh"));
-        return new CompanyLedgerService(queries, remitted, periods, companies, clock);
+        return new CompanyLedgerService(queries, settlementRepo, periods, companies, clock);
     }
 
     @BeforeEach
@@ -58,8 +64,11 @@ class CompanyLedgerServiceTest {
         when(periods.findById(9L)).thenReturn(Optional.of(sept));
         when(periods.findById(10L)).thenReturn(Optional.of(oct));
         when(companies.findAllById(any())).thenReturn(List.of(dv01, dv03));
-        when(remitted.receivedByCompany(anyLong())).thenReturn(Map.of());
-        when(remitted.receivedByCompanyAndPeriod()).thenReturn(List.of());
+        when(settlementRepo.findByPeriodId(anyLong())).thenAnswer(i -> settlements.stream()
+                .filter(x -> x.getPeriod().getId().equals(i.getArgument(0))).toList());
+        when(settlementRepo.findAllWithPeriod()).thenAnswer(i -> List.copyOf(settlements));
+        when(settlementRepo.search(any(), any())).thenAnswer(i -> settlements.stream()
+                .filter(x -> x.getCompany().getId().equals(i.getArgument(1))).toList());
     }
 
     void due(long periodId, long companyId, long amount, long count) {
@@ -77,8 +86,20 @@ class CompanyLedgerServiceTest {
         when(queries.retainedByCompany(periodId)).thenReturn(List.of(new LedgerQueries.CompanyAmount(companyId, amount, 0)));
     }
 
-    void received(long periodId, long companyId, long amount) {
-        when(remitted.receivedByCompany(periodId)).thenReturn(Map.of(companyId, new RemittedTotals.Received(amount, 1)));
+    /** Phiếu quyết toán của công ty ở kỳ với chênh lệch {@code amount} (dương công ty nộp, âm xã trả); thay phiếu cũ nếu có. */
+    void settle(long periodId, long companyId, long amount) {
+        CollectionPeriod p = periodId == 9L ? sept : oct;
+        Company c = companyId == 1L ? dv01 : dv03;
+        settlements.removeIf(x -> x.getPeriod() == p && x.getCompany() == c);
+        Settlement x = Settlement.builder().code("QT-" + periodId + "-" + companyId).company(c).period(p)
+                .companyOwes(Math.max(amount, 0)).communeOwes(Math.max(-amount, 0)).method(ReceiptMethod.TRANSFER)
+                .settleDate(LocalDate.of(2026, 11, 1)).representativeName("A").build();
+        ReflectionTestUtils.setField(x, "id", periodId * 100 + companyId);
+        settlements.add(x);
+    }
+
+    void unsettle() {
+        settlements.clear();
     }
 
     @Test
@@ -86,7 +107,7 @@ class CompanyLedgerServiceTest {
         when(queries.dueByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 1_600_000, 20),
                 new LedgerQueries.CompanyAmount(3L, 800_000, 10)));
         collect(10L, 1L, 1_000_000, 200_000);
-        received(10L, 1L, 700_000);
+        settle(10L, 1L, 700_000);
 
         List<LedgerRow> rows = service("2026-10-15").ledger(10L);
 
@@ -99,7 +120,8 @@ class CompanyLedgerServiceTest {
         // Phải nộp xã tính trên TIỀN MẶT đã thu (chuyển khoản vào tài khoản xã, công ty không cầm), không phải phải thu.
         assertThat(r.payable()).isEqualTo(1_000_000);
         assertThat(r.received()).isEqualTo(700_000);
-        assertThat(r.receiptCount()).isEqualTo(1);
+        assertThat(r.settlementCode()).isEqualTo("QT-10-1");
+        assertThat(rows.get(1).settlementId()).isNull();
         assertThat(r.remaining()).isEqualTo(300_000);
         assertThat(r.gap()).isEqualTo(-300_000);
         assertThat(r.collectionRate()).isEqualTo(75.0);
@@ -150,14 +172,14 @@ class CompanyLedgerServiceTest {
         // Công ty thu tiền mặt 800.000 nhưng mới nộp 359.999 / 800.000 = 44,9999% (hiện "45,0"): cờ công ty bật theo đã nộp.
         due(10L, 1L, 1_000_000, 10);
         collect(10L, 1L, 800_000, 0);
-        received(10L, 1L, 359_999);
+        settle(10L, 1L, 359_999);
         LedgerRow row = service("2026-10-15").row(1L, 10L);
         assertThat(row.collectionRate()).isEqualTo(80.0);
         assertThat(row.lowCollectionRate()).isFalse();
         assertThat(row.remittedRate()).isEqualTo(45.0);
         assertThat(row.lowRemittedRate()).isTrue();
 
-        received(10L, 1L, 360_000);
+        settle(10L, 1L, 360_000);
         assertThat(service("2026-10-15").row(1L, 10L).lowRemittedRate()).isFalse();
         collect(10L, 1L, 359_999, 0);
         assertThat(service("2026-10-15").row(1L, 10L).lowCollectionRate()).isTrue();
@@ -174,7 +196,7 @@ class CompanyLedgerServiceTest {
         due(10L, 1L, 1_000_000, 10);
         collect(10L, 1L, 1_000_000, 0);
         retained(10L, 1L, 100_000);
-        received(10L, 1L, 900_000);
+        settle(10L, 1L, 900_000);
         LedgerRow r = service("2026-10-15").row(1L, 10L);
 
         assertThat(r.retained()).isEqualTo(100_000);
@@ -184,8 +206,8 @@ class CompanyLedgerServiceTest {
         assertThat(r.reconciliation()).isEqualTo(Reconciliation.MATCHED);
         assertThat(r.gap()).isZero();
 
-        // Mới nộp 450.000: còn phải nộp 450.000, tỷ lệ nộp = 450.000 / 900.000 = 50%.
-        received(10L, 1L, 450_000);
+        // Phiếu ghi 450.000: còn phải nộp 450.000, tỷ lệ nộp = 450.000 / 900.000 = 50%.
+        settle(10L, 1L, 450_000);
         LedgerRow half = service("2026-10-15").row(1L, 10L);
         assertThat(half.remaining()).isEqualTo(450_000);
         assertThat(half.remittedRate()).isEqualTo(50.0);
@@ -206,24 +228,21 @@ class CompanyLedgerServiceTest {
         assertThat(r.payable()).isEqualTo(-228_000);
         assertThat(r.remaining()).isEqualTo(-228_000);
         assertThat(r.gap()).isEqualTo(228_000);
-        assertThat(r.progress()).isEqualTo(Progress.PAID_IN_FULL);
-        // Xã chưa trả lại: còn nợ công ty 228.000, đối soát chưa Khớp (UC-55).
+        // Chưa quyết toán: xã còn nợ công ty 228.000, đối soát chưa Khớp.
+        assertThat(r.progress()).isEqualTo(Progress.NOT_PAID);
         assertThat(r.communePaid()).isZero();
         assertThat(r.communeOwed()).isEqualTo(228_000);
         assertThat(r.reconciliation()).isEqualTo(Reconciliation.PENDING);
         assertThat(r.lowRemittedRate()).isFalse();
-        assertThat(service("2026-10-15").remaining(1L, 10L)).isEqualTo(-228_000);
-        // Xã trả 100.000 rồi 128.000: còn phải trả giảm dần, đủ thì Khớp; còn phải nộp vẫn âm.
-        when(remitted.paidBackByCompany(10L)).thenReturn(Map.of(1L, 100_000L));
-        LedgerRow part = service("2026-10-15").row(1L, 10L);
-        assertThat(part.communeOwed()).isEqualTo(128_000);
-        assertThat(part.reconciliation()).isEqualTo(Reconciliation.PENDING);
-        when(remitted.paidBackByCompany(10L)).thenReturn(Map.of(1L, 228_000L));
+        // Phiếu quyết toán chênh lệch −228.000: xã đã trả, Khớp; còn phải nộp vẫn âm.
+        settle(10L, 1L, -228_000);
         LedgerRow full = service("2026-10-15").row(1L, 10L);
+        assertThat(full.communePaid()).isEqualTo(228_000);
         assertThat(full.communeOwed()).isZero();
         assertThat(full.remaining()).isEqualTo(-228_000);
         assertThat(full.reconciliation()).isEqualTo(Reconciliation.MATCHED);
-        assertThat(service("2026-10-15").companiesWithDebt(10L)).isEmpty();
+        assertThat(full.progress()).isEqualTo(Progress.PAID_IN_FULL);
+        assertThat(service("2026-10-15").unsettled(10L)).isEmpty();
     }
 
     @Test
@@ -233,14 +252,12 @@ class CompanyLedgerServiceTest {
         due(10L, 1L, 1_000_000, 10);
         collect(10L, 1L, 600_000, 400_000);
         retained(10L, 1L, 228_000);
-        received(10L, 1L, 300_000);
         LedgerRow r = service("2026-10-15").row(1L, 10L);
 
         assertThat(r.payable()).isEqualTo(372_000);
-        assertThat(r.remaining()).isEqualTo(72_000);
-        assertThat(r.gap()).isEqualTo(-72_000);
-        assertThat(r.remittedRate()).isEqualTo(80.6);
-        assertThat(r.progress()).isEqualTo(Progress.PARTIAL);
+        assertThat(r.remaining()).isEqualTo(372_000);
+        assertThat(r.gap()).isEqualTo(-372_000);
+        assertThat(r.progress()).isEqualTo(Progress.NOT_PAID);
     }
 
     @Test
@@ -266,37 +283,36 @@ class CompanyLedgerServiceTest {
         // Kỳ 9 công ty phải nộp xã 900.000 (tính trên đã thu): nộp 900.000 thì hết nợ, nộp 800.000 thì nợ 100.000.
         when(queries.payableByCompanyAndPeriodBefore(any())).thenReturn(List.of(new CompanyPeriodAmount(1L, 9L, 900_000)));
         when(periods.findAllById(any())).thenReturn(List.of(sept));
-        when(remitted.receivedByCompanyAndPeriod()).thenReturn(List.of(new CompanyPeriodAmount(1L, 9L, 900_000)));
+        settle(9L, 1L, 900_000);
         assertThat(service("2026-10-15").overdueDebtsOf(1L)).isEmpty();
 
-        when(remitted.receivedByCompanyAndPeriod()).thenReturn(List.of(new CompanyPeriodAmount(1L, 9L, 800_000)));
-        assertThat(service("2026-10-15").overdueDebtsOf(1L)).singleElement().satisfies(d -> assertThat(d.remaining()).isEqualTo(100_000));
+        // Chưa quyết toán kỳ 9 (qua hạn 05/10): nợ cả 900.000.
+        unsettle();
+        assertThat(service("2026-10-15").overdueDebtsOf(1L)).singleElement().satisfies(d -> assertThat(d.remaining()).isEqualTo(900_000));
 
         // Kỳ 9 xã phải trả lại công ty (phải nộp âm): không phải nợ.
         when(queries.payableByCompanyAndPeriodBefore(any())).thenReturn(List.of(new CompanyPeriodAmount(1L, 9L, -50_000)));
-        when(remitted.receivedByCompanyAndPeriod()).thenReturn(List.of());
         assertThat(service("2026-10-15").overdueDebtsOf(1L)).isEmpty();
     }
 
     @Test
     void progressStatusBranches() {
-        // Chưa nộp: đã thu tiền mặt 800.000, chưa có phiếu thu, chưa quá hạn.
+        // Chưa quyết toán, chưa tới hạn quyết toán (05/11, đúng ngày hạn vẫn trong hạn).
         due(10L, 1L, 800_000, 10);
         collect(10L, 1L, 800_000, 0);
         assertThat(service("2026-10-15").row(1L, 10L).progress()).isEqualTo(Progress.NOT_PAID);
+        assertThat(service("2026-11-05").row(1L, 10L).overdue()).isFalse();
 
-        // Nộp một phần.
-        received(10L, 1L, 300_000);
-        assertThat(service("2026-10-15").row(1L, 10L).progress()).isEqualTo(Progress.PARTIAL);
-
-        // Quá hạn nộp: hết hạn kỳ mà còn phải nộp.
-        LedgerRow late = service("2026-11-02").row(1L, 10L);
+        // Quá hạn quyết toán.
+        LedgerRow late = service("2026-11-06").row(1L, 10L);
         assertThat(late.progress()).isEqualTo(Progress.OVERDUE);
         assertThat(late.overdue()).isTrue();
 
-        // Đã nộp đủ.
-        when(remitted.receivedByCompany(10L)).thenReturn(Map.of(1L, new RemittedTotals.Received(800_000, 2)));
-        assertThat(service("2026-11-02").row(1L, 10L).progress()).isEqualTo(Progress.PAID_IN_FULL);
+        // Đã quyết toán (kể cả trễ).
+        settle(10L, 1L, 800_000);
+        LedgerRow done = service("2026-11-06").row(1L, 10L);
+        assertThat(done.progress()).isEqualTo(Progress.PAID_IN_FULL);
+        assertThat(done.overdue()).isFalse();
     }
 
     @Test
@@ -305,7 +321,7 @@ class CompanyLedgerServiceTest {
         collect(10L, 1L, 800_000, 0); // kỳ này còn phải nộp nên mới xét nợ kỳ trước làm tiến độ quá hạn
         when(queries.payableByCompanyAndPeriodBefore(any())).thenReturn(List.of(
                 new CompanyPeriodAmount(1L, 9L, 500_000), new CompanyPeriodAmount(3L, 9L, 400_000)));
-        when(remitted.receivedByCompanyAndPeriod()).thenReturn(List.of(new CompanyPeriodAmount(1L, 9L, 200_000)));
+        settle(9L, 1L, 200_000);
 
         LedgerRow r = service("2026-10-15").row(1L, 10L);
 
@@ -319,8 +335,8 @@ class CompanyLedgerServiceTest {
     void previousDebtIgnoresOverpaidPeriodsAndTheCurrentPeriod() {
         due(10L, 1L, 800_000, 10);
         when(queries.payableByCompanyAndPeriodBefore(any())).thenReturn(List.of(new CompanyPeriodAmount(1L, 9L, 500_000)));
-        when(remitted.receivedByCompanyAndPeriod()).thenReturn(List.of(new CompanyPeriodAmount(1L, 9L, 600_000),
-                new CompanyPeriodAmount(1L, 10L, 100_000)));
+        settle(9L, 1L, 600_000);
+        settle(10L, 1L, 100_000);
 
         assertThat(service("2026-10-15").row(1L, 10L).previousDebt()).isZero();
     }
@@ -337,17 +353,18 @@ class CompanyLedgerServiceTest {
     @Test
     void reconciliationBranches() {
         due(10L, 1L, 800_000, 10);
-        // Đang nộp: trong hạn, đã thu nhưng chưa nộp hết.
+        // Đang nộp: trong hạn quyết toán, chưa có phiếu. Chưa thu gì (chênh lệch 0) vẫn phải quyết toán.
+        assertThat(service("2026-10-15").row(1L, 10L).reconciliation()).isEqualTo(Reconciliation.PENDING);
+        assertThat(service("2026-10-15").row(1L, 10L).settled()).isFalse();
         collect(10L, 1L, 800_000, 0);
-        received(10L, 1L, 500_000);
         assertThat(service("2026-10-15").row(1L, 10L).reconciliation()).isEqualTo(Reconciliation.PENDING);
 
-        // Lệch: hết hạn mà vẫn thu rồi chưa nộp.
-        assertThat(service("2026-11-02").row(1L, 10L).reconciliation()).isEqualTo(Reconciliation.MISMATCH);
+        // Lệch: qua hạn quyết toán mà chưa có phiếu.
+        assertThat(service("2026-11-06").row(1L, 10L).reconciliation()).isEqualTo(Reconciliation.MISMATCH);
 
-        // Khớp: nộp đủ phải nộp xã.
-        when(remitted.receivedByCompany(10L)).thenReturn(Map.of(1L, new RemittedTotals.Received(800_000, 2)));
-        assertThat(service("2026-11-02").row(1L, 10L).reconciliation()).isEqualTo(Reconciliation.MATCHED);
+        // Khớp: đã có phiếu quyết toán.
+        settle(10L, 1L, 800_000);
+        assertThat(service("2026-11-06").row(1L, 10L).reconciliation()).isEqualTo(Reconciliation.MATCHED);
     }
 
     @Test
@@ -363,23 +380,22 @@ class CompanyLedgerServiceTest {
     }
 
     @Test
-    void helpersForReceiptsRemindersAndLock() {
+    void unsettledListsCompaniesWithFiguresButNoSettlement() {
+        // DV01 có khoản, DV03 chỉ có trong danh sách công ty (không số liệu) thì không cần quyết toán.
         due(10L, 1L, 800_000, 10);
         collect(10L, 1L, 800_000, 0);
-        received(10L, 1L, 300_000);
         CompanyLedgerService s = service("2026-10-15");
 
-        assertThat(s.remaining(1L, 10L)).isEqualTo(500_000);
-        assertThat(s.remaining(3L, 10L)).isZero();
-        assertThat(s.companiesWithDebt(10L)).extracting(LedgerRow::companyCode).containsExactly("DV01");
+        assertThat(s.unsettled(10L)).extracting(LedgerRow::companyCode).containsExactly("DV01");
+        assertThat(s.row(3L, 10L).settled()).isTrue();
 
-        when(remitted.receivedByCompany(10L)).thenReturn(Map.of(1L, new RemittedTotals.Received(800_000, 2)));
-        assertThat(s.companiesWithDebt(10L)).isEmpty();
+        settle(10L, 1L, 800_000);
+        assertThat(s.unsettled(10L)).isEmpty();
     }
 
     /** SPEC đối soát mẫu: mỗi khoản 60.000 = vận chuyển 20.000 + thu gom 40.000. Cty A: 620 tiền mặt, 260 QR. */
     @Test
-    void reconciliationSplitsQrAndCashAndSettlesByReceipt() {
+    void reconciliationSplitsQrAndCashAndSettlesBySettlement() {
         due(10L, 1L, 52_800_000, 880);
         collect(10L, 1L, 37_200_000, 15_600_000);
         retained(10L, 1L, 35_200_000);
@@ -397,7 +413,7 @@ class CompanyLedgerServiceTest {
         assertThat(open.holding()).isEqualTo(15_600_000);
         assertThat(open.settled()).isFalse();
 
-        received(10L, 1L, 2_000_000);
+        settle(10L, 1L, 2_000_000);
         LedgerRow settled = service("2026-10-15").row(1L, 10L);
         assertThat(settled.holding()).isEqualTo(17_600_000).isEqualTo(settled.entitled());
         assertThat(settled.settled()).isTrue();
@@ -417,7 +433,7 @@ class CompanyLedgerServiceTest {
         assertThat(open.holding() - open.entitled()).isEqualTo(11_300_000);
         assertThat(open.settled()).isFalse();
 
-        when(remitted.paidBackByCompany(10L)).thenReturn(Map.of(1L, 11_300_000L));
+        settle(10L, 1L, -11_300_000);
         LedgerRow paid = service("2026-10-15").row(1L, 10L);
         assertThat(paid.holding()).isEqualTo(paid.entitled());
         assertThat(paid.settled()).isTrue();
@@ -442,7 +458,7 @@ class CompanyLedgerServiceTest {
         assertThat(open.payable()).isEqualTo(148_000);
         assertThat(open.entitled()).isEqualTo(1_202_000);
 
-        received(10L, 1L, 148_000);
+        settle(10L, 1L, 148_000);
         LedgerRow settled = service("2026-10-15").row(1L, 10L);
         assertThat(settled.holding()).isEqualTo(settled.entitled());
         assertThat(settled.settled()).isTrue();

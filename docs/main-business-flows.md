@@ -18,10 +18,10 @@ Bản rút gọn ngày 30/09/2026, dùng để chỉnh sơ đồ swimlane. Mỗi
 
 | Bước | Làn | Hành động | Nhánh / bước tiếp theo |
 |---|---|---|---|
-| A1 | Quản trị | Đặt quy tắc tự tạo kỳ một lần: bật/tắt, chu kỳ tháng hoặc quý, ngày tạo kỳ, số ngày công ty nộp xã (có thể vẫn mở kỳ thủ công) | → A2 |
+| A1 | Quản trị | Đặt quy tắc tự tạo kỳ một lần: bật/tắt, chu kỳ tháng hoặc quý, ngày tạo kỳ (có thể vẫn mở kỳ thủ công) | → A2 |
 | A2 | Hệ thống | Đến ngày tạo kỳ (7h30 hằng ngày) tự tạo kỳ kế tiếp ở dạng **Dự thảo**, gắn biểu giá áp dụng, báo cán bộ xã; kỳ Dự thảo chưa có khoản thu và chưa ghi thu được | → A3 |
 | A3 | Cán bộ xã | Xác định công ty phụ trách các khu vực cần thu; phân công nếu chưa có. Mở tab **Kỳ chờ mở** ở Khoản thu | → A4 |
-| A4 | Cán bộ xã | Chọn kỳ Dự thảo; hạn nộp (hạn duy nhất của kỳ, hộ đóng trong hạn này) mặc định theo quy tắc của quản trị, sửa được. (Lập phiếu thủ công cho kỳ đã mở vẫn dùng được) | → A5 |
+| A4 | Cán bộ xã | Chọn kỳ Dự thảo; hạn dân đóng mặc định ngày 25 tháng cuối kỳ, sửa được, phải trước hạn quyết toán (ngày 5 tháng sau kỳ). (Lập phiếu thủ công cho kỳ đã mở vẫn dùng được) | → A5 |
 | A5 | Hệ thống | Tính khoản phải thu, hiển thị danh sách và tổng tiền để xem trước | → A6 |
 | A6 | Cán bộ xã | Kiểm tra và xác nhận phát hành | Cần điều chỉnh → A3/A4; đồng ý → A7 |
 | A7 | Hệ thống | Lưu phiếu và tạo khoản thu cho các đối tượng đủ điều kiện | → A8 |
@@ -33,9 +33,9 @@ Bản rút gọn ngày 30/09/2026, dùng để chỉnh sơ đồ swimlane. Mỗi
 
 **Trigger:** Khoản phải thu đã được phát hành.
 
-**End condition:** Cán bộ xã khóa kỳ sau khi mọi công ty đã nộp đủ số phải nộp xã (tính trên số đã thu), và kỳ đã thu đủ mọi khoản hoặc đã đến hạn nộp.
+**End condition:** Cán bộ xã khóa kỳ sau khi mọi công ty có số liệu trong kỳ đã có phiếu quyết toán và không còn giao dịch chuyển khoản chưa xác định công ty.
 
-Tiền mặt cho người đi thu và chuyển khoản VietQR (ngân hàng báo về tự ghi nhận) là hai cách thay thế cho một khoản. Thu, bàn giao và nộp tiền có thể lặp nhiều lần trong kỳ; không cần chờ thu hết các hộ mới nộp về xã.
+Tiền mặt cho người đi thu và chuyển khoản VietQR (ngân hàng báo về tự ghi nhận) là hai cách thay thế cho một khoản. Thu và bàn giao có thể lặp nhiều lần trong kỳ. Công ty và xã quyết toán **một lần** mỗi kỳ, sau hạn dân đóng, chậm nhất hạn quyết toán ngày 5 tháng sau kỳ (07/10, `docs/quyet-toan-0710.md`).
 
 | Bước | Làn | Hành động | Nhánh / bước tiếp theo |
 |---|---|---|---|
@@ -47,19 +47,18 @@ Tiền mặt cho người đi thu và chuyển khoản VietQR (ngân hàng báo 
 | B6 | Hệ thống | Ghi nhận thanh toán, cập nhật khoản thu và xác nhận thanh toán | Tiền mặt do người đi thu giữ → B7; chuyển khoản VietQR vào tài khoản chung của xã → B9 |
 | B7 | Người đi thu | Bàn giao tiền mặt cho công ty | → B8 |
 | B8 | Công ty môi trường | Ghi nhận tiền đã nhận từ người đi thu | → B9 |
-| B9 | Công ty môi trường | Kiểm tra số phải nộp và nộp tiền về xã | → B10 |
-| B10 | Cán bộ xã | Lập phiếu thu cho lần công ty nộp tiền | → B11 |
-| B11 | Hệ thống | Cập nhật số đã nộp và số còn phải nộp | → B12 |
+| B9 | Công ty môi trường | Sau hạn dân đóng, đến xã quyết toán kỳ | → B10 |
+| B10 | Cán bộ xã | Lập phiếu quyết toán cho công ty (số tiền hệ thống tính); công ty nộp xã chênh lệch dương hoặc xã trả công ty chênh lệch âm, chênh lệch 0 vẫn lập phiếu | → B11 |
+| B11 | Hệ thống | Ghi phiếu (mỗi công ty mỗi kỳ một phiếu), báo công ty; tiền phát sinh sau đó cho khoản của công ty ở kỳ này ghi vào kỳ đang thu khác | → B12 |
 | B12 | Cán bộ xã | Đối soát số phải thu, công ty đã thu và đã nộp | Cần thu/nộp thêm → B2/B9; cần điều chỉnh tài chính → quy trình con F; đề nghị khóa kỳ → B13 |
 | B13 | Cán bộ xã | Yêu cầu khóa kỳ | → B14 |
-| B14 | Hệ thống | Kiểm tra mọi công ty đã nộp đủ phải nộp xã (tính trên đã thu) và kỳ đã thu đủ mọi khoản hoặc đã đến hạn nộp | Chưa đủ điều kiện → quay lại B12; đủ → khóa kỳ, hộ chưa đóng thành công nợ của hộ, kết thúc |
+| B14 | Hệ thống | Kiểm tra không còn giao dịch chuyển khoản chưa xác định công ty và mọi công ty có số liệu trong kỳ đã có phiếu quyết toán | Chưa đủ điều kiện → quay lại B12; đủ → khóa kỳ, hộ chưa đóng thành công nợ của hộ, kết thúc |
 
 **Nhánh phụ chỉ vẽ khi cần:**
 
-- **Nhắc nộp:** Cán bộ xã gửi nhắc công ty có nợ quá hạn → công ty nhận và tiếp tục nộp tại B9.
-- **Sai phiếu thu:** Công ty báo sai → cán bộ xã kiểm tra, xử lý theo trạng thái kỳ → xem lại đối soát tại B12. Không sửa trực tiếp phiếu của kỳ đã khóa.
+- **Nhắc nộp:** Qua hạn quyết toán mà công ty còn phải nộp, cán bộ xã gửi nhắc → công ty nhận và đến quyết toán tại B9. Công ty xem phiếu quyết toán của mình, không báo sai sót.
 
-**Lưu ý nghiệp vụ:** Mỗi phiếu thuộc một kỳ; một kỳ có thể có nhiều phiếu. Phải nộp xã = tiền mặt công ty đã thu − điều chỉnh kỳ trước − phí thu gom của toàn bộ số đã thu (cả chuyển khoản vào tài khoản chung của xã); âm thì xã trả lại công ty phần chênh. Số còn phải nộp = phải nộp xã − đã nộp. Khoản hộ chưa đóng khi khóa thành công nợ của hộ, hộ nộp được ở kỳ sau và tiền tính vào kỳ đang thu. Trạng thái đối soát không phải điều kiện kiểm tra khóa kỳ riêng.
+**Lưu ý nghiệp vụ:** Mỗi công ty mỗi kỳ một phiếu quyết toán, không sửa, không hủy. Phải nộp xã = tiền mặt công ty đã thu − điều chỉnh kỳ trước − phí thu gom của toàn bộ số đã thu (cả chuyển khoản vào tài khoản chung của xã); âm thì xã trả lại công ty phần chênh; đây là chênh lệch trên phiếu quyết toán. Khoản hộ chưa đóng khi khóa thành công nợ của hộ, hộ nộp được ở kỳ sau và tiền tính vào kỳ đang thu. Qua hạn quyết toán chưa có phiếu thì đối soát Lệch, kỳ chưa khóa được.
 
 ### Quy trình con F: Xét duyệt điều chỉnh tài chính
 
