@@ -234,7 +234,7 @@ describe('Đối soát', () => {
     // Sao kê QR = QR của các công ty (57.300.000) + chưa xác định (180.000).
     expect(await screen.findByText(/Sao kê QR/)).toHaveTextContent('57.480.000');
     expect(screen.getByText(/3 giao dịch chưa xác định Cty/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Xử lý/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Xử lý/ })).toHaveAttribute('href', '/commune/transfers');
   });
 
   it('bảng 11 cột theo nhóm QR / tiền mặt / đối chiếu; nút phiếu theo kết quả; tab lọc Chưa khớp / Đã khớp', async () => {
