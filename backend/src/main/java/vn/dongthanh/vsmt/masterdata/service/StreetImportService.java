@@ -3,6 +3,7 @@ package vn.dongthanh.vsmt.masterdata.service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -103,11 +104,8 @@ public class StreetImportService {
             apply(p, p.parent.entity, renamed);
         }
         if (!renamed.isEmpty()) {
-            // Đường đổi tên: hồ sơ của đường và các hẻm của nó hiển thị theo tên mới.
-            Set<Long> ids = new HashSet<>(renamed);
-            plan.alleys.values().stream().filter(a -> a.entity != null && renamed.contains(a.parent.entity.getId()))
-                    .forEach(a -> ids.add(a.entity.getId()));
-            subjects.findByStreetIds(ids).forEach(ServiceSubject::refreshStreetName);
+            // Đường/hẻm đổi tên: hồ sơ của nó và của mọi hẻm thuộc nó (kể cả hẻm không có trong file) theo tên mới.
+            subjects.findOnStreetsOrTheirAlleys(renamed).forEach(ServiceSubject::refreshStreetName);
         }
         audit.record(actor, "IMPORT_STREETS", "Street", null, null,
                 Map.of("added", preview.added(), "updated", preview.updated(), "skipped", preview.skipped()));
@@ -189,7 +187,7 @@ public class StreetImportService {
                     Map<String, String> c = new HashMap<>();
                     cols.forEach((k, j) -> {
                         Cell cell = row.getCell(j);
-                        c.put(k, cell == null ? "" : fmt.formatCellValue(cell).trim());
+                        c.put(k, cell == null ? "" : nfc(fmt.formatCellValue(cell)));
                     });
                     if (c.values().stream().allMatch(String::isEmpty)) {
                         continue;
@@ -222,7 +220,7 @@ public class StreetImportService {
             return cols;
         }
         for (Cell cell : head) {
-            String h = fmt.formatCellValue(cell).trim().toLowerCase(Locale.ROOT);
+            String h = nfc(fmt.formatCellValue(cell)).toLowerCase(Locale.ROOT);
             String key = h.contains("tên mới") ? "newName"
                     : h.contains("tên cũ") ? "oldName"
                     : h.startsWith("tên") ? "name"
@@ -237,6 +235,11 @@ public class StreetImportService {
             }
         }
         return cols;
+    }
+
+    /** Ô gõ bằng Unicode tổ hợp (NFD) vẫn so được với chữ dựng sẵn ("Bỏ", "Hẻm"). */
+    private static String nfc(String text) {
+        return Normalizer.normalize(text, Normalizer.Form.NFC).trim();
     }
 
     // ---- lập kế hoạch: gộp dòng trùng, tìm đường đã có, kiểm lỗi
@@ -336,7 +339,7 @@ public class StreetImportService {
             }
             Area a = areaByKey.get(StreetService.matchKey(token));
             Matcher n = NUMBER.matcher(token);
-            if (a == null && n.find()) {
+            if (a == null && StreetService.matchKey(token).startsWith("ap ") && n.find()) {
                 a = areaByKey.get(StreetService.matchKey("Ấp " + Integer.parseInt(n.group())));
             }
             if (a == null) {
@@ -348,6 +351,16 @@ public class StreetImportService {
         String shownParent = parent == null ? "" : parent.name;
         if (!errors.isEmpty()) {
             return new ImportRow(r.rowNo(), name, r.kind(), shownParent, r.areas(), old, r.note(), "", errors);
+        }
+        if (!old.isEmpty()) {
+            Street holder = existing(old, "", parent, catalog);
+            Planned target = (parent == null ? plan.streets : plan.alleys)
+                    .get((parent == null ? "" : StreetService.matchKey(parent.name) + "|") + StreetService.matchKey(name));
+            Street willRename = target != null ? target.existing : existing(name, old, parent, catalog);
+            if (holder != null && (willRename == null || !holder.getId().equals(willRename.getId()))) {
+                return new ImportRow(r.rowNo(), name, r.kind(), shownParent, r.areas(), old, r.note(), "", List.of(
+                        "'" + old + "' đang là một đường khác trong danh mục: ngừng dùng đường đó trước rồi nhập lại"));
+            }
         }
         Map<String, Planned> group = parent == null ? plan.streets : plan.alleys;
         String groupKey = (parent == null ? "" : StreetService.matchKey(parent.name) + "|") + StreetService.matchKey(name);

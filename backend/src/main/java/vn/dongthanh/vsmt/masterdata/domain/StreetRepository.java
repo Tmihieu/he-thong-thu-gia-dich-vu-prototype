@@ -21,15 +21,12 @@ public interface StreetRepository extends JpaRepository<Street, Long> {
             + "((:parentId is null and s.parent is null) or s.parent.id = :parentId)")
     Optional<Street> findByParentAndNameKey(Long parentId, String nameKey);
 
-    @Query("select count(s) > 0 from Street s where s.parent.id = :parentId")
-    boolean hasAlleys(Long parentId);
-
     /**
      * Tìm theo tên, tên cũ, hoặc tên hiển thị của hẻm ("hem 19 to ky"); {@code key} đã qua {@link AddressText#streetKey}.
      * Đường trước hẻm.
      */
-    @Query("select distinct s from Street s left join fetch s.parent p left join s.oldNames o where s.status = 'ACTIVE' and "
-            + "(s.nameKey like %:key% or o.nameKey like %:key% or concat(s.nameKey, ' ', p.nameKey) like %:key%) "
+    @Query("select distinct s from Street s left join fetch s.parent p left join s.oldNames o where s.status = 'ACTIVE' "
+            + "and (p is null or p.status = 'ACTIVE') and (s.nameKey like %:key% or o.nameKey like %:key% or concat(s.nameKey, ' ', p.nameKey) like %:key%) "
             + "order by s.kind desc, s.nameKey")
     List<Street> search(String key, Pageable limit);
 }

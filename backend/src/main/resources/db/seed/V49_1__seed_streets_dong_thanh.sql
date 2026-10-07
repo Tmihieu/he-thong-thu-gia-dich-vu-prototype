@@ -2,6 +2,7 @@
 -- từ bản nháp docs/dia-chi/danh-sach-duong-dong-thanh-nhap.xlsx, GIẢ ĐỊNH xã đã duyệt: đổi tên 18 tuyến theo
 -- NQ 380/NQ-HĐND ngày 24/7/2025 (giữ tên cũ), bỏ cầu, đường phường bên cạnh, hẻm không rõ đường cha.
 -- Nguồn: © OpenStreetMap contributors (ODbL). Khi có danh mục chính thức, quản trị viên nhập lại bằng Excel.
+-- "on conflict do nothing": DB demo cũ có thể đã có đường cùng tên (thêm tay trước V49).
 
 insert into streets (kind, name, name_key) values
     ('STREET', 'Bùi Công Trừng', 'bui cong trung'),
@@ -143,7 +144,8 @@ insert into streets (kind, name, name_key) values
     ('STREET', 'Ấp Đông 4-4C', 'ap dong 4-4c'),
     ('STREET', 'Ấp Đông 4-5', 'ap dong 4-5'),
     ('STREET', 'Ấp Đông 4-6', 'ap dong 4-6'),
-    ('STREET', 'Ấp Đông 6', 'ap dong 6');
+    ('STREET', 'Ấp Đông 6', 'ap dong 6')
+on conflict do nothing;
 
 insert into streets (kind, parent_id, name, name_key)
 select 'ALLEY', p.id, v.name, v.name_key from (values
@@ -168,7 +170,8 @@ select 'ALLEY', p.id, v.name, v.name_key from (values
     ('ap dong 6', 'Hẻm 12', 'hem 12'),
     ('ap dong 6', 'Hẻm 20', 'hem 20')
 ) v (parent_key, name, name_key)
-join streets p on p.parent_id is null and p.name_key = v.parent_key;
+join streets p on p.parent_id is null and p.name_key = v.parent_key
+on conflict do nothing;
 
 insert into street_areas (street_id, area_id)
 select s.id, a.id from (values
@@ -543,7 +546,8 @@ select s.id, a.id from (values
 ) v (name_key, parent_key, area_code)
 join streets s on s.name_key = v.name_key and ((v.parent_key = '' and s.parent_id is null)
     or s.parent_id = (select p.id from streets p where p.parent_id is null and p.name_key = v.parent_key))
-join areas a on a.code = v.area_code;
+join areas a on a.code = v.area_code
+on conflict do nothing;
 
 insert into street_old_names (street_id, name, name_key, note)
 select s.id, v.name, v.old_key, 'NQ 380/NQ-HĐND ngày 24/7/2025' from (values
@@ -566,4 +570,5 @@ select s.id, v.name, v.old_key, 'NQ 380/NQ-HĐND ngày 24/7/2025' from (values
     ('vo thi toi', 'Đông Thạnh 4', 'dong thanh 4'),
     ('dang thi son', 'Nhị Bình 18', 'nhi binh 18')
 ) v (name_key, name, old_key)
-join streets s on s.parent_id is null and s.name_key = v.name_key;
+join streets s on s.parent_id is null and s.name_key = v.name_key
+on conflict do nothing;

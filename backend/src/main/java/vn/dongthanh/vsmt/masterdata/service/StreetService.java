@@ -126,6 +126,7 @@ public class StreetService {
         if (streets.findByParentAndNameKey(parentId, AddressText.streetKey(name)).isPresent()) {
             throw new ConflictException("STREET_EXISTS", (parent == null ? "Đường " : "Hẻm ") + name + " đã có trong danh mục.");
         }
+        rejectOldNameOfAnother(parentId, AddressText.streetKey(name), null);
         Street street = parent == null ? Street.street(name) : Street.alley(parent, name);
         street.setAreaIds(checkedAreas(cmd.areaIds()));
         Street saved = streets.save(street);
@@ -147,24 +148,22 @@ public class StreetService {
         streets.findByParentAndNameKey(parentId, key).filter(other -> !other.getId().equals(id)).ifPresent(other -> {
             throw new ConflictException("STREET_EXISTS", "Đã có " + other.getDisplayName() + " trong danh mục.");
         });
+        rejectOldNameOfAnother(parentId, key, id);
         boolean renamed = !name.equals(street.getName());
         if (!key.equals(street.getNameKey())) {
             street.rename(name, cmd.renameNote());
         } else if (renamed) {
             street.rename(name, null); // chỉ sửa chữ hoa/khoảng trắng: tên cũ trùng khóa nên không lưu thành tên cũ
         }
-        street.setAreaIds(checkedAreas(cmd.areaIds()));
+        if (cmd.areaIds() != null) {
+            street.setAreaIds(checkedAreas(cmd.areaIds()));
+        }
         if (cmd.status() != null) {
             street.setStatus(cmd.status());
         }
         if (renamed) {
             // Hồ sơ của đường và các hẻm của nó hiển thị theo tên mới.
-            Set<Long> ids = new HashSet<>(List.of(street.getId()));
-            if (street.getKind() == Street.Kind.STREET) {
-                streets.findAllForCatalog().stream().filter(s -> s.getParent() != null && s.getParent().getId().equals(id))
-                        .forEach(s -> ids.add(s.getId()));
-            }
-            subjects.findByStreetIds(ids).forEach(ServiceSubject::refreshStreetName);
+            subjects.findOnStreetsOrTheirAlleys(List.of(street.getId())).forEach(ServiceSubject::refreshStreetName);
         }
         audit.record(actor, "UPDATE_STREET", "Street", street.getId(), before, snapshot(street));
         return street;
@@ -175,16 +174,18 @@ public class StreetService {
         actor.requireRole(Role.ADMIN);
         CatalogIndex index = index();
         List<ServiceSubject> unlinked = subjects.findWithoutCatalogStreet();
-        int matched = 0;
+        List<Map<String, Object>> linked = new ArrayList<>();
         for (ServiceSubject s : unlinked) {
             Optional<Street> street = index.match(s.getStreet());
             if (street.isPresent()) {
+                linked.add(Map.of("code", s.getCode(), "street", s.getStreet(), "address", s.getAddress(), "streetId", street.get().getId()));
                 s.linkStreet(street.get());
-                matched++;
             }
         }
+        int matched = linked.size();
+        // Giữ chữ cán bộ đã ghi để đối chiếu/khôi phục nếu khớp nhầm.
         audit.record(actor, "AUTO_MATCH_STREETS", "Street", null, null,
-                Map.of("matched", matched, "remaining", unlinked.size() - matched));
+                Map.of("matched", matched, "remaining", unlinked.size() - matched, "subjects", linked));
         return new MatchResult(matched, unlinked.size() - matched);
     }
 
@@ -213,21 +214,28 @@ public class StreetService {
         actor.requireRole(Role.ADMIN);
         Street street = streets.findByIdWithParent(streetId)
                 .orElseThrow(() -> new NotFoundException("STREET_NOT_FOUND", "Không tìm thấy đường."));
-        if (street.getStatus() != ActiveStatus.ACTIVE) {
+        if (!usable(street)) {
             throw new BusinessRuleException("STREET_INACTIVE", street.getDisplayName() + " đã ngừng dùng trong danh mục.");
         }
         List<ServiceSubject> group = subjects.findWithoutCatalogStreet().stream()
                 .filter(s -> matchKey(s.getStreet()).equals(key)).toList();
+        List<Map<String, Object>> before = group.stream()
+                .map(s -> Map.<String, Object>of("code", s.getCode(), "street", s.getStreet(), "address", s.getAddress())).toList();
         group.forEach(s -> s.linkStreet(street));
-        audit.record(actor, "LINK_STREET_GROUP", "Street", street.getId(), Map.of("streetText", key),
-                Map.of("subjects", group.stream().map(ServiceSubject::getCode).toList()));
+        audit.record(actor, "LINK_STREET_GROUP", "Street", street.getId(), Map.of("subjects", before),
+                Map.of("street", street.getDisplayName()));
         return group.size();
     }
 
     /** Chỉ mục khớp tên của toàn bộ đường/hẻm đang dùng; dựng một lần cho cả lô (nhập file, tự khớp). */
     @Transactional(readOnly = true)
     public CatalogIndex index() {
-        return new CatalogIndex(streets.findAllForCatalog().stream().filter(s -> s.getStatus() == ActiveStatus.ACTIVE).toList());
+        return new CatalogIndex(streets.findAllForCatalog().stream().filter(StreetService::usable).toList());
+    }
+
+    /** Đang dùng, và nếu là hẻm thì đường của nó cũng đang dùng. */
+    static boolean usable(Street s) {
+        return s.getStatus() == ActiveStatus.ACTIVE && (s.getParent() == null || s.getParent().getStatus() == ActiveStatus.ACTIVE);
     }
 
     /** Khớp tên đường tự do với danh mục: chỉ nhận khi đúng một đường/hẻm khớp. */
@@ -264,9 +272,9 @@ public class StreetService {
         }
     }
 
-    /** Khóa so khớp: như {@link AddressText#streetKey} và bỏ chữ "đường" giữa chừng ("Hẻm 69 đường Nguyễn Thị Pha"). */
+    /** Khóa so khớp: như {@link AddressText#streetKey} và bỏ chữ "đường" trước tên đường ("Hẻm 69 đường Nguyễn Thị Pha"). */
     static String matchKey(String text) {
-        return (" " + AddressText.streetKey(text) + " ").replace(" duong ", " ").trim();
+        return AddressText.streetKey(text).replaceAll(" duong (?=\\S)", " ");
     }
 
     /** "Hẻm 19 Tô Ký" trên đường Tô Ký → "Hẻm 19"; tên không kết thúc bằng tên đường (kể cả tên cũ) giữ nguyên. */
@@ -288,6 +296,16 @@ public class StreetService {
             }
         }
         return name.trim();
+    }
+
+    /** Tên trùng tên cũ của một đường/hẻm khác cùng cấp thì tự khớp địa chỉ cũ không phân biệt được: chặn. */
+    private void rejectOldNameOfAnother(Long parentId, String key, Long selfId) {
+        streets.findAllForCatalog().stream()
+                .filter(s -> !s.getId().equals(selfId) && java.util.Objects.equals(parentId, s.getParent() == null ? null : s.getParent().getId()))
+                .filter(s -> s.getOldNames().stream().anyMatch(o -> o.getNameKey().equals(key)))
+                .findFirst().ifPresent(s -> {
+                    throw new ConflictException("STREET_OLD_NAME_TAKEN", "Đây là tên cũ của " + s.getDisplayName() + ".");
+                });
     }
 
     private static String requireName(String name) {

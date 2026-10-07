@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { PageHeader } from '../../../shared/PageHeader';
 import { StatusTag } from '../../../shared/StatusTag';
 import { errorText } from '../../../shared/errorText';
+import { filterNoMarks, normalizeText as fold } from '../../../shared/normalizeText';
 import {
   type Area,
   type PendingStreetGroup,
@@ -17,8 +18,6 @@ import {
 } from '../api';
 import { ImportStreetsModal } from './ImportStreetsModal';
 import { type StreetDraft, StreetFormModal } from './StreetFormModal';
-
-const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/gi, 'd').toLowerCase();
 
 /** Chuỗi tìm của một đường: tên hiển thị và tên cũ. */
 const haystack = (s: Street) => fold([s.displayName, ...s.oldNames.map((o) => o.name)].join(' | '));
@@ -271,7 +270,7 @@ function PendingTab() {
         <Select<number>
           aria-label="Đường / hẻm trong danh mục"
           showSearch
-          optionFilterProp="label"
+          filterOption={filterNoMarks}
           placeholder="Tìm tên đường, hẻm hoặc tên cũ"
           style={{ width: '100%' }}
           value={target}

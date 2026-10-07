@@ -1,6 +1,7 @@
 import { Button, Col, Row, Select, Space } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 
+import { filterNoMarks } from '../../../shared/normalizeText';
 import { type Street, useStreets } from '../api';
 import { StreetSearch, type StreetValue } from './StreetSearch';
 
@@ -75,7 +76,7 @@ export function StreetPicker({ areaId, value, onChange }: Props) {
             aria-label="Đường"
             showSearch
             allowClear
-            optionFilterProp="label"
+            filterOption={filterNoMarks}
             loading={catalog.isLoading}
             disabled={areaId === undefined}
             placeholder={areaId === undefined ? 'Chọn ấp trước' : 'Chọn đường đi qua ấp'}
@@ -89,7 +90,7 @@ export function StreetPicker({ areaId, value, onChange }: Props) {
           <Select<number>
             aria-label="Hẻm"
             showSearch
-            optionFilterProp="label"
+            filterOption={filterNoMarks}
             disabled={!street}
             placeholder={street ? 'Mặt đường hoặc chọn hẻm' : 'Chọn đường trước'}
             options={alleyOptions}

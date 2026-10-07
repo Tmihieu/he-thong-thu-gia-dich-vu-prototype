@@ -434,7 +434,7 @@ public class SubjectService {
                 .orElseThrow(() -> new NotFoundException("STREET_NOT_FOUND", "Không tìm thấy đường trong danh mục."));
         boolean kept = existing != null && existing.getStreetRef() != null
                 && existing.getStreetRef().getId().equals(streetId);
-        if (street.getStatus() != ActiveStatus.ACTIVE && !kept) {
+        if (!StreetService.usable(street) && !kept) {
             throw new BusinessRuleException("STREET_INACTIVE", street.getDisplayName() + " đã ngừng dùng trong danh mục.");
         }
         return street;

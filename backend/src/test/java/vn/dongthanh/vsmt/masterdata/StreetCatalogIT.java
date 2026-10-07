@@ -220,6 +220,58 @@ class StreetCatalogIT extends IntegrationTest {
     }
 
     @Test
+    void catalogListsEachOldNameOnceAndUpdateWithoutAreasKeepsThem() throws Exception {
+        long st = id(create("{\"name\":\"Đông Thạnh 4-1\",\"kind\":\"STREET\",\"areaIds\":[%d,%d]}".formatted(ap1.getId(), ap2.getId())));
+        rename(st, "{\"name\":\"Đông Thạnh 5\"}");
+        rename(st, "{\"name\":\"Nguyễn Thị Tạo\",\"renameNote\":\"NQ 380\"}");
+        em.flush();
+        em.clear();
+        // Đường qua 2 ấp, có 2 tên cũ: không nhân bản tên cũ theo số ấp.
+        mvc.perform(get("/api/masterdata/streets").header(HttpHeaders.AUTHORIZATION, officer))
+                .andExpect(jsonPath("$[0].areaIds.length()").value(2))
+                .andExpect(jsonPath("$[0].oldNames.length()").value(2));
+        // Tên trùng tên cũ của đường khác: chặn (tự khớp sẽ không phân biệt được).
+        create("{\"name\":\"Đông Thạnh 5\",\"kind\":\"STREET\"}")
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("STREET_OLD_NAME_TAKEN"));
+    }
+
+    @Test
+    void alleysOfAnInactiveStreetCannotBeChosen() throws Exception {
+        long st = id(create("{\"name\":\"Tô Ký\",\"kind\":\"STREET\",\"areaIds\":[%d]}".formatted(ap1.getId())));
+        long alley = id(create("{\"name\":\"Hẻm 19\",\"kind\":\"ALLEY\",\"parentId\":%d}".formatted(st)));
+        rename(st, "{\"name\":\"Tô Ký\",\"status\":\"INACTIVE\"}");
+        mvc.perform(post("/api/masterdata/subjects").header(HttpHeaders.AUTHORIZATION, officer)
+                .contentType(MediaType.APPLICATION_JSON).content(subjectJson("19/1", alley)))
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("STREET_INACTIVE"));
+        mvc.perform(get("/api/masterdata/streets/suggest").param("q", "hem 19 to ky").header(HttpHeaders.AUTHORIZATION, officer))
+                .andExpect(jsonPath("$.streets.length()").value(0));
+    }
+
+    @Test
+    void importRenameUpdatesAddressesOnAlleysNotInTheFileAndRefusesMergingTwoExistingStreets() throws Exception {
+        long dt8 = id(create("{\"name\":\"Đông Thạnh 8\",\"kind\":\"STREET\",\"areaIds\":[%d]}".formatted(ap1.getId())));
+        long hem = id(create("{\"name\":\"Hẻm 12\",\"kind\":\"ALLEY\",\"parentId\":%d}".formatted(dt8)));
+        long onAlley = subject("12/3", hem);
+        id(create("{\"name\":\"Đông Thạnh 9\",\"kind\":\"STREET\",\"areaIds\":[%d]}".formatted(ap1.getId())));
+        String[] head = { "Tên đường / hẻm", "Loại", "Ấp đi qua", "Tên mới", "Văn bản đổi tên" };
+
+        byte[] merge = xlsx(head, List.of(new String[] { "Đông Thạnh 8", "Đường", "Ấp 1", "Nguyễn Thị Mực", "NQ 380" },
+                new String[] { "Đông Thạnh 9", "Đường", "Ấp 1", "Nguyễn Thị Mực", "NQ 380" }));
+        mvc.perform(multipart("/api/masterdata/streets/import/preview").file(new MockMultipartFile("file", "x.xlsx", null, merge))
+                .header(HttpHeaders.AUTHORIZATION, admin))
+                .andExpect(jsonPath("$.invalid").value(1))
+                .andExpect(jsonPath("$.rows[1].errors[0]").value(org.hamcrest.Matchers.startsWith("'Đông Thạnh 9' đang là một đường khác")));
+
+        byte[] rename = xlsx(head, List.<String[]>of(new String[] { "Đông Thạnh 8", "Đường", "Ấp 1", "Nguyễn Thị Mực", "NQ 380" }));
+        mvc.perform(multipart("/api/masterdata/streets/import").file(new MockMultipartFile("file", "x.xlsx", null, rename))
+                .header(HttpHeaders.AUTHORIZATION, admin))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.rows[0].action").value("Đổi tên từ Đông Thạnh 8"));
+        em.flush();
+        assertThat(jdbc.queryForObject("select address from service_subjects where id = ?", String.class, onAlley))
+                .isEqualTo("12/3 Hẻm 12 Nguyễn Thị Mực");
+    }
+
+    @Test
     void importWithErrorsWritesNothing() throws Exception {
         byte[] file = xlsx(new String[] { "Tên đường / hẻm", "Loại", "Thuộc đường (với hẻm)", "Ấp đi qua" }, List.of(
                 new String[] { "Tô Ký", "Đường", "", "Ấp 1" },
@@ -243,6 +295,11 @@ class StreetCatalogIT extends IntegrationTest {
     private ResultActions create(String body) throws Exception {
         return mvc.perform(post("/api/masterdata/streets").header(HttpHeaders.AUTHORIZATION, admin)
                 .contentType(MediaType.APPLICATION_JSON).content(body));
+    }
+
+    private void rename(long id, String body) throws Exception {
+        mvc.perform(put("/api/masterdata/streets/" + id).header(HttpHeaders.AUTHORIZATION, admin)
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isOk());
     }
 
     private long subject(String house, long streetId) throws Exception {

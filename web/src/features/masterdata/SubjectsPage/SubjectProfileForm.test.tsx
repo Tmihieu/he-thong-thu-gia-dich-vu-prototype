@@ -238,7 +238,7 @@ describe('SubjectProfileForm', () => {
       expect(await screen.findByTitle('Đường Nguyễn Huệ')).toBeInTheDocument();
       expect(screen.getByTitle('Nguyễn Thị Mực (tên cũ: Đông Thạnh 8)')).toBeInTheDocument();
       expect(screen.queryByTitle('Lê Văn Khương')).not.toBeInTheDocument(); // đường của ấp khác
-      fireEvent.change(screen.getByRole('combobox', { name: 'Đường' }), { target: { value: 'Đông Thạnh 8' } });
+      fireEvent.change(screen.getByRole('combobox', { name: 'Đường' }), { target: { value: 'dong thanh 8' } }); // không dấu, tên cũ
       await waitFor(() => expect(screen.queryByTitle('Đường Nguyễn Huệ')).not.toBeInTheDocument());
 
       await pickStreet('Nguyễn Thị Mực (tên cũ: Đông Thạnh 8)', 'Hẻm 12');
