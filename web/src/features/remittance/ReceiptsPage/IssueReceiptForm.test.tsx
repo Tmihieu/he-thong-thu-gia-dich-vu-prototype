@@ -25,13 +25,16 @@ function setup() {
 }
 
 describe('IssueReceiptForm', () => {
-  it('số tiền bắt buộc, lớn hơn 0 và không vượt số còn phải nộp', async () => {
+  it('điền sẵn số còn phải nộp; số tiền lớn hơn 0 và không vượt số đó', async () => {
     const onSubmit = setup();
     const ok = screen.getByRole('button', { name: 'Lập phiếu' });
-    await userEvent.click(ok);
-    expect(await screen.findByText('Vui lòng nhập số tiền')).toBeInTheDocument();
-
     const amount = screen.getByLabelText('Số tiền');
+    expect(amount).toHaveValue('600.000');
+    // Xóa trắng thì ô về 0.
+    await userEvent.clear(amount);
+    await userEvent.click(ok);
+    expect(await screen.findByText('Số tiền phải lớn hơn 0')).toBeInTheDocument();
+
     await userEvent.type(amount, '700000');
     await userEvent.click(ok);
     expect(await screen.findByText('Không vượt số còn phải nộp (600.000 đ)', norm)).toBeInTheDocument();
@@ -45,6 +48,7 @@ describe('IssueReceiptForm', () => {
 
   it('gửi phiếu nộp một phần bằng chuyển khoản, ngày mặc định hôm nay', async () => {
     const onSubmit = setup();
+    await userEvent.clear(screen.getByLabelText('Số tiền'));
     await userEvent.type(screen.getByLabelText('Số tiền'), '400000');
     await userEvent.type(screen.getByLabelText('Số ủy nhiệm chi / mã giao dịch'), 'UNC-0925');
     await userEvent.click(screen.getByRole('button', { name: 'Lập phiếu' }));

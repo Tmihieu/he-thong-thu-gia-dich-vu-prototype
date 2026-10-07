@@ -298,12 +298,16 @@ body { font-size: 15px; line-height: 1.5; color: var(--gray-950); -webkit-font-s
 /* Bảng: thanh cuộn ngang trên màn hẹp, hàng có dấu hiệu bấm được */
 .ant-table-wrapper .ant-table { border-radius: var(--radius-lg); }
 .ant-table-wrapper .ant-table-container { border-radius: var(--radius-lg); }
+/* Bảng vuông góc (đối soát): bỏ bo góc để viền ngoài liền. */
+.ant-table-wrapper.table-square .ant-table-container,
+.ant-table-wrapper.table-square .ant-table-container table,
+.ant-table-wrapper.table-square .ant-table-thead > tr > th { border-radius: 0 !important; }
 .ant-table-wrapper .ant-table-tbody > tr > td { font-variant-numeric: tabular-nums; }
 .ant-table-wrapper .ant-table-cell .ant-btn-link { height: auto; font-weight: 600; }
 /* Mọi bảng: ô căn giữa cả ngang lẫn dọc; cột đầu (sau cột mở rộng/chọn nếu có) căn trái sát mép. */
 .ant-table-wrapper .ant-table-cell { text-align: center !important; vertical-align: middle !important; }
 .ant-table-wrapper .ant-table-tbody > tr > td.ant-table-cell:first-child,
-.ant-table-wrapper .ant-table-thead > tr > th.ant-table-cell:first-child,
+.ant-table-wrapper .ant-table-thead > tr:first-child > th.ant-table-cell:first-child,
 .ant-table-wrapper .ant-table-row-expand-icon-cell + .ant-table-cell,
 .ant-table-wrapper .ant-table-selection-column + .ant-table-cell { text-align: left !important; }
 
