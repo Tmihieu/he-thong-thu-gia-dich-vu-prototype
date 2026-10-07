@@ -28,14 +28,8 @@
 | Tiến độ thu và nộp             | Xem                                                          | UC-16, UC-32, UC-33  | No                       | Full                | Full               | Restricted ¹                 | No                        | No           |
 | Công nợ hộ                     | Xem danh sách và tổng (khoản chưa thu của kỳ đã khóa)        | UC-32                | No                       | Full                | Full               | No                           | No                        | No           |
 | Nhắc công ty nộp tiền          | Gửi                                                          | UC-34                | No                       | Full                | No                 | No                           | No                        | No           |
-| Phiếu thu                      | Lập / In                                                     | UC-35                | No                       | Full                | No                 | No                           | No                        | No           |
-| Phiếu thu                      | Xem                                                          | UC-35, UC-36         | No                       | Full                | No                 | Restricted ¹                 | No                        | No           |
-| Phiếu chi trả công ty          | Lập / In                                                     | UC-55                | No                       | Full                | No                 | No                           | No                        | No           |
-| Phiếu chi trả công ty          | Xem                                                          | UC-55, UC-56             | No                       | Full                | Full ⁵             | Restricted ¹                 | No                        | No           |
-| Sai sót phiếu chi trả          | Báo sai sót                                                  | UC-56                | No                       | No                  | No                 | Restricted ¹                 | No                        | No           |
-| Sai sót phiếu chi trả          | Xử lý                                                        | UC-57                | No                       | Full                | No                 | No                           | No                        | No           |
-| Sai sót phiếu thu              | Báo sai sót                                                  | UC-36                | No                       | No                  | No                 | Restricted ¹                 | No                        | No           |
-| Sai sót phiếu thu              | Xử lý                                                        | UC-37                | No                       | Full                | No                 | No                           | No                        | No           |
+| Phiếu quyết toán               | Lập / In                                                     | UC-35                | No                       | Full                | No                 | No                           | No                        | No           |
+| Phiếu quyết toán               | Xem                                                          | UC-35                | No                       | Full                | Full               | Restricted ¹                 | No                        | No           |
 | Đối soát                       | Xem                                                          | UC-38                | No                       | Full                | Full               | No                           | No                        | No           |
 | Kỳ thu                         | Khóa                                                         | UC-39                | No                       | Full                | No                 | No                           | No                        | No           |
 | Phản ánh                       | Gửi / Theo dõi                                               | UC-40                | No                       | No                  | No                 | No                           | No                        | Restricted ³ |
@@ -62,7 +56,7 @@
 
 **Chú thích cho Restricted:**
 
-- ¹ Chỉ dữ liệu của công ty mình: các khu vực được giao, hộ/cơ sở trong các khu vực đó, người đi thu, phiếu thu và phiếu chi trả của công ty.
+- ¹ Chỉ dữ liệu của công ty mình: các khu vực được giao, hộ/cơ sở trong các khu vực đó, người đi thu, phiếu quyết toán của công ty.
 - ² Chỉ hộ/cơ sở có khoản phải thu của công ty người đi thu đó, không giới hạn theo tổ.
 - ³ Chỉ dữ liệu của chính mình. Người dân: hộ đã liên kết với tài khoản, tin đăng của mình, phản ánh của hộ. Người đi thu: tiền mặt mình đang giữ. Thông báo: thông báo gửi đến mình.
 - ⁴ Chỉ các phản ánh cán bộ xã đã chuyển cho công ty.

@@ -2,6 +2,8 @@
 
 Bản 05/10/2026, viết theo code hiện tại (nhánh `fix/gop-y-ba-0510`) và `docs/business-rules.md`. Thay phần §10 của `docs/demo-runbook.md` ở những chỗ đã cũ: người đi thu không còn ghi vắng/hẹn/thu một phần, rác cồng kềnh đã bỏ, lãnh đạo không còn màn duyệt đề nghị trên web.
 
+**Lưu ý 08/10:** mục 4d–4f viết lại theo phiếu quyết toán (07/10, `docs/quyet-toan-0710.md`): mỗi công ty mỗi kỳ một phiếu, bỏ phiếu thu / phiếu chi trả và báo sai sót phiếu; kỳ có hạn dân đóng và hạn quyết toán (ngày 5 tháng sau kỳ). Các dòng 4.25–4.27 (sai sót phiếu thu) và 4.39–4.49 (phiếu chi trả) đã bỏ; dòng mới đánh số từ 4.50.
+
 **Lưu ý 06/10:** `docs/use-cases.md` đã sửa theo góp ý BA 05/10 (xem `docs/thay-doi-gop-y-0510.md`), code demo chưa đổi theo. Dòng nào ghi **(chưa có trong bản demo)** thì cột Kết quả nêu theo nghiệp vụ chuẩn; chạy trên demo hiện tại sẽ ra hành vi cũ ghi sau chữ "Demo hiện:", không tính là lỗi.
 
 Đi theo thứ tự từ trên xuống: mỗi phần dùng dữ liệu phần trước tạo ra. Cột **Đạt** để đánh dấu khi chạy; dòng **✗** là case lỗi, phải bị chặn đúng thông báo.
@@ -23,7 +25,7 @@ Bản 05/10/2026, viết theo code hiện tại (nhánh `fix/gop-y-ba-0510`) và
 
 Mật khẩu chung `Demo@2026`. Mở F12 ở mọi cửa sổ: chạy hết kịch bản không có lỗi đỏ trong Console.
 
-**Số liệu seed cần nhớ:** kỳ 09/2026 đang thu, hạn công ty nộp xã 25/09 (đã quá hạn); DV01 còn nợ kỳ 09; chưa có kỳ 10/2026; Ấp 47 chưa có công ty; `thu07` phụ trách Ấp 39 (hộ `DTH-H000128`), đang giữ 0 đ tiền mặt.
+**Số liệu seed cần nhớ:** kỳ 09/2026 đang thu, hạn dân đóng 25/09, hạn quyết toán 05/10 (đã qua cả hai); chưa công ty nào có phiếu quyết toán kỳ 09 nên cả 11 công ty **Quá hạn quyết toán**; DV01 nộp xã 24.212, 10 công ty còn lại xã trả công ty; còn 5 giao dịch QR chưa xác định công ty (300.000 đ); chưa có kỳ 10/2026; Ấp 47 chưa có công ty; `thu07` phụ trách Ấp 39 (hộ `DTH-H000128`), đang giữ 0 đ tiền mặt.
 
 ---
 
@@ -46,9 +48,9 @@ Mật khẩu chung `Demo@2026`. Mở F12 ở mọi cửa sổ: chạy hết kị
 | 2.2 ✗ | `admin` → Biểu giá | Soạn bản dự thảo bỏ trống một nhóm (không phải HGĐ theo nhân khẩu) → **Ban hành** | "Biểu giá phải có đơn giá cho đủ các nhóm giá." | |
 | 2.2b ✗ | `admin` → Biểu giá | Dự thảo bật **Thu hộ gia đình theo nhân khẩu**, chọn địa bàn DTH, để trống đơn giá HGĐ theo nhân khẩu → **Ban hành** | "Biểu giá thu theo nhân khẩu phải có đơn giá một người." | |
 | 2.2c | `admin` → Biểu giá | Dự thảo hiệu lực **01/11/2026**, bật theo nhân khẩu cho **DTH**, đơn giá một người số tạm (vd. 10.000 + 5.000) → **Ban hành** | Ban hành được; `BG-65-2026` kết thúc 31/10/2026; xem lại thấy ô nhân khẩu + DTH. Dùng cho 9.13–9.14 | |
-| 2.3 | `admin` → Cấu hình → Kỳ thu | **Tạo kỳ dự thảo** tháng **10/2026** (chỉ chọn loại, năm, tháng) | Kỳ 10/2026 hiện ngay **đầu** bảng, trạng thái **Dự thảo**, gắn `BG-65-2026`, cột Ngày mở và Hạn công ty nộp để trống; `canbo_xa` có thông báo kỳ chờ mở | |
+| 2.3 | `admin` → Cấu hình → Kỳ thu | **Tạo kỳ dự thảo** tháng **10/2026** (chỉ chọn loại, năm, tháng) | Kỳ 10/2026 hiện ngay **đầu** bảng, trạng thái **Dự thảo**, gắn `BG-65-2026`, cột Ngày mở và Hạn dân đóng để trống, Hạn quyết toán **05/11/2026**; `canbo_xa` có thông báo kỳ chờ mở | |
 | 2.4 ✗ | `admin` | Tạo lại kỳ 10/2026 lần nữa | "Kỳ … đã được tạo trước đó." | |
-| 2.5 | `admin` → Kỳ thu → thẻ **Tự tạo kỳ thu** | Bật quy tắc tháng, ngày tạo 1, hộ đóng 15 ngày, nộp xã 10 ngày → **Lưu quy tắc** | Lưu được; không tạo kỳ trùng với kỳ 10 vừa tạo | |
+| 2.5 | `admin` → Kỳ thu → thẻ **Tự tạo kỳ thu** | Bật quy tắc tháng, ngày tạo 1 → **Lưu quy tắc** (không còn ô số ngày hộ đóng / công ty nộp xã) | Lưu được; không tạo kỳ trùng với kỳ 10 vừa tạo | |
 | 2.6 | `admin` → Công ty & địa bàn | Xem 11 công ty DV01–DV11 | Trạng thái Đang hợp tác. Chuẩn: hồ sơ công ty không có tài khoản ngân hàng (tài khoản nhận chuyển khoản là của xã, do quản trị khai báo, UC-54) **(chưa có trong bản demo)**. Demo hiện: còn tài khoản ngân hàng tạm của từng công ty, chưa có chỗ khai báo tài khoản của xã | |
 
 ## 3. Luồng 1 — Mở kỳ và phát hành khoản thu (BF-01)
@@ -57,9 +59,9 @@ Mật khẩu chung `Demo@2026`. Mở F12 ở mọi cửa sổ: chạy hết kị
 |---|---|---|---|---|
 | 3.1 | `canbo_xa` → Khu vực | Mở **Ấp 47** → **Phân công** cho **DV01** | Ấp 47 hiện DV01 trên bảng; **Lịch sử** có dòng mới. Chuẩn: không còn bản đồ khu vực (UC-14 bỏ) **(chưa có trong bản demo)**. Demo hiện: còn hiện trên bản đồ và kéo thả vị trí | |
 | 3.2 ✗ | `canbo_xa` → Khu vực | Phân công Ấp 39 (đang là DV01) cho DV02 cùng khoảng ngày | Báo "Khu vực … đang do … phụ trách." hoặc tự đóng phân công cũ theo BR-MD-01 — ghi lại hành vi thật | |
-| 3.3 | `canbo_xa` → Khoản thu → Phiếu YCT → **Lập phiếu YCT** | Ô Kỳ thu: **Tháng 10/2026** nằm trên cùng; chọn nó, đặt hạn công ty nộp xã **31/10/2026** → **Xem trước** | Danh sách khoản + tổng tiền; hộ miễn 100% (`DTH-H000149`) là 0 đ | |
-| 3.4 ✗ | `canbo_xa` (màn xem trước) | Đặt hạn hộ đóng **sau** 31/10/2026 | Chuẩn: kỳ chỉ có một hạn nộp (hạn công ty nộp xã, hộ đóng trong hạn này), không có ô hạn hộ đóng riêng nên không có case này **(chưa có trong bản demo)**. Demo hiện: còn ô hạn hộ đóng, báo "Hạn hộ đóng không được sau hạn công ty nộp xã của kỳ …" | |
-| 3.5 | `canbo_xa` | Chuẩn: không nhập hạn hộ đóng; Demo hiện: nhập hạn hộ đóng hợp lệ (vd. 20/10). Rồi **Mở kỳ & phát hành** → xác nhận | Kỳ 10/2026 thành **Đang thu**; có phiếu `YCT-1026-01`; khoản sinh cho các hộ có đăng ký hiệu lực | |
+| 3.3 | `canbo_xa` → Khoản thu → Phiếu YCT → **Lập phiếu YCT** | Ô Kỳ thu: **Tháng 10/2026** nằm trên cùng; chọn nó, ô **Hạn dân đóng** mặc định **25/10/2026**, dưới ghi hạn quyết toán 05/11/2026 → **Xem trước** | Danh sách khoản + tổng tiền; hộ miễn 100% (`DTH-H000149`) là 0 đ | |
+| 3.4 ✗ | `canbo_xa` (màn xem trước) | Đặt hạn dân đóng **05/11/2026** (bằng hoặc sau hạn quyết toán) | Bị chặn: "Hạn dân đóng phải trước hạn quyết toán (…)" (`PERIOD_DUE_AFTER_SETTLEMENT`) | |
+| 3.5 | `canbo_xa` | Giữ hạn dân đóng 25/10/2026 → **Mở kỳ & phát hành** → xác nhận | Kỳ 10/2026 thành **Đang thu**; có phiếu `YCT-1026-01`; khoản sinh cho các hộ có đăng ký hiệu lực | |
 | 3.6 | `canbo_xa` → Khoản thu → Phiếu YCT | **Lập phiếu YCT** cùng kỳ, toàn xã → **Xem trước** | Các hộ đã có khoản bị bỏ qua kèm cảnh báo trùng, không sinh khoản thứ 2 | |
 | 3.7 | `dv01` → Khu vực được giao → Tổng quan | Chọn kỳ 10/2026 | Thấy tổng phải thu kỳ 10, gồm cả hộ Ấp 47 vừa nhận | |
 | 3.8 | Người dân `0902000128` | Trang chủ | Có thông báo khoản mới; **Khoản phí phải đóng** có khoản kỳ 10/2026 | |
@@ -100,60 +102,43 @@ Chuẩn (UC-18 bỏ): không phân tổ; người đi thu thu được mọi h�
 | 4.16 ✗ | `dv01` | Ngày bàn giao ngày mai | "Ngày bàn giao không được sau hôm nay." | |
 | 4.17 | `dv01` | Nhận đúng số đang giữ → **Xác nhận đã nhận** | `thu07` → Tiền mặt về **0**, **Lịch sử bàn giao** có dòng mới | |
 
-### 4d. Nhắc nộp, nộp về xã
+### 4d. Nhắc nộp, quyết toán (UC-34, UC-35)
 
-**Phải nộp xã tính trên số đã thu** (góp ý BA 05/10; đã có trong bản demo): phải nộp xã = tiền mặt công ty đã thu − điều chỉnh kỳ trước − phí thu gom của **toàn bộ** số đã thu (cả chuyển khoản vào tài khoản xã). Với biểu giá BG-65-2026 nhóm HH_3_PLUS (80.000 đ = thu gom 57.000 + vận chuyển 23.000): mỗi hộ nộp **tiền mặt** làm phải nộp xã tăng **23.000 đ** (80.000 − 57.000); mỗi hộ **chuyển khoản** làm phải nộp xã giảm **57.000 đ** (công ty được hưởng phí thu gom nhưng không cầm tiền). Phải nộp xã **có thể âm**: xã trả lại công ty phần chênh, màn hiện "Xã trả lại công ty X đ".
+**Phải nộp xã tính trên số đã thu** (góp ý BA 05/10): phải nộp xã = tiền mặt công ty đã thu − điều chỉnh kỳ trước − phí thu gom của **toàn bộ** số đã thu (cả chuyển khoản vào tài khoản xã). Với biểu giá BG-65-2026 nhóm HH_3_PLUS (80.000 đ = thu gom 57.000 + vận chuyển 23.000): mỗi hộ nộp **tiền mặt** làm phải nộp xã tăng **23.000 đ**; mỗi hộ **chuyển khoản** làm giảm **57.000 đ**. Phải nộp xã chính là **chênh lệch** trên phiếu quyết toán: dương công ty nộp xã, âm xã trả công ty, 0 vẫn lập phiếu (BR-REM-18).
 
-⚠ Seed kỳ 09/2026 có ~40% chuyển khoản và phiếu thu viết theo công thức cũ, nên theo công thức mới **không công ty nào còn nợ kỳ 09** (DV01: đã thu 639.000 = tiền mặt 480.000 + chuyển khoản 159.000, phí thu gom 455.788, phải nộp xã 24.212, đã nộp 200.000, còn phải nộp **−175.788** = xã trả lại công ty; 10 công ty còn lại đều âm). Muốn thử nhắc nộp và lập phiếu (4.19, 4.22, 4.23) phải tạo số còn phải nộp dương ở kỳ 10: ghi **tiền mặt** nhiều hộ ở 4.4–4.5 (4 hộ tiền mặt = 92.000 đ; nếu đã có 1 hộ chuyển khoản ở 4.10 thì còn 35.000 đ) và, với nhắc nộp, mở kỳ 10 với hạn nộp đã qua.
-
-| # | Vai trò | Thao tác | Kết quả mong đợi | Đạt |
-|---|---|---|---|---|
-| 4.18 | `canbo_xa` → Tiến độ thu | Kỳ 10/2026 | Seed: DV01 **không** còn cảnh báo "Kỳ trước chưa khóa" (kỳ 09 phải nộp xã 24.212, đã nộp 200.000, xã trả lại công ty 175.788); ghi lại số "Xã trả lại công ty" ở dòng kỳ 09. Kỳ 10 chưa có số thì DV01 chưa hiện dòng | |
-| 4.19 | `canbo_xa` | DV01 → **Nhắc công ty nộp tiền về xã** → **Gửi nhắc nộp** (cần công ty nợ quá hạn: xem ghi chú ⚠ ở đầu 4d; seed không có) | `dv01` có thông báo ở chuông; bấm vào mở đúng màn | |
-| 4.20 ✗ | `canbo_xa` | Nhắc một công ty không nợ (DV02 kỳ 09, hoặc DV01 theo seed) | "Công ty … không có kỳ nào quá hạn còn nợ, không cần nhắc nộp." | |
-| 4.21 ✗ | `canbo_xa` → Khoản thu → Phiếu thu công ty → kỳ 09 → **Lập phiếu** DV01 | Số tiền bất kỳ (seed: còn phải nộp âm), hoặc ở kỳ có nợ: số tiền **lớn hơn** "còn phải nộp" | "Số tiền phải lớn hơn 0 và không vượt số còn phải nộp (…)"; khi không còn phải nộp: "… công ty không còn số phải nộp ở kỳ này (xã trả lại công ty 175.788 đ)" | |
-| 4.22 | `canbo_xa` | Kỳ có nợ (xem ⚠ ở đầu 4d): lập phiếu DV01 đúng bằng còn phải nộp | Phiếu `PT-CT-…`; **Bản in phiếu thu** có số tiền bằng chữ; DV01 đã nộp đủ (còn phải nộp 0); Tiến độ hết cảnh báo "Kỳ trước chưa khóa" nếu đó là kỳ cũ. Số tiền mỗi phiếu không vượt số còn phải nộp (UC-35) | |
-| 4.23 | `canbo_xa` | Kỳ 10 (đã ghi tiền mặt ≥ 4 hộ, xem ⚠) → Lập phiếu DV01 số **nhỏ hơn** còn phải nộp | Tiến độ thu: **Nộp một phần**; Đối soát: **Đang nộp** | |
-| 4.24 | `canbo_xa` → Tiến độ thu | So số DV01 kỳ 10 với `dv01` → Tổng quan và Đối soát | Phải thu / đã thu (tiền mặt + chuyển khoản) / phí thu gom công ty hưởng / phải nộp xã / đã nộp **khớp nhau** ở cả 3 màn (BR-REM-12). Phải nộp xã = tiền mặt công ty đã thu − điều chỉnh kỳ trước − phí thu gom của toàn bộ số đã thu (cả chuyển khoản); âm thì hiện "Xã trả lại công ty". Ví dụ: 2 hộ tiền mặt (160.000) + 1 hộ chuyển khoản (80.000): thu gom 3 × 57.000 = 171.000, phải nộp xã = 160.000 − 171.000 = −11.000 | |
-
-### 4d-2. Xã trả lại công ty (UC-55)
+Seed kỳ 09/2026 (đã qua hạn dân đóng 25/09 và hạn quyết toán 05/10, chưa có phiếu nào): DV01 chênh lệch **24.212** (công ty nộp xã); DV02 **−310.000**, DV03 −322.000, DV04 −396.000, DV05 −176.000, DV06 −158.000, DV07 −402.000, DV08 −174.000, DV09 −228.000, DV10 −57.000, DV11 −327.000 (xã trả công ty).
 
 | # | Vai trò | Thao tác | Kết quả mong đợi | Đạt |
 |---|---|---|---|---|
-| 4.39 | `canbo_xa` → Tiến độ thu / Đối soát | Kỳ 09/2026 (seed: DV01 phải nộp xã 24.212, đã nộp 200.000) | Hiện "Xã trả lại công ty 175.788 đ"; Đối soát hiện **Đang nộp** hoặc **Lệch** (xã còn phải trả) | |
-| 4.40 | `canbo_xa` → Khoản thu → Phiếu chi trả công ty → kỳ 09 → **Lập phiếu chi** DV01 | Số tiền 100.000, hình thức **Chuyển khoản**, số chứng từ `UNC-01`, ngày hôm nay | Phiếu `PC-CT-0926-001`; **Bản in phiếu chi** có số tiền bằng chữ, hình thức, chứng từ, lũy kế đã trả 100.000, xã còn phải trả 75.788; Tiến độ thu: "Xã trả lại công ty 175.788 đ, đã trả 100.000 đ, còn 75.788 đ" | |
-| 4.41 ✗ | `canbo_xa` | Lập phiếu chi DV01 số tiền 75.789 (lớn hơn xã còn phải trả) hoặc 0, hoặc ngày mai | Báo lỗi số tiền phải lớn hơn 0 và không vượt 75.788 đ; "Ngày trả không được sau hôm nay." | |
-| 4.42 | `canbo_xa` | Lập phiếu chi DV01 số 75.788 | Phiếu `PC-CT-0926-002`; xã còn phải trả 0; nhãn "Xã đã trả đủ"; Đối soát **Khớp**; nút Lập phiếu chi của DV01 bị khóa | |
-| 4.43 | `dv01` → Khu vực được giao → Phiếu thu xã lập | Xem mục Phiếu xã trả lại | Thấy hai phiếu chi của DV01, không thấy phiếu công ty khác; có thông báo "Xã đã lập phiếu chi trả …" ở chuông, bấm vào mở đúng màn | |
-| 4.44 ✗ | `dv01`, `admin`, người đi thu | Gọi `POST /api/remittance/payouts` | 403 (công ty, quản trị viên, người đi thu không lập được); `admin` không xem được danh sách | |
-| 4.45 | `lanhdao` → menu **Phiếu chi trả** | Chọn kỳ 09/2026 | Thấy danh sách công ty xã phải trả, đã trả, còn phải trả và lịch sử phiếu; **không** có nút Lập phiếu chi. `admin` → Nhật ký thấy dòng `ISSUE_COMMUNE_PAYOUT` kèm trước/sau | |
-| 4.46 ✗ | `canbo_xa` → Đối soát → **Khóa kỳ** | Kỳ 09/2026 khi xã còn phải trả lại DV01 (chưa lập đủ phiếu chi), kể cả khi mọi công ty đã nộp đủ và kỳ đã hết hạn | Cảnh báo đỏ "Chưa khóa được kỳ … vì xã còn phải trả lại 1 công ty: DV01: …" (mã `PERIOD_COMMUNE_OWES`); lập đủ phiếu chi rồi khóa lại thì khóa được | |
-| 4.47 ✗ | `canbo_xa` → Phiếu chi trả công ty | Kỳ đã khóa: nút **Lập phiếu chi** bị khóa | Kỳ đã khóa thì không lập thêm phiếu chi (xã đã trả đủ trước khi khóa) | |
-| 4.48 | `dv01` → Phiếu thu xã lập → mục Phiếu xã trả lại → **Báo sai sót** một phiếu chi | Chọn loại, ghi mô tả → **Gửi báo sai sót** | Phiếu hiện "Đã báo sai sót · chờ xã kiểm tra"; `canbo_xa` có thông báo (UC-56) | |
-| 4.49 | `canbo_xa` → Khoản thu → Sai sót phiếu chi trả | **Xử lý** → ghi kết quả → **Đánh dấu đã xử lý** | Chuyển sang lọc **Đã xử lý**; phiếu chi gốc không bị sửa; `dv01` có thông báo kết quả (UC-57) | |
-
-### 4e. Sai sót phiếu thu
-
-| # | Vai trò | Thao tác | Kết quả mong đợi | Đạt |
-|---|---|---|---|---|
-| 4.25 ✗ | `dv01` → Phiếu thu xã lập → **Báo sai sót** | Để trống mô tả | "Phải mô tả sai sót." | |
-| 4.26 | `dv01` | Ghi mô tả → **Gửi báo sai sót** | `canbo_xa` có thông báo | |
-| 4.27 | `canbo_xa` → Khoản thu → Sai sót phiếu thu | **Xử lý** → ghi kết quả → **Đánh dấu đã xử lý** | Chuyển sang lọc **Đã xử lý**; phiếu gốc không bị sửa | |
+| 4.18 | `canbo_xa` → Tiến độ thu, Đối soát | Kỳ 09/2026, rồi kỳ 10/2026 | Kỳ 09: cả 11 công ty **Quá hạn quyết toán**, Đối soát lọc **Chưa quyết toán 11**. Kỳ 10: DV01 hiện quá hạn vì còn phải nộp kỳ 09 (nợ kỳ trước 24.212) | |
+| 4.19 | `canbo_xa` | Kỳ 09 → DV01 → **Nhắc nộp** → **Gửi nhắc nộp** | `dv01` có thông báo ở chuông; bấm vào mở đúng màn | |
+| 4.20 ✗ | `canbo_xa` | Nhắc DV02 (xã trả công ty, không có số phải nộp) | "Công ty … không có kỳ nào quá hạn còn nợ, không cần nhắc nộp." | |
+| 4.21 ✗ | `canbo_xa` → Đối soát → kỳ 10/2026 | Tìm nút **Lập phiếu quyết toán** (chưa tới hạn dân đóng 25/10); gọi `POST /api/remittance/settlements` cho kỳ 10 | Nút bị khóa, rê chuột thấy "Chỉ lập sau hạn dân đóng 25/10/2026"; API báo "Chỉ lập phiếu quyết toán sau hạn dân đóng (25/10/2026)." | |
+| 4.22 | `canbo_xa` → Đối soát → kỳ 09/2026 | Dòng DV02 → **Lập phiếu quyết toán** → hình thức **Chuyển khoản**, ngày hôm nay, để trống người đại diện → **Lập phiếu** | Popup hiện công ty phải nộp xã **6.694.819**, xã phải trả công ty **7.004.819**, chênh lệch **−310.000** (xã trả công ty), không sửa được. Phiếu **`QT-0926-001`**; bản in có số tiền bằng chữ "Ba trăm mười nghìn đồng", người đại diện = người đầu mối DV02. Dòng DV02 thành **Đã quyết toán**, nút **Xem phiếu QT-0926-001** | |
+| 4.23 | `canbo_xa` | Dòng DV01 → **Lập phiếu quyết toán** → hình thức **Tiền mặt** | Chênh lệch **24.212** (công ty nộp xã); phiếu `QT-0926-002`; ô Xã đang giữ: "+ Đã thu từ Cty" 24.212, "− Đã chi cho Cty" 310.000. Kỳ 10: DV01 không còn quá hạn do nợ kỳ trước | |
+| 4.50 ✗ | `canbo_xa` (API) | Gọi lại `POST /api/remittance/settlements` cho DV02 kỳ 09 | 409 "Công ty DV02 đã quyết toán Tháng 09/2026." | |
+| 4.51 ✗ | `canbo_xa` | Lập phiếu DV03 (chênh lệch −322.000) bỏ trống hình thức (hoặc gọi API không có `method`) | "Phải chọn hình thức chuyển tiền." | |
+| 4.52 ✗ | `canbo_xa` (API) | Lập phiếu DV03 với ngày quyết toán ngày mai | "Ngày quyết toán không được sau hôm nay." | |
+| 4.53 | `dv01` → Khu vực được giao → tab **Phiếu quyết toán** | Xem; bấm thông báo "Xã đã lập phiếu quyết toán QT-0926-002" ở chuông | Chỉ thấy `QT-0926-002` của DV01, không thấy phiếu DV02; không có nút báo sai sót; thông báo mở đúng màn | |
+| 4.54 ✗ | `dv01`, `lanhdao`, `admin` (API) | Gọi `POST /api/remittance/settlements` | 403 (chỉ cán bộ xã lập) | |
+| 4.55 | `lanhdao` → menu **Phiếu quyết toán**, Đối soát | Chọn kỳ 09/2026 | Thấy `QT-0926-001`, `QT-0926-002`; **không** có nút Lập phiếu quyết toán. `admin` → Nhật ký thấy dòng `ISSUE_SETTLEMENT` (Lập phiếu quyết toán) kèm số tiền | |
+| 4.56 | `canbo_xa` | Sau 4.22: hộ `TTT-H000221` (DV07, còn nợ kỳ 09) → lập phiếu quyết toán DV07 trước, rồi người dân chuyển khoản khoản kỳ 09 (như 4.10) | Khoản **Đã đóng**; tiền ghi vào **kỳ 10** (Đối soát kỳ 10 DV07 có thêm số đã thu), số kỳ 09 và phiếu DV07 giữ nguyên (BR-REM-19) | |
+| 4.24 | `canbo_xa` → Tiến độ thu | So số DV01 kỳ 10 với `dv01` → Tổng quan và Đối soát | Phải thu / đã thu (tiền mặt + chuyển khoản) / phí thu gom công ty hưởng / phải nộp xã **khớp nhau** ở cả 3 màn (BR-REM-12). Ví dụ: 2 hộ tiền mặt (160.000) + 1 hộ chuyển khoản (80.000): thu gom 3 × 57.000 = 171.000, phải nộp xã = 160.000 − 171.000 = −11.000 | |
 
 ### 4f. Khóa kỳ
 
 | # | Vai trò | Thao tác | Kết quả mong đợi | Đạt |
 |---|---|---|---|---|
-| 4.28 ✗ | `canbo_xa` → Đối soát → kỳ 10/2026 → **Khóa kỳ** | Còn công ty chưa nộp đủ phải nộp xã (tính trên đã thu), và/hoặc kỳ còn khoản hộ chưa đóng mà chưa đến hạn nộp | "Chưa khóa được kỳ … vì còn … công ty chưa nộp đủ phải nộp xã: DV01: …" nêu tên công ty và số nợ; hoặc "… còn N khoản hộ chưa đóng và chưa đến hạn nộp (dd/MM/yyyy)"; cả hai thì nêu cả hai lý do. Chỉ khóa được khi mọi công ty nộp đủ **và** (kỳ đã thu đủ mọi khoản **hoặc** đã đến hạn nộp: hôm nay ≥ ngày hạn) | |
+| 4.28 ✗ | `canbo_xa` → Đối soát → kỳ 09/2026 → **Khóa kỳ** | Seed còn 5 giao dịch QR chưa xác định công ty | "Chưa khóa được kỳ 2026-09 vì còn 5 giao dịch chuyển khoản chưa xác định công ty (300.000 đ)." (`PERIOD_UNIDENTIFIED_QR`; cộng thêm giao dịch tạo ở 4.11–4.12 nếu có). Demo chưa có màn xử lý giao dịch này: muốn thử tiếp phải xóa chúng trong CSDL demo (`delete from bank_transfers where status = 'UNMATCHED'`) | |
 | 4.29 ✗ | `lanhdao` → Đối soát | Tìm nút Khóa kỳ | Không có (chỉ xem) | |
-| 4.30 | `canbo_xa` | Kỳ 09 (hạn 25/09 đã qua, mọi công ty phải nộp ≤ 0 nên không ai nợ): **Khóa kỳ** 09 (cần đã mở kỳ 10 ở bước 1 để có kỳ đang thu) | Khóa được dù còn hộ chưa đóng (đã đến hạn nộp). Hộ chưa đóng kỳ 09 thành **công nợ của hộ**: app `0902000221` (`TTT-H000221`) vẫn thấy khoản kỳ 09 cần đóng, chuyển khoản qua mã QR (hoặc người đi thu ghi tiền mặt) → khoản **Đã đóng**, tiền ghi vào **kỳ 10** (Đối soát kỳ 10 có thêm số đã thu, phải thu kỳ 10 không đổi); số kỳ 09 giữ nguyên. Kỳ 09 vẫn chặn lập thêm khoản và phiếu thu | |
-| 4.31 ✗ | `canbo_xa` | Kỳ 10 còn hộ chưa đóng, hạn nộp chưa tới, mọi công ty đã nộp đủ phần đã thu → **Khóa kỳ** | Bị chặn: "… còn N khoản hộ chưa đóng và chưa đến hạn nộp (…)" | |
-| 4.32 ✗ | `canbo_xa` | Kỳ 09 đã khóa → thử lập phiếu thu kỳ 09, phát hành thêm khoản kỳ 09 | "Kỳ 2026-09 đã khóa, không thay đổi được." | |
+| 4.31 ✗ | `canbo_xa` | Hết QR chưa xác định, mới quyết toán DV01, DV02 (và DV07 nếu đã làm 4.56) → **Khóa kỳ** 09 | "Chưa khóa được kỳ 2026-09 vì còn n công ty chưa quyết toán: DV03, DV04, …" (`PERIOD_NOT_SETTLED`, nêu đủ mã công ty) | |
+| 4.30 | `canbo_xa` | Lập phiếu quyết toán cho mọi công ty còn lại → **Khóa kỳ** 09 (cần kỳ 10 đang thu) | Khóa được dù còn hộ chưa đóng. Hộ chưa đóng kỳ 09 thành **công nợ của hộ**: app `0902000221` (`TTT-H000221`) vẫn thấy khoản kỳ 09 cần đóng (nếu chưa đóng ở 4.56), chuyển khoản qua mã QR (hoặc người đi thu ghi tiền mặt) → khoản **Đã đóng**, tiền ghi vào **kỳ 10**; số kỳ 09 giữ nguyên | |
+| 4.32 ✗ | `canbo_xa` | Kỳ 09 đã khóa → thử lập phiếu quyết toán kỳ 09, phát hành thêm khoản kỳ 09 | API báo "Kỳ 2026-09 đã khóa, không thay đổi được." | |
 | 4.33 ✗ | (Máy hoặc người đi thu) | Kỳ 09 đã khóa, **chưa có kỳ đang thu**: ghi thu hộ còn nợ kỳ 09 | "… đã khóa và chưa có kỳ đang thu để ghi nhận tiền công nợ của hộ." | |
-| 4.34 | `canbo_xa` → Tiến độ thu | Sau khi khóa kỳ 09 (4.30), chọn kỳ 10/2026 | Có đủ thẻ: Phải thu, Đã thu (tiền mặt, chuyển khoản), Phải nộp xã, Đã nộp, Còn phải nộp, **Công nợ hộ** (N hộ, tổng tiền các khoản chưa thu của kỳ 09, đúng bằng số hộ chưa đóng kỳ 09). Bảng công ty có cột Phải nộp xã và Tỷ lệ nộp, **không** có cột "Nợ kỳ trước"; thanh tỷ lệ không tô đỏ dưới 45% | |
+| 4.34 | `canbo_xa` → Tiến độ thu | Sau khi khóa kỳ 09 (4.30), chọn kỳ 10/2026 | Có đủ thẻ: Phải thu, Đã thu (tiền mặt, chuyển khoản), Phải nộp xã, Đã nộp, Còn phải nộp, **Công nợ hộ** (N hộ, tổng tiền các khoản chưa thu của kỳ 09, đúng bằng số hộ chưa đóng kỳ 09). Công ty chưa quyết toán kỳ 10 hiện **Chưa quyết toán** (chưa tới hạn quyết toán 05/11); không còn nhãn "Nộp một phần" | |
 | 4.35 | `canbo_xa` | Thẻ Công nợ hộ → **Xem danh sách**; rồi mở công ty → cột "Hộ còn nợ kỳ cũ" của tổ → bấm số | Danh sách hộ: hộ, địa chỉ, tổ, công ty, kỳ (Tháng 09/2026), số tiền, số kỳ nợ; bấm từ tổ chỉ còn hộ của tổ đó. Phân trang 10 dòng | |
 | 4.36 | `canbo_xa` | Hộ `TTT-H000221` nộp công nợ kỳ 09 (như 4.30) → mở lại Tiến độ thu kỳ 10 | Thẻ Công nợ hộ **giảm 1 hộ** và hết hộ đó trong danh sách; thẻ Đã thu có chú thích "trong đó thu công nợ kỳ cũ: <số tiền khoản đã nộp>" | |
-| 4.37 | `canbo_xa` → Đối soát, kỳ 10 | Xem bảng | Cột: Công ty, Phải thu, Đã thu tiền mặt, Đã thu chuyển khoản, Phí thu gom công ty hưởng, Điều chỉnh, Phải nộp xã, Đã nộp, Chênh lệch, Kết quả (Khớp / Đang nộp / Lệch); **không** có "Nợ kỳ trước". Công ty còn phải nộp của kỳ cũ hiện ở cảnh báo đầu trang | |
+| 4.37 | `canbo_xa` → Đối soát, kỳ 10 | Xem bảng | Nhóm Xã nhận qua QR, Cty thu tiền mặt, cột Kết quả, Phiếu quyết toán; đầu bảng ghi hạn dân đóng 25/10/2026 và hạn quyết toán 05/11/2026; lọc **Tất cả / Chưa quyết toán / Đã quyết toán** | |
 | 4.38 | `lanhdao` → Tiến độ thu | Xem thẻ Công nợ hộ và danh sách | Thấy thẻ và danh sách; **không** có nút "Nhắc công ty nộp". Tài khoản `dv01` không vào được màn này (1.3) | |
 
 ## 5. Quy trình con F — Miễn giảm, hoàn, xóa nợ (lãnh đạo duyệt)
@@ -213,8 +198,8 @@ Web chỉ còn phần **miễn giảm** (bật trên hồ sơ hộ). Hoàn tiề
 |---|---|---|---|---|
 | 8.1 | `lanhdao` → Dashboard | Kỳ 09 và kỳ 10 | Cảnh báo **Tỷ lệ nộp thấp (dưới 45%)** có DV05, DV08, DV10 (kỳ 09); **Nộp chậm / nợ kỳ trước**; số khớp Tiến độ thu của xã | |
 | 8.2 | `lanhdao` → Báo cáo tổng hợp | Lọc theo công ty, theo tổ → **Xuất báo cáo** | File CSV mở bằng Excel không lỗi dấu; có dòng **Tổng toàn xã**, cột **Phải nộp xã**, **Hộ miễn 100%** | |
-| 8.3 ✗ | `lanhdao` | Tiến độ thu / Đối soát | Chỉ xem: không có Nhắc nộp, Lập phiếu, Khóa kỳ | |
-| 8.4 | `admin` → Nhật ký | Lọc theo `canbo_xa`, hành động lập phiếu thu | Có dòng ở 4.22–4.23 kèm trước/sau | |
+| 8.3 ✗ | `lanhdao` | Tiến độ thu / Đối soát / Phiếu quyết toán | Chỉ xem: không có Nhắc nộp, Lập phiếu quyết toán, Khóa kỳ | |
+| 8.4 | `admin` → Nhật ký | Lọc theo `canbo_xa`, hành động lập phiếu quyết toán | Có dòng ở 4.22–4.23 kèm số tiền | |
 | 8.5 | Mọi vai trò | Chuông → bấm một thông báo | Mở đúng màn liên quan; **Đánh dấu tất cả đã đọc** hết số đỏ | |
 
 ## 9. Hồ sơ hộ (case dữ liệu)

@@ -1,5 +1,7 @@
 # Làm lại trang Đối soát theo mockup (07/10)
 
+> **Đã thay 07/10:** quyết định "giữ nhiều phiếu thu và nhiều phiếu chi trong một kỳ" bên dưới không còn hiệu lực, thay bằng một phiếu quyết toán mỗi công ty mỗi kỳ: xem `docs/quyet-toan-0710.md`.
+
 Nguồn: `docs/doi-soat/SPEC.md` + `mockup.html` (gói bàn giao, đã chép vào repo). Trang: `web/src/features/remittance/ReconciliationPage/`. Màu và style dùng lại của web hiện tại (Ant Design, `StatCard`, `StatusTag`, `MoneyText`), không chép CSS của mockup.
 
 ## Trạng thái: đã làm 07/10 (backend + web), IT liên quan đã xanh (PeriodLock, Ledger, CommunePayout, CompanyReceipt), chưa push

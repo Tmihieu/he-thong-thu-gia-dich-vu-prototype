@@ -16,9 +16,9 @@ Người dùng chốt 07/10/2026. Thay cho quyết định "giữ nhiều phiế
 | Q2 | Hạn dân đóng mặc định **ngày 25 tháng cuối kỳ** (kỳ tháng: 25 hằng tháng; kỳ quý: 25 tháng thứ 3). Vẫn sửa được khi mở kỳ. |
 | Q3 | Hạn quyết toán = **ngày 5 tháng sau kỳ**, cố định, không sửa theo từng kỳ, không lùi khi rơi vào ngày nghỉ (tính ra từ ngày cuối kỳ, không lưu cột). Hạn dân đóng phải trước hạn quyết toán. |
 | Q4 | Xã nộp Sở chậm nhất **ngày 9** tháng sau ("trước ngày 10"). Demo không làm phần nộp Sở (BR-REM-14). |
-| Q5 | Mỗi công ty, mỗi kỳ **một phiếu quyết toán**, lập một lần, không sửa, không hủy. Thay phiếu thu công ty (UC-30..) và phiếu chi trả công ty (UC-55). |
+| Q5 | Mỗi công ty, mỗi kỳ **một phiếu quyết toán**, lập một lần, không sửa, không hủy. Thay phiếu thu công ty (UC-35) và phiếu chi trả công ty (UC-55). |
 | Q6 | Chênh lệch bằng 0 vẫn phải lập phiếu quyết toán (công ty vẫn đến nhận quyết toán). |
-| Q7 | Công ty chỉ xem phiếu của mình. **Bỏ báo sai sót** phiếu thu và phiếu chi trả (UC-31, UC-32, UC-56, UC-57). |
+| Q7 | Công ty chỉ xem phiếu của mình. **Bỏ báo sai sót** phiếu thu và phiếu chi trả (UC-36, UC-37, UC-56, UC-57). |
 | Q8 | Quá hạn quyết toán: xem mục dưới. |
 | Q9 | Giữ kỳ quý. |
 | Q10 | Chưa hỏi kế toán xã việc phiếu quyết toán thay phiếu thu/chi trong sổ của xã; vẫn làm. |
