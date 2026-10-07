@@ -138,11 +138,12 @@ class StreetAddressIT extends IntegrationTest {
 
         when(goong.autocomplete(anyString(), anyInt())).thenReturn(new GoongClient.Result(GoongClient.Status.OK,
                 List.of(new GoongClient.Suggestion("pid", "Đường Lê Lợi", "Đông Thạnh"),
-                        new GoongClient.Suggestion("pid2", "Đường Nguyễn Huệ", "Đông Thạnh"))));
+                        new GoongClient.Suggestion("pid2", "Đường Nguyễn Huệ", "Đông Thạnh"),
+                        new GoongClient.Suggestion("pid3", "Đường Lê Văn Khương", "Thới An, Hồ Chí Minh"))));
         mvc.perform(get("/api/masterdata/streets/suggest").param("q", "nguyen hue").param("districtId", nb.getId().toString())
                         .header(HttpHeaders.AUTHORIZATION, officer))
                 .andExpect(jsonPath("$.streets.length()").value(1))
-                // Đường đã có trong danh mục thì không lặp lại ở phần Goong; đường lạ chỉ là tham khảo.
+                // Đường đã có trong danh mục thì không lặp lại ở phần Goong; đường ngoài xã bị bỏ; đường lạ chỉ là tham khảo.
                 .andExpect(jsonPath("$.external.length()").value(1))
                 .andExpect(jsonPath("$.external[0].name").value("Đường Lê Lợi"));
     }

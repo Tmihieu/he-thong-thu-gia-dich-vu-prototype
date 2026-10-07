@@ -2,6 +2,7 @@ package vn.dongthanh.vsmt.masterdata.service;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.springframework.data.domain.PageRequest;
@@ -57,7 +58,10 @@ public class StreetService {
         String where = districtId == null ? "" : districts.findById(districtId).map(d -> " " + d.getName()).orElse("");
         GoongClient.Result r = goong.autocomplete(raw + where, GOONG_LIMIT);
         List<String> known = found.stream().map(Street::getNameKey).toList();
+        // Chỉ nhận đường trong xã: địa chỉ phụ Goong phải nêu một trong các địa bàn (xã cũ đã gộp vào Đông Thạnh).
+        List<String> communes = districts.findAll().stream().map(d -> d.getName().toLowerCase(Locale.ROOT)).toList();
         List<GoongClient.Suggestion> external = r.items().stream()
+                .filter(s -> communes.stream().anyMatch(s.secondary().toLowerCase(Locale.ROOT)::contains))
                 .filter(s -> !known.contains(AddressText.streetKey(s.name()))).toList();
         return new Suggestions(found, external, r.status());
     }
