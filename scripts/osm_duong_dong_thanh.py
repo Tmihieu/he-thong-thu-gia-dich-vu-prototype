@@ -19,8 +19,29 @@ AP_IDS = list(range(21383875, 21383914)) + list(range(21386184, 21386197))
 def xa_cu(ap):
     return 'Thới Tam Thôn' if ap <= 23 else 'Đông Thạnh' if ap <= 47 else 'Nhị Bình'
 
-# Báo chí mới nêu 2 ví dụ trong 18 tuyến của NQ 380/2025; phần còn lại chờ xã cung cấp.
-NQ380 = {'đông thạnh 6': 'Trương Thị Trưng', 'đông thạnh 8': 'Nguyễn Thị Mực'}
+# 18 tuyến ở Đông Thạnh theo NQ 380/NQ-HĐND 24/7/2025, chép từ bảng báo Thanh Niên (chưa có bản Công báo):
+# thanhnien.vn/tphcm-dat-ten-moi-cho-60-tuyen-duong-185250724100127187.htm. Xã đối chiếu văn bản gốc.
+NQ380 = {
+    'đông thạnh 8': 'Nguyễn Thị Mực',
+    # Báo ghi 2 dòng cùng tên cũ "Đông Thạnh 6", lý trình khác nhau.
+    'đông thạnh 6': 'Trương Thị Trưng hoặc Nguyễn Thị Dễ (báo ghi 2 dòng, cần văn bản gốc)',
+    'đông thạnh 6-1': 'Nguyễn Thị Dễ',
+    'đông thạnh 3': 'Nguyễn Thị Út',
+    'đông thạnh 7': 'Lê Thị Thìn',
+    'đông thạnh 4': 'Võ Thị Tới',
+    'đông thạnh 2-1': 'Võ Thị Lùng',
+    'đông thạnh 2-5': 'Nguyễn Thị Chồn',
+    'đông thạnh 4-1': 'Nguyễn Thị Tạo',
+    'đông thạnh 5': 'Nguyễn Thị Tạo',
+    'đông thạnh 7-3': 'Phạm Thị Tôm',
+    'đông thạnh 7-4': 'Nguyễn Thị Đẹt',
+    'nhị bình 15': 'Trần Thị Hơn',
+    'nhị bình 3': 'Thái Thị Mén',
+    'nhị bình 18': 'Đặng Thị Son',
+    'nhị bình 6': 'Huỳnh Thị Xe',
+    'thới tam thôn 12': 'Phùng Thị Chuyện',
+    'thới tam thôn 7': 'Nguyễn Thị Nghé',
+}
 # Lối đi bộ/xe đạp không phải địa chỉ nhà.
 SKIP_HIGHWAY = {'footway', 'path', 'cycleway', 'steps', 'bridleway', 'construction', 'proposed', 'platform'}
 
@@ -68,6 +89,7 @@ def build(csv_text):
     for k, s in streets.items():
         # Ưu tiên cách viết đầy đủ ("Đông Thạnh 2-6" hơn "ĐT 2-6").
         name = next((v for v, _ in s['names'].most_common() if v.lower() == k), s['names'].most_common(1)[0][0])
+        name = re.sub(r'^(ĐT|Đt|đt)\s*(?=\d)', 'Đông Thạnh ', name)
         m = re.match(r'^hẻm\s+([\w/]+)\s+(.+)$', k)
         parent = ''
         if m:
@@ -82,7 +104,7 @@ def build(csv_text):
             'aps': ', '.join(f'Ấp {a}' for a in aps),
             'xa': ', '.join(sorted({xa_cu(a) for a in aps})),
             'hw': ', '.join(sorted(s['hw'])), 'n': len(s['ids']),
-            'check': ('Có (báo chí)' if k in NQ380 else 'Nên kiểm (tên đánh số)' if numbered else ''),
+            'check': ('Có (NQ 380, theo báo)' if k in NQ380 else 'Nên kiểm (tên đánh số)' if numbered else ''),
             'new': NQ380.get(k, ''),
             'variants': '; '.join(v for v in s['names'] if v != name),
             'osm': ' '.join(sorted(s['ids'])[:6]) + (' …' if len(s['ids']) > 6 else ''),
@@ -172,8 +194,8 @@ def main():
         ['Mục', 'Nội dung'],
         ['Là gì', 'Bản NHÁP danh mục đường/hẻm trong xã Đông Thạnh, tự lấy từ OpenStreetMap ngày ' + today + '. Chưa phải danh mục chính thức.'],
         ['Xã cần làm', 'Ở trang "Danh sach duong": cột "Xã xác nhận" ghi Đúng / Sửa / Bỏ; ghi tên đúng vào "Tên mới / tên đúng"; bổ sung dòng mới cho đường/hẻm còn thiếu.'],
-        ['Đổi tên NQ 380/2025', 'HĐND TP đặt tên 18 tuyến ở Đông Thạnh (NQ 380/NQ-HĐND 24/7/2025). Báo chí mới nêu 2 ví dụ đã điền sẵn; các đường tên đánh số được đánh dấu "Nên kiểm".'],
-        ['Ấp', 'Theo ranh giới 52 ấp trên OpenStreetMap. Một đường dài có thể đi qua nhiều ấp. Xã kiểm lại số ấp hiện hành sau sáp nhập.'],
+        ['Đổi tên NQ 380/2025', 'HĐND TP đặt tên 18 tuyến ở Đông Thạnh (NQ 380/NQ-HĐND 24/7/2025). Tên mới đã điền sẵn theo bảng báo Thanh Niên (chưa có bản Công báo) - xã đối chiếu văn bản gốc. "Đông Thạnh 6" bị báo ghi 2 dòng. Tên đánh số khác đánh dấu "Nên kiểm".'],
+        ['Ấp', 'Theo ranh giới 52 ấp trên OpenStreetMap (vẽ 9/2026, nguồn là một bài Facebook, chưa phải văn bản). Đợt sắp xếp ấp 6/2026 do HĐND xã quyết. Một đường dài có thể đi qua nhiều ấp. Xã kiểm lại số ấp và ranh giới.'],
         ['Không có trong file', 'Hẻm nhỏ chưa ai vẽ trên bản đồ, hẻm trong hẻm, số nhà, tên gọi dân gian. Đã bỏ lối đi bộ/xe đạp.'],
         ['Nguồn', '© OpenStreetMap contributors, giấy phép ODbL (openstreetmap.org/copyright).'],
         ['Thống kê', f'{sum(r["kind"] == "Đường" for r in rows)} đường, {sum(r["kind"] == "Hẻm" for r in rows)} hẻm, {len(by_ap)} ấp có dữ liệu.'],
