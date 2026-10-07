@@ -163,7 +163,7 @@ public class LedgerQueries {
     }
 
     /**
-     * Phải nộp xã theo (công ty, kỳ) của các kỳ có hạn nộp trước {@code today}: tiền mặt đã thu − điều chỉnh − phần thu
+     * Phải nộp xã theo (công ty, kỳ) của các kỳ có hạn quyết toán trước {@code today}: tiền mặt đã thu − điều chỉnh − phần thu
      * gom của số đã thu, cùng công thức với {@link #cashCollectedByCompany}, {@link #retainedByCompany} và
      * {@link #writeOffAdjustmentByCompany}. Có thể âm (xã trả lại công ty).
      */
@@ -179,15 +179,9 @@ public class LedgerQueries {
                 + COLLECTION_JOIN
                 + " where c.written_off_period_id is not null and c.period_id <> c.written_off_period_id"
                 + ") x join collection_periods p on p.id = x.period_id"
-                + " where p.due_date < ? group by x.company_id, x.period_id",
+                // Hạn quyết toán = ngày 5 tháng sau kỳ (CollectionPeriod.getSettlementDueDate).
+                + " where p.end_date + 5 < ? group by x.company_id, x.period_id",
                 (rs, i) -> new CompanyPeriodAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), today);
-    }
-
-    /** Số khoản Chưa thu của kỳ: kỳ "đã thu đủ mọi khoản" khi bằng 0 (UC-39). Khoản miễn, đã xóa nợ không tính. */
-    public long unpaidChargeCount(long periodId) {
-        Long n = jdbc.queryForObject("select count(*) from charges c where c.period_id = ? and c.status = 'UNPAID'",
-                Long.class, periodId);
-        return n == null ? 0 : n;
     }
 
 

@@ -20,18 +20,19 @@ import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository;
 import vn.dongthanh.vsmt.masterdata.domain.Company;
 import vn.dongthanh.vsmt.masterdata.domain.CompanyRepository;
 import vn.dongthanh.vsmt.platform.common.NotFoundException;
+import vn.dongthanh.vsmt.remittance.domain.Settlement;
+import vn.dongthanh.vsmt.remittance.domain.SettlementRepository;
 import vn.dongthanh.vsmt.remittance.service.LedgerQueries.CompanyAmount;
 import vn.dongthanh.vsmt.remittance.service.LedgerQueries.CompanyPeriodAmount;
 import vn.dongthanh.vsmt.remittance.service.LedgerStatus.Progress;
 import vn.dongthanh.vsmt.remittance.service.LedgerStatus.Reconciliation;
-import vn.dongthanh.vsmt.remittance.service.RemittedTotals.Received;
 
 /**
  * Sổ công ty–kỳ, nguồn số liệu duy nhất cho tiến độ, đối soát, màn công ty, phiếu thu, nhắc nộp và khóa kỳ.
  * <ul>
  * <li>Phải thu (sửa R6): Σ khoản theo công ty chụp lúc phát hành (G3), không dùng phân công hiện tại.</li>
  * <li>Đã thu (R8, G4): Σ thanh toán ròng (tiền mặt và chuyển khoản) ghi nhận ở kỳ; thanh toán công nợ hộ của kỳ đã khóa
- * ghi vào kỳ đang thu. Đã nộp về xã (R7): Σ phiếu thu.</li>
+ * ghi vào kỳ đang thu. Đã nộp về xã: chênh lệch dương của phiếu quyết toán (07/10).</li>
  * <li>Phải nộp xã (góp ý BA 05/10) = tiền mặt công ty đã thu − điều chỉnh kỳ trước − phí thu gom của TOÀN BỘ số đã thu
  * (cả chuyển khoản vào tài khoản xã). Âm thì xã trả lại công ty phần chênh, không cắt về 0. Còn phải nộp = phải nộp xã −
  * đã nộp.</li>
@@ -39,10 +40,12 @@ import vn.dongthanh.vsmt.remittance.service.RemittedTotals.Received;
  * chỉ để hiển thị.</li>
  * <li>Điều chỉnh kỳ trước (O10): khoản của kỳ đã khóa được xóa nợ, ghi nhận ở kỳ này. Đã thu đã trừ tiền hoàn ghi nhận
  * ở kỳ này (T58); cột "đã hoàn" chỉ để hiển thị.</li>
- * <li>Nợ kỳ trước (R9–R11): Σ max(0, phải nộp xã − đã nộp) các kỳ khác đã hết hạn. Quá hạn: hạn kỳ &lt; hôm nay và còn nộp.</li>
- * <li>Xã trả lại công ty (UC-55): Σ phiếu chi trả công ty của kỳ là {@code communePaid}; {@code communeOwed} = max(0, −còn phải
- * nộp − đã trả). Còn xã phải trả thì đối soát chưa Khớp.</li>
- * <li>Tiến độ (R13) và đối soát (R14, chênh lệch = đã nộp − phải nộp xã) như prototype.</li>
+ * <li>Nợ kỳ trước (R9–R11): Σ max(0, phải nộp xã − đã nộp) các kỳ cũ hơn đã qua hạn quyết toán. Quá hạn: qua hạn quyết
+ * toán (ngày 5 tháng sau kỳ) mà công ty cần quyết toán chưa có phiếu.</li>
+ * <li>Phiếu quyết toán (07/10): mỗi công ty mỗi kỳ một phiếu; chênh lệch dương là đã nộp ({@code received}), âm là xã đã trả
+ * công ty ({@code communePaid}). Sau khi lập, tiền phát sinh cho khoản của công ty ở kỳ đó ghi vào kỳ đang thu khác
+ * ({@code PeriodGuard.carryOverPeriod}) nên số của dòng không đổi. Công ty có số liệu trong kỳ (phải thu, đã thu, điều
+ * chỉnh) phải quyết toán kể cả khi chênh lệch bằng 0; đã có phiếu thì Khớp, quá hạn chưa có thì Lệch.</li>
  * <li>Cờ dưới 45% ở cấp công ty (màn tiến độ của xã) tính theo đã nộp về xã / phải nộp xã như prototype; tỷ lệ đã thu
  * và cờ của nó vẫn giữ cho màn tổng quan của công ty. Cờ 45% chưa chốt lại sau góp ý BA 05/10, để nguyên.</li>
  * </ul>
@@ -55,13 +58,13 @@ public class CompanyLedgerService {
     static final long LOW_RATE_PERCENT = 45;
 
     private final LedgerQueries queries;
-    private final RemittedTotals remitted;
+    private final SettlementRepository settlements;
     private final CollectionPeriodRepository periods;
     private final CompanyRepository companies;
     private final Clock clock;
 
     public record LedgerRow(Long companyId, String companyCode, String companyName, Long periodId, long due,
-            long chargeCount, long adjustment, long refunded, long collected, long cashCollected, long received, long receiptCount, long remaining, long gap,
+            long chargeCount, long adjustment, long refunded, long collected, long cashCollected, long received, Long settlementId, String settlementCode, long remaining, long gap,
             long previousDebt, boolean overdue, double collectionRate, boolean lowCollectionRate, double remittedRate,
             boolean lowRemittedRate, Progress progress, Reconciliation reconciliation,
             long retained, long payable, long debtCollected, long communePaid, long communeOwed, long qrCollection, long lastPeriodDebt,
@@ -104,13 +107,13 @@ public class CompanyLedgerService {
             return qrTransport() + cashTransport() + processing;
         }
 
-        /** Hai bên đã bù trừ xong: công ty không còn phải nộp, xã không còn phải trả (hoặc không có gì để bù trừ). */
+        /** Đã quyết toán, hoặc không có số liệu gì phải quyết toán. */
         public boolean settled() {
-            return remaining <= 0 && communeOwed == 0;
+            return settlementId != null || !needsSettlement(due, collected, adjustment, refunded);
         }
     }
 
-    /** Mọi công ty có khoản, thanh toán, phiếu thu trong kỳ hoặc còn nợ kỳ trước; sắp theo mã công ty. */
+    /** Mọi công ty có khoản, thanh toán, phiếu quyết toán trong kỳ hoặc còn nợ kỳ trước; sắp theo mã công ty. */
     public List<LedgerRow> ledger(Long periodId) {
         CollectionPeriod period = period(periodId);
         LocalDate today = LocalDate.now(clock);
@@ -124,8 +127,8 @@ public class CompanyLedgerService {
         Map<Long, LedgerQueries.QrAmount> qr = queries.qrByCompany(periodId).stream()
                 .collect(Collectors.toMap(LedgerQueries.QrAmount::companyId, Function.identity()));
         Map<Long, CompanyAmount> processing = byCompany(queries.processingByCompany(periodId));
-        Map<Long, Received> received = remitted.receivedByCompany(periodId);
-        Map<Long, Long> paidBack = remitted.paidBackByCompany(periodId);
+        Map<Long, Settlement> settled = settlements.findByPeriodId(periodId).stream()
+                .collect(Collectors.toMap(x -> x.getCompany().getId(), Function.identity()));
         Map<Long, Long> previousDebt = previousDebts(periodId, today);
         Map<Long, CompanyAmount> lastPeriodDebt = byCompany(queries.lastPeriodUnpaidByCompany(periodId));
 
@@ -134,7 +137,7 @@ public class CompanyLedgerService {
         ids.addAll(collected.keySet());
         ids.addAll(adjustment.keySet());
         ids.addAll(refunded.keySet());
-        ids.addAll(received.keySet());
+        ids.addAll(settled.keySet());
         ids.addAll(lastPeriodDebt.keySet());
         previousDebt.forEach((id, debt) -> {
             if (debt > 0) {
@@ -149,9 +152,8 @@ public class CompanyLedgerService {
         return ids.stream()
                 .filter(companyById::containsKey)
                 .map(id -> build(companyById.get(id), period, today, due.get(id), adjustment.get(id), refunded.get(id),
-                        retained.get(id), cash.get(id), collected.get(id), received.get(id),
-                        previousDebt.getOrDefault(id, 0L), debtCollected.get(id), paidBack.getOrDefault(id, 0L),
-                        qr.get(id), lastPeriodDebt.containsKey(id) ? lastPeriodDebt.get(id).amount() : 0L,
+                        retained.get(id), cash.get(id), collected.get(id), settled.get(id),
+                        previousDebt.getOrDefault(id, 0L), debtCollected.get(id), qr.get(id), lastPeriodDebt.containsKey(id) ? lastPeriodDebt.get(id).amount() : 0L,
                         processing.containsKey(id) ? processing.get(id).amount() : 0L))
                 .sorted(Comparator.comparing(LedgerRow::companyCode))
                 .toList();
@@ -164,7 +166,7 @@ public class CompanyLedgerService {
                     Company c = companies.findAllById(List.of(companyId)).stream()
                             .filter(x -> x.getId().equals(companyId)).findFirst()
                             .orElseThrow(() -> new NotFoundException("COMPANY_NOT_FOUND", "Không tìm thấy công ty."));
-                    return build(c, period(periodId), LocalDate.now(clock), null, null, null, null, null, null, null, 0L, null, 0L, null, 0L, 0L);
+                    return build(c, period(periodId), LocalDate.now(clock), null, null, null, null, null, null, null, 0L, null, null, 0L, 0L);
                 });
     }
 
@@ -173,36 +175,20 @@ public class CompanyLedgerService {
         return queries.unidentifiedQr();
     }
 
-    /** Còn phải nộp của công ty cho kỳ (dùng chặn số tiền phiếu thu, R15). */
-    public long remaining(Long companyId, Long periodId) {
-        return ledger(periodId).stream().filter(r -> r.companyId().equals(companyId)).mapToLong(LedgerRow::remaining)
-                .findFirst().orElse(0L);
-    }
-
-    /** Công ty còn phải nộp &gt; 0 cho kỳ (chặn khóa kỳ, G15; nhắc nộp). */
-    public List<LedgerRow> companiesWithDebt(Long periodId) {
-        return ledger(periodId).stream().filter(r -> r.remaining() > 0).toList();
-    }
-
-    /** Số khoản Chưa thu của kỳ (điều kiện "đã thu đủ mọi khoản" của khóa kỳ, UC-39). */
-    public long unpaidChargeCount(Long periodId) {
-        return queries.unpaidChargeCount(periodId);
-    }
-
-    /** Công ty xã còn phải trả lại &gt; 0 cho kỳ (chặn khóa kỳ, UC-39 / UC-55). */
-    public List<LedgerRow> companiesCommuneOwes(Long periodId) {
-        return ledger(periodId).stream().filter(r -> r.communeOwed() > 0).toList();
+    /** Công ty phải quyết toán mà chưa có phiếu (chặn khóa kỳ, 07/10). */
+    public List<LedgerRow> unsettled(Long periodId) {
+        return ledger(periodId).stream().filter(r -> !r.settled()).toList();
     }
 
     public record PeriodDebt(CollectionPeriod period, long remaining) {
     }
 
-    /** Các kỳ đã hết hạn công ty nộp xã mà công ty còn phải nộp &gt; 0, cũ trước (nhắc nộp R16, nợ kỳ trước). */
+    /** Các kỳ đã qua hạn quyết toán mà công ty còn phải nộp &gt; 0, cũ trước (nhắc nộp R16, nợ kỳ trước). */
     public List<PeriodDebt> overdueDebtsOf(Long companyId) {
         LocalDate today = LocalDate.now(clock);
         Map<Long, Long> receivedByPeriod = new HashMap<>();
-        remitted.receivedByCompanyAndPeriod().stream().filter(r -> r.companyId() == companyId)
-                .forEach(r -> receivedByPeriod.merge(r.periodId(), r.amount(), Long::sum));
+        settlements.search(null, companyId)
+                .forEach(x -> receivedByPeriod.put(x.getPeriod().getId(), Math.max(0, x.getAmount())));
         Map<Long, Long> remainingByPeriod = new HashMap<>();
         queries.payableByCompanyAndPeriodBefore(today).stream().filter(d -> d.companyId() == companyId)
                 .forEach(d -> remainingByPeriod.merge(d.periodId(),
@@ -220,7 +206,7 @@ public class CompanyLedgerService {
 
     private LedgerRow build(Company company, CollectionPeriod period, LocalDate today, CompanyAmount dueRow,
             CompanyAmount adjustmentRow, CompanyAmount refundedRow, CompanyAmount retainedRow, CompanyAmount cashRow, CompanyAmount collectedRow,
-            Received receivedRow, long previousDebt, CompanyAmount debtCollectedRow, long communePaid, LedgerQueries.QrAmount qr,
+            Settlement settlement, long previousDebt, CompanyAmount debtCollectedRow, LedgerQueries.QrAmount qr,
             long lastPeriodDebt, long processing) {
         long qrCollection = qr == null ? 0 : qr.collection();
         long qrProcessing = qr == null ? 0 : qr.processing();
@@ -230,46 +216,45 @@ public class CompanyLedgerService {
         long chargeCount = dueRow == null ? 0 : dueRow.count();
         long collected = collectedRow == null ? 0 : collectedRow.amount();
         long cashCollected = cashRow == null ? 0 : cashRow.amount();
-        long received = receivedRow == null ? 0 : receivedRow.amount();
-        long receiptCount = receivedRow == null ? 0 : receivedRow.receiptCount();
+        // Phiếu quyết toán: chênh lệch dương công ty đã nộp xã, âm xã đã trả công ty.
+        long received = settlement == null ? 0 : Math.max(0, settlement.getAmount());
+        long communePaid = settlement == null ? 0 : Math.max(0, -settlement.getAmount());
         // Phải nộp xã = tiền mặt đã thu − điều chỉnh kỳ trước − phí thu gom của TOÀN BỘ số đã thu, kể cả chuyển khoản vào tài
         // khoản xã (góp ý BA 05/10). Âm thì xã trả lại công ty phần chênh: giữ nguyên số âm, không cắt về 0.
         long retained = retainedRow == null ? 0 : retainedRow.amount();
         long payable = cashCollected - adjustment - retained;
         long remaining = payable - received;
         long gap = received - payable;
-        // Xã còn phải trả lại công ty = số âm của còn phải nộp − tiền xã đã trả (phiếu chi trả công ty, UC-55).
+        // Xã còn phải trả lại công ty = số âm của còn phải nộp − tiền xã đã trả theo phiếu quyết toán.
         long communeOwed = Math.max(0, -remaining - communePaid);
-        boolean pastDue = period.getDueDate().isBefore(today);
-        boolean overdue = pastDue && remaining > 0;
+        boolean done = settlement != null || !needsSettlement(due, collected, adjustment, refunded);
+        boolean overdue = !done && period.getSettlementDueDate().isBefore(today);
 
         Progress progress;
-        if (remaining <= 0) {
+        Reconciliation reconciliation;
+        if (done) {
             progress = Progress.PAID_IN_FULL;
+            reconciliation = Reconciliation.MATCHED;
         } else if (overdue || previousDebt > 0) {
             progress = Progress.OVERDUE;
-        } else if (received > 0) {
-            progress = Progress.PARTIAL;
+            reconciliation = Reconciliation.MISMATCH;
         } else {
             progress = Progress.NOT_PAID;
-        }
-
-        Reconciliation reconciliation;
-        boolean outstanding = gap < 0 || remaining > 0 || communeOwed > 0;
-        if (previousDebt > 0 || (pastDue && outstanding)) {
-            reconciliation = Reconciliation.MISMATCH;
-        } else if (outstanding) {
             reconciliation = Reconciliation.PENDING;
-        } else {
-            reconciliation = Reconciliation.MATCHED;
         }
 
         // Phải thu 0 thì tỷ lệ 0% và không gắn cờ (không có gì để thu, BR-REM-10).
         return new LedgerRow(company.getId(), company.getCode(), company.getName(), period.getId(), due, chargeCount,
-                adjustment, refunded, collected, cashCollected, received, receiptCount, remaining, gap, previousDebt, overdue, percent(collected, due),
+                adjustment, refunded, collected, cashCollected, received, settlement == null ? null : settlement.getId(),
+                settlement == null ? null : settlement.getCode(), remaining, gap, previousDebt, overdue, percent(collected, due),
                 due > 0 && lowRate(collected, due), percent(received, payable), payable > 0 && lowRate(received, payable),
                 progress, reconciliation, retained, payable, debtCollectedRow == null ? 0 : debtCollectedRow.amount(), communePaid,
                 communeOwed, qrCollection, lastPeriodDebt, qrProcessing, processing);
+    }
+
+    /** Công ty có số liệu trong kỳ (phải thu, đã thu, điều chỉnh) thì phải quyết toán, kể cả khi chênh lệch bằng 0. */
+    static boolean needsSettlement(long due, long collected, long adjustment, long refunded) {
+        return due != 0 || collected != 0 || adjustment != 0 || refunded != 0;
     }
 
     /** Phần trăm làm tròn 1 chữ số để hiển thị; 0 khi phải thu 0. */
@@ -284,8 +269,8 @@ public class CompanyLedgerService {
 
     private Map<Long, Long> previousDebts(Long currentPeriodId, LocalDate today) {
         Map<String, Long> receivedByKey = new HashMap<>();
-        remitted.receivedByCompanyAndPeriod()
-                .forEach(r -> receivedByKey.merge(r.companyId() + ":" + r.periodId(), r.amount(), Long::sum));
+        settlements.findAllWithPeriod().forEach(x -> receivedByKey.put(x.getCompany().getId() + ":" + x.getPeriod().getId(),
+                Math.max(0, x.getAmount())));
         Map<Long, Long> debt = new HashMap<>();
         LocalDate currentStart = period(currentPeriodId).getStartDate();
         for (CompanyPeriodAmount d : queries.payableByCompanyAndPeriodBefore(today)) {
