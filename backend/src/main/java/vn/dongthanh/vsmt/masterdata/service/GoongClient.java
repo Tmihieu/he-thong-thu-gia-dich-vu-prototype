@@ -116,9 +116,10 @@ public class GoongClient {
         for (JsonNode p : body.path("predictions")) {
             String main = p.path("structured_formatting").path("main_text").asText("");
             String secondary = p.path("structured_formatting").path("secondary_text").asText("");
-            // Cửa hàng/quán có địa chỉ bắt đầu bằng số nhà ("32/3 Lê Văn Khương, ..."); đường thì không.
+            // Đường chỉ kèm "phường, thành phố"; quán, trạm xe, chợ kèm thêm số nhà/tên đường
+            // ("32/3 Lê Văn Khương, Thới An, Hồ Chí Minh"). Đã kiểm với Goong thật 07/10.
             boolean notStreet = main.isBlank() || Character.isDigit(main.charAt(0))
-                    || secondary.split("[ ,]", 2)[0].matches(".*\\d.*");
+                    || secondary.split(",").length > 2;
             for (JsonNode t : p.path("types")) {
                 notStreet |= NOT_STREET.contains(t.asText());
             }
