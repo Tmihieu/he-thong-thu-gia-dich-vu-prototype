@@ -73,20 +73,21 @@ Mọi tên, SĐT, địa chỉ là dữ liệu giả ("Mẫu", đầu số `0902
 
 | Công ty | Phải thu | Đã thu (tiền mặt + chuyển khoản) | Phí thu gom công ty hưởng | Phải nộp xã | Đã nộp | Còn phải nộp |
 |---|---|---|---|---|---|---|
-| DV01 | 1.319.000 | 639.000 (480.000 + 159.000) | 455.788 | 24.212 | 200.000 | −175.788 |
-| DV02 | 2.560.000 | 2.560.000 (1.520.000 + 1.040.000) | 1.830.000 | −310.000 | 730.000 | −1.040.000 |
-| DV03 | 3.040.000 | 2.520.000 (1.480.000 + 1.040.000) | 1.802.000 | −322.000 | 867.000 | −1.189.000 |
-| DV04 | 2.440.000 | 2.120.000 (1.120.000 + 1.000.000) | 1.516.000 | −396.000 | 417.000 | −813.000 |
-| DV05 | 1.680.000 | 1.200.000 (680.000 + 520.000) | 856.000 | −176.000 | 192.000 | −368.000 |
-| DV06 | 2.718.000 | 1.558.000 (958.000 + 600.000) | 1.116.000 | −158.000 | 0 | −158.000 |
-| DV07 | 3.158.000 | 2.798.000 (1.598.000 + 1.200.000) | 2.000.000 | −402.000 | 901.000 | −1.303.000 |
-| DV08 | 2.440.000 | 1.080.000 (600.000 + 480.000) | 774.000 | −174.000 | 208.000 | −382.000 |
-| DV09 | 1.838.000 | 1.438.000 (800.000 + 638.000) | 1.028.000 | −228.000 | 420.000 | −648.000 |
-| DV10 | 2.000.000 | 640.000 (400.000 + 240.000) | 457.000 | −57.000 | 0 | −57.000 |
-| DV11 | 2.640.000 | 2.640.000 (1.560.000 + 1.080.000) | 1.887.000 | −327.000 | 753.000 | −1.080.000 |
+| DV01 | 31.313.732 | 30.633.732 (13.371.474 + 17.262.258) | 13.347.262 | 24.212 | 200.000 | −175.788 |
+| DV02 | 28.111.068 | 28.111.068 (12.501.626 + 15.609.442) | 12.811.626 | −310.000 | 730.000 | −1.040.000 |
+| DV03 | 36.367.480 | 35.847.480 (15.803.860 + 20.043.620) | 16.125.860 | −322.000 | 867.000 | −1.189.000 |
+| DV04 | 31.323.816 | 31.003.816 (13.534.012 + 17.469.804) | 13.930.012 | −396.000 | 417.000 | −813.000 |
+| DV05 | 26.120.152 | 25.640.152 (11.184.164 + 14.455.988) | 11.360.164 | −176.000 | 192.000 | −368.000 |
+| DV06 | 34.934.564 | 33.774.564 (14.804.398 + 18.970.166) | 14.962.398 | −158.000 | 0 | −158.000 |
+| DV07 | 30.930.900 | 30.570.900 (13.534.550 + 17.036.350) | 13.936.550 | −402.000 | 901.000 | −1.303.000 |
+| DV08 | 25.769.236 | 24.409.236 (10.626.702 + 13.782.534) | 10.800.702 | −174.000 | 208.000 | −382.000 |
+| DV09 | 32.943.648 | 32.543.648 (14.168.936 + 18.374.712) | 14.396.936 | −228.000 | 420.000 | −648.000 |
+| DV10 | 28.661.984 | 27.301.984 (11.859.088 + 15.442.896) | 11.916.088 | −57.000 | 0 | −57.000 |
+| DV11 | 24.858.320 | 24.858.320 (11.109.240 + 13.749.080) | 11.436.240 | −327.000 | 753.000 | −1.080.000 |
 
 ⚠ Seed viết cho công thức cũ (phải nộp = phải thu − phí thu gom, phiếu thu ~40–100% của số đó) và có ~40% hộ chuyển khoản, nên với công thức mới **chỉ DV01 có phải nộp xã dương (24.212 đ) và mọi công ty đã nộp dư**: cột "Còn phải nộp" âm hiện "Xã trả lại công ty X đ"; **không công ty nào còn nợ quá hạn** nên Nhắc nộp (bước 5.1) không có đối tượng và mọi công ty đủ điều kiện để khóa kỳ 09. Muốn demo nợ phải ghi thêm tiền mặt (xem bước 5). Cột "Đã thu" là số cũ, các cột phí thu gom/phải nộp là tính lại.
 
+- **Nguồn thải lớn có phí xử lý** (`V48_1`, 07/10): mỗi công ty 2 hồ sơ `NL…` (nhà máy, siêu thị, bệnh viện, khu trọ… tên giả) ở 2 ấp khác nhau, nhóm cân đủ chi phí 1.054 đ/kg (thu gom 453 + vận chuyển 180 + xử lý 421), định mức 9.060–18.030 kg/tháng, đã thu đủ kỳ 09: một hộ trả QR, một hộ trả tiền mặt (người thu đã bàn giao). Số kg tiền mặt : QR = 453 : 601 nên **phải nộp xã, đã nộp, còn phải nộp không đổi**; chỉ phải thu, đã thu, phí thu gom và cột **Xử lý** ở màn Đối soát (bấm *Chi tiết*) có số. Ví dụ DV01: `DTH-NL00001` (Ấp 39, tiền mặt 12.231 kg) và `TTT-NL00001` (Ấp 02, QR 16.227 kg).
 - **Tài khoản ngân hàng tạm** cho cả 11 công ty. Chuẩn: mọi chuyển khoản vào một tài khoản chung của xã do quản trị khai báo (UC-54), hồ sơ công ty không có tài khoản **(chưa có trong bản demo)**; demo hiện vẫn dùng tài khoản của từng công ty (`Vietcombank 9999000001` của DV01, `MBBank 9999000002` … `MSB 9999000011`, không phải tài khoản thật): màn Thu tiền của người đi thu và app người dân hiện mã VietQR, app không còn nút thanh toán mô phỏng. Hộ có app còn nợ kỳ 09 để thử đóng online: `0902000221` (`TTT-H000221`) và `0902000341` (`NB-H000341`), cùng DV07, mỗi hộ 80.000.
 - **Chuyển khoản qua QR** (Chuẩn: **cán bộ xã** xem giao dịch chờ đối chiếu (UC-27); demo hiện hiện ở màn công ty, Cấu hình → công ty → *Chuyển khoản chờ đối chiếu*, **chưa có trong bản demo** phần chuyển sang xã): phần lớn đã khớp và ghi Đã thu tự động; còn 5 dòng chờ đối chiếu mỗi lý do một dòng — không có mã khoản (DV05, DV07), sai số tiền (DV03), sai tài khoản (DV06), khoản đã đóng rồi (DV09).
 - Tiền mặt đã bàn giao và phiếu thu nộp về xã (`PT-CT-0926-002…`) có đủ ở các công ty; một số người đi thu còn đang giữ tiền mặt chưa bàn giao (màn Tiền mặt của công ty). Mọi thao tác trên có dòng nhật ký.
@@ -96,10 +97,10 @@ Mọi tên, SĐT, địa chỉ là dữ liệu giả ("Mẫu", đầu số `0902
 
 | DV01 · kỳ 09/2026 | Số tiền |
 |---|---|
-| Phải thu (19 khoản: 9 hộ KV07, 9 hộ + 1 nguồn thải nhỏ KV09, giá BG-65-2026) | 1.319.000 |
-| Đã thu (8 lần, mọi khoản đã thu là thu đủ): tiền mặt 480.000 + chuyển khoản 159.000 | 639.000 |
-| Phí thu gom công ty được hưởng (tính theo từng khoản đã thu, cả chuyển khoản) | 455.788 |
-| **Phải nộp xã** = 480.000 − 0 (điều chỉnh) − 455.788 | **24.212** |
+| Phải thu (21 khoản: 9 hộ KV07, 9 hộ + 1 nguồn thải nhỏ KV09, giá BG-65-2026; thêm 2 nguồn thải lớn của `V48_1`) | 31.313.732 |
+| Đã thu (10 lần, mọi khoản đã thu là thu đủ): tiền mặt 13.371.474 + chuyển khoản 17.262.258 | 30.633.732 |
+| Phí thu gom công ty được hưởng (tính theo từng khoản đã thu, cả chuyển khoản) | 13.347.262 |
+| **Phải nộp xã** = 13.371.474 − 0 (điều chỉnh) − 13.347.262 | **24.212** |
 | Đã nộp về xã (phiếu `PT-CT-0926-001`, 22/09) | 200.000 |
 | **Còn phải nộp** = 24.212 − 200.000 (âm: xã trả lại công ty 175.788 đ) | **−175.788** |
 

@@ -141,7 +141,7 @@ class DemoSeedIT extends IntegrationTest {
                 select count(*) from service_subjects s join service_contracts c on c.subject_id = s.id
                 where s.status = 'ENDED' and c.valid_to is not null""", Integer.class)).isPositive();
         assertThat(demoDb.queryForList("select distinct subject_type from service_subjects order by 1", String.class))
-                .containsExactly("HOUSEHOLD", "SMALL_SOURCE");
+                .containsExactly("HOUSEHOLD", "LARGE_SOURCE", "SMALL_SOURCE");
         assertThat(demoDb.queryForObject("select count(distinct area_id) from service_subjects", Integer.class)).isEqualTo(52);
         // Không có SĐT trùng giữa các hộ (SĐT dùng để gắn tài khoản app người dân).
         assertThat(demoDb.queryForObject("select count(*) - count(distinct phone) from service_subjects", Integer.class)).isZero();
@@ -219,11 +219,12 @@ class DemoSeedIT extends IntegrationTest {
         long period = demoDb.queryForObject("select id from collection_periods where code = '2026-09'", Long.class);
 
         // Chính các truy vấn sổ công ty–kỳ dùng. Số liệu DV01 (V22_1) không đổi khi V40_3 thêm khoản cho 10 công ty khác.
+        // V48_1 thêm 2 nguồn thải lớn đã thu đủ: tiền mặt 12.891.474 (12.231 kg) + QR 17.103.258 (16.227 kg).
         LedgerQueries ledger = new LedgerQueries(demoDb);
-        assertThat(ledger.dueByCompany(period)).hasSize(11).contains(new CompanyAmount(dv01, 1_319_000, 19));
+        assertThat(ledger.dueByCompany(period)).hasSize(11).contains(new CompanyAmount(dv01, 1_319_000 + 29_994_732, 21));
         // Đã thu 609.000; V41_1 (nếu có) coi hộ đóng trước một phần DTH-H000125 là đóng đủ nên cộng thêm 30.000.
         assertThat(ledger.collectedByCompany(period)).filteredOn(c -> c.companyId() == dv01)
-                .extracting(CompanyAmount::amount).singleElement().isIn(609_000L, 639_000L);
+                .extracting(CompanyAmount::amount).singleElement().isIn(609_000L + 29_994_732, 639_000L + 29_994_732);
         long received = demoDb.queryForObject(
                 "select sum(amount) from company_receipts where company_id = ? and period_id = ?", Long.class, dv01, period);
         // QĐ-L16: V34_1 hạ phiếu mẫu về 200.000 đ.
@@ -237,7 +238,8 @@ class DemoSeedIT extends IntegrationTest {
         long retained = ledger.retainedByCompany(period).stream().filter(c -> c.companyId() == dv01)
                 .mapToLong(CompanyAmount::amount).sum();
         long payable = cash - retained;
-        assertThat(cash).isEqualTo(480_000L);
+        // Nguồn thải lớn (V48_1) theo tỷ lệ kg tiền mặt : QR = 453 : 601 nên phải nộp xã không đổi.
+        assertThat(cash).isEqualTo(480_000L + 12_891_474);
         assertThat(payable).isEqualTo(24_212L);
         for (LocalDate today : List.of(LocalDate.of(2026, 9, 28), LocalDate.of(2026, 10, 21))) {
             assertThat(ledger.payableByCompanyAndPeriodBefore(today)).filteredOn(d -> d.companyId() == dv01)
@@ -321,6 +323,31 @@ class DemoSeedIT extends IntegrationTest {
                 select c.code from charges c where c.status = 'UNPAID' and c.code like 'KT-0926-%'
                   and c.subject_id in (select subject_id from citizen_accounts) order by c.code""", String.class))
                 .containsExactly("KT-0926-NB-H000341", "KT-0926-TTT-H000221");
+    }
+
+    @Test
+    void demoProfileSeedsLargeSourcesWithProcessingFeeForEveryCompany() {
+        long period = demoDb.queryForObject("select id from collection_periods where code = '2026-09'", Long.class);
+        // V48_1: mỗi công ty 2 nguồn thải lớn ở 2 ấp, nhóm cân đủ chi phí, đã thu đủ (1 QR + 1 tiền mặt).
+        assertThat(demoDb.queryForList("""
+                select co.code || ':' || count(*) || ':' || count(distinct c.area_id) || ':'
+                    || string_agg(distinct p.method, ',' order by p.method)
+                from charges c join service_subjects s on s.id = c.subject_id join companies co on co.id = c.company_id
+                join payments p on p.charge_id = c.id
+                where c.period_id = ? and s.subject_type = 'LARGE_SOURCE' and c.tariff_group = 'FULL_COST_BY_KG'
+                  and c.status = 'PAID' and c.amount = 1054 * c.quota_kg
+                group by co.code order by co.code""", String.class, period))
+                .hasSize(11).allSatisfy(r -> assertThat(r).endsWith(":2:CASH,TRANSFER"))
+                .contains("DV01:2:2:CASH,TRANSFER");
+        LedgerQueries ledger = new LedgerQueries(demoDb);
+        assertThat(ledger.processingByCompany(period)).hasSize(11).allSatisfy(c -> assertThat(c.amount()).isPositive());
+        assertThat(ledger.qrByCompany(period)).hasSize(11).allSatisfy(q -> assertThat(q.processing()).isPositive());
+        // Người thu bàn giao hết tiền mặt của nguồn thải lớn (R21).
+        assertThat(demoDb.queryForObject("""
+                select count(*) from payments p join charges c on c.id = p.charge_id
+                join service_subjects s on s.id = c.subject_id
+                where s.subject_type = 'LARGE_SOURCE' and p.method = 'CASH' and not exists (select 1 from cash_handovers h
+                    where h.collector_id = p.collector_id and h.amount = p.amount)""", Integer.class)).isZero();
     }
 
     private static DataSource dataSource(String url) {
