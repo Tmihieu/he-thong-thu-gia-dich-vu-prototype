@@ -81,8 +81,8 @@ class StreetAddressIT extends IntegrationTest {
     District nb;
     Area kv07;
     Area kv08;
+    Area ap50;
     Street huDth;
-    Street huNb;
     String officer;
 
     @BeforeEach
@@ -91,27 +91,35 @@ class StreetAddressIT extends IntegrationTest {
         nb = districts.save(District.create("NB", "Nhị Bình"));
         kv07 = areas.save(Area.create("KV07", "Tổ 07", dth));
         kv08 = areas.save(Area.create("KV08", "Tổ 08", dth));
-        // Hai đường trùng tên ở hai xã khác nhau.
-        huDth = streets.save(Street.create(dth, "Đường Nguyễn Huệ", null));
-        huNb = streets.save(Street.create(nb, "Nguyễn Huệ", null));
+        ap50 = areas.save(Area.create("AP50", "Ấp 50", nb));
+        huDth = Street.street("Đường Nguyễn Huệ");
+        huDth.setAreaIds(java.util.Set.of(kv07.getId(), kv08.getId()));
+        huDth = streets.save(huDth);
         officer = token("canbo_it", Role.COMMUNE_OFFICER, null);
         when(goong.autocomplete(anyString(), anyInt())).thenReturn(new GoongClient.Result(GoongClient.Status.OK, List.of()));
     }
 
-    // ---- danh mục đường + gợi ý
+    // ---- gợi ý đường
 
     @Test
-    void differentSpellingsFindTheSameStreetAndSameNameShowsDistrict() throws Exception {
+    void differentSpellingsOldNamesAndAlleyFullNamesFindTheStreet() throws Exception {
+        Street muc = Street.street("Đông Thạnh 8");
+        muc.rename("Nguyễn Thị Mực", "NQ 380/NQ-HĐND 24/7/2025");
+        muc = streets.save(muc);
+        streets.save(Street.alley(muc, "Hẻm 12"));
         for (String q : new String[] { "nguyen hue", "NGUYỄN  HUỆ", "đường nguyễn huệ", "huệ" }) {
             mvc.perform(get("/api/masterdata/streets/suggest").param("q", q).header(HttpHeaders.AUTHORIZATION, officer))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.streets.length()").value(2))
-                    .andExpect(jsonPath("$.streets[*].districtName").value(org.hamcrest.Matchers.containsInAnyOrder("Đông Thạnh", "Nhị Bình")));
+                    .andExpect(jsonPath("$.streets.length()").value(1))
+                    .andExpect(jsonPath("$.streets[0].id").value(huDth.getId()));
         }
-        mvc.perform(get("/api/masterdata/streets/suggest").param("q", "nguyen hue").param("districtId", dth.getId().toString())
-                        .header(HttpHeaders.AUTHORIZATION, officer))
+        // Tên cũ vẫn tìm ra đường (và hẻm của nó); đường trước hẻm.
+        mvc.perform(get("/api/masterdata/streets/suggest").param("q", "dong thanh 8").header(HttpHeaders.AUTHORIZATION, officer))
+                .andExpect(jsonPath("$.streets[0].displayName").value("Nguyễn Thị Mực"));
+        mvc.perform(get("/api/masterdata/streets/suggest").param("q", "hẻm 12 nguyễn thị mực").header(HttpHeaders.AUTHORIZATION, officer))
                 .andExpect(jsonPath("$.streets.length()").value(1))
-                .andExpect(jsonPath("$.streets[0].id").value(huDth.getId()));
+                .andExpect(jsonPath("$.streets[0].displayName").value("Hẻm 12 Nguyễn Thị Mực"))
+                .andExpect(jsonPath("$.streets[0].kind").value("ALLEY"));
     }
 
     @Test
@@ -123,10 +131,10 @@ class StreetAddressIT extends IntegrationTest {
     @Test
     void goongOnlyAskedWhenCatalogIsThinAndItsOutageDoesNotBreakSuggest() throws Exception {
         // Danh mục đã đủ gợi ý (≥3) thì không tốn hạn mức Goong.
-        streets.save(Street.create(dth, "Đường Huệ A", null));
-        streets.save(Street.create(dth, "Đường Huệ B", null));
-        mvc.perform(get("/api/masterdata/streets/suggest").param("q", "hue").param("districtId", dth.getId().toString())
-                .header(HttpHeaders.AUTHORIZATION, officer)).andExpect(jsonPath("$.streets.length()").value(3));
+        streets.save(Street.street("Đường Huệ A"));
+        streets.save(Street.street("Đường Huệ B"));
+        mvc.perform(get("/api/masterdata/streets/suggest").param("q", "hue").header(HttpHeaders.AUTHORIZATION, officer))
+                .andExpect(jsonPath("$.streets.length()").value(3));
         verify(goong, never()).autocomplete(anyString(), anyInt());
 
         when(goong.autocomplete(anyString(), anyInt()))
@@ -140,8 +148,7 @@ class StreetAddressIT extends IntegrationTest {
                 List.of(new GoongClient.Suggestion("pid", "Đường Lê Lợi", "Đông Thạnh"),
                         new GoongClient.Suggestion("pid2", "Đường Nguyễn Huệ", "Đông Thạnh"),
                         new GoongClient.Suggestion("pid3", "Đường Lê Văn Khương", "Thới An, Hồ Chí Minh"))));
-        mvc.perform(get("/api/masterdata/streets/suggest").param("q", "nguyen hue").param("districtId", nb.getId().toString())
-                        .header(HttpHeaders.AUTHORIZATION, officer))
+        mvc.perform(get("/api/masterdata/streets/suggest").param("q", "nguyen hue").header(HttpHeaders.AUTHORIZATION, officer))
                 .andExpect(jsonPath("$.streets.length()").value(1))
                 // Đường đã có trong danh mục thì không lặp lại ở phần Goong; đường ngoài xã bị bỏ; đường lạ chỉ là tham khảo.
                 .andExpect(jsonPath("$.external.length()").value(1))
@@ -149,37 +156,34 @@ class StreetAddressIT extends IntegrationTest {
     }
 
     @Test
-    void suggestAndCreateStreetAreOfficerOnlyAndCreateIsAuditedAndDeduplicated() throws Exception {
+    void suggestIsOfficerOnlyAndOfficerCannotChangeTheCatalog() throws Exception {
         String company = token("dv01_it", Role.COMPANY_MANAGER, companies.save(
                 Company.create("DV01", "Công ty Một", "A", "0900000001", LocalDate.of(2026, 1, 1))).getId());
         mvc.perform(get("/api/masterdata/streets/suggest").param("q", "hue").header(HttpHeaders.AUTHORIZATION, company))
                 .andExpect(status().isForbidden());
-
-        String req = "{\"districtId\":%d,\"name\":\"Đường Lê Lợi\",\"goongPlaceId\":\"pid\"}".formatted(dth.getId());
-        mvc.perform(post("/api/masterdata/streets").header(HttpHeaders.AUTHORIZATION, company)
-                .contentType(MediaType.APPLICATION_JSON).content(req)).andExpect(status().isForbidden());
+        mvc.perform(get("/api/masterdata/streets").header(HttpHeaders.AUTHORIZATION, company))
+                .andExpect(status().isForbidden());
+        // Danh mục do quản trị viên quản lý: cán bộ xã chỉ chọn.
         mvc.perform(post("/api/masterdata/streets").header(HttpHeaders.AUTHORIZATION, officer)
-                .contentType(MediaType.APPLICATION_JSON).content(req))
-                .andExpect(status().isCreated()).andExpect(jsonPath("$.goongLinked").value(true));
-        // Viết khác nhưng cùng đường, cùng xã → 409.
-        mvc.perform(post("/api/masterdata/streets").header(HttpHeaders.AUTHORIZATION, officer)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"districtId\":%d,\"name\":\"le  loi\"}".formatted(dth.getId())))
-                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("STREET_EXISTS"));
-        assertThat(jdbc.queryForList("select action from audit_logs where action = 'CREATE_STREET'", String.class)).hasSize(1);
+                .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Đường Lê Lợi\",\"kind\":\"STREET\"}"))
+                .andExpect(status().isForbidden());
     }
 
     // ---- hồ sơ hộ
 
     @Test
-    void savedHouseholdLinksToStreetIdAndStreetMustBelongToAreaDistrict() throws Exception {
+    void savedHouseholdLinksToStreetIdAndAlleyShowsWithItsStreet() throws Exception {
         create(kv07, huDth.getId(), "12A", null, "", "")
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.streetId").value(huDth.getId()))
                 .andExpect(jsonPath("$.street").value("Đường Nguyễn Huệ"))
                 .andExpect(jsonPath("$.address").value("12A Đường Nguyễn Huệ"));
-        // Đường của Nhị Bình không dùng được cho tổ thuộc Đông Thạnh.
-        create(kv07, huNb.getId(), "5", null, "", "").andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("STREET_DISTRICT_MISMATCH"));
+        Street alley = streets.save(Street.alley(huDth, "Hẻm 5"));
+        create(kv07, alley.getId(), "5/2", null, "", "").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.street").value("Hẻm 5 Đường Nguyễn Huệ"))
+                .andExpect(jsonPath("$.address").value("5/2 Hẻm 5 Đường Nguyễn Huệ"));
+        // Đường là của cả xã: nhà giáp ranh ở ấp thuộc xã cũ khác vẫn chọn được (không còn chặn theo địa bàn).
+        create(ap50, huDth.getId(), "99", null, "", "").andExpect(status().isCreated());
     }
 
     @Test
