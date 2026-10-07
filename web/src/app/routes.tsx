@@ -16,6 +16,7 @@ import { LeaderDashboardPage } from '../features/leadership/LeaderDashboardPage'
 import { LeaderReportPage } from '../features/leadership/LeaderReportPage';
 import { CompaniesPage } from '../features/masterdata/CompaniesPage/CompaniesPage';
 import { ConfigPage } from '../features/masterdata/ConfigPage';
+import { StreetsPage } from '../features/masterdata/StreetsPage/StreetsPage';
 import { SubjectsPage } from '../features/masterdata/SubjectsPage/SubjectsPage';
 import { NotificationCenterPage } from '../features/notifications/NotificationCenterPage';
 import { AccountsPage } from '../features/platform/AccountsPage/AccountsPage';
@@ -44,6 +45,7 @@ const settlements = (
 const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'ADMIN:accounts': <AccountsPage />,
   'ADMIN:config': <ConfigPage />,
+  'ADMIN:streets': <StreetsPage />,
   'ADMIN:logs': <AuditLogPage />,
   'ADMIN:data': <DataAdminPage />,
   'COMMUNE_OFFICER:areas': <AreasPage />,

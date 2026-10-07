@@ -7,6 +7,7 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -50,15 +51,27 @@ public class GoongClient {
 
     private final RestClient http;
     private final String apiKey;
+    private final String location;
+    private final int radiusKm;
 
+    public GoongClient(String baseUrl, String apiKey, Duration timeout) {
+        this(baseUrl, apiKey, timeout, "", 0);
+    }
+
+    /** {@code location} ("vĩ độ,kinh độ") + {@code radiusKm}: chỉ tìm quanh xã, không ra kết quả cả nước. */
+    @Autowired
     public GoongClient(@Value("${vsmt.goong.base-url:https://rsapi.goong.io}") String baseUrl,
             @Value("${vsmt.goong.api-key:}") String apiKey,
-            @Value("${vsmt.goong.timeout:3s}") Duration timeout) {
+            @Value("${vsmt.goong.timeout:3s}") Duration timeout,
+            @Value("${vsmt.goong.location:}") String location,
+            @Value("${vsmt.goong.radius-km:0}") int radiusKm) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(timeout);
         factory.setReadTimeout(timeout);
         this.http = RestClient.builder().baseUrl(baseUrl).requestFactory(factory).build();
         this.apiKey = apiKey == null ? "" : apiKey.trim();
+        this.location = location == null ? "" : location.trim();
+        this.radiusKm = radiusKm;
     }
 
     public boolean configured() {
@@ -72,9 +85,15 @@ public class GoongClient {
         try {
             // Lấy dư rồi lọc bỏ cửa hàng/địa danh.
             JsonNode body = http.get()
-                    .uri(b -> b.path("/v2/place/autocomplete").queryParam("api_key", apiKey)
-                            .queryParam("input", "{input}").queryParam("limit", limit * 2)
-                            .queryParam("more_compound", true).build(input))
+                    .uri(b -> {
+                        b.path("/v2/place/autocomplete").queryParam("api_key", apiKey)
+                                .queryParam("input", "{input}").queryParam("limit", limit * 2)
+                                .queryParam("more_compound", true);
+                        if (!location.isEmpty() && radiusKm > 0) {
+                            b.queryParam("location", location).queryParam("radius", radiusKm);
+                        }
+                        return b.build(input);
+                    })
                     .retrieve().body(JsonNode.class);
             return parse(body, limit);
         } catch (RestClientResponseException e) {
@@ -96,13 +115,16 @@ public class GoongClient {
         List<Suggestion> out = new ArrayList<>();
         for (JsonNode p : body.path("predictions")) {
             String main = p.path("structured_formatting").path("main_text").asText("");
-            boolean notStreet = main.isBlank() || Character.isDigit(main.charAt(0));
+            String secondary = p.path("structured_formatting").path("secondary_text").asText("");
+            // Đường chỉ kèm "phường, thành phố"; quán, trạm xe, chợ kèm thêm số nhà/tên đường
+            // ("32/3 Lê Văn Khương, Thới An, Hồ Chí Minh"). Đã kiểm với Goong thật 07/10.
+            boolean notStreet = main.isBlank() || Character.isDigit(main.charAt(0))
+                    || secondary.split(",").length > 2;
             for (JsonNode t : p.path("types")) {
                 notStreet |= NOT_STREET.contains(t.asText());
             }
             if (!notStreet && p.hasNonNull("place_id") && out.size() < limit) {
-                out.add(new Suggestion(p.get("place_id").asText(), main,
-                        p.path("structured_formatting").path("secondary_text").asText("")));
+                out.add(new Suggestion(p.get("place_id").asText(), main, secondary));
             }
         }
         return new Result(Status.OK, out);

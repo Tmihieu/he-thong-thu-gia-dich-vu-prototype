@@ -65,15 +65,22 @@ function api() {
 const norm = { normalizer: (s: string) => s.replace(/\s+/g, ' ').trim() };
 
 describe('Tiến độ thu', () => {
-  it('bảng công ty bỏ cột phải nộp xã, đã nộp, còn phải nộp và cột Nợ kỳ trước; kỳ trước chưa khóa hiện ở cảnh báo; cảnh báo tổ chưa có công ty', async () => {
+  it('bảng công ty chỉ số liệu thu (bỏ cột nộp xã), khoản đã thu cộng từ các tổ, thẻ quá hạn nộp cạnh tên; cảnh báo kỳ trước, tổ chưa có công ty', async () => {
     const fetchFn = api();
     renderApp('/commune/progress');
 
-    // Cột "Đã quyết toán": dấu x đỏ cho công ty chưa có phiếu quyết toán.
-    expect(await screen.findAllByLabelText('Chưa quyết toán')).toHaveLength(2);
+    const dv01Row = (await screen.findByText('Công ty MTĐT Đông Thạnh')).closest('tr')!;
+    await waitFor(() => expect(within(dv01Row).getByText('8/10')).toBeInTheDocument());
+    expect(within(dv01Row).getByText('75%')).toBeInTheDocument();
+    expect(within(dv01Row).queryByText('Quá hạn quyết toán')).not.toBeInTheDocument();
+    // DV07 quá hạn quyết toán (khớp nút nhắc nộp); không có tổ nên khoản đã thu là dấu gạch.
+    const dv07Row = screen.getByText('Công ty Xanh Sài Gòn').closest('tr')!;
+    expect(within(dv07Row).getByText('Quá hạn quyết toán')).toBeInTheDocument();
+    expect(within(dv07Row).getByText('—')).toBeInTheDocument();
     expect(screen.getByText('1 tổ chưa có công ty thu: KV24')).toBeInTheDocument();
     const headers = screen.getAllByRole('columnheader').map((h) => h.textContent);
-    expect(headers).toEqual(expect.arrayContaining(['Công ty', 'Phải thu', 'Đã thu', 'Công nợ tháng trước', 'Tỷ lệ nộp', 'Đã quyết toán']));
+    expect(headers).toEqual(expect.arrayContaining(['Công ty', 'Phải thu', 'Đã thu', 'Công nợ tháng trước', 'Tỷ lệ thu', 'Khoản đã thu']));
+    for (const removed of ['Tỷ lệ nộp', 'Đã nộp đủ']) expect(headers).not.toContain(removed);
     // Công nợ tháng trước nằm ngay sau Đã thu.
     expect(headers.indexOf('Công nợ tháng trước')).toBe(headers.indexOf('Đã thu') + 1);
     for (const removed of ['Phải nộp xã', 'Đã nộp', 'Còn phải nộp']) expect(headers).not.toContain(removed);
@@ -88,7 +95,7 @@ describe('Tiến độ thu', () => {
     // Bấm "+" ở công ty thấy tổ; bấm "+" ở tổ mới tải và hiện hộ chưa thu kèm số nhân khẩu, nhóm giá.
     await userEvent.click(screen.getAllByRole('button', { name: /mở rộng|expand/i })[0]!);
     const area = (await screen.findByText('KV07 · Tổ dân phố 07')).closest('tr')!;
-    expect(screen.getByText('8/10')).toBeInTheDocument();
+    expect(within(area).getByText('8/10')).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Hộ còn nợ tháng trước' })).toBeInTheDocument();
     expect(fetchFn.mock.calls.some(([url]) => String(url).startsWith('/api/billing/charges'))).toBe(false);
     await userEvent.click(within(area).getByRole('button', { name: /mở rộng|expand/i }));
@@ -98,11 +105,10 @@ describe('Tiến độ thu', () => {
     expect(fetchFn.mock.calls.some(([url]) => String(url).startsWith('/api/billing/charges?periodId=10&areaId=7&companyId=1&status=UNPAID'))).toBe(true);
   });
 
-  it('tỷ lệ nộp = đã nộp / phải nộp xã, thanh trơn không tô đỏ dưới 45%; phải nộp xã bằng 0 thì hiện dấu gạch', async () => {
-    // Đã nộp 37,5% phải nộp xã (dưới 45%) nhưng không còn cờ đỏ; DV04 chưa phải nộp gì nên không có tỷ lệ.
-    const dv03 = { ...dv01, companyId: 3, companyCode: 'DV03', companyName: 'Công ty Ba', due: 800_000, collected: 600_000,
-      payable: 800_000, received: 300_000, remaining: 500_000, gap: -300_000, collectionRate: 75, lowCollectionRate: false,
-      remittedRate: 37.5, lowRemittedRate: true };
+  it('tỷ lệ thu = đã thu của kỳ / phải thu, thanh trơn không tô đỏ dưới 45%; phải thu bằng 0 thì hiện dấu gạch', async () => {
+    // (300.000 − 100.000 thu nợ kỳ cũ) / 800.000 = 25% (dưới 45%) nhưng không có cờ đỏ; DV04 không có gì phải thu.
+    const dv03 = { ...dv01, companyId: 3, companyCode: 'DV03', companyName: 'Công ty Ba', due: 800_000, collected: 300_000,
+      debtCollected: 100_000, collectionRate: 37.5, lowCollectionRate: true };
     const dv04 = { ...dv01, companyId: 4, companyCode: 'DV04', companyName: 'Công ty Bốn', due: 0, collected: 0, cashCollected: 0,
       payable: 0, received: 0, remaining: 0, gap: 0, collectionRate: 0, remittedRate: 0, lowRemittedRate: false,
       progress: 'PAID_IN_FULL', reconciliation: 'MATCHED' };
@@ -117,10 +123,10 @@ describe('Tiến độ thu', () => {
     const { container } = renderApp('/commune/progress');
 
     const row = (await screen.findByText('Công ty Ba')).closest('tr')!;
-    expect(within(row).getByText('37,5%')).toBeInTheDocument();
+    expect(within(row).getByText('25%')).toBeInTheDocument();
     const zero = (await screen.findByText('Công ty Bốn')).closest('tr')!;
     expect(within(zero).queryByText(/%/)).not.toBeInTheDocument();
-    expect(within(zero).getByText('—')).toBeInTheDocument();
+    expect(within(zero).getAllByText('—')).toHaveLength(2);
     // Tổ cũng không còn thanh tiến độ đỏ khi tỷ lệ thu dưới 45%.
     await userEvent.click(within(row).getByRole('button', { name: /mở rộng|expand/i }));
     expect(await screen.findByText('KV07 · Tổ dân phố 07')).toBeInTheDocument();

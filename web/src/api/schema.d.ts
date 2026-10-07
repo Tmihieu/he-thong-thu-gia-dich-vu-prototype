@@ -56,6 +56,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/masterdata/streets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sửa/đổi tên (giữ tên cũ kèm văn bản), đổi ấp, ngừng dùng đường/hẻm (quản trị viên, có nhật ký) */
+        put: operations["update_1"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/masterdata/period-rule": {
         parameters: {
             query?: never;
@@ -66,7 +83,7 @@ export interface paths {
         /** Quy tắc tự tạo kỳ thu dự thảo (quản trị) */
         get: operations["get_1"];
         /** Sửa quy tắc tự tạo kỳ thu: bật/tắt, chu kỳ, ngày tạo (quản trị) */
-        put: operations["update_1"];
+        put: operations["update_2"];
         post?: never;
         delete?: never;
         options?: never;
@@ -566,10 +583,79 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** Toàn bộ danh mục đường/hẻm kèm ấp và tên cũ (cán bộ xã chọn khi nhập hồ sơ; quản trị viên quản lý) */
+        get: operations["catalog"];
+        put?: never;
+        /** Thêm đường hoặc hẻm vào danh mục (quản trị viên, có nhật ký) */
+        post: operations["create_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/streets/pending/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         get?: never;
         put?: never;
-        /** Bổ sung đường vào danh mục (cán bộ xã, có nhật ký) */
-        post: operations["create_2"];
+        /** Gắn mọi hồ sơ của một nhóm chờ vào một đường/hẻm trong danh mục (quản trị viên) */
+        post: operations["linkGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/streets/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Nhập danh mục đường từ Excel: ghi tất cả hoặc không gì (quản trị viên) */
+        post: operations["importStreets"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/streets/import/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Xem trước file nhập danh mục đường: từng dòng kèm việc sẽ làm và lỗi, chưa ghi gì (quản trị viên) */
+        post: operations["previewImport_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/streets/auto-match": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tự gắn hồ sơ có tên đường khớp đúng một đường/hẻm trong danh mục (quản trị viên) */
+        post: operations["autoMatch"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1391,8 +1477,42 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Gợi ý đường theo từ khóa: danh mục nội bộ trước, Goong chỉ bổ sung tham khảo (cán bộ xã) */
+        /** Gợi ý đường theo từ khóa (cả tên cũ): danh mục trước, Goong chỉ bổ sung tham khảo (cán bộ xã) */
         get: operations["suggest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/streets/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Hồ sơ chưa gắn đường (địa chỉ cũ, chờ xác minh), gộp theo tên đường đã ghi (quản trị viên) */
+        get: operations["pending"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/streets/import-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tải file Excel mẫu nhập danh mục đường (quản trị viên) */
+        get: operations["importTemplate_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2372,6 +2492,39 @@ export interface components {
             currentContract: components["schemas"]["ContractDto"];
             contracts: components["schemas"]["ContractDto"][];
         };
+        UpdateStreetRequest: {
+            name: string;
+            areaIds?: number[];
+            /** @enum {string} */
+            status?: "ACTIVE" | "INACTIVE";
+            /** @description Văn bản đổi tên (khi đổi tên) */
+            renameNote?: string;
+        };
+        OldNameDto: {
+            name: string;
+            /** @description Văn bản đổi tên */
+            note: string | null;
+        };
+        StreetDto: {
+            /** Format: int64 */
+            id: number;
+            /** @description Tên; với hẻm là tên ngắn ("Hẻm 19") */
+            name: string;
+            /** @description Tên hiển thị; hẻm kèm tên đường */
+            displayName: string;
+            /** @enum {string} */
+            kind: "STREET" | "ALLEY";
+            /**
+             * Format: int64
+             * @description Đường của hẻm
+             */
+            parentId: number | null;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+            /** @description Ấp đường đi qua */
+            areaIds: number[];
+            oldNames: components["schemas"]["OldNameDto"][];
+        };
         PeriodRuleRequest: {
             enabled: boolean;
             /** @enum {string} */
@@ -2822,21 +2975,52 @@ export interface components {
             address: string;
         };
         CreateStreetRequest: {
-            /** Format: int64 */
-            districtId: number;
             name: string;
-            goongPlaceId?: string;
+            /** @enum {string} */
+            kind: "STREET" | "ALLEY";
+            /**
+             * Format: int64
+             * @description Bắt buộc với hẻm
+             */
+            parentId?: number;
+            areaIds?: number[];
         };
-        StreetDto: {
+        LinkGroupRequest: {
+            key: string;
             /** Format: int64 */
-            id: number;
+            streetId: number;
+        };
+        CountDto: {
+            /** Format: int32 */
+            count: number;
+        };
+        StreetImportPreviewDto: {
+            rows: components["schemas"]["StreetImportRowDto"][];
+            /** Format: int32 */
+            added: number;
+            /** Format: int32 */
+            updated: number;
+            /** Format: int32 */
+            skipped: number;
+            /** Format: int32 */
+            invalid: number;
+        };
+        StreetImportRowDto: {
+            /** Format: int32 */
+            rowNo: number;
             name: string;
-            /** Format: int64 */
-            districtId: number;
-            /** @description Xã/phường, để phân biệt đường trùng tên */
-            districtName: string;
-            /** @description Đã đối chiếu với Goong */
-            goongLinked: boolean;
+            kind: string;
+            parent: string;
+            areas: string;
+            oldName: string;
+            action: string;
+            errors: string[];
+        };
+        MatchResultDto: {
+            /** Format: int32 */
+            matched: number;
+            /** Format: int32 */
+            remaining: number;
         };
         OpenPeriodRequest: {
             /** @enum {string} */
@@ -3771,8 +3955,15 @@ export interface components {
             name: string;
             secondaryText: string;
         };
+        StreetRefDto: {
+            /** Format: int64 */
+            id: number;
+            displayName: string;
+            /** @enum {string} */
+            kind: "STREET" | "ALLEY";
+        };
         SuggestDto: {
-            streets: components["schemas"]["StreetDto"][];
+            streets: components["schemas"]["StreetRefDto"][];
             /** @description Gợi ý tham khảo từ Goong, CHƯA có trong danh mục */
             external: components["schemas"]["ExternalStreetDto"][];
             /**
@@ -3780,6 +3971,21 @@ export interface components {
              * @enum {string}
              */
             goongStatus: "OK" | "NOT_CONFIGURED" | "REJECTED" | "UNAVAILABLE";
+        };
+        PendingGroupDto: {
+            /** @description Khóa nhóm, gửi lại khi gắn */
+            key: string;
+            /** @description Tên đường cán bộ đã ghi */
+            name: string;
+            /** Format: int32 */
+            subjectCount: number;
+            /**
+             * Format: int32
+             * @description Số hồ sơ cán bộ ghi chờ xác minh
+             */
+            pendingCount: number;
+            areaNames: string[];
+            sampleCodes: string[];
         };
         FeeTypeDto: {
             /** Format: int64 */
@@ -4333,6 +4539,32 @@ export interface operations {
             };
         };
     };
+    update_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateStreetRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StreetDto"];
+                };
+            };
+        };
+    };
     get_1: {
         parameters: {
             query?: never;
@@ -4353,7 +4585,7 @@ export interface operations {
             };
         };
     };
-    update_1: {
+    update_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -5248,6 +5480,26 @@ export interface operations {
             };
         };
     };
+    catalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StreetDto"][];
+                };
+            };
+        };
+    };
     create_2: {
         parameters: {
             query?: never;
@@ -5268,6 +5520,104 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["StreetDto"];
+                };
+            };
+        };
+    };
+    linkGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkGroupRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CountDto"];
+                };
+            };
+        };
+    };
+    importStreets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StreetImportPreviewDto"];
+                };
+            };
+        };
+    };
+    previewImport_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StreetImportPreviewDto"];
+                };
+            };
+        };
+    };
+    autoMatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatchResultDto"];
                 };
             };
         };
@@ -6587,7 +6937,6 @@ export interface operations {
         parameters: {
             query: {
                 q: string;
-                districtId?: number;
             };
             header?: never;
             path?: never;
@@ -6602,6 +6951,46 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["SuggestDto"];
+                };
+            };
+        };
+    };
+    pending: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PendingGroupDto"][];
+                };
+            };
+        };
+    };
+    importTemplate_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
                 };
             };
         };

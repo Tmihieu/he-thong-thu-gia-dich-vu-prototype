@@ -45,6 +45,14 @@ public interface ServiceSubjectRepository extends JpaRepository<ServiceSubject, 
     @Query("select s from ServiceSubject s join fetch s.area a join fetch a.district order by s.code")
     List<ServiceSubject> findAllWithArea();
 
+    /** Hồ sơ chưa gắn đường trong danh mục (địa chỉ cũ hoặc chờ xác minh). */
+    @Query("select s from ServiceSubject s join fetch s.area where s.streetRef is null order by s.code")
+    List<ServiceSubject> findWithoutCatalogStreet();
+
+    /** Hồ sơ gắn các đường này hoặc hẻm của chúng (để cập nhật tên khi đổi tên). */
+    @Query("select s from ServiceSubject s join s.streetRef st left join st.parent p where st.id in :streetIds or p.id in :streetIds")
+    List<ServiceSubject> findOnStreetsOrTheirAlleys(Collection<Long> streetIds);
+
     @Query("select s from ServiceSubject s join fetch s.area a join fetch a.district where a.id in :areaIds order by s.code")
     List<ServiceSubject> findAllWithAreaIn(Collection<Long> areaIds);
 

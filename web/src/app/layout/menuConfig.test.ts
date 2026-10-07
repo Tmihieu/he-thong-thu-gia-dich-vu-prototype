@@ -22,7 +22,7 @@ describe('menuConfig', () => {
     ]);
     expect(labels('COMPANY_MANAGER')).toEqual(['Khu vực được giao', 'Người đi thu', 'Khiếu nại']);
     expect(labels('COLLECTOR')).toEqual(['Danh sách thu', 'Tiền mặt', 'Tài khoản']);
-    expect(labels('ADMIN')).toEqual(['Tài khoản', 'Cấu hình', 'Nhật ký', 'Quản trị dữ liệu']);
+    expect(labels('ADMIN')).toEqual(['Tài khoản', 'Cấu hình', 'Danh mục đường', 'Nhật ký', 'Quản trị dữ liệu']);
     expect(labels('LEADER')).toEqual(['Dashboard', 'Báo cáo tổng hợp', 'Tiến độ thu', 'Đối soát', 'Phiếu quyết toán']);
   });
 

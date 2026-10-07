@@ -60,7 +60,7 @@ describe('Lãnh đạo', () => {
   it('màn tiến độ và đối soát chỉ đọc: không nhắc nộp, không khóa kỳ', async () => {
     api();
     renderApp('/leader/progress');
-    expect((await screen.findAllByLabelText('Chưa quyết toán')).length).toBeGreaterThan(0);
+    expect((await screen.findAllByRole('columnheader', { name: 'Phải thu' })).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: /Nhắc nộp/ })).not.toBeInTheDocument();
   });
 });

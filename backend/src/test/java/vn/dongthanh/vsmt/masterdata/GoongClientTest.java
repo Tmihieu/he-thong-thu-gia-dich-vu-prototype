@@ -26,6 +26,8 @@ class GoongClientTest {
              {"place_id":"p2","types":["route"],"structured_formatting":{"main_text":"Hẻm 5","secondary_text":"Đông Thạnh"}},
              {"place_id":"p3","types":["establishment","store"],"structured_formatting":{"main_text":"Cửa hàng Sang","secondary_text":"Bà Điểm"}},
              {"place_id":"p4","types":[],"structured_formatting":{"main_text":"12/5 Đường Nguyễn Văn Bứa","secondary_text":"Bà Điểm"}},
+             {"place_id":"p6","types":[],"structured_formatting":{"main_text":"Lẩu mắm 71","secondary_text":"32/3 Lê Văn Khương, Thới An, Hồ Chí Minh"}},
+             {"place_id":"p7","types":[],"structured_formatting":{"main_text":"Chợ Tân An","secondary_text":"Quốc Lộ 279, Văn Lang, Thái Nguyên"}},
              {"place_id":"p5","types":["administrative_area_level_2","political"],"structured_formatting":{"main_text":"Ấp 4","secondary_text":"Đông Thạnh"}}]}""";
 
     HttpServer server;
@@ -72,7 +74,16 @@ class GoongClientTest {
 
         assertThat(r.status()).isEqualTo(Status.OK);
         assertThat(r.items()).extracting(GoongClient.Suggestion::name).containsExactly("Đường Nguyễn Văn Bứa", "Hẻm 5");
-        assertThat(lastQuery.get()).contains("api_key=k-test", "more_compound=true", "limit=10");
+        assertThat(lastQuery.get()).contains("api_key=k-test", "more_compound=true", "limit=10")
+                .doesNotContain("location", "radius");
+    }
+
+    @Test
+    void searchesAroundCommuneWhenLocationConfigured() {
+        new GoongClient("http://127.0.0.1:" + server.getAddress().getPort(), "k", Duration.ofSeconds(5),
+                "10.8975,106.6315", 8).autocomplete("le van khuong", 5);
+
+        assertThat(lastQuery.get()).contains("location=10.8975,106.6315", "radius=8");
     }
 
     @Test

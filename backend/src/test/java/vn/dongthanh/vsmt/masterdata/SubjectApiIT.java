@@ -136,6 +136,14 @@ class SubjectApiIT extends IntegrationTest {
     }
 
     @Test
+    void upcomingContractIsCurrentSoFormEditsItInsteadOfAddingOverlap() throws Exception {
+        create(officer, kv07.getId(), """
+                ,"contract":{"tariffGroup":"HH_3_PLUS","validFrom":"2099-01-01"}""")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.currentContract.validFrom").value("2099-01-01"));
+    }
+
+    @Test
     void changingMemberCountSwitchesTariffGroupFromNextPeriodAndKeepsHistory() throws Exception {
         // Hôm nay 01/10/2026, đang có kỳ tháng 10 (đến 31/10): nhóm giá mới phải bắt đầu từ 01/11/2026.
         TariffVersion bg = tariffs.save(TariffVersion.create("BG-IT", "QĐ thử", LocalDate.of(2026, 9, 1), null, TariffStatus.ACTIVE));

@@ -25,7 +25,13 @@ export type SubjectRequest = components['schemas']['SubjectRequest'];
 export type Contract = components['schemas']['ContractDto'];
 export type ContractRequest = components['schemas']['ContractRequest'];
 export type Street = components['schemas']['StreetDto'];
+export type StreetRef = components['schemas']['StreetRefDto'];
 export type StreetSuggestions = components['schemas']['SuggestDto'];
+export type CreateStreetRequest = components['schemas']['CreateStreetRequest'];
+export type UpdateStreetRequest = components['schemas']['UpdateStreetRequest'];
+export type PendingStreetGroup = components['schemas']['PendingGroupDto'];
+export type StreetImportPreview = components['schemas']['StreetImportPreviewDto'];
+export type StreetImportRow = components['schemas']['StreetImportRowDto'];
 export type DuplicateSubject = components['schemas']['DuplicateDto'];
 
 export type CommuneBankAccount = components['schemas']['CommuneBankAccountDto'];
@@ -50,6 +56,8 @@ export const masterdataKeys = {
   assignments: ['masterdata', 'assignments'] as const,
   subjects: ['masterdata', 'subjects'] as const,
   communeBankAccount: ['masterdata', 'commune-bank-account'] as const,
+  streets: ['masterdata', 'streets'] as const,
+  streetPending: ['masterdata', 'streets', 'pending'] as const,
 };
 
 export function useTariffs() {
@@ -220,9 +228,63 @@ export function useSubjects(query: SubjectQuery) {
   });
 }
 
-/** Gợi ý đường: danh mục nội bộ trước, Goong chỉ bổ sung tham khảo. {@code signal} để bỏ yêu cầu cũ khi đổi từ khóa. */
-export function suggestStreets(q: string, districtId: number | undefined, signal?: AbortSignal) {
-  return api.get<StreetSuggestions>('/api/masterdata/streets/suggest', { params: { q, districtId }, signal });
+/** Gợi ý đường (cả tên cũ): danh mục nội bộ trước, Goong chỉ bổ sung tham khảo. {@code signal} để bỏ yêu cầu cũ khi đổi từ khóa. */
+export function suggestStreets(q: string, signal?: AbortSignal) {
+  return api.get<StreetSuggestions>('/api/masterdata/streets/suggest', { params: { q }, signal });
+}
+
+/** Toàn bộ danh mục đường/hẻm (vài trăm dòng): lọc theo ấp, đường cha ở trình duyệt. */
+export function useStreets() {
+  return useQuery({ queryKey: masterdataKeys.streets, queryFn: () => api.get<Street[]>('/api/masterdata/streets') });
+}
+
+/** Sửa danh mục đổi cả địa chỉ hiển thị của hồ sơ (đổi tên, gắn nhóm chờ): làm mới danh mục, nhóm chờ và hồ sơ. */
+function useStreetMutation<V, R>(fn: (v: V) => Promise<R>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: masterdataKeys.streets });
+      await qc.invalidateQueries({ queryKey: masterdataKeys.subjects });
+    },
+  });
+}
+
+export function useCreateStreet() {
+  return useStreetMutation((body: CreateStreetRequest) => api.post<Street>('/api/masterdata/streets', body));
+}
+
+export function useUpdateStreet() {
+  return useStreetMutation(({ id, body }: { id: number; body: UpdateStreetRequest }) =>
+    api.put<Street>(`/api/masterdata/streets/${id}`, body),
+  );
+}
+
+export function useStreetPending() {
+  return useQuery({
+    queryKey: masterdataKeys.streetPending,
+    queryFn: () => api.get<PendingStreetGroup[]>('/api/masterdata/streets/pending'),
+  });
+}
+
+export function useLinkStreetGroup() {
+  return useStreetMutation((body: { key: string; streetId: number }) =>
+    api.post<{ count: number }>('/api/masterdata/streets/pending/link', body),
+  );
+}
+
+export function useAutoMatchStreets() {
+  return useStreetMutation(() => api.post<{ matched: number; remaining: number }>('/api/masterdata/streets/auto-match'));
+}
+
+export function usePreviewStreetImport() {
+  return useMutation({
+    mutationFn: (file: File) => api.post<StreetImportPreview>('/api/masterdata/streets/import/preview', fileForm(file)),
+  });
+}
+
+export function useImportStreets() {
+  return useStreetMutation((file: File) => api.post<StreetImportPreview>('/api/masterdata/streets/import', fileForm(file)));
 }
 
 /** Hồ sơ nghi trùng địa chỉ (cùng tổ/ấp + đường + số nhà, kể cả đã ngừng). */
