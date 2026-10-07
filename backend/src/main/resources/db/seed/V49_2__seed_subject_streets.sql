@@ -4,6 +4,7 @@
 --     (nút "Tự khớp" gắn được), còn lại giữ "đường Mẫu N" (không khớp, xử lý tay);
 --   * id % 20 = 7: cán bộ ghi "chờ xác minh" một hẻm chưa có trong danh mục, mỗi xã cũ một hẻm (gộp nhóm nhiều hộ).
 -- Số nhà bỏ tiền tố "Số " cho giống cách ghi địa chỉ thật.
+-- Chỉ sửa hồ sơ mẫu ("đường Mẫu…", chưa gắn đường): hồ sơ cán bộ đã nhập trên DB demo cũ giữ nguyên.
 
 create temporary table area_streets on commit drop as
 select sa.area_id, s.id as street_id, s.name,
@@ -21,7 +22,8 @@ set street_id = st.street_id,
     address = coalesce(regexp_replace(ss.house_no, '^Số ', '') || ' ', '') || st.name
 from area_streets st
 where st.area_id = ss.area_id and st.idx = ss.id % st.n
-  and ss.id % 10 <> 0 and ss.id % 20 <> 7;
+  and ss.id % 10 <> 0 and ss.id % 20 <> 7
+  and ss.street_id is null and ss.street like 'đường Mẫu%';
 
 -- Địa chỉ cũ ghi đúng tên đường (chưa gắn): "Tự khớp" sẽ gắn.
 update service_subjects ss
@@ -29,7 +31,8 @@ set street = 'đường ' || st.name,
     address = coalesce(ss.house_no || ' ', '') || 'đường ' || st.name
 from area_streets st
 where st.area_id = ss.area_id and st.idx = ss.id % st.n
-  and ss.id % 30 = 0;
+  and ss.id % 30 = 0
+  and ss.street_id is null and ss.street like 'đường Mẫu%';
 
 -- Chờ xác minh: hẻm chưa có trong danh mục, cùng tên cho mọi hộ của một xã cũ.
 update service_subjects ss
@@ -41,4 +44,5 @@ from areas a
 join districts d on d.id = a.district_id
 join (values ('DTH', 'Hẻm 99 Đặng Thúc Vịnh'), ('TTT', 'Hẻm 88 Trịnh Thị Miếng'), ('NB', 'Hẻm 77 Bùi Công Trừng'))
     v (district_code, alley) on v.district_code = d.code
-where a.id = ss.area_id and ss.id % 20 = 7;
+where a.id = ss.area_id and ss.id % 20 = 7
+  and ss.street_id is null and ss.street like 'đường Mẫu%';

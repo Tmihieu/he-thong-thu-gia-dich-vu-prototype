@@ -15,9 +15,9 @@ create index ix_street_areas_area on street_areas (area_id);
 insert into street_areas (street_id, area_id)
 select s.id, a.id from streets s join areas a on a.district_id = s.district_id;
 
--- Đường trùng tên ở hai địa bàn cũ là cùng một đường của xã mới: gộp về id nhỏ nhất.
+-- Đường trùng tên ở hai địa bàn cũ là cùng một đường của xã mới: gộp về bản đang dùng (id nhỏ nhất).
 create temporary table street_dupes on commit drop as
-select id, min(id) over (partition by name_key) as keep_id from streets;
+select id, first_value(id) over (partition by name_key order by (status = 'ACTIVE') desc, id) as keep_id from streets;
 
 update service_subjects ss set street_id = d.keep_id
 from street_dupes d where ss.street_id = d.id and d.id <> d.keep_id;

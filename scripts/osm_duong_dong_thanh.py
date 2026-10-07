@@ -176,15 +176,18 @@ def seed_sql(rows):
            '-- từ bản nháp docs/dia-chi/danh-sach-duong-dong-thanh-nhap.xlsx, GIẢ ĐỊNH xã đã duyệt: đổi tên 18 tuyến theo',
            f'-- {NQ380_NOTE} (giữ tên cũ), bỏ cầu, đường phường bên cạnh, hẻm không rõ đường cha.',
            '-- Nguồn: © OpenStreetMap contributors (ODbL). Khi có danh mục chính thức, quản trị viên nhập lại bằng Excel.',
+           '-- "on conflict do nothing": DB demo cũ có thể đã có đường cùng tên (thêm tay trước V49).',
            '',
            'insert into streets (kind, name, name_key) values',
-           nl.join(f"    ('STREET', {q(n)}, {q(street_key(n))})" for n in sorted(streets)) + ';',
+           nl.join(f"    ('STREET', {q(n)}, {q(street_key(n))})" for n in sorted(streets)),
+           'on conflict do nothing;',
            '',
            'insert into streets (kind, parent_id, name, name_key)',
            "select 'ALLEY', p.id, v.name, v.name_key from (values",
            nl.join(f'    ({q(street_key(p))}, {q(a)}, {q(street_key(a))})' for p, a, _ in alleys),
            ') v (parent_key, name, name_key)',
-           'join streets p on p.parent_id is null and p.name_key = v.parent_key;',
+           'join streets p on p.parent_id is null and p.name_key = v.parent_key',
+           'on conflict do nothing;',
            '']
     pairs = [(street_key(n), '', ap) for n, s in sorted(streets.items()) for ap in sorted(s['aps'])]
     pairs += [(street_key(a), street_key(p), ap) for p, a, aps in alleys for ap in aps]
@@ -194,14 +197,16 @@ def seed_sql(rows):
             ') v (name_key, parent_key, area_code)',
             "join streets s on s.name_key = v.name_key and ((v.parent_key = '' and s.parent_id is null)",
             '    or s.parent_id = (select p.id from streets p where p.parent_id is null and p.name_key = v.parent_key))',
-            'join areas a on a.code = v.area_code;',
+            'join areas a on a.code = v.area_code',
+            'on conflict do nothing;',
             '']
     olds = [(street_key(n), o) for n, s in sorted(streets.items()) for o in sorted(s['old'])]
     out += ['insert into street_old_names (street_id, name, name_key, note)',
             f'select s.id, v.name, v.old_key, {q(NQ380_NOTE)} from (values',
             nl.join(f'    ({q(k)}, {q(o)}, {q(street_key(o))})' for k, o in olds),
             ') v (name_key, name, old_key)',
-            'join streets s on s.parent_id is null and s.name_key = v.name_key;']
+            'join streets s on s.parent_id is null and s.name_key = v.name_key',
+            'on conflict do nothing;']
     return '\n'.join(out) + '\n', len(streets), len(alleys)
 
 

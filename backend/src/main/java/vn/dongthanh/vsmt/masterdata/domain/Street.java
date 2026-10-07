@@ -1,8 +1,7 @@
 package vn.dongthanh.vsmt.masterdata.domain;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import jakarta.persistence.CascadeType;
@@ -65,7 +64,7 @@ public class Street extends BaseEntity {
 
     @OneToMany(mappedBy = "street", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id")
-    private List<StreetOldName> oldNames = new ArrayList<>();
+    private Set<StreetOldName> oldNames = new LinkedHashSet<>();
 
     public static Street street(String name) {
         return create(Kind.STREET, null, name);
