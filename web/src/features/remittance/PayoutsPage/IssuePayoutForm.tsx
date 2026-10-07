@@ -26,7 +26,7 @@ interface Props {
   onCancel: () => void;
 }
 
-/** Lập phiếu chi trả công ty (UC-55): 0 < số tiền ≤ số xã còn phải trả của kỳ, ngày không sau hôm nay. */
+/** Lập phiếu chi trả công ty (UC-55): 0 < số tiền ≤ số xã còn phải trả của kỳ (điền sẵn số đó), ngày không sau hôm nay. */
 export function IssuePayoutForm({ row, periodLabel, submitting, error, onSubmit, onCancel }: Props) {
   const [form] = Form.useForm<FormValues>();
   const method = Form.useWatch('method', form);
@@ -61,7 +61,7 @@ export function IssuePayoutForm({ row, periodLabel, submitting, error, onSubmit,
           {row.companyName} · xã còn phải trả <MoneyText value={owed} strong />
         </Typography.Paragraph>
       )}
-      <Form<FormValues> form={form} layout="vertical" preserve={false} initialValues={{ method: 'TRANSFER', payoutDate: dayjs() }} onFinish={finish}>
+      <Form<FormValues> form={form} layout="vertical" preserve={false} initialValues={{ amount: owed > 0 ? owed : undefined, method: 'TRANSFER', payoutDate: dayjs() }} onFinish={finish}>
         <Form.Item
           label="Số tiền"
           name="amount"

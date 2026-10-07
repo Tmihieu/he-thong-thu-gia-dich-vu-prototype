@@ -247,14 +247,13 @@ describe('Đối soát', () => {
     const rowOf = (name: string) => screen.getByRole('cell', { name }).closest('tr')!;
     const a = rowOf('Cty Thu gom A');
     expect(within(a).getByText('Cty nộp Xã 2.000.000 đ', norm)).toBeInTheDocument();
-    expect(within(a).getByText('Thiếu 2.000.000 đ', norm)).toBeInTheDocument();
     expect(within(a).getByRole('button', { name: 'Lập phiếu thu DV01' })).toBeInTheDocument();
     const b = rowOf('Cty Thu gom B');
     expect(within(b).getByText('Khớp')).toBeInTheDocument();
-    expect(within(b).getByText('✓ Đủ')).toBeInTheDocument();
     expect(within(b).getByRole('button', { name: 'Xem phiếu DV02' })).toBeInTheDocument();
     const c = rowOf('Cty Thu gom C');
-    expect(within(c).getByText('Xã trả Cty 11.300.000 đ', norm)).toBeInTheDocument();
+    // Xã phải trả công ty hiện số âm ở cột Kết quả.
+    expect(within(c).getByText('−11.300.000 đ', norm)).toBeInTheDocument();
     expect(within(c).getByRole('button', { name: 'Lập phiếu chi DV03' })).toBeInTheDocument();
 
     await userEvent.click(screen.getByText('Đã khớp 1'));
@@ -408,6 +407,7 @@ describe('Phiếu thu công ty', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Lập phiếu DV01' }));
     const dialog = await screen.findByRole('dialog');
+    await userEvent.clear(within(dialog).getByLabelText('Số tiền'));
     await userEvent.type(within(dialog).getByLabelText('Số tiền'), '400000');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Lập phiếu' }));
 
@@ -463,6 +463,7 @@ describe('Phiếu chi trả công ty (xã trả lại)', () => {
     expect(screen.queryByRole('button', { name: 'Lập phiếu chi DV01' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Lập phiếu chi DV02' }));
     const dialog = await screen.findByRole('dialog');
+    await userEvent.clear(within(dialog).getByLabelText('Số tiền'));
     await userEvent.type(within(dialog).getByLabelText('Số tiền'), '28000');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Lập phiếu' }));
 

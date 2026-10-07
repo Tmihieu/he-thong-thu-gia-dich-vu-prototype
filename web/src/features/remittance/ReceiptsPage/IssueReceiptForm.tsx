@@ -27,7 +27,7 @@ interface Props {
   onCancel: () => void;
 }
 
-/** Lập phiếu thu khi công ty nộp tiền (R15): 0 < số tiền ≤ còn phải nộp của kỳ, ngày không sau hôm nay. */
+/** Lập phiếu thu khi công ty nộp tiền (R15): 0 < số tiền ≤ còn phải nộp của kỳ (điền sẵn số đó), ngày không sau hôm nay. */
 export function IssueReceiptForm({ row, periodLabel, submitting, error, onSubmit, onCancel }: Props) {
   const [form] = Form.useForm<FormValues>();
   const method = Form.useWatch('method', form);
@@ -67,7 +67,7 @@ export function IssueReceiptForm({ row, periodLabel, submitting, error, onSubmit
         form={form}
         layout="vertical"
         preserve={false}
-        initialValues={{ method: 'TRANSFER', receiptDate: dayjs() }}
+        initialValues={{ amount: remaining > 0 ? remaining : undefined, method: 'TRANSFER', receiptDate: dayjs() }}
         onFinish={finish}
       >
         <Form.Item
