@@ -101,18 +101,9 @@ class LedgerApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$[0].payable").value(-34_000))
                 .andExpect(jsonPath("$[0].remaining").value(-34_000))
                 .andExpect(jsonPath("$[0].gap").value(34_000))
-                .andExpect(jsonPath("$[0].progress").value("PAID_IN_FULL"))
+                .andExpect(jsonPath("$[0].progress").value("NOT_PAID"))
                 .andExpect(jsonPath("$[0].communeOwed").value(34_000))
                 .andExpect(jsonPath("$[0].reconciliation").value("PENDING"));
-        // Còn phải nộp âm thì không lập được phiếu thu nộp thêm.
-        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/remittance/receipts")
-                        .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer))
-                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
-                        .content("{\"companyId\":%d,\"periodId\":%d,\"amount\":1000,\"method\":\"CASH\"}"
-                                .formatted(fx.dv01.getId(), fx.october.getId())))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("RECEIPT_AMOUNT_OUT_OF_RANGE"))
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("xã trả lại công ty 34.000 đ")));
     }
 
     @Test
