@@ -265,6 +265,14 @@ describe('SubjectProfileForm', () => {
       expect(screen.getByTitle('Đường Nguyễn Huệ · Nhị Bình')).toBeInTheDocument();
     });
 
+    it('chưa cấu hình khóa Goong: báo rõ, vẫn chọn được đường trong danh mục', async () => {
+      suggest.mockResolvedValue(found({ goongStatus: 'NOT_CONFIGURED' }));
+      render(<SubjectProfileForm areas={areas} onSubmit={vi.fn()} />);
+      await searchStreet('nguyen hue');
+      expect(await screen.findByText('Chưa cấu hình khóa Goong nên chỉ tìm trong danh mục nội bộ.')).toBeInTheDocument();
+      expect(screen.getByTitle('Đường Nguyễn Huệ · Nhị Bình')).toBeInTheDocument();
+    });
+
     it('Goong chỉ là gợi ý tham khảo: chọn thì ghi nhận chờ xác minh, không gửi streetId', async () => {
       suggest.mockResolvedValue(found({ streets: [], external: [{ placeId: 'pid1', name: 'Đường Lê Lợi', secondaryText: 'Hồ Chí Minh' }] }));
       const onSubmit = vi.fn();

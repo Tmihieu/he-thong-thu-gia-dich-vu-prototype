@@ -161,6 +161,11 @@ export function StreetSearch({ districtId, value, onChange }: Props) {
           Gợi ý từ Goong tạm thời không dùng được; vẫn tìm được trong danh mục nội bộ.
         </Typography.Text>
       )}
+      {result?.goongStatus === 'NOT_CONFIGURED' && (
+        <Typography.Text type="secondary" style={{ display: 'block' }}>
+          Chưa cấu hình khóa Goong nên chỉ tìm trong danh mục nội bộ.
+        </Typography.Text>
+      )}
       {!value?.streetId && (
         <Button type="link" style={{ padding: 0 }} onClick={() => onChange?.({ street: text.trim(), pending: true })}>
           Không tìm thấy đường? Ghi nhận chờ xác minh
