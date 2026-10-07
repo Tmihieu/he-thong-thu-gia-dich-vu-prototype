@@ -260,15 +260,18 @@ export function ReconciliationPage() {
           icon={<ExclamationCircleOutlined />}
           style={{ marginTop: 16 }}
           message={
-            <>
+            <strong>
               Sao kê QR <MoneyText value={qrTotal + qr.amount} /> = QR của {rows.length} Cty <MoneyText value={qrTotal} /> +{' '}
-              <strong>
-                {qr.count} giao dịch chưa xác định Cty (<MoneyText value={qr.amount} />)
-              </strong>
-              . Cần xử lý trước khi khóa kỳ.
-            </>
+              {qr.count} giao dịch chưa xác định Cty (<MoneyText value={qr.amount} />). Cần xử lý trước khi khóa kỳ.
+            </strong>
           }
-          action={readOnly ? undefined : <Link to="/transfers">Xử lý →</Link>}
+          action={
+            readOnly ? undefined : (
+              <Link to="/commune/transfers" style={{ fontWeight: 700 }}>
+                Xử lý →
+              </Link>
+            )
+          }
         />
       )}
 
