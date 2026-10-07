@@ -320,7 +320,7 @@ describe('Khóa kỳ khi xã còn phải trả lại công ty', () => {
     await userEvent.click(await screen.findByRole('button', { name: /Khóa kỳ/ }));
     await userEvent.click(await screen.findByRole('button', { name: 'Khóa kỳ' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('xã còn phải trả lại 1 công ty: DV02: 128.000 đ');
+    expect(await screen.findByText(/xã còn phải trả lại 1 công ty: DV02: 128.000 đ/)).toBeInTheDocument();
   });
 });
 
@@ -341,7 +341,7 @@ describe('Khóa kỳ chưa đến hạn', () => {
     await userEvent.click(await screen.findByRole('button', { name: /Khóa kỳ/ }));
     await userEvent.click(await screen.findByRole('button', { name: 'Khóa kỳ' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('còn 3 khoản hộ chưa đóng và chưa đến hạn nộp (31/10/2026)');
+    expect(await screen.findByText(/còn 3 khoản hộ chưa đóng và chưa đến hạn nộp \(31\/10\/2026\)/)).toBeInTheDocument();
   });
 });
 

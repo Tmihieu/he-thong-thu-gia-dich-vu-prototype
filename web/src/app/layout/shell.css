@@ -310,6 +310,8 @@ body { font-size: 15px; line-height: 1.5; color: var(--gray-950); -webkit-font-s
 .ant-table-wrapper .ant-table-thead > tr:first-child > th.ant-table-cell:first-child,
 .ant-table-wrapper .ant-table-row-expand-icon-cell + .ant-table-cell,
 .ant-table-wrapper .ant-table-selection-column + .ant-table-cell { text-align: left !important; }
+/* Cột chữ dài (nội dung chuyển khoản, ngân hàng, lý do): căn trái cả tiêu đề lẫn ô. */
+.ant-table-wrapper .ant-table-cell.cell-left { text-align: left !important; }
 
 /* Form, modal, drawer */
 .ant-modal .ant-modal-header { padding-bottom: 12px; border-bottom: 1px solid var(--gray-200); margin-bottom: 16px; }
