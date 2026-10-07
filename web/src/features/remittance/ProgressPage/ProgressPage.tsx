@@ -1,4 +1,4 @@
-import { BellOutlined, CheckCircleFilled, CloseCircleFilled } from '@ant-design/icons';
+import { BellOutlined } from '@ant-design/icons';
 import { Alert, Button, Progress, Space, Table, Typography } from 'antd';
 import { useState } from 'react';
 
@@ -54,8 +54,9 @@ function UnpaidHouseholds({ periodId, areaId, companyId }: { periodId: number; a
 }
 
 /**
- * Tiến độ thu theo công ty và theo tổ (UC-32, R13): phải thu, đã thu, tỷ lệ đã thu của kỳ; số nộp xã xem ở Đối soát
- * (góp ý 06/10 bỏ thẻ và cột phải nộp xã, đã nộp, xã trả lại). Tổ theo đã thu / phải thu. Có thẻ công nợ tháng trước (khoản chưa thu của kỳ liền trước). Kỳ trước chưa khóa hiện ở
+ * Tiến độ thu theo công ty và theo tổ (UC-32, R13): phải thu, đã thu, tỷ lệ đã thu, khoản đã thu của kỳ; số nộp xã xem ở
+ * Đối soát (góp ý 06/10 bỏ thẻ và cột phải nộp xã, đã nộp, xã trả lại; 07/10 bỏ cột tỷ lệ nộp, đã nộp đủ). Công ty quá hạn
+ * nộp xã chỉ gắn thẻ cạnh tên, khớp nút nhắc nộp. Tổ theo đã thu / phải thu. Có thẻ công nợ tháng trước (khoản chưa thu của kỳ liền trước). Kỳ trước chưa khóa hiện ở
  * cảnh báo đầu trang, không còn cột riêng.
  */
 export function ProgressPage() {
@@ -75,12 +76,15 @@ export function ProgressPage() {
   const sum = (key: 'due' | 'collected' | 'debtCollected') => rows.reduce((t, r) => t + r[key], 0);
   const due = sum('due');
   const thisPeriod = sum('collected') - sum('debtCollected');
+  // Tỷ lệ đã thu của kỳ, không tính thu công nợ kỳ cũ (giống thẻ tổng).
+  const rateOf = (collected: number, total: number) => cappedRate(Math.round((collected / total) * 1000) / 10);
+  const areasOf = (companyId: number) => (areas.data ?? []).filter((a) => a.companyId === companyId);
 
   return (
     <>
       <PageHeader
         title="Tiến độ thu"
-        description="Công ty đã nộp về xã bao nhiêu, còn thiếu bao nhiêu và tổ nào thu chậm."
+        description="Mỗi công ty thu được bao nhiêu so với phải thu, tổ nào thu chậm, hộ nào còn nợ."
         extra={
           <Space wrap>
             <PeriodSelect value={periodId} onChange={setPeriodId} />
@@ -105,7 +109,7 @@ export function ProgressPage() {
         <StatCard
           label="Tỷ lệ đã thu"
           tone="info"
-          value={due > 0 ? `${cappedRate(Math.round((thisPeriod / due) * 1000) / 10).toLocaleString('vi-VN')}%` : '—'}
+          value={due > 0 ? `${rateOf(thisPeriod, due).toLocaleString('vi-VN')}%` : '—'}
           hint="đã thu của kỳ / phải thu (không tính thu công nợ kỳ cũ)"
         />
         <StatCard
@@ -149,7 +153,7 @@ export function ProgressPage() {
               size="small"
               rowKey={(a) => `${a.areaId}-${a.companyId}`}
               pagination={false}
-              dataSource={(areas.data ?? []).filter((a) => a.companyId === r.companyId)}
+              dataSource={areasOf(r.companyId)}
               expandable={{
                 rowExpandable: (a) => a.paidCount < a.chargeCount,
                 expandedRowRender: (a) => <UnpaidHouseholds periodId={r.periodId} areaId={a.areaId} companyId={r.companyId} />,
@@ -188,27 +192,27 @@ export function ProgressPage() {
             title: 'Công ty',
             width: 200,
             render: (_, r) => (
-              <Typography.Text ellipsis={{ tooltip: `${r.companyCode} · ${r.companyName}` }} style={{ maxWidth: 160 }}>
-                {r.companyName}
-              </Typography.Text>
+              <Space size={4} wrap>
+                <Typography.Text ellipsis={{ tooltip: `${r.companyCode} · ${r.companyName}` }} style={{ maxWidth: 160 }}>
+                  {r.companyName}
+                </Typography.Text>
+                {r.progress === 'OVERDUE' && <StatusTag color="red">Quá hạn nộp</StatusTag>}
+              </Space>
             ),
           },
           { title: 'Phải thu', dataIndex: 'due', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           // Đã thu chỉ phần của kỳ này; tiền hộ đóng nợ kỳ trước làm giảm cột công nợ tháng trước.
           { title: 'Đã thu', align: 'right', render: (_, r) => <MoneyText value={r.collected - r.debtCollected} /> },
           { title: 'Công nợ tháng trước', dataIndex: 'lastPeriodDebt', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-          // Phải nộp xã <= 0 thì chưa có gì để nộp: không chia cho 0 hay số âm.
-          { title: 'Tỷ lệ nộp', render: (_, r) => (r.payable > 0 ? <Rate rate={r.remittedRate} /> : '—') },
+          { title: 'Tỷ lệ thu', render: (_, r) => (r.due > 0 ? <Rate rate={rateOf(r.collected - r.debtCollected, r.due)} /> : '—') },
           {
-            title: 'Đã nộp đủ',
-            align: 'center',
-            width: 110,
-            render: (_, r) =>
-              r.remaining <= 0 ? (
-                <CheckCircleFilled aria-label="Đã nộp đủ" style={{ color: '#16a34a', fontSize: 18 }} />
-              ) : (
-                <CloseCircleFilled aria-label="Chưa nộp đủ" style={{ color: '#dc2626', fontSize: 18 }} />
-              ),
+            title: 'Khoản đã thu',
+            align: 'right',
+            render: (_, r) => {
+              const own = areasOf(r.companyId);
+              const total = own.reduce((t, a) => t + a.chargeCount, 0);
+              return total > 0 ? `${own.reduce((t, a) => t + a.paidCount, 0)}/${total}` : '—';
+            },
           },
         ]}
       />
