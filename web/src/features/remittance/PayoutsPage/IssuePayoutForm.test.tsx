@@ -42,6 +42,27 @@ describe('IssuePayoutForm', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it('đóng rồi mở phiếu công ty khác thì số tiền đúng số xã còn phải trả công ty đó, không giữ số cũ', async () => {
+    const other = { ...row, companyId: 3, companyCode: 'DV03', companyName: 'Công ty Ba', communeOwed: 165_000 };
+    const view = (r: typeof row | null) => (
+      <AntApp>
+        <IssuePayoutForm row={r} periodLabel="Tháng 10/2026" onSubmit={() => {}} onCancel={() => {}} />
+      </AntApp>
+    );
+    const { rerender } = render(view(row));
+    const amount = screen.getByLabelText('Số tiền');
+    await userEvent.clear(amount);
+    await userEvent.type(amount, '5000');
+
+    rerender(view(null));
+    rerender(view(other));
+    await waitFor(() => expect(screen.getByLabelText('Số tiền')).toHaveValue('165.000'));
+
+    rerender(view(null));
+    rerender(view(row));
+    await waitFor(() => expect(screen.getByLabelText('Số tiền')).toHaveValue('128.000'));
+  });
+
   it('gửi phiếu trả một phần, ngày mặc định hôm nay', async () => {
     const onSubmit = setup();
     await userEvent.clear(screen.getByLabelText('Số tiền'));

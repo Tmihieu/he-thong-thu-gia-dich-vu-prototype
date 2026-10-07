@@ -1,5 +1,6 @@
 import { Alert, DatePicker, Form, Input, InputNumber, Modal, Radio, Typography } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
+import { useEffect } from 'react';
 
 import type { components } from '../../../api/schema';
 import { formatMoney } from '../../../shared/format';
@@ -32,6 +33,14 @@ export function IssueReceiptForm({ row, periodLabel, submitting, error, onSubmit
   const [form] = Form.useForm<FormValues>();
   const method = Form.useWatch('method', form);
   const remaining = row?.remaining ?? 0;
+
+  // Form dùng chung một store qua các lần mở: mỗi lần mở phiếu (đổi công ty) gán thẳng số đúng của công ty đó, không giữ
+  // số đã gõ ở lần trước (chỉ dựa initialValues thì số chậm một lần mở).
+  useEffect(() => {
+    if (!row) return;
+    form.resetFields();
+    form.setFieldsValue({ amount: row.remaining > 0 ? row.remaining : undefined, method: 'TRANSFER', receiptDate: dayjs(), payerName: undefined, documentRef: undefined, note: undefined });
+  }, [row, form]);
 
   function finish(v: FormValues) {
     onSubmit({
