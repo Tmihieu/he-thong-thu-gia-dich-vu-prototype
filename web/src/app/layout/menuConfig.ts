@@ -72,6 +72,7 @@ export const MENU: Record<Role, MenuEntry[]> = {
   ADMIN: [
     { path: 'accounts', label: 'Tài khoản', icon: TeamOutlined },
     { path: 'config', label: 'Cấu hình', icon: SettingOutlined },
+    { path: 'streets', label: 'Danh mục đường', icon: EnvironmentOutlined },
     { path: 'logs', label: 'Nhật ký', icon: FileSearchOutlined },
     { path: 'data', label: 'Quản trị dữ liệu', icon: DatabaseOutlined },
   ],

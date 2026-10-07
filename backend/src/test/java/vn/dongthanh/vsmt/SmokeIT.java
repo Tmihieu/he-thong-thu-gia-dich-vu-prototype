@@ -34,9 +34,15 @@ class SmokeIT extends IntegrationTest {
 
     @Test
     void openApiIsPublic() throws Exception {
-        mvc.perform(get("/v3/api-docs"))
+        String doc = mvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.openapi").exists());
+                .andExpect(jsonPath("$.openapi").exists())
+                .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        // OPENAPI_OUT=<file>: ghi tài liệu ra file để web sinh kiểu (openapi-typescript <file>) khi không chạy backend.
+        String out = System.getenv("OPENAPI_OUT");
+        if (out != null && !out.isBlank()) {
+            java.nio.file.Files.writeString(java.nio.file.Path.of(out), doc);
+        }
     }
 
     @Test

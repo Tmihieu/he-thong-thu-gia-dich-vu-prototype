@@ -125,7 +125,7 @@ public class StreetController {
             @Schema(requiredMode = RequiredMode.REQUIRED) int remaining) {
     }
 
-    public record ImportRowDto(
+    public record StreetImportRowDto(
             @Schema(requiredMode = RequiredMode.REQUIRED) int rowNo,
             @Schema(requiredMode = RequiredMode.REQUIRED) String name,
             @Schema(requiredMode = RequiredMode.REQUIRED) String kind,
@@ -136,15 +136,15 @@ public class StreetController {
             @Schema(requiredMode = RequiredMode.REQUIRED) List<String> errors) {
     }
 
-    public record ImportPreviewDto(
-            @Schema(requiredMode = RequiredMode.REQUIRED) List<ImportRowDto> rows,
+    public record StreetImportPreviewDto(
+            @Schema(requiredMode = RequiredMode.REQUIRED) List<StreetImportRowDto> rows,
             @Schema(requiredMode = RequiredMode.REQUIRED) int added,
             @Schema(requiredMode = RequiredMode.REQUIRED) int updated,
             @Schema(requiredMode = RequiredMode.REQUIRED) int skipped,
             @Schema(requiredMode = RequiredMode.REQUIRED) int invalid) {
 
-        static ImportPreviewDto of(StreetImportService.ImportPreview p) {
-            return new ImportPreviewDto(p.rows().stream().map(r -> new ImportRowDto(r.rowNo(), r.name(), r.kind(), r.parent(),
+        static StreetImportPreviewDto of(StreetImportService.ImportPreview p) {
+            return new StreetImportPreviewDto(p.rows().stream().map(r -> new StreetImportRowDto(r.rowNo(), r.name(), r.kind(), r.parent(),
                     r.areas(), r.oldName(), r.action(), r.errors())).toList(), p.added(), p.updated(), p.skipped(), p.invalid());
         }
     }
@@ -212,15 +212,15 @@ public class StreetController {
 
     @Operation(summary = "Xem trước file nhập danh mục đường: từng dòng kèm việc sẽ làm và lỗi, chưa ghi gì (quản trị viên)")
     @PostMapping(value = "/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ImportPreviewDto previewImport(@RequestParam("file") MultipartFile file,
+    public StreetImportPreviewDto previewImport(@RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal CurrentUser actor) throws IOException {
-        return ImportPreviewDto.of(importer.preview(file.getInputStream(), actor));
+        return StreetImportPreviewDto.of(importer.preview(file.getInputStream(), actor));
     }
 
     @Operation(summary = "Nhập danh mục đường từ Excel: ghi tất cả hoặc không gì (quản trị viên)")
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ImportPreviewDto importStreets(@RequestParam("file") MultipartFile file,
+    public StreetImportPreviewDto importStreets(@RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal CurrentUser actor) throws IOException {
-        return ImportPreviewDto.of(importer.commit(file.getInputStream(), actor));
+        return StreetImportPreviewDto.of(importer.commit(file.getInputStream(), actor));
     }
 }
