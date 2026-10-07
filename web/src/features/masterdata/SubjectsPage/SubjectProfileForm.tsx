@@ -12,7 +12,8 @@ import {
 } from '../../../shared/labels';
 import { type Area, type ContractRequest, checkDuplicates, type DuplicateSubject, type Subject, type SubjectRequest } from '../api';
 import { StatusTag } from '../../../shared/StatusTag';
-import { StreetSearch, type StreetValue } from './StreetSearch';
+import { StreetPicker } from './StreetPicker';
+import type { StreetValue } from './StreetSearch';
 
 export interface ProfileSubmit {
   subject: SubjectRequest;
@@ -91,7 +92,6 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
   const [distinct, setDistinct] = useState(false);
   const [reason, setReason] = useState('');
   const areaId = Form.useWatch('areaId', form) ?? subject?.areaId;
-  const districtId = areas.find((a) => a.id === areaId)?.districtId;
   const type = Form.useWatch('type', form) ?? subject?.subjectType ?? 'HOUSEHOLD';
   const hasContract = Form.useWatch('hasContract', form);
   const tariffGroup = Form.useWatch('tariffGroup', form);
@@ -227,12 +227,6 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
         if ('type' in changed && (all.type === 'LARGE_SOURCE' || (group && !groupsFor(all.type).includes(group)))) {
           form.setFieldValue('tariffGroup', all.type === 'LARGE_SOURCE' ? 'FULL_COST_BY_KG' : undefined);
         }
-        if ('areaId' in changed) {
-          // Đường thuộc xã/phường khác tổ/ấp mới chọn thì bỏ chọn (backend cũng từ chối).
-          const newDistrict = areas.find((a) => a.id === changed.areaId)?.districtId;
-          const picked = form.getFieldValue('street') as StreetValue | undefined;
-          if (picked?.districtId !== undefined && picked.districtId !== newDistrict) form.setFieldValue('street', undefined);
-        }
         if ('areaId' in changed || 'street' in changed || 'houseNo' in changed || 'unitNo' in changed) {
           setDupes(null);
           setDistinct(false);
@@ -256,23 +250,24 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
           </Form.Item>
         </Col>
         <Col xs={24} md={12}>
-          <Form.Item label="Tổ/Ấp/Thôn" name="areaId" rules={[{ required: true, message: 'Vui lòng chọn tổ/ấp/thôn' }]}>
-            <Select
-              aria-label="Tổ/Ấp/Thôn"
-              showSearch
-              optionFilterProp="label"
-              placeholder="Chọn tổ/ấp/thôn"
-              options={areas.map((a) => ({ value: a.id, label: `${a.code} · ${a.name}` }))}
-            />
+          <Form.Item
+            label={type === 'HOUSEHOLD' ? 'Tên chủ hộ' : 'Tên cơ sở'}
+            name="name"
+            rules={[{ required: true, whitespace: true, message: 'Vui lòng nhập tên' }]}
+          >
+            <Input maxLength={200} />
           </Form.Item>
         </Col>
       </Row>
-      <Form.Item
-        label={type === 'HOUSEHOLD' ? 'Tên chủ hộ' : 'Tên cơ sở'}
-        name="name"
-        rules={[{ required: true, whitespace: true, message: 'Vui lòng nhập tên' }]}
-      >
-        <Input maxLength={200} />
+      {/* Địa chỉ từ tổng quát đến chi tiết: ấp → đường → hẻm → số nhà. */}
+      <Form.Item label="Ấp" name="areaId" rules={[{ required: true, message: 'Vui lòng chọn ấp' }]}>
+        <Select
+          aria-label="Ấp"
+          showSearch
+          optionFilterProp="label"
+          placeholder="Chọn ấp"
+          options={areas.map((a) => ({ value: a.id, label: `${a.code} · ${a.name}` }))}
+        />
       </Form.Item>
       <Form.Item
         label="Đường / hẻm"
@@ -286,7 +281,7 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
           },
         ]}
       >
-        <StreetSearch districtId={districtId} />
+        <StreetPicker areaId={areaId} />
       </Form.Item>
       <Row gutter={16}>
         <Col xs={24}>

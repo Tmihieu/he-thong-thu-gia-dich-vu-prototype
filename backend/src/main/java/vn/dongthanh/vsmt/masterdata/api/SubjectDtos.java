@@ -117,8 +117,10 @@ public final class SubjectDtos {
             LocalDate today = LocalDate.now();
             List<ServiceContract> sorted = contracts.stream()
                     .sorted((a, b) -> b.getValidFrom().compareTo(a.getValidFrom())).toList();
-            ContractDto current = sorted.stream().filter(c -> c.covers(today)).findFirst().map(ContractDto::of)
-                    .orElse(null);
+            // Chưa có đăng ký đang hiệu lực thì lấy đăng ký sắp hiệu lực gần nhất, để form sửa nó thay vì tạo mới bị chồng.
+            ContractDto current = sorted.stream().filter(c -> c.covers(today)).findFirst()
+                    .or(() -> sorted.stream().filter(c -> c.getValidFrom().isAfter(today)).reduce((a, b) -> b))
+                    .map(ContractDto::of).orElse(null);
             return new SubjectDto(s.getId(), s.getCode(), s.getSubjectType(), s.getName(), s.getAddress(),
                     s.getHouseNo(), s.getStreet(), s.getStreetRef() == null ? null : s.getStreetRef().getId(),
                     s.isStreetPending(), s.getUnitNo(), s.getLocationNote(), s.getArea().getId(), s.getArea().getCode(), s.getArea().getDistrict().getCode(), s.getPhone(),

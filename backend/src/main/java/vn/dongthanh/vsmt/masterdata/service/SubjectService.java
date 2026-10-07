@@ -90,7 +90,7 @@ public class SubjectService {
         int digits = 7 - cmd.type().codePrefix().length();
         String code = prefix + String.format("%0" + digits + "d", subjects.maxCodeNumber(prefix) + 1);
 
-        Street street = resolveStreet(cmd, area, null);
+        Street street = resolveStreet(cmd, null);
         List<ServiceSubject> twins = suspectedDuplicates(area.getId(), street, cmd.houseNo(), cmd.unitNo(), null);
         requireDuplicateReason(twins, cmd);
 
@@ -119,7 +119,7 @@ public class SubjectService {
         ServiceSubject subject = find(id);
         Map<String, Object> before = snapshot(subject);
         Area area = area(cmd.areaId());
-        Street street = resolveStreet(cmd, area, subject);
+        Street street = resolveStreet(cmd, subject);
         // Chỉ hỏi lại khi địa chỉ đổi: sửa SĐT của hộ vốn đã trùng không bị chặn lại.
         List<ServiceSubject> twins = addressKey(subject).equals(addressKey(area.getId(), street, cmd.houseNo(), cmd.unitNo()))
                 ? List.of()
@@ -368,7 +368,7 @@ public class SubjectService {
             Long excludeSubjectId, CurrentUser actor) {
         actor.requireRole(Role.COMMUNE_OFFICER);
         Area area = area(areaId);
-        Street street = streetId == null ? null : resolveStreet(streetId, area, null);
+        Street street = streetId == null ? null : resolveStreet(streetId, null);
         return suspectedDuplicates(area.getId(), street, houseNo, unitNo, excludeSubjectId);
     }
 
@@ -417,7 +417,7 @@ public class SubjectService {
                 + AddressText.unitKey(unitNo);
     }
 
-    private Street resolveStreet(SubjectCommand cmd, Area area, ServiceSubject existing) {
+    private Street resolveStreet(SubjectCommand cmd, ServiceSubject existing) {
         if (cmd.streetId() == null) {
             if (cmd.street() == null || cmd.street().isBlank()) {
                 throw new BusinessRuleException("STREET_REQUIRED",
@@ -425,21 +425,17 @@ public class SubjectService {
             }
             return null;
         }
-        return resolveStreet(cmd.streetId(), area, existing);
+        return resolveStreet(cmd.streetId(), existing);
     }
 
-    /** Đường phải cùng xã/phường với tổ/ấp; đường đã tạm ngưng chỉ giữ được nếu hồ sơ đang dùng sẵn. */
-    private Street resolveStreet(Long streetId, Area area, ServiceSubject existing) {
-        Street street = streets.findByIdWithDistrict(streetId)
+    /** Đường/hẻm thuộc cả xã (nhà giáp ranh có thể ở đường của ấp bên cạnh); đường đã ngừng dùng chỉ giữ được nếu hồ sơ đang dùng sẵn. */
+    private Street resolveStreet(Long streetId, ServiceSubject existing) {
+        Street street = streets.findByIdWithParent(streetId)
                 .orElseThrow(() -> new NotFoundException("STREET_NOT_FOUND", "Không tìm thấy đường trong danh mục."));
-        if (!street.getDistrict().getId().equals(area.getDistrict().getId())) {
-            throw new BusinessRuleException("STREET_DISTRICT_MISMATCH", "Đường " + street.getName() + " thuộc "
-                    + street.getDistrict().getName() + ", không cùng xã/phường với tổ/ấp đã chọn.");
-        }
         boolean kept = existing != null && existing.getStreetRef() != null
                 && existing.getStreetRef().getId().equals(streetId);
-        if (street.getStatus() != ActiveStatus.ACTIVE && !kept) {
-            throw new BusinessRuleException("STREET_INACTIVE", "Đường " + street.getName() + " đã tạm ngưng trong danh mục.");
+        if (!StreetService.usable(street) && !kept) {
+            throw new BusinessRuleException("STREET_INACTIVE", street.getDisplayName() + " đã ngừng dùng trong danh mục.");
         }
         return street;
     }

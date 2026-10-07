@@ -36,9 +36,9 @@ import vn.dongthanh.vsmt.masterdata.domain.District;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubject;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubjectRepository;
 import vn.dongthanh.vsmt.masterdata.domain.Street;
-import vn.dongthanh.vsmt.masterdata.domain.StreetRepository;
 import vn.dongthanh.vsmt.masterdata.domain.SubjectType;
 import vn.dongthanh.vsmt.masterdata.domain.TariffGroup;
+import vn.dongthanh.vsmt.masterdata.service.StreetService;
 import vn.dongthanh.vsmt.masterdata.service.SubjectImportService;
 import vn.dongthanh.vsmt.masterdata.service.SubjectImportService.ImportPreview;
 import vn.dongthanh.vsmt.masterdata.service.SubjectService;
@@ -53,7 +53,7 @@ class SubjectImportServiceTest {
     final SubjectService subjects = mock(SubjectService.class);
     final ServiceSubjectRepository repo = mock(ServiceSubjectRepository.class);
     final AreaRepository areas = mock(AreaRepository.class);
-    final StreetRepository streets = mock(StreetRepository.class);
+    final StreetService streets = mock(StreetService.class);
     final Clock clock = Clock.fixed(Instant.parse("2026-10-04T03:00:00Z"), ZoneId.of("Asia/Ho_Chi_Minh"));
     final CurrentUser officer = new CurrentUser(3L, "canbo", Role.COMMUNE_OFFICER, null);
     SubjectImportService service;
@@ -67,6 +67,7 @@ class SubjectImportServiceTest {
         when(kv07.getId()).thenReturn(7L);
         when(kv07.getCode()).thenReturn("KV07");
         when(areas.findAllWithDistrict(null)).thenReturn(List.of(kv07));
+        when(streets.index()).thenReturn(new StreetService.CatalogIndex(List.of()));
         service = new SubjectImportService(subjects, repo, areas, streets, clock);
     }
 
@@ -151,9 +152,9 @@ class SubjectImportServiceTest {
     }
 
     Street catalogStreet() {
-        Street street = Street.create(mock(District.class), "Nguyễn Huệ", null);
+        Street street = Street.street("Nguyễn Huệ");
         ReflectionTestUtils.setField(street, "id", 40L);
-        when(streets.findByDistrictIdAndNameKey(3L, "nguyen hue")).thenReturn(java.util.Optional.of(street));
+        when(streets.index()).thenReturn(new StreetService.CatalogIndex(List.of(street)));
         return street;
     }
 

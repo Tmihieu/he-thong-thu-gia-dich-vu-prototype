@@ -91,6 +91,7 @@ Lịch sử trước/sau của thao tác tạo/sửa tiền **không** nằm ở
 | 5   | Company             | `companies`             | master-data   | A    |
 | 6   | AreaAssignment      | `area_assignments`      | master-data   | A    |
 | 7   | ServiceSubject      | `service_subjects`      | master-data   | A    |
+| 7a  | Street              | `streets`, `street_areas`, `street_old_names` | master-data | A |
 | 8   | ServiceContract     | `service_contracts`     | master-data   | A    |
 | 9   | TariffVersion       | `tariff_versions`       | master-data   | A    |
 | 10  | TariffRate          | `tariff_rates`          | master-data   | A    |
@@ -293,6 +294,24 @@ Hộ gia đình / nguồn thải nhỏ / nguồn thải lớn (06/10, V48; thay 
 **Enum `SubjectStatus`:** `ACTIVE` Đang cung cấp · `PENDING` Chờ xử lý · `ENDED` Đã chấm dứt
 
 **Khóa/ràng buộc:** `code` duy nhất.
+
+### Street — Danh mục đường/hẻm · `streets` (+ `street_areas`, `street_old_names`) · Phần A
+
+Danh mục chung cả xã (V49, 07/10; BR-MD-23). Dữ liệu ban đầu: bản nháp từ OpenStreetMap (© OpenStreetMap contributors, ODbL) do xã duyệt, sinh bằng `scripts/osm_duong_dong_thanh.py`. Hồ sơ hộ liên kết qua `service_subjects.street_id`.
+
+
+| Tên hiển thị (VI) | Tên kỹ thuật | Kiểu | Bắt buộc | Nguồn | Ví dụ | Mức | Ghi chú |
+| ----------------- | ------------ | ---- | -------- | ----- | ----- | ---- | ------- |
+| Loại | `kind` | `enum` | Có | Xã | `STREET` | Thật | `STREET` đường · `ALLEY` hẻm (CHECK: hẻm phải có `parent_id`, đường không có) |
+| Thuộc đường | `parent_id` | `FK→Street` | Có điều kiện | Xã | 12 | Thật | Chỉ với hẻm; đường cha phải là `STREET` |
+| Tên | `name` | `text(200)` | Có | Xã | Hẻm 19 | Thật | Hẻm lưu tên ngắn; tên hiển thị = tên hẻm + tên đường cha |
+| Khóa so khớp | `name_key` | `text(200)` | Có | Hệ thống | hem 19 | Demo | Bỏ dấu, chữ thường, bỏ tiền tố "đường". Duy nhất theo (`parent_id`, `name_key`) |
+| Trạng thái | `status` | `enum ActiveStatus` | Có | Xã | `ACTIVE` | Thật | Ngừng dùng: không chọn cho hồ sơ mới |
+| Ấp đi qua | `street_areas(street_id, area_id)` | bảng nối | Không | Xã | Ấp 1, Ấp 2 | Thật | Lọc đường khi cán bộ chọn ấp; hẻm thường để trống (theo đường cha) |
+| Tên cũ | `street_old_names(name, name_key, note)` | bảng con | Không | Xã | Đông Thạnh 8 · NQ 380/NQ-HĐND 24/7/2025 | Thật | Ghi khi đổi tên; vẫn tìm và tự khớp được theo tên cũ |
+
+
+**Khóa/ràng buộc:** (`parent_id`, `name_key`) duy nhất; hẻm phải có đường cha. Bỏ `district_id` và `goong_place_id` (V49): đường không thuộc riêng xã cũ nào, không lưu dữ liệu Goong.
 
 ### ServiceContract — Đăng ký dịch vụ (hợp đồng) · `service_contracts` · Phần A
 
