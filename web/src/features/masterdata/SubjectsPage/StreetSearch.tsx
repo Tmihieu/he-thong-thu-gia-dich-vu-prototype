@@ -3,20 +3,15 @@ import { useEffect, useRef, useState } from 'react';
 
 import { type StreetSuggestions, suggestStreets } from '../api';
 
-/** Giá trị của ô chọn đường: đường chuẩn (có streetId), đường chờ xác minh (pending) hoặc địa chỉ cũ chưa chuẩn hóa. */
+/** Giá trị của ô chọn đường: đường/hẻm chuẩn (có streetId), đường chờ xác minh (pending) hoặc địa chỉ cũ chưa chuẩn hóa. */
 export interface StreetValue {
   streetId?: number;
-  /** Tên đường chuẩn, hoặc tên tạm (chờ xác minh / địa chỉ cũ). */
+  /** Tên hiển thị của đường/hẻm chuẩn (hẻm kèm tên đường), hoặc tên tạm (chờ xác minh / địa chỉ cũ). */
   street: string;
   pending: boolean;
-  districtId?: number;
-  /** Tên xã/phường của đường chuẩn, để phân biệt đường trùng tên. */
-  districtName?: string;
 }
 
 interface Props {
-  /** Xã/phường của tổ/ấp đang chọn; có thì chỉ tìm đường của xã/phường đó. */
-  districtId?: number;
   value?: StreetValue;
   onChange?: (value: StreetValue | undefined) => void;
 }
@@ -27,10 +22,10 @@ const MIN_CHARS = 2;
 const isAbort = (err: unknown) => err instanceof DOMException && err.name === 'AbortError';
 
 /**
- * Ô tìm đường: gõ rồi chọn từ danh mục chuẩn (gọi backend sau {@link DEBOUNCE_MS} ms, bỏ yêu cầu và phản hồi cũ khi
+ * Ô tìm đường cả xã (đường ở ấp khác, tên cũ): gõ rồi chọn từ danh mục chuẩn (gọi backend sau {@link DEBOUNCE_MS} ms, bỏ yêu cầu và phản hồi cũ khi
  * đổi từ khóa). Kết quả Goong chỉ để tham khảo: chọn nó chỉ ghi nhận "chờ xác minh", không tự thêm đường vào danh mục.
  */
-export function StreetSearch({ districtId, value, onChange }: Props) {
+export function StreetSearch({ value, onChange }: Props) {
   const [text, setText] = useState('');
   const [result, setResult] = useState<StreetSuggestions | null>(null);
   const [loading, setLoading] = useState(false);
@@ -51,7 +46,7 @@ export function StreetSearch({ districtId, value, onChange }: Props) {
     setLoading(true);
     /* eslint-enable react-hooks/set-state-in-effect */
     const timer = setTimeout(() => {
-      suggestStreets(q, districtId, controller.signal)
+      suggestStreets(q, controller.signal)
         .then((r) => {
           if (mine === latest.current) {
             setResult(r);
@@ -72,7 +67,7 @@ export function StreetSearch({ districtId, value, onChange }: Props) {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [text, districtId]);
+  }, [text]);
 
   if (value?.pending) {
     return (
@@ -99,7 +94,7 @@ export function StreetSearch({ districtId, value, onChange }: Props) {
   }
 
   const legacy = value && !value.streetId;
-  const streetOptions = (result?.streets ?? []).map((s) => ({ value: `s:${s.id}`, label: `${s.name} · ${s.districtName}` }));
+  const streetOptions = (result?.streets ?? []).map((s) => ({ value: `s:${s.id}`, label: s.displayName }));
   const external = (result?.external ?? []).map((e) => ({ value: `g:${e.placeId}`, label: `${e.name} · ${e.secondaryText}` }));
   const options = [
     ...streetOptions,
@@ -110,7 +105,7 @@ export function StreetSearch({ districtId, value, onChange }: Props) {
     if (!picked) return onChange?.(undefined);
     if (picked.value.startsWith('s:')) {
       const s = result?.streets.find((x) => `s:${x.id}` === picked.value);
-      if (s) onChange?.({ streetId: s.id, street: s.name, pending: false, districtId: s.districtId, districtName: s.districtName });
+      if (s) onChange?.({ streetId: s.id, street: s.displayName, pending: false });
     } else {
       const e = result?.external.find((x) => `g:${x.placeId}` === picked.value);
       if (e) onChange?.({ street: e.name, pending: true });
@@ -136,11 +131,9 @@ export function StreetSearch({ districtId, value, onChange }: Props) {
         allowClear
         labelInValue
         filterOption={false}
-        placeholder="Gõ tên đường rồi chọn trong danh sách"
+        placeholder="Gõ tên đường, hẻm hoặc tên cũ rồi chọn"
         value={
-          value?.streetId
-            ? { value: `s:${value.streetId}`, label: value.districtName ? `${value.street} · ${value.districtName}` : value.street }
-            : undefined
+          value?.streetId ? { value: `s:${value.streetId}`, label: value.street } : undefined
         }
         loading={loading}
         options={options}

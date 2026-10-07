@@ -4,7 +4,7 @@ import { beforeEach, vi } from 'vitest';
 
 import { pickDate, pickOption } from '../../../test/antd';
 import { ApiError } from '../../../api/client';
-import type { Area, DuplicateSubject, StreetSuggestions, Subject } from '../api';
+import type { Area, DuplicateSubject, Street, StreetSuggestions, Subject } from '../api';
 import { checkDuplicates, suggestStreets } from '../api';
 import { SubjectProfileForm } from './SubjectProfileForm';
 
@@ -12,6 +12,7 @@ vi.mock('../api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../api')>()),
   suggestStreets: vi.fn(),
   checkDuplicates: vi.fn(),
+  useStreets: () => ({ data: catalog, isLoading: false }),
 }));
 
 const areas: Area[] = [
@@ -31,8 +32,18 @@ const existing: Subject = {
 };
 const standardized: Subject = { ...existing, street: 'Đường Nguyễn Huệ', streetId: 9, houseNo: '12/5', address: '12/5 Đường Nguyễn Huệ' };
 
-const hue = { id: 9, name: 'Đường Nguyễn Huệ', districtId: 3, districtName: 'Nhị Bình', goongLinked: false };
-const hueDth = { id: 10, name: 'Nguyễn Huệ', districtId: 4, districtName: 'Đông Thạnh', goongLinked: true };
+const street = (over: Partial<Street> & Pick<Street, 'id' | 'name'>): Street => ({
+  displayName: over.name, kind: 'STREET', parentId: null, status: 'ACTIVE', areaIds: [24], oldNames: [], ...over,
+});
+// Danh mục: đường đi qua ấp (KV24/KV25), hẻm thuộc đường, tên cũ theo văn bản đổi tên.
+const catalog: Street[] = [
+  street({ id: 9, name: 'Đường Nguyễn Huệ' }),
+  street({ id: 20, name: 'Nguyễn Thị Mực', areaIds: [24, 25], oldNames: [{ name: 'Đông Thạnh 8', note: 'NQ 380' }] }),
+  street({ id: 21, name: 'Hẻm 12', displayName: 'Hẻm 12 Nguyễn Thị Mực', kind: 'ALLEY', parentId: 20, areaIds: [] }),
+  street({ id: 22, name: 'Lê Văn Khương', areaIds: [25] }),
+];
+const hue = { id: 9, displayName: 'Đường Nguyễn Huệ', kind: 'STREET' as const };
+const hueDth = { id: 10, displayName: 'Nguyễn Huệ', kind: 'STREET' as const };
 const found = (over: Partial<StreetSuggestions> = {}): StreetSuggestions => ({ streets: [hue], external: [], goongStatus: 'OK', ...over });
 const twin: DuplicateSubject = { id: 77, code: 'NB-H000077', name: 'Trần Thị Cũ', phone: '0903111222', status: 'ENDED', address: '12/5 Đường Nguyễn Huệ' };
 
@@ -48,21 +59,28 @@ function type(label: string, value: string) {
   fireEvent.change(screen.getByLabelText(label), { target: { value } });
 }
 
-/** Gõ vào ô tìm đường; kết quả về sau debounce nên đợi rồi mới chọn. */
+/** Chuyển sang ô tìm cả xã (đường ấp khác, tên cũ, chờ xác minh). */
+async function openSearch() {
+  await userEvent.click(screen.getByRole('button', { name: /Tìm cả xã hoặc ghi nhận chờ xác minh/ }));
+}
+
+/** Gõ vào ô tìm cả xã; kết quả về sau debounce nên đợi rồi mới chọn. */
 async function searchStreet(text: string) {
+  if (!screen.queryByRole('combobox', { name: 'Đường / hẻm' })) await openSearch();
   fireEvent.change(screen.getByRole('combobox', { name: 'Đường / hẻm' }), { target: { value: text } });
   await waitFor(() => expect(suggest).toHaveBeenCalled());
 }
 
-async function pickStreet(text: string, label: string) {
-  await searchStreet(text);
-  await pickOption(screen.getByRole('combobox', { name: 'Đường / hẻm' }), label);
+/** Chọn đường đi qua ấp đã chọn (danh mục), hẻm nếu có. */
+async function pickStreet(label: string, alley?: string) {
+  await pickOption(screen.getByRole('combobox', { name: 'Đường' }), label);
+  if (alley) await pickOption(screen.getByRole('combobox', { name: 'Hẻm' }), alley);
 }
 
 async function fillNewHousehold() {
   type('Tên chủ hộ', 'Lê Thị Mẫu');
   await userEvent.type(screen.getByLabelText('Số thành viên'), '3');
-  await pickOption(screen.getByRole('combobox', { name: 'Tổ/Ấp/Thôn' }), 'KV24 · Tổ dân phố 24');
+  await pickOption(screen.getByRole('combobox', { name: 'Ấp' }), 'KV24 · Tổ dân phố 24');
   await userEvent.click(screen.getByRole('checkbox', { name: 'Đưa hộ này vào danh sách thu phí' }));
 }
 
@@ -75,7 +93,7 @@ describe('SubjectProfileForm', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ' }));
 
     expect(await screen.findByText('Vui lòng nhập tên')).toBeInTheDocument();
-    expect(screen.getByText('Vui lòng chọn tổ/ấp/thôn')).toBeInTheDocument();
+    expect(screen.getByText('Vui lòng chọn ấp')).toBeInTheDocument();
     expect(screen.getByText('Vui lòng chọn đường trong danh mục hoặc ghi nhận chờ xác minh')).toBeInTheDocument();
     expect(screen.getByText('Vui lòng nhập số thành viên')).toBeInTheDocument();
     expect(screen.getByText('Số điện thoại chỉ gồm 9–15 chữ số')).toBeInTheDocument();
@@ -100,8 +118,8 @@ describe('SubjectProfileForm', () => {
     type('Số nhà', ' 12/5B ');
     type('Số điện thoại', '0902999555');
     await userEvent.type(screen.getByLabelText('Số thành viên'), '3');
-    await pickOption(screen.getByRole('combobox', { name: 'Tổ/Ấp/Thôn' }), 'KV24 · Tổ dân phố 24');
-    await pickStreet('nguyen hue', 'Đường Nguyễn Huệ · Nhị Bình');
+    await pickOption(screen.getByRole('combobox', { name: 'Ấp' }), 'KV24 · Tổ dân phố 24');
+    await pickStreet('Đường Nguyễn Huệ');
     await pickOption(screen.getByRole('combobox', { name: 'Nhóm giá' }), 'HGĐ ≥ 3 người');
     pickDate(screen.getByLabelText('Hiệu lực từ'), '01/10/2026');
     await userEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ' }));
@@ -118,15 +136,15 @@ describe('SubjectProfileForm', () => {
       },
       contractId: null,
     });
-    // Tìm đường theo xã/phường của tổ/ấp đã chọn.
-    expect(suggest).toHaveBeenLastCalledWith('nguyen hue', 3, expect.any(AbortSignal));
+    // Đường chọn từ danh mục theo ấp: không cần gọi tìm kiếm.
+    expect(suggest).not.toHaveBeenCalled();
   });
 
   it('bỏ chọn đăng ký dịch vụ thì không gửi hợp đồng', async () => {
     const onSubmit = vi.fn();
     render(<SubjectProfileForm areas={areas} onSubmit={onSubmit} />);
     await fillNewHousehold();
-    await pickStreet('hue', 'Đường Nguyễn Huệ · Nhị Bình');
+    await pickStreet('Đường Nguyễn Huệ');
     await userEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ' }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
@@ -210,23 +228,28 @@ describe('SubjectProfileForm', () => {
       expect(dupCheck).not.toHaveBeenCalled();
     });
 
-    it('hai đường trùng tên: nhãn có xã/phường để phân biệt, chọn đúng đường theo id', async () => {
-      suggest.mockResolvedValue(found({ streets: [hue, hueDth] }));
+    it('chỉ hiện đường đi qua ấp đã chọn; tên cũ lọc được; chọn hẻm thì gửi id hẻm', async () => {
       const onSubmit = vi.fn();
       render(<SubjectProfileForm areas={areas} onSubmit={onSubmit} />);
-      await fillNewHousehold();
-      await searchStreet('nguyen hue');
-      expect(await screen.findByTitle('Đường Nguyễn Huệ · Nhị Bình')).toBeInTheDocument();
-      expect(screen.getByTitle('Nguyễn Huệ · Đông Thạnh')).toBeInTheDocument();
-      fireEvent.click(screen.getByTitle('Đường Nguyễn Huệ · Nhị Bình'));
-      await userEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ' }));
+      expect(screen.getByRole('combobox', { name: 'Đường' })).toBeDisabled();
+      await fillNewHousehold(); // ấp KV24
 
+      fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Đường' }));
+      expect(await screen.findByTitle('Đường Nguyễn Huệ')).toBeInTheDocument();
+      expect(screen.getByTitle('Nguyễn Thị Mực (tên cũ: Đông Thạnh 8)')).toBeInTheDocument();
+      expect(screen.queryByTitle('Lê Văn Khương')).not.toBeInTheDocument(); // đường của ấp khác
+      fireEvent.change(screen.getByRole('combobox', { name: 'Đường' }), { target: { value: 'Đông Thạnh 8' } });
+      await waitFor(() => expect(screen.queryByTitle('Đường Nguyễn Huệ')).not.toBeInTheDocument());
+
+      await pickStreet('Nguyễn Thị Mực (tên cũ: Đông Thạnh 8)', 'Hẻm 12');
+      await userEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ' }));
       await waitFor(() => expect(onSubmit).toHaveBeenCalled());
-      expect(onSubmit.mock.calls[0]![0].subject.streetId).toBe(9);
+      expect(onSubmit.mock.calls[0]![0].subject).toMatchObject({ streetId: 21, street: undefined });
     });
 
     it('debounce: gõ nhanh chỉ gọi máy chủ một lần với từ khóa cuối; dưới 2 ký tự không gọi', async () => {
       render(<SubjectProfileForm areas={areas} onSubmit={vi.fn()} />);
+      await openSearch();
       const box = screen.getByRole('combobox', { name: 'Đường / hẻm' });
       fireEvent.change(box, { target: { value: 'n' } });
       fireEvent.change(box, { target: { value: 'ng' } });
@@ -243,18 +266,19 @@ describe('SubjectProfileForm', () => {
       suggest.mockImplementationOnce(() => new Promise((r) => (resolveOld = r)));
       suggest.mockResolvedValueOnce(found({ streets: [hueDth] }));
       render(<SubjectProfileForm areas={areas} onSubmit={vi.fn()} />);
+      await openSearch();
       const box = screen.getByRole('combobox', { name: 'Đường / hẻm' });
 
       fireEvent.change(box, { target: { value: 'le' } });
       await waitFor(() => expect(suggest).toHaveBeenCalledTimes(1));
       fireEvent.change(box, { target: { value: 'nguyen' } });
       await waitFor(() => expect(suggest).toHaveBeenCalledTimes(2));
-      expect(await screen.findByTitle('Nguyễn Huệ · Đông Thạnh')).toBeInTheDocument();
+      expect(await screen.findByTitle('Nguyễn Huệ')).toBeInTheDocument();
 
-      resolveOld(found({ streets: [{ ...hue, id: 1, name: 'Đường Lê Lợi' }] }));
+      resolveOld(found({ streets: [{ ...hue, id: 1, displayName: 'Đường Lê Lợi' }] }));
       await new Promise((r) => setTimeout(r, 50));
-      expect(screen.queryByTitle('Đường Lê Lợi · Nhị Bình')).not.toBeInTheDocument();
-      expect(screen.getByTitle('Nguyễn Huệ · Đông Thạnh')).toBeInTheDocument();
+      expect(screen.queryByTitle('Đường Lê Lợi')).not.toBeInTheDocument();
+      expect(screen.getByTitle('Nguyễn Huệ')).toBeInTheDocument();
     });
 
     it('Goong hết hạn mức: báo nhẹ, vẫn chọn được đường trong danh mục', async () => {
@@ -262,7 +286,7 @@ describe('SubjectProfileForm', () => {
       render(<SubjectProfileForm areas={areas} onSubmit={vi.fn()} />);
       await searchStreet('nguyen hue');
       expect(await screen.findByText('Gợi ý từ Goong tạm thời không dùng được; vẫn tìm được trong danh mục nội bộ.')).toBeInTheDocument();
-      expect(screen.getByTitle('Đường Nguyễn Huệ · Nhị Bình')).toBeInTheDocument();
+      expect(screen.getByTitle('Đường Nguyễn Huệ')).toBeInTheDocument();
     });
 
     it('chưa cấu hình khóa Goong: báo rõ, vẫn chọn được đường trong danh mục', async () => {
@@ -270,7 +294,7 @@ describe('SubjectProfileForm', () => {
       render(<SubjectProfileForm areas={areas} onSubmit={vi.fn()} />);
       await searchStreet('nguyen hue');
       expect(await screen.findByText('Chưa cấu hình khóa Goong nên chỉ tìm trong danh mục nội bộ.')).toBeInTheDocument();
-      expect(screen.getByTitle('Đường Nguyễn Huệ · Nhị Bình')).toBeInTheDocument();
+      expect(screen.getByTitle('Đường Nguyễn Huệ')).toBeInTheDocument();
     });
 
     it('Goong chỉ là gợi ý tham khảo: chọn thì ghi nhận chờ xác minh, không gửi streetId', async () => {
@@ -278,7 +302,8 @@ describe('SubjectProfileForm', () => {
       const onSubmit = vi.fn();
       render(<SubjectProfileForm areas={areas} onSubmit={onSubmit} />);
       await fillNewHousehold();
-      await pickStreet('le loi', 'Đường Lê Lợi · Hồ Chí Minh');
+      await searchStreet('le loi');
+      await pickOption(screen.getByRole('combobox', { name: 'Đường / hẻm' }), 'Đường Lê Lợi · Hồ Chí Minh');
 
       expect(screen.getByText(/Đường chưa có trong danh mục/)).toBeInTheDocument();
       await userEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ' }));
@@ -303,14 +328,18 @@ describe('SubjectProfileForm', () => {
       expect(onSubmit.mock.calls[0]![0].subject).toMatchObject({ street: 'Hẻm 7 mới mở', streetPending: true, streetId: undefined });
     });
 
-    it('đổi sang tổ/ấp của xã/phường khác thì bỏ đường đã chọn', async () => {
+    it('đổi sang ấp mà đường không đi qua thì bỏ đường đã chọn; đường đi qua cả hai ấp thì giữ', async () => {
       render(<SubjectProfileForm areas={areas} onSubmit={vi.fn()} />);
-      await pickOption(screen.getByRole('combobox', { name: 'Tổ/Ấp/Thôn' }), 'KV24 · Tổ dân phố 24');
-      await pickStreet('hue', 'Đường Nguyễn Huệ · Nhị Bình');
-      expect(document.querySelector('.ant-select-selection-item[title="Đường Nguyễn Huệ · Nhị Bình"]')).not.toBeNull();
+      await pickOption(screen.getByRole('combobox', { name: 'Ấp' }), 'KV24 · Tổ dân phố 24');
+      await pickStreet('Đường Nguyễn Huệ');
+      expect(document.querySelector('.ant-select-selection-item[title="Đường Nguyễn Huệ"]')).not.toBeNull();
 
-      await pickOption(screen.getByRole('combobox', { name: 'Tổ/Ấp/Thôn' }), 'KV25 · Tổ dân phố 25');
-      await waitFor(() => expect(document.querySelector('.ant-select-selection-item[title="Đường Nguyễn Huệ · Nhị Bình"]')).toBeNull());
+      await pickOption(screen.getByRole('combobox', { name: 'Ấp' }), 'KV25 · Tổ dân phố 25');
+      await waitFor(() => expect(document.querySelector('.ant-select-selection-item[title="Đường Nguyễn Huệ"]')).toBeNull());
+
+      await pickStreet('Nguyễn Thị Mực (tên cũ: Đông Thạnh 8)');
+      await pickOption(screen.getByRole('combobox', { name: 'Ấp' }), 'KV24 · Tổ dân phố 24');
+      expect(document.querySelector('.ant-select-selection-item[title="Nguyễn Thị Mực (tên cũ: Đông Thạnh 8)"]')).not.toBeNull();
     });
   });
 
@@ -321,7 +350,7 @@ describe('SubjectProfileForm', () => {
       render(<SubjectProfileForm areas={areas} onSubmit={onSubmit} onOpenExisting={onOpenExisting} />);
       await fillNewHousehold();
       if (house) type('Số nhà', house);
-      await pickStreet('hue', 'Đường Nguyễn Huệ · Nhị Bình');
+      await pickStreet('Đường Nguyễn Huệ');
       await userEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ' }));
       return { onSubmit, onOpenExisting };
     }
