@@ -1,6 +1,7 @@
 """Bản nháp danh mục đường/hẻm xã Đông Thạnh từ OpenStreetMap, xuất Excel để xã duyệt.
 
-Chạy: python scripts/osm_duong_dong_thanh.py [đường-dẫn-ra.xlsx] [csv-overpass-đã-tải]
+Chạy: python scripts/osm_duong_dong_thanh.py [đường-dẫn-ra.xlsx | seed.sql] [csv-overpass-đã-tải]
+(.sql: sinh seed demo, giả định xã đã duyệt bản nháp.)
 Nguồn: © OpenStreetMap contributors (ODbL). Ranh giới 52 ấp: relation 21383875–21383913, 21386184–21386196
 (cùng nguồn với seed V40_1). OSM có thể còn tên đường cũ (vd. chưa cập nhật NQ 380/NQ-HĐND ngày 24/7/2025).
 Chỉ dùng thư viện chuẩn: .xlsx là gói zip chứa XML.
@@ -9,6 +10,7 @@ import collections
 import datetime
 import re
 import sys
+import unicodedata
 import urllib.parse
 import urllib.request
 import zipfile
@@ -108,7 +110,7 @@ def build(csv_text):
             'new': NQ380.get(k, ''),
             'variants': '; '.join(v for v in s['names'] if v != name),
             'osm': ' '.join(sorted(s['ids'])[:6]) + (' …' if len(s['ids']) > 6 else ''),
-            'first_ap': aps[0],
+            'ap_list': aps,
         })
     rows.sort(key=lambda r: (['Đường', 'Hẻm', 'Cầu'].index(r['kind']), r['parent'].lower(), r['name'].lower()))
     by_ap = collections.defaultdict(list)
@@ -116,6 +118,91 @@ def build(csv_text):
         for a in r['aps'].split(', '):
             by_ap[int(a.split()[1])].append(r['name'])
     return rows, by_ap
+
+
+# ---- seed demo: giả định xã đã duyệt bản nháp ----
+# Bỏ khi xã duyệt: đường của phường bên cạnh lọt vào do cắt ranh ấp, tên không rõ là đường nào.
+SEED_SKIP = {'tân chánh hiệp 39', 'tân xuân - trung chánh 1', 'nhánh 1'}
+# Hai tuyến NQ 380 không có tên cũ trên OSM (OSM đã ghi tên mới / chưa vẽ đường).
+SEED_EXTRA_OLD = {'Võ Thị Lùng': ['Đông Thạnh 2-1'], 'Nguyễn Thị Be': ['Đường vào trường Trần Văn Danh']}
+NQ380_NOTE = 'NQ 380/NQ-HĐND ngày 24/7/2025'
+
+
+def street_key(text):
+    """Như AddressText.streetKey ở backend: bỏ dấu, chữ thường, đ→d, gộp khoảng trắng, bỏ tiền tố "duong "."""
+    t = unicodedata.normalize('NFD', text.strip().lower().replace('đ', 'd'))
+    t = re.sub(r'\s+', ' ', ''.join(c for c in t if unicodedata.category(c) != 'Mn')).strip()
+    return t[6:].strip() if t.startswith('duong ') else t
+
+
+def seed_sql(rows):
+    def q(v):
+        return "'" + v.replace("'", "''") + "'"
+
+    streets = {}  # tên dùng -> {'aps', 'old'}
+    by_osm = {}   # khóa tên OSM -> tên dùng
+    for r in rows:
+        k = key(r['name'])
+        if r['kind'] != 'Đường' or k in SEED_SKIP:
+            continue
+        # "Đông Thạnh 6": báo ghi 2 dòng; dòng lý trình Đông Thạnh 4 → 6-2 là Trương Thị Trưng.
+        name = NQ380.get(k, '').split(' hoặc ')[0] or r['name']
+        s = streets.setdefault(name, {'aps': set(), 'old': set()})
+        s['aps'].update(r['ap_list'])
+        if name != r['name']:
+            s['old'].add(r['name'])
+        by_osm[k] = name
+    for name, olds in SEED_EXTRA_OLD.items():
+        streets.setdefault(name, {'aps': set(), 'old': set()})['old'].update(olds)
+    # Nguyễn Thị Be nối Đông Thạnh 2-5 (Nguyễn Thị Chồn) với Đông Thạnh 3-1: tạm lấy ấp của hai đường đó.
+    be_aps = streets['Nguyễn Thị Chồn']['aps'] | streets['Đông Thạnh 3-1']['aps']
+    streets['Nguyễn Thị Be']['aps'] |= be_aps
+
+    alleys = []
+    for r in rows:
+        parent = by_osm.get(key(r['parent'])) if r['kind'] == 'Hẻm' and not r['parent'].endswith('(?)') else None
+        if not parent:
+            continue
+        # Tên ngắn: bỏ tên đường (theo OSM) ở cuối, như StreetService.shortAlleyName.
+        words, short = r['name'].split(), r['name']
+        for i in range(1, len(words)):
+            if key(' '.join(words[i:])) == key(r['parent']):
+                short = re.sub(r'\s+(đường|Đường)$', '', ' '.join(words[:i]))
+                break
+        alleys.append((parent, short, r['ap_list']))
+
+    nl = ',\n'
+    out = ['-- Seed demo (chỉ profile demo): danh mục đường/hẻm xã Đông Thạnh, sinh bởi scripts/osm_duong_dong_thanh.py',
+           '-- từ bản nháp docs/dia-chi/danh-sach-duong-dong-thanh-nhap.xlsx, GIẢ ĐỊNH xã đã duyệt: đổi tên 18 tuyến theo',
+           f'-- {NQ380_NOTE} (giữ tên cũ), bỏ cầu, đường phường bên cạnh, hẻm không rõ đường cha.',
+           '-- Nguồn: © OpenStreetMap contributors (ODbL). Khi có danh mục chính thức, quản trị viên nhập lại bằng Excel.',
+           '',
+           'insert into streets (kind, name, name_key) values',
+           nl.join(f"    ('STREET', {q(n)}, {q(street_key(n))})" for n in sorted(streets)) + ';',
+           '',
+           'insert into streets (kind, parent_id, name, name_key)',
+           "select 'ALLEY', p.id, v.name, v.name_key from (values",
+           nl.join(f'    ({q(street_key(p))}, {q(a)}, {q(street_key(a))})' for p, a, _ in alleys),
+           ') v (parent_key, name, name_key)',
+           'join streets p on p.parent_id is null and p.name_key = v.parent_key;',
+           '']
+    pairs = [(street_key(n), '', ap) for n, s in sorted(streets.items()) for ap in sorted(s['aps'])]
+    pairs += [(street_key(a), street_key(p), ap) for p, a, aps in alleys for ap in aps]
+    out += ['insert into street_areas (street_id, area_id)',
+            'select s.id, a.id from (values',
+            nl.join(f"    ({q(k)}, {q(pk)}, 'AP{ap:02d}')" for k, pk, ap in pairs),
+            ') v (name_key, parent_key, area_code)',
+            "join streets s on s.name_key = v.name_key and ((v.parent_key = '' and s.parent_id is null)",
+            '    or s.parent_id = (select p.id from streets p where p.parent_id is null and p.name_key = v.parent_key))',
+            'join areas a on a.code = v.area_code;',
+            '']
+    olds = [(street_key(n), o) for n, s in sorted(streets.items()) for o in sorted(s['old'])]
+    out += ['insert into street_old_names (street_id, name, name_key, note)',
+            f'select s.id, v.name, v.old_key, {q(NQ380_NOTE)} from (values',
+            nl.join(f'    ({q(k)}, {q(o)}, {q(street_key(o))})' for k, o in olds),
+            ') v (name_key, name, old_key)',
+            'join streets s on s.parent_id is null and s.name_key = v.name_key;']
+    return '\n'.join(out) + '\n', len(streets), len(alleys)
 
 
 # ---- .xlsx tối giản (inlineStr, 1 kiểu chữ đậm cho dòng tiêu đề) ----
@@ -189,6 +276,12 @@ def main():
     # Overpass hay quá tải: cho đọc lại CSV đã tải trước (tham số thứ 2).
     csv_text = open(sys.argv[2], encoding='utf-8').read() if len(sys.argv) > 2 else fetch()
     rows, by_ap = build(csv_text)
+    if out.endswith('.sql'):
+        sql, n_streets, n_alleys = seed_sql(rows)
+        with open(out, 'w', encoding='utf-8', newline='\n') as f:
+            f.write(sql)
+        print(f'{out}: {n_streets} đường, {n_alleys} hẻm')
+        return
     today = datetime.date.today().strftime('%d/%m/%Y')
     guide = [
         ['Mục', 'Nội dung'],
