@@ -80,7 +80,7 @@ export function ProgressPage() {
     <>
       <PageHeader
         title="Tiến độ thu"
-        description="Công ty đã nộp về xã bao nhiêu, còn thiếu bao nhiêu và tổ nào thu chậm."
+        description="Công ty đã quyết toán với xã chưa, còn thiếu bao nhiêu và tổ nào thu chậm."
         extra={
           <Space wrap>
             <PeriodSelect value={periodId} onChange={setPeriodId} />
@@ -200,14 +200,14 @@ export function ProgressPage() {
           // Phải nộp xã <= 0 thì chưa có gì để nộp: không chia cho 0 hay số âm.
           { title: 'Tỷ lệ nộp', render: (_, r) => (r.payable > 0 ? <Rate rate={r.remittedRate} /> : '—') },
           {
-            title: 'Đã nộp đủ',
+            title: 'Đã quyết toán',
             align: 'center',
-            width: 110,
+            width: 120,
             render: (_, r) =>
-              r.remaining <= 0 ? (
-                <CheckCircleFilled aria-label="Đã nộp đủ" style={{ color: '#16a34a', fontSize: 18 }} />
+              r.settled ? (
+                <CheckCircleFilled aria-label="Đã quyết toán" style={{ color: '#16a34a', fontSize: 18 }} />
               ) : (
-                <CloseCircleFilled aria-label="Chưa nộp đủ" style={{ color: '#dc2626', fontSize: 18 }} />
+                <CloseCircleFilled aria-label="Chưa quyết toán" style={{ color: '#dc2626', fontSize: 18 }} />
               ),
           },
         ]}

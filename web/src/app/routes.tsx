@@ -13,7 +13,6 @@ import { CompanyComplaintsPage } from '../features/complaints/CompanyComplaintsP
 import { MarketModerationPage, MarketModerationPostPage } from '../features/market/MarketPages';
 import { AreasPage } from '../features/masterdata/AreasPage/AreasPage';
 import { LeaderDashboardPage } from '../features/leadership/LeaderDashboardPage';
-import { LeaderPayoutsPage } from '../features/leadership/LeaderPayoutsPage';
 import { LeaderReportPage } from '../features/leadership/LeaderReportPage';
 import { CompaniesPage } from '../features/masterdata/CompaniesPage/CompaniesPage';
 import { ConfigPage } from '../features/masterdata/ConfigPage';
@@ -24,12 +23,22 @@ import { DataAdminPage } from '../features/platform/DataAdminPage';
 import { AuditLogPage } from '../features/platform/AuditLogPage/AuditLogPage';
 import { ProgressPage } from '../features/remittance/ProgressPage/ProgressPage';
 import { ReconciliationPage } from '../features/remittance/ReconciliationPage/ReconciliationPage';
+import { SettlementsPage } from '../features/remittance/SettlementsPage/SettlementsPage';
+import { PageHeader } from '../shared/PageHeader';
 import { LoginPage } from './auth/LoginPage';
 import { RequireRole } from './auth/RequireRole';
 import type { Role } from './auth/authContext';
 import { homePath, MENU, ROLE_BASE, ROLES } from './layout/menuConfig';
 import { RoleLayout } from './layout/RoleLayout';
 import { NotFoundPage, RootRedirect } from './pages/StatusPages';
+
+/** Phiếu quyết toán: cán bộ xã và lãnh đạo cùng xem (lập phiếu ở màn Đối soát). */
+const settlements = (
+  <>
+    <PageHeader title="Phiếu quyết toán" description="Mỗi công ty mỗi kỳ một phiếu: công ty phải nộp, xã phải trả và chênh lệch chuyển giữa hai bên." />
+    <SettlementsPage />
+  </>
+);
 
 /** Màn theo `vai trò:đường dẫn menu`. */
 const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
@@ -43,6 +52,7 @@ const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'COMMUNE_OFFICER:charges': <ChargesHubPage />,
   'COMMUNE_OFFICER:progress': <ProgressPage />,
   'COMMUNE_OFFICER:reconciliation': <ReconciliationPage />,
+  'COMMUNE_OFFICER:settlements': settlements,
   'COMMUNE_OFFICER:transfers': <BankTransfersPage />,
   'COMMUNE_OFFICER:complaints': <CommuneComplaintsPage />,
   'COMMUNE_OFFICER:market': <MarketModerationPage />,
@@ -50,7 +60,7 @@ const PAGES: Partial<Record<`${Role}:${string}`, ReactNode>> = {
   'LEADER:report': <LeaderReportPage />,
   'LEADER:progress': <ProgressPage />,
   'LEADER:reconciliation': <ReconciliationPage />,
-  'LEADER:payouts': <LeaderPayoutsPage />,
+  'LEADER:settlements': settlements,
   'COMPANY_MANAGER:complaints': <CompanyComplaintsPage />,
   'COMPANY_MANAGER:assigned': <CompanyHubPage />,
   'COMPANY_MANAGER:collectors': <CollectorAccountsPage />,
