@@ -174,10 +174,12 @@ public class LedgerController {
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Xã nhận qua QR: tổng (đã trừ hoàn)") long qrTotal,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Xã nhận qua QR: phần vận chuyển, xã giữ") long qrTransport,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Xã nhận qua QR: phần thu gom, xã trả công ty") long qrCollection,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Công ty thu tiền mặt: phần vận chuyển, công ty nộp xã (đã trừ điều chỉnh) = phải nộp xã + thu gom QR") long cashTransport,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Xã nhận qua QR: phí xử lý (nhóm cân đủ chi phí), xã giữ") long qrProcessing,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Công ty thu tiền mặt: phần vận chuyển, công ty nộp xã (đã trừ điều chỉnh) = phải nộp xã + thu gom QR − xử lý tiền mặt") long cashTransport,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Công ty thu tiền mặt: phần thu gom, công ty giữ") long cashCollection,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Công ty thu tiền mặt: phí xử lý, công ty nộp xã cùng vận chuyển") long cashProcessing,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Xã đang giữ = QR + đã nhận từ công ty − đã chi cho công ty") long holding,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Xã được hưởng = vận chuyển trong QR + vận chuyển trong tiền mặt") long entitled,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Xã được hưởng = vận chuyển + phí xử lý, trong QR và trong tiền mặt") long entitled,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã khớp: công ty không còn phải nộp và xã không còn phải trả") boolean settled,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Công nợ tháng trước: hộ còn chưa đóng của kỳ liền trước, tính đến hiện tại") long lastPeriodDebt) {
 
@@ -186,7 +188,7 @@ public class LedgerController {
                     r.chargeCount(), r.adjustment(), r.refunded(), r.collected(), r.cashCollected(), r.received(), r.receiptCount(), r.remaining(), r.gap(),
                     r.previousDebt(), r.overdue(), r.collectionRate(), r.lowCollectionRate(), r.remittedRate(),
                     r.lowRemittedRate(), r.progress(), r.reconciliation(), r.retained(), r.payable(), r.debtCollected(), r.communePaid(), r.communeOwed(),
-                    r.qrTotal(), r.qrTransport(), r.qrCollection(), r.cashTransport(), r.cashCollection(), r.holding(), r.entitled(), r.settled(), r.lastPeriodDebt());
+                    r.qrTotal(), r.qrTransport(), r.qrCollection(), r.qrProcessing(), r.cashTransport(), r.cashCollection(), r.cashProcessing(), r.holding(), r.entitled(), r.settled(), r.lastPeriodDebt());
         }
     }
 }

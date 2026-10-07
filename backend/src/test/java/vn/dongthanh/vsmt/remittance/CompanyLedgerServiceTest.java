@@ -383,7 +383,7 @@ class CompanyLedgerServiceTest {
         due(10L, 1L, 52_800_000, 880);
         collect(10L, 1L, 37_200_000, 15_600_000);
         retained(10L, 1L, 35_200_000);
-        when(queries.qrByCompany(10L)).thenReturn(List.of(new LedgerQueries.QrAmount(1L, 15_600_000, 10_400_000)));
+        when(queries.qrByCompany(10L)).thenReturn(List.of(new LedgerQueries.QrAmount(1L, 15_600_000, 10_400_000, 0)));
 
         LedgerRow open = service("2026-10-15").row(1L, 10L);
 
@@ -409,7 +409,7 @@ class CompanyLedgerServiceTest {
         due(10L, 1L, 44_400_000, 740);
         collect(10L, 1L, 18_300_000, 26_100_000);
         retained(10L, 1L, 29_600_000);
-        when(queries.qrByCompany(10L)).thenReturn(List.of(new LedgerQueries.QrAmount(1L, 26_100_000, 17_400_000)));
+        when(queries.qrByCompany(10L)).thenReturn(List.of(new LedgerQueries.QrAmount(1L, 26_100_000, 17_400_000, 0)));
 
         LedgerRow open = service("2026-10-15").row(1L, 10L);
         assertThat(open.payable()).isEqualTo(-11_300_000);
@@ -421,6 +421,31 @@ class CompanyLedgerServiceTest {
         LedgerRow paid = service("2026-10-15").row(1L, 10L);
         assertThat(paid.holding()).isEqualTo(paid.entitled());
         assertThat(paid.settled()).isTrue();
+    }
+
+    /** Nhóm cân đủ chi phí 1.054 đ/kg = thu gom 453 + vận chuyển 180 + xử lý 421; 1.000 kg tiền mặt, 1.000 kg QR. */
+    @Test
+    void reconciliationSplitsProcessingFeeToCommune() {
+        due(10L, 1L, 2_108_000, 2);
+        collect(10L, 1L, 1_054_000, 1_054_000);
+        retained(10L, 1L, 906_000);
+        when(queries.processingByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 842_000, 0)));
+        when(queries.qrByCompany(10L)).thenReturn(List.of(new LedgerQueries.QrAmount(1L, 1_054_000, 453_000, 421_000)));
+
+        LedgerRow open = service("2026-10-15").row(1L, 10L);
+
+        assertThat(open.qrTransport()).isEqualTo(180_000);
+        assertThat(open.qrProcessing()).isEqualTo(421_000);
+        assertThat(open.cashTransport()).isEqualTo(180_000);
+        assertThat(open.cashCollection()).isEqualTo(453_000);
+        assertThat(open.cashProcessing()).isEqualTo(421_000);
+        assertThat(open.payable()).isEqualTo(148_000);
+        assertThat(open.entitled()).isEqualTo(1_202_000);
+
+        received(10L, 1L, 148_000);
+        LedgerRow settled = service("2026-10-15").row(1L, 10L);
+        assertThat(settled.holding()).isEqualTo(settled.entitled());
+        assertThat(settled.settled()).isTrue();
     }
 
     @Test

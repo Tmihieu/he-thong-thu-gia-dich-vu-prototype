@@ -46,12 +46,13 @@ export function BankTransfersTab() {
         columns={[
           { title: 'Thời gian', className: 'cell-nowrap', render: (_, t) => t.transactionDate ?? formatDate(t.createdAt, true) },
           { title: 'Số tiền', dataIndex: 'amount', align: 'right', render: (v: number) => <MoneyText value={v} /> },
-          { title: 'Nội dung chuyển khoản', dataIndex: 'content' },
-          { title: 'Ngân hàng', render: (_, t) => [t.gateway, t.accountNumber].filter(Boolean).join(' · ') || '—' },
+          { title: 'Nội dung chuyển khoản', dataIndex: 'content', className: 'cell-left' },
+          { title: 'Ngân hàng', className: 'cell-left', render: (_, t) => [t.gateway, t.accountNumber].filter(Boolean).join(' · ') || '—' },
           { title: 'Mã giao dịch', dataIndex: 'referenceCode', render: (v: string | null) => v ?? '—' },
           {
             title: 'Lý do chưa ghi nhận',
             dataIndex: 'reason',
+            className: 'cell-left',
             render: (r: BankTransfer['reason']) => <StatusTag tone="warning">{r ? REASON_LABELS[r] : '—'}</StatusTag>,
           },
         ]}

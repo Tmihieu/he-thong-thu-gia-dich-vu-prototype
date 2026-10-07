@@ -64,7 +64,8 @@ public class CompanyLedgerService {
             long chargeCount, long adjustment, long refunded, long collected, long cashCollected, long received, long receiptCount, long remaining, long gap,
             long previousDebt, boolean overdue, double collectionRate, boolean lowCollectionRate, double remittedRate,
             boolean lowRemittedRate, Progress progress, Reconciliation reconciliation,
-            long retained, long payable, long debtCollected, long communePaid, long communeOwed, long qrCollection, long lastPeriodDebt) {
+            long retained, long payable, long debtCollected, long communePaid, long communeOwed, long qrCollection, long lastPeriodDebt,
+            long qrProcessing, long processing) {
 
         /** Chuyển khoản vào tài khoản xã (đã trừ hoàn). */
         public long qrTotal() {
@@ -72,7 +73,7 @@ public class CompanyLedgerService {
         }
 
         public long qrTransport() {
-            return qrTotal() - qrCollection;
+            return qrTotal() - qrCollection - qrProcessing;
         }
 
         /** Phần thu gom công ty giữ trong tiền mặt (kể cả phần điều chỉnh kỳ trước). */
@@ -80,9 +81,17 @@ public class CompanyLedgerService {
             return retained - qrCollection;
         }
 
-        /** Vận chuyển trong tiền mặt, công ty nộp xã, đã trừ điều chỉnh: bằng phải nộp xã + xã trả công ty phần thu gom QR. */
+        /** Phí xử lý trong tiền mặt, công ty nộp xã cùng vận chuyển (kể cả phần điều chỉnh kỳ trước). */
+        public long cashProcessing() {
+            return processing - qrProcessing;
+        }
+
+        /**
+         * Vận chuyển trong tiền mặt, công ty nộp xã, đã trừ điều chỉnh: phải nộp xã + xã trả công ty phần thu gom QR − phí
+         * xử lý trong tiền mặt.
+         */
         public long cashTransport() {
-            return payable + qrCollection;
+            return payable + qrCollection - cashProcessing();
         }
 
         /** Tiền xã đang giữ = chuyển khoản + đã nhận từ công ty − đã chi cho công ty. */
@@ -90,9 +99,9 @@ public class CompanyLedgerService {
             return qrTotal() + received - communePaid;
         }
 
-        /** Tiền vận chuyển xã được hưởng. */
+        /** Tiền xã được hưởng: vận chuyển và phí xử lý (QĐ 65/2026: xã nộp tiếp về Sở NN&MT). */
         public long entitled() {
-            return qrTransport() + cashTransport();
+            return qrTransport() + cashTransport() + processing;
         }
 
         /** Hai bên đã bù trừ xong: công ty không còn phải nộp, xã không còn phải trả (hoặc không có gì để bù trừ). */
@@ -112,8 +121,9 @@ public class CompanyLedgerService {
         Map<Long, CompanyAmount> retained = byCompany(queries.retainedByCompany(periodId));
         Map<Long, CompanyAmount> cash = byCompany(queries.cashCollectedByCompany(periodId));
         Map<Long, CompanyAmount> debtCollected = byCompany(queries.debtCollectedByCompany(periodId));
-        Map<Long, Long> qrCollection = queries.qrByCompany(periodId).stream()
-                .collect(Collectors.toMap(LedgerQueries.QrAmount::companyId, LedgerQueries.QrAmount::collection));
+        Map<Long, LedgerQueries.QrAmount> qr = queries.qrByCompany(periodId).stream()
+                .collect(Collectors.toMap(LedgerQueries.QrAmount::companyId, Function.identity()));
+        Map<Long, CompanyAmount> processing = byCompany(queries.processingByCompany(periodId));
         Map<Long, Received> received = remitted.receivedByCompany(periodId);
         Map<Long, Long> paidBack = remitted.paidBackByCompany(periodId);
         Map<Long, Long> previousDebt = previousDebts(periodId, today);
@@ -141,8 +151,8 @@ public class CompanyLedgerService {
                 .map(id -> build(companyById.get(id), period, today, due.get(id), adjustment.get(id), refunded.get(id),
                         retained.get(id), cash.get(id), collected.get(id), received.get(id),
                         previousDebt.getOrDefault(id, 0L), debtCollected.get(id), paidBack.getOrDefault(id, 0L),
-                        qrCollection.getOrDefault(id, 0L),
-                        lastPeriodDebt.containsKey(id) ? lastPeriodDebt.get(id).amount() : 0L))
+                        qr.get(id), lastPeriodDebt.containsKey(id) ? lastPeriodDebt.get(id).amount() : 0L,
+                        processing.containsKey(id) ? processing.get(id).amount() : 0L))
                 .sorted(Comparator.comparing(LedgerRow::companyCode))
                 .toList();
     }
@@ -154,7 +164,7 @@ public class CompanyLedgerService {
                     Company c = companies.findAllById(List.of(companyId)).stream()
                             .filter(x -> x.getId().equals(companyId)).findFirst()
                             .orElseThrow(() -> new NotFoundException("COMPANY_NOT_FOUND", "Không tìm thấy công ty."));
-                    return build(c, period(periodId), LocalDate.now(clock), null, null, null, null, null, null, null, 0L, null, 0L, 0L, 0L);
+                    return build(c, period(periodId), LocalDate.now(clock), null, null, null, null, null, null, null, 0L, null, 0L, null, 0L, 0L);
                 });
     }
 
@@ -210,8 +220,10 @@ public class CompanyLedgerService {
 
     private LedgerRow build(Company company, CollectionPeriod period, LocalDate today, CompanyAmount dueRow,
             CompanyAmount adjustmentRow, CompanyAmount refundedRow, CompanyAmount retainedRow, CompanyAmount cashRow, CompanyAmount collectedRow,
-            Received receivedRow, long previousDebt, CompanyAmount debtCollectedRow, long communePaid, long qrCollection,
-            long lastPeriodDebt) {
+            Received receivedRow, long previousDebt, CompanyAmount debtCollectedRow, long communePaid, LedgerQueries.QrAmount qr,
+            long lastPeriodDebt, long processing) {
+        long qrCollection = qr == null ? 0 : qr.collection();
+        long qrProcessing = qr == null ? 0 : qr.processing();
         long due = dueRow == null ? 0 : dueRow.amount();
         long adjustment = adjustmentRow == null ? 0 : adjustmentRow.amount();
         long refunded = refundedRow == null ? 0 : refundedRow.amount();
@@ -257,7 +269,7 @@ public class CompanyLedgerService {
                 adjustment, refunded, collected, cashCollected, received, receiptCount, remaining, gap, previousDebt, overdue, percent(collected, due),
                 due > 0 && lowRate(collected, due), percent(received, payable), payable > 0 && lowRate(received, payable),
                 progress, reconciliation, retained, payable, debtCollectedRow == null ? 0 : debtCollectedRow.amount(), communePaid,
-                communeOwed, qrCollection, lastPeriodDebt);
+                communeOwed, qrCollection, lastPeriodDebt, qrProcessing, processing);
     }
 
     /** Phần trăm làm tròn 1 chữ số để hiển thị; 0 khi phải thu 0. */
