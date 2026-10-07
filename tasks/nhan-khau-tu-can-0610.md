@@ -157,6 +157,6 @@ Thuật ngữ: "Hộ/cơ sở" → hộ gia đình / nguồn thải nhỏ / ngu�
 
 **Việc chưa làm**
 - [x] Câu 8: tạm chốt xã giữ hết (06/10), chờ xác nhận chính thức.
-- [ ] Hỏi: phí xử lý thu được thuộc về ai (đang code tạm: nộp xã như vận chuyển).
+- [x] Phí xử lý thuộc về ai: theo QĐ 65/2026 (tra báo chí 07/10) xã nhận cùng vận chuyển, nộp về Sở NN&MT, giữ ≤8%; công ty không giữ. Đối soát đã tách cột Xử lý (07/10, nhánh `feat/doi-soat-phi-xu-ly`). Chờ xã xác nhận bằng văn bản.
 - [x] Sửa tài liệu theo mục 4, 5, 6: `SPEC.md`, `business-rules.md`, `data-dictionary.md` (thay ghi chú tạm ở `BY_VOLUME`), `use-cases.md`, `kich-ban-kiem-thu.md`, `demo-runbook.md`.
 - [x] Code: backend (V48) → web → Flutter, mỗi lát một commit.

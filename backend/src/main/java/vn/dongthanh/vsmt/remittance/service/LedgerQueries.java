@@ -19,8 +19,8 @@ public class LedgerQueries {
     public record CompanyPeriodAmount(long companyId, long periodId, long amount) {
     }
 
-    /** Chuyển khoản vào tài khoản xã đã khớp khoản: tổng ròng và phần thu gom của công ty trong đó. */
-    public record QrAmount(long companyId, long total, long collection) {
+    /** Chuyển khoản vào tài khoản xã đã khớp khoản: tổng ròng, phần thu gom của công ty và phần phí xử lý trong đó. */
+    public record QrAmount(long companyId, long total, long collection, long processing) {
     }
 
     /** Giao dịch tiền vào chưa khớp được khoản nào: số giao dịch và tổng tiền. */
@@ -89,12 +89,15 @@ public class LedgerQueries {
     }
 
     /**
-     * Phần thu gom của một khoản = số tiền × thu gom / tổng đơn giá (thu gom + vận chuyển + xử lý) của nhóm giá trong biểu
-     * giá của kỳ. Công ty cầm lại phần này, nộp phần vận chuyển về xã (xã chốt 03/10); phí xử lý (nhóm cân) chưa rõ thuộc
-     * ai, tạm nộp xã cùng vận chuyển. Khoản không theo biểu giá thì không có phần giữ lại.
+     * Phần {@code fee} (thu gom hoặc xử lý) của một khoản = số tiền × đơn giá phần đó / tổng đơn giá (thu gom + vận chuyển +
+     * xử lý) của nhóm giá trong biểu giá của kỳ. Công ty cầm lại phần thu gom, nộp vận chuyển và xử lý về xã (xã chốt
+     * 03/10; QĐ 65/2026: xã nộp tiền vận chuyển, xử lý về Sở NN&MT). Khoản không theo biểu giá thì không có phần nào.
      */
-    private static final String COLLECTION_PART =
-            "coalesce(round(c.amount * r.collection_fee::numeric / nullif(r.monthly_total, 0)), 0)";
+    private static String chargePart(String fee) {
+        return "coalesce(round(c.amount * r." + fee + "::numeric / nullif(r.monthly_total, 0)), 0)";
+    }
+
+    private static final String COLLECTION_PART = chargePart("collection_fee");
 
     private static final String COLLECTION_JOIN = " join collection_periods cp on cp.id = c.period_id"
             + " left join tariff_rates r on r.tariff_version_id = cp.tariff_version_id and r.tariff_group = c.tariff_group";
@@ -114,29 +117,43 @@ public class LedgerQueries {
      * phí cố định (không có đơn giá nhóm) không có phần thu gom. Số {@code count} không dùng.
      */
     public List<CompanyAmount> retainedByCompany(long periodId) {
+        return feePartByCompany("collection_fee", periodId);
+    }
+
+    /**
+     * Phí xử lý (nhóm cân đủ chi phí) trong số đã thu của kỳ theo công ty, cùng cách tính với {@link #retainedByCompany}.
+     * Xã được hưởng phần này cùng vận chuyển; chỉ để tách cột trên màn đối soát, không đổi số phải nộp.
+     */
+    public List<CompanyAmount> processingByCompany(long periodId) {
+        return feePartByCompany("processing_fee", periodId);
+    }
+
+    private List<CompanyAmount> feePartByCompany(String fee, long periodId) {
         return jdbc.query("select x.company_id, sum(x.v), 0 from ("
-                + " select c.company_id, coalesce(round(sum(p.amount) * r.collection_fee::numeric"
+                + " select c.company_id, coalesce(round(sum(p.amount) * r." + fee + "::numeric"
                 + " / nullif(r.monthly_total, 0)), 0) as v from payments p join charges c on c.id = p.charge_id"
                 + COLLECTION_JOIN + " where " + PAYMENT_PERIOD + " = ?"
-                + " group by c.id, c.company_id, r.collection_fee, r.monthly_total"
+                + " group by c.id, c.company_id, r." + fee + ", r.monthly_total"
                 + " union all"
-                + " select c.company_id, -" + COLLECTION_PART + " from charges c" + COLLECTION_JOIN
+                + " select c.company_id, -" + chargePart(fee) + " from charges c" + COLLECTION_JOIN
                 + " where c.written_off_period_id = ? and c.period_id <> c.written_off_period_id"
                 + ") x group by x.company_id",
                 (rs, i) -> new CompanyAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), periodId, periodId);
     }
 
     /**
-     * Chuyển khoản ghi nhận ở kỳ theo công ty: Σ thanh toán ròng và phần thu gom trong đó (cùng cách làm tròn theo khoản
-     * với {@link #retainedByCompany}). Xã giữ tiền này và phải trả lại phần thu gom cho công ty.
+     * Chuyển khoản ghi nhận ở kỳ theo công ty: Σ thanh toán ròng, phần thu gom và phần xử lý trong đó (cùng cách làm tròn
+     * theo khoản với {@link #retainedByCompany}). Xã giữ tiền này và phải trả lại phần thu gom cho công ty.
      */
     public List<QrAmount> qrByCompany(long periodId) {
-        return jdbc.query("select x.company_id, sum(x.t), sum(x.v) from ("
-                + " select c.company_id, sum(p.amount) as t, coalesce(round(sum(p.amount) * r.collection_fee::numeric"
-                + " / nullif(r.monthly_total, 0)), 0) as v from payments p join charges c on c.id = p.charge_id"
+        return jdbc.query("select x.company_id, sum(x.t), sum(x.v), sum(x.f) from ("
+                + " select c.company_id, sum(p.amount) as t,"
+                + " coalesce(round(sum(p.amount) * r.collection_fee::numeric / nullif(r.monthly_total, 0)), 0) as v,"
+                + " coalesce(round(sum(p.amount) * r.processing_fee::numeric / nullif(r.monthly_total, 0)), 0) as f"
+                + " from payments p join charges c on c.id = p.charge_id"
                 + COLLECTION_JOIN + " where " + PAYMENT_PERIOD + " = ? and p.method = 'TRANSFER'"
-                + " group by c.id, c.company_id, r.collection_fee, r.monthly_total) x group by x.company_id",
-                (rs, i) -> new QrAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), periodId);
+                + " group by c.id, c.company_id, r.collection_fee, r.processing_fee, r.monthly_total) x group by x.company_id",
+                (rs, i) -> new QrAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3), rs.getLong(4)), periodId);
     }
 
     /** Giao dịch chuyển khoản vào tài khoản xã chưa khớp khoản nào (chờ cán bộ xã xử lý). */

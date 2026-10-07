@@ -195,7 +195,7 @@ describe('Đối soát', () => {
   const split = { adjustment: 0, refunded: 0, previousDebt: 0, communePaid: 0, communeOwed: 0, retained: 35_200_000,
     qrTotal: 15_600_000, qrTransport: 5_200_000, qrCollection: 10_400_000, cashCollected: 37_200_000, cashTransport: 12_400_000,
     cashCollection: 24_800_000, collected: 52_800_000, payable: 2_000_000, received: 0, receiptCount: 0, remaining: 2_000_000,
-    holding: 15_600_000, entitled: 17_600_000, settled: false };
+    holding: 15_600_000, entitled: 17_600_000, settled: false, qrProcessing: 0, cashProcessing: 0 };
   const cty1 = { ...dv01, ...split, companyName: 'Cty Thu gom A' };
   // B đã nộp đủ phiếu thu: Khớp, xem được phiếu.
   const cty2 = { ...cty1, companyId: 2, companyCode: 'DV02', companyName: 'Cty Thu gom B', received: 2_000_000, receiptCount: 1, remaining: 0,
@@ -228,7 +228,7 @@ describe('Đối soát', () => {
     // Sao kê QR = QR của các công ty (57.300.000) + chưa xác định (180.000).
     expect(await screen.findByText(/Sao kê QR/)).toHaveTextContent('57.480.000');
     expect(screen.getByText(/3 giao dịch chưa xác định Cty/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Xử lý/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Xử lý/ })).toHaveAttribute('href', '/commune/transfers');
   });
 
   it('bảng 11 cột theo nhóm QR / tiền mặt / đối chiếu; nút phiếu theo kết quả; tab lọc Chưa khớp / Đã khớp', async () => {
@@ -241,14 +241,13 @@ describe('Đối soát', () => {
     const rowOf = (name: string) => screen.getByRole('cell', { name }).closest('tr')!;
     const a = rowOf('Cty Thu gom A');
     expect(within(a).getByText('Cty nộp Xã 2.000.000 đ', norm)).toBeInTheDocument();
-    expect(within(a).getByText('Thiếu 2.000.000 đ', norm)).toBeInTheDocument();
     expect(within(a).getByRole('button', { name: 'Lập phiếu thu DV01' })).toBeInTheDocument();
     const b = rowOf('Cty Thu gom B');
     expect(within(b).getByText('Khớp')).toBeInTheDocument();
-    expect(within(b).getByText('✓ Đủ')).toBeInTheDocument();
     expect(within(b).getByRole('button', { name: 'Xem phiếu DV02' })).toBeInTheDocument();
     const c = rowOf('Cty Thu gom C');
-    expect(within(c).getByText('Xã trả Cty 11.300.000 đ', norm)).toBeInTheDocument();
+    // Xã phải trả công ty hiện số âm ở cột Kết quả.
+    expect(within(c).getByText('−11.300.000 đ', norm)).toBeInTheDocument();
     expect(within(c).getByRole('button', { name: 'Lập phiếu chi DV03' })).toBeInTheDocument();
 
     await userEvent.click(screen.getByText('Đã khớp 1'));
@@ -257,6 +256,23 @@ describe('Đối soát', () => {
     await userEvent.click(screen.getByText('Chưa khớp 2'));
     expect(await screen.findByRole('cell', { name: 'Cty Thu gom A' })).toBeInTheDocument();
     expect(screen.queryByRole('cell', { name: 'Cty Thu gom B' })).not.toBeInTheDocument();
+  });
+
+  it('nhóm QR / tiền mặt mặc định chỉ cột Tổng; bấm Chi tiết tách Vận chuyển, Thu gom, Xử lý', async () => {
+    setup();
+
+    await screen.findByRole('cell', { name: 'Cty Thu gom A' });
+    expect(screen.queryByRole('columnheader', { name: 'Xử lý' })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Xem chi tiết Xã nhận qua QR' }));
+    expect(screen.getAllByRole('columnheader', { name: 'Xử lý' })).toHaveLength(1);
+    expect(screen.getAllByRole('columnheader', { name: 'Vận chuyển' })).toHaveLength(1);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Xem chi tiết Cty thu tiền mặt' }));
+    expect(screen.getAllByRole('columnheader', { name: 'Xử lý' })).toHaveLength(2);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Thu gọn Xã nhận qua QR' }));
+    expect(screen.getAllByRole('columnheader', { name: 'Xử lý' })).toHaveLength(1);
   });
 });
 
@@ -299,7 +315,7 @@ describe('Khóa kỳ khi xã còn phải trả lại công ty', () => {
     await userEvent.click(await screen.findByRole('button', { name: /Khóa kỳ/ }));
     await userEvent.click(await screen.findByRole('button', { name: 'Khóa kỳ' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('xã còn phải trả lại 1 công ty: DV02: 128.000 đ');
+    expect(await screen.findByText(/xã còn phải trả lại 1 công ty: DV02: 128.000 đ/)).toBeInTheDocument();
   });
 });
 
@@ -320,7 +336,7 @@ describe('Khóa kỳ chưa đến hạn', () => {
     await userEvent.click(await screen.findByRole('button', { name: /Khóa kỳ/ }));
     await userEvent.click(await screen.findByRole('button', { name: 'Khóa kỳ' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('còn 3 khoản hộ chưa đóng và chưa đến hạn nộp (31/10/2026)');
+    expect(await screen.findByText(/còn 3 khoản hộ chưa đóng và chưa đến hạn nộp \(31\/10\/2026\)/)).toBeInTheDocument();
   });
 });
 
@@ -386,6 +402,7 @@ describe('Phiếu thu công ty', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Lập phiếu DV01' }));
     const dialog = await screen.findByRole('dialog');
+    await userEvent.clear(within(dialog).getByLabelText('Số tiền'));
     await userEvent.type(within(dialog).getByLabelText('Số tiền'), '400000');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Lập phiếu' }));
 
@@ -441,6 +458,7 @@ describe('Phiếu chi trả công ty (xã trả lại)', () => {
     expect(screen.queryByRole('button', { name: 'Lập phiếu chi DV01' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Lập phiếu chi DV02' }));
     const dialog = await screen.findByRole('dialog');
+    await userEvent.clear(within(dialog).getByLabelText('Số tiền'));
     await userEvent.type(within(dialog).getByLabelText('Số tiền'), '28000');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Lập phiếu' }));
 

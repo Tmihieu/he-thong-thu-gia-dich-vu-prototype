@@ -1,5 +1,6 @@
 import { Alert, DatePicker, Form, Input, InputNumber, Modal, Radio, Typography } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
+import { useEffect } from 'react';
 
 import type { components } from '../../../api/schema';
 import { formatMoney } from '../../../shared/format';
@@ -26,11 +27,19 @@ interface Props {
   onCancel: () => void;
 }
 
-/** Lập phiếu chi trả công ty (UC-55): 0 < số tiền ≤ số xã còn phải trả của kỳ, ngày không sau hôm nay. */
+/** Lập phiếu chi trả công ty (UC-55): 0 < số tiền ≤ số xã còn phải trả của kỳ (điền sẵn số đó), ngày không sau hôm nay. */
 export function IssuePayoutForm({ row, periodLabel, submitting, error, onSubmit, onCancel }: Props) {
   const [form] = Form.useForm<FormValues>();
   const method = Form.useWatch('method', form);
   const owed = row?.communeOwed ?? 0;
+
+  // Form dùng chung một store qua các lần mở: mỗi lần mở phiếu (đổi công ty) gán thẳng số đúng của công ty đó, không giữ
+  // số đã gõ ở lần trước (chỉ dựa initialValues thì số chậm một lần mở).
+  useEffect(() => {
+    if (!row) return;
+    form.resetFields();
+    form.setFieldsValue({ amount: row.communeOwed > 0 ? row.communeOwed : undefined, method: 'TRANSFER', payoutDate: dayjs(), documentRef: undefined, note: undefined });
+  }, [row, form]);
 
   function finish(v: FormValues) {
     onSubmit({
@@ -61,7 +70,7 @@ export function IssuePayoutForm({ row, periodLabel, submitting, error, onSubmit,
           {row.companyName} · xã còn phải trả <MoneyText value={owed} strong />
         </Typography.Paragraph>
       )}
-      <Form<FormValues> form={form} layout="vertical" preserve={false} initialValues={{ method: 'TRANSFER', payoutDate: dayjs() }} onFinish={finish}>
+      <Form<FormValues> form={form} layout="vertical" preserve={false} initialValues={{ amount: owed > 0 ? owed : undefined, method: 'TRANSFER', payoutDate: dayjs() }} onFinish={finish}>
         <Form.Item
           label="Số tiền"
           name="amount"

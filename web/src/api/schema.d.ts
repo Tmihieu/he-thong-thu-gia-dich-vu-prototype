@@ -3994,7 +3994,12 @@ export interface components {
             qrCollection: number;
             /**
              * Format: int64
-             * @description Công ty thu tiền mặt: phần vận chuyển, công ty nộp xã (đã trừ điều chỉnh) = phải nộp xã + thu gom QR
+             * @description Xã nhận qua QR: phí xử lý (nhóm cân đủ chi phí), xã giữ
+             */
+            qrProcessing: number;
+            /**
+             * Format: int64
+             * @description Công ty thu tiền mặt: phần vận chuyển, công ty nộp xã (đã trừ điều chỉnh) = phải nộp xã + thu gom QR − xử lý tiền mặt
              */
             cashTransport: number;
             /**
@@ -4004,12 +4009,17 @@ export interface components {
             cashCollection: number;
             /**
              * Format: int64
+             * @description Công ty thu tiền mặt: phí xử lý, công ty nộp xã cùng vận chuyển
+             */
+            cashProcessing: number;
+            /**
+             * Format: int64
              * @description Xã đang giữ = QR + đã nhận từ công ty − đã chi cho công ty
              */
             holding: number;
             /**
              * Format: int64
-             * @description Xã được hưởng = vận chuyển trong QR + vận chuyển trong tiền mặt
+             * @description Xã được hưởng = vận chuyển + phí xử lý, trong QR và trong tiền mặt
              */
             entitled: number;
             /** @description Đã khớp: công ty không còn phải nộp và xã không còn phải trả */

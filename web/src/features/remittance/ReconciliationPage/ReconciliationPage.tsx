@@ -1,6 +1,6 @@
-import { CheckOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { CheckOutlined, ExclamationCircleOutlined, MinusSquareOutlined, PlusSquareOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, ConfigProvider, Segmented, Space, Table, Typography } from 'antd';
+import { Alert, App, Button, ConfigProvider, Segmented, Space, Table, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
@@ -34,18 +34,16 @@ const errorText = (e: unknown) => (e ? apiErrorText(e) : null);
 
 const sum = (rows: LedgerRow[], pick: (r: LedgerRow) => number) => rows.reduce((t, r) => t + pick(r), 0);
 
-/** Nhãn "Đủ / Thừa / Thiếu" của xã so với phần vận chuyển được hưởng: thừa là tiền thu gom của công ty xã giữ hộ. */
-function Surplus({ diff }: { diff: number }) {
-  if (diff === 0) return <span style={{ color: semantic.success.fg }}>✓ Đủ</span>;
-  return diff > 0 ? <span style={{ color: semantic.info.fg }}>Thừa {formatDiff(diff)}</span> : <span style={{ color: semantic.warning.fg }}>Thiếu {formatDiff(-diff)}</span>;
-}
+/** Nền tiêu đề từng nhóm cột: đậm hơn nền ô để nhóm nổi bật. */
+const HEAD = { qr: '#a9c9f5', cash: '#f8c77e', match: '#9fdbb7' };
 
-const formatDiff = formatMoney;
+/** Số xã phải trả công ty hiện là số âm, công ty nộp xã là số dương. */
+const signed = (v: number) => (v < 0 ? `−${formatMoney(-v)}` : formatMoney(v));
 
-/** Kết quả bù trừ của một công ty theo số còn lại: công ty còn nộp xã, xã còn trả công ty, hoặc đã khớp. */
+/** Kết quả bù trừ của một công ty theo số còn lại: công ty còn nộp xã, xã còn trả công ty (số âm), hoặc đã khớp. */
 function Result({ row }: { row: LedgerRow }) {
-  if (row.remaining > 0) return <strong style={{ color: semantic.warning.fg }}>Cty nộp Xã {formatDiff(row.remaining)}</strong>;
-  if (row.communeOwed > 0) return <strong style={{ color: semantic.info.fg }}>Xã trả Cty {formatDiff(row.communeOwed)}</strong>;
+  if (row.remaining > 0) return <strong style={{ color: semantic.warning.fg }}>Cty nộp Xã {formatMoney(row.remaining)}</strong>;
+  if (row.communeOwed > 0) return <strong style={{ color: semantic.info.fg }}>{signed(-row.communeOwed)}</strong>;
   const net = row.payable;
   return (
     <>
@@ -54,20 +52,43 @@ function Result({ row }: { row: LedgerRow }) {
       </StatusTag>
       <div>
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {net > 0 ? `Cty nộp Xã ${formatDiff(net)}` : net < 0 ? `Xã trả Cty ${formatDiff(-net)}` : 'Hai bên bằng nhau'}
+          {net > 0 ? `Cty nộp Xã ${formatMoney(net)}` : net < 0 ? signed(net) : 'Hai bên bằng nhau'}
         </Typography.Text>
       </div>
     </>
   );
 }
 
+const centerHead = (bg?: string) => () => ({ style: { background: bg, textAlign: 'center' as const } });
+
 const group = (bg: string, children: ColumnsType<LedgerRow>, title: ReactNode) => ({
   title,
-  onHeaderCell: () => ({ style: { background: bg, textAlign: 'center' as const } }),
-  children: children.map((c) => ({ ...c, align: 'right' as const, onHeaderCell: () => ({ style: { background: bg } }) })),
+  onHeaderCell: () => ({ style: { background: bg, textAlign: 'center' as const, position: 'relative' as const } }),
+  children: children.map((c) => ({ ...c, align: 'right' as const, onHeaderCell: centerHead(bg) })),
 });
 
 const money = (pick: (r: LedgerRow) => number, strong = false) => (_: unknown, r: LedgerRow) => <MoneyText value={pick(r)} strong={strong} />;
+
+/** Tiêu đề nhóm cột kèm nút nhỏ ở góc dưới phải: thu gọn về cột Tổng / mở ra Tổng, Vận chuyển, Thu gom, Xử lý. */
+function GroupTitle({ label, open, onToggle }: { label: string; open: boolean; onToggle: () => void }) {
+  const action = `${open ? 'Thu gọn' : 'Xem chi tiết'} ${label}`;
+  return (
+    <>
+      {label}
+      <Tooltip title={action}>
+        <Button
+          type="text"
+          size="small"
+          icon={open ? <MinusSquareOutlined /> : <PlusSquareOutlined />}
+          onClick={onToggle}
+          aria-expanded={open}
+          aria-label={action}
+          style={{ position: 'absolute', right: 2, bottom: 2, width: 20, height: 20, minWidth: 20 }}
+        />
+      </Tooltip>
+    </>
+  );
+}
 
 /**
  * Đối soát xã – công ty (UC-38, mockup 07/10): tách tiền xã nhận qua QR và tiền công ty thu mặt thành vận chuyển / thu gom;
@@ -82,6 +103,9 @@ export function ReconciliationPage() {
   const readOnly = useAuth().user?.role === 'LEADER';
   const [periodId, setPeriodId] = useState<number>();
   const [filter, setFilter] = useState<Filter>('all');
+  // Hai nhóm QR / tiền mặt mặc định chỉ hiện cột Tổng cho bảng gọn; bấm Chi tiết để tách 4 cột.
+  const [qrOpen, setQrOpen] = useState(false);
+  const [cashOpen, setCashOpen] = useState(false);
   const [issuingReceipt, setIssuingReceipt] = useState<LedgerRow | null>(null);
   const [issuingPayout, setIssuingPayout] = useState<LedgerRow | null>(null);
   const [viewing, setViewing] = useState<LedgerRow | null>(null);
@@ -125,68 +149,66 @@ export function ReconciliationPage() {
 
   const voucherCell = (r: LedgerRow) => {
     if (!r.settled) {
-      if (readOnly || locked) return <Typography.Text type="secondary">Chưa lập phiếu</Typography.Text>;
+      if (readOnly || locked) return <Typography.Text type="secondary" style={{ fontSize: 12 }}>Chưa lập phiếu</Typography.Text>;
       return r.remaining > 0 ? (
-        <Button type="primary" onClick={() => setIssuingReceipt(r)} aria-label={`Lập phiếu thu ${r.companyCode}`}>
+        <Button type="primary" size="small" onClick={() => setIssuingReceipt(r)} aria-label={`Lập phiếu thu ${r.companyCode}`}>
           Lập phiếu thu
         </Button>
       ) : (
-        <Button type="primary" onClick={() => setIssuingPayout(r)} aria-label={`Lập phiếu chi ${r.companyCode}`}>
+        <Button type="primary" size="small" onClick={() => setIssuingPayout(r)} aria-label={`Lập phiếu chi ${r.companyCode}`}>
           Lập phiếu chi
         </Button>
       );
     }
     return r.receiptCount > 0 || r.communePaid > 0 ? (
-      <Button onClick={() => setViewing(r)} aria-label={`Xem phiếu ${r.companyCode}`}>
+      <Button size="small" onClick={() => setViewing(r)} aria-label={`Xem phiếu ${r.companyCode}`}>
         Xem phiếu
       </Button>
     ) : (
-      <Typography.Text type="secondary">Không cần phiếu</Typography.Text>
+      <Typography.Text type="secondary" style={{ fontSize: 12 }}>Không cần phiếu</Typography.Text>
     );
   };
 
   const columns: ColumnsType<LedgerRow> = [
     { title: 'Công ty', dataIndex: 'companyName', fixed: 'left', width: 200, render: (v: string) => <strong style={{ fontWeight: 600 }}>{v}</strong> },
     group(
-      semantic.info.bg,
+      HEAD.qr,
       [
-        { title: 'Tổng', key: 'qrTotal', width: 130, render: money((r) => r.qrTotal) },
-        { title: 'Vận chuyển', key: 'qrTransport', width: 130, render: money((r) => r.qrTransport) },
-        { title: 'Thu gom', key: 'qrCollection', width: 140, render: money((r) => r.qrCollection, true) },
+        { title: 'Tổng', key: 'qrTotal', width: 130, render: money((r) => r.qrTotal, !qrOpen) },
+        ...(qrOpen
+          ? [
+              { title: 'Vận chuyển', key: 'qrTransport', width: 130, render: money((r) => r.qrTransport) },
+              { title: 'Thu gom', key: 'qrCollection', width: 140, render: money((r) => r.qrCollection, true) },
+              { title: 'Xử lý', key: 'qrProcessing', width: 120, render: money((r) => r.qrProcessing) },
+            ]
+          : []),
       ],
-      'Xã nhận qua QR',
+      <GroupTitle label="Xã nhận qua QR" open={qrOpen} onToggle={() => setQrOpen((v) => !v)} />,
     ),
     group(
-      semantic.warning.bg,
+      HEAD.cash,
       [
-        { title: 'Tổng', key: 'cashTotal', width: 130, render: money((r) => r.cashCollected) },
-        { title: 'Vận chuyển', key: 'cashTransport', width: 140, render: money((r) => r.cashTransport, true) },
-        { title: 'Thu gom', key: 'cashCollection', width: 130, render: money((r) => r.cashCollection) },
+        { title: 'Tổng', key: 'cashTotal', width: 130, render: money((r) => r.cashCollected, !cashOpen) },
+        ...(cashOpen
+          ? [
+              { title: 'Vận chuyển', key: 'cashTransport', width: 140, render: money((r) => r.cashTransport, true) },
+              { title: 'Thu gom', key: 'cashCollection', width: 130, render: money((r) => r.cashCollection) },
+              { title: 'Xử lý', key: 'cashProcessing', width: 120, render: money((r) => r.cashProcessing, true) },
+            ]
+          : []),
       ],
-      'Cty thu tiền mặt',
+      <GroupTitle label="Cty thu tiền mặt" open={cashOpen} onToggle={() => setCashOpen((v) => !v)} />,
     ),
-    { title: 'Kết quả', key: 'result', width: 170, render: (_, r) => <Result row={r} /> },
+    { title: 'Kết quả', key: 'result', width: 170, align: 'center', onHeaderCell: centerHead(), render: (_, r) => <Result row={r} /> },
     group(
-      semantic.success.bg,
+      HEAD.match,
       [
-        {
-          title: 'Xã đang giữ',
-          key: 'holding',
-          width: 160,
-          render: (_, r) => (
-            <>
-              <MoneyText value={r.holding} strong />
-              <div style={{ fontSize: 12, fontWeight: 600 }}>
-                <Surplus diff={r.holding - r.entitled} />
-              </div>
-            </>
-          ),
-        },
+        { title: 'Xã đang giữ', key: 'holding', width: 150, render: money((r) => r.holding, true) },
         { title: 'Xã được hưởng', key: 'entitled', width: 150, render: money((r) => r.entitled) },
       ],
       'Đối chiếu tiền xã',
     ),
-    { title: 'Phiếu', key: 'voucher', width: 170, render: (_, r) => voucherCell(r) },
+    { title: 'Phiếu', key: 'voucher', width: 120, align: 'center', onHeaderCell: centerHead(), render: (_, r) => voucherCell(r) },
   ];
 
   return (
@@ -212,9 +234,11 @@ export function ReconciliationPage() {
             <Line label="− Đã chi cho Cty" value={sum(rows, (r) => r.communePaid)} />
           </Tile>
           <Operator>−</Operator>
-          <Tile label="Xã được hưởng · phí vận chuyển" value={entitled}>
+          <Tile label="Xã được hưởng · vận chuyển + xử lý" value={entitled}>
             <Line label="Vận chuyển trong QR" value={sum(rows, (r) => r.qrTransport)} />
             <Line label="+ Vận chuyển trong tiền mặt" value={sum(rows, (r) => r.cashTransport)} />
+            <Line label="+ Xử lý trong QR" value={sum(rows, (r) => r.qrProcessing)} />
+            <Line label="+ Xử lý trong tiền mặt" value={sum(rows, (r) => r.cashProcessing)} />
           </Tile>
           <Operator>=</Operator>
           <Tile label={diff > 0 ? 'Xã đang THỪA' : diff < 0 ? 'Xã đang THIẾU' : 'Đã cân'} value={Math.abs(diff)}>
@@ -222,8 +246,8 @@ export function ReconciliationPage() {
               {diff > 0
                 ? 'Đây là tiền thu gom của Cty mà xã đang giữ hộ, phải chi trả.'
                 : diff < 0
-                  ? 'Cty còn giữ tiền vận chuyển của xã, phải thu về.'
-                  : 'Xã giữ đúng bằng phần vận chuyển được hưởng.'}
+                  ? 'Cty còn giữ tiền vận chuyển, xử lý của xã, phải thu về.'
+                  : 'Xã giữ đúng bằng phần vận chuyển, xử lý được hưởng.'}
             </span>
           </Tile>
         </div>
@@ -231,20 +255,23 @@ export function ReconciliationPage() {
 
       {qr && qr.count > 0 && (
         <Alert
-          type="warning"
+          type="error"
           showIcon
           icon={<ExclamationCircleOutlined />}
           style={{ marginTop: 16 }}
           message={
-            <>
+            <strong>
               Sao kê QR <MoneyText value={qrTotal + qr.amount} /> = QR của {rows.length} Cty <MoneyText value={qrTotal} /> +{' '}
-              <strong>
-                {qr.count} giao dịch chưa xác định Cty (<MoneyText value={qr.amount} />)
-              </strong>
-              . Cần xử lý trước khi khóa kỳ.
-            </>
+              {qr.count} giao dịch chưa xác định Cty (<MoneyText value={qr.amount} />). Cần xử lý trước khi khóa kỳ.
+            </strong>
           }
-          action={readOnly ? undefined : <Link to="/transfers">Xử lý →</Link>}
+          action={
+            readOnly ? undefined : (
+              <Link to="/commune/transfers" style={{ fontWeight: 700 }}>
+                Xử lý →
+              </Link>
+            )
+          }
         />
       )}
 
@@ -261,6 +288,7 @@ export function ReconciliationPage() {
           />
         </div>
         <Table<LedgerRow>
+          className="table-square"
           bordered
           rowKey="companyId"
           loading={ledger.isLoading}
@@ -268,7 +296,7 @@ export function ReconciliationPage() {
           pagination={false}
           locale={{ emptyText: 'Kỳ này chưa có khoản phải thu' }}
           tableLayout="fixed"
-          scroll={{ x: 1650 }}
+          scroll={{ x: 'max-content' }}
           columns={columns}
         />
       </div>
