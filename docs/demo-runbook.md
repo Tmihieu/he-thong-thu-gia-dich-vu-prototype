@@ -66,7 +66,7 @@ Mọi tên, SĐT, địa chỉ là dữ liệu giả ("Mẫu", đầu số `0902
 | KV24 chưa có công ty (bước 2) | `V6_1` + `V40_2`: mọi ấp khác (51) đã phân công, hiệu lực 01/09–31/12/2026; KV24 nay là Ấp 47 |
 | DV01 phụ trách KV07, KV09; người đi thu `thu07`, `thu09` (bước 3) | `V6_1`, `V9_1` |
 | Hộ `DTH-H000128` (KV07, DV01) có tài khoản app (bước 4) | `V18_1` |
-| **Kỳ cũ 09/2026 đã qua hạn quyết toán** (hạn dân đóng 25/09, hạn quyết toán 05/10) và **chưa công ty nào quyết toán**: cả 11 công ty Quá hạn quyết toán; DV01 nộp xã 24.212 đ, 10 công ty còn lại xã trả công ty, xem dưới | `V22_1`, `V40_3`, V49 |
+| **Kỳ cũ 09/2026 đã qua hạn quyết toán** (hạn dân đóng 25/09, hạn quyết toán 05/10) và **chưa công ty nào quyết toán**: cả 11 công ty Quá hạn quyết toán; DV01 nộp xã 24.212 đ, 10 công ty còn lại xã trả công ty, xem dưới | `V22_1`, `V40_3`, V50 |
 | Chợ đồ cũ có bài giả; `CDC-035` của hộ kịch bản đang mở, `CDC-033` đã đóng (bước 7) | `V20_1` |
 | Lịch thu gom mọi tổ (chuẩn: bỏ lịch thu gom khỏi UC-12; app còn màn này, **chưa có trong bản demo**) | `V17_1` |
 | **Kỳ 09/2026 có số liệu của cả 11 công ty** (Tiến độ thu, Đối soát, Tổng quan không chỉ DV01) | `V40_3`, xem dưới |
@@ -87,12 +87,12 @@ Mọi tên, SĐT, địa chỉ là dữ liệu giả ("Mẫu", đầu số `0902
 | DV10 | 28.661.984 | 27.301.984 (11.859.088 + 15.442.896) | 11.916.088 | −57.000 |
 | DV11 | 24.858.320 | 24.858.320 (11.109.240 + 13.749.080) | 11.436.240 | −327.000 |
 
-⚠ Seed viết cho công thức cũ (phải nộp = phải thu − phí thu gom) và có ~40% hộ chuyển khoản, nên **chỉ DV01 có phải nộp xã dương (24.212 đ, công ty nộp xã)**, 10 công ty còn lại âm (xã trả công ty). Phiếu thu, phiếu chi cũ của kỳ 09 (kỳ đang thu) đã bị V49 bỏ, nên **đã nộp = 0** và **chưa công ty nào có phiếu quyết toán**: kỳ 09 đã qua hạn quyết toán 05/10 nên cả 11 công ty hiện **Quá hạn quyết toán** (Đối soát: Lệch), DV01 nhắc nộp được (bước 5.1). Cột "Đã thu" là số cũ, các cột phí thu gom/phải nộp là tính lại.
+⚠ Seed viết cho công thức cũ (phải nộp = phải thu − phí thu gom) và có ~40% hộ chuyển khoản, nên **chỉ DV01 có phải nộp xã dương (24.212 đ, công ty nộp xã)**, 10 công ty còn lại âm (xã trả công ty). Phiếu thu, phiếu chi cũ của kỳ 09 (kỳ đang thu) đã bị V50 bỏ, nên **đã nộp = 0** và **chưa công ty nào có phiếu quyết toán**: kỳ 09 đã qua hạn quyết toán 05/10 nên cả 11 công ty hiện **Quá hạn quyết toán** (Đối soát: Lệch), DV01 nhắc nộp được (bước 5.1). Cột "Đã thu" là số cũ, các cột phí thu gom/phải nộp là tính lại.
 
 - **Nguồn thải lớn có phí xử lý** (`V48_1`, 07/10): mỗi công ty 2 hồ sơ `NL…` (nhà máy, siêu thị, bệnh viện, khu trọ… tên giả) ở 2 ấp khác nhau, nhóm cân đủ chi phí 1.054 đ/kg (thu gom 453 + vận chuyển 180 + xử lý 421), định mức 9.060–18.030 kg/tháng, đã thu đủ kỳ 09: một hộ trả QR, một hộ trả tiền mặt (người thu đã bàn giao). Số kg tiền mặt : QR = 453 : 601 nên **phải nộp xã không đổi**; chỉ phải thu, đã thu, phí thu gom và cột **Xử lý** ở màn Đối soát (bấm *Chi tiết*) có số. Ví dụ DV01: `DTH-NL00001` (Ấp 39, tiền mặt 12.231 kg) và `TTT-NL00001` (Ấp 02, QR 16.227 kg).
 - **Tài khoản ngân hàng tạm** cho cả 11 công ty. Chuẩn: mọi chuyển khoản vào một tài khoản chung của xã do quản trị khai báo (UC-54), hồ sơ công ty không có tài khoản **(chưa có trong bản demo)**; demo hiện vẫn dùng tài khoản của từng công ty (`Vietcombank 9999000001` của DV01, `MBBank 9999000002` … `MSB 9999000011`, không phải tài khoản thật): màn Thu tiền của người đi thu và app người dân hiện mã VietQR, app không còn nút thanh toán mô phỏng. Hộ có app còn nợ kỳ 09 để thử đóng online: `0902000221` (`TTT-H000221`) và `0902000341` (`NB-H000341`), cùng DV07, mỗi hộ 80.000.
 - **Chuyển khoản qua QR** (Chuẩn: **cán bộ xã** xem giao dịch chờ đối chiếu (UC-27); demo hiện hiện ở màn công ty, Cấu hình → công ty → *Chuyển khoản chờ đối chiếu*, **chưa có trong bản demo** phần chuyển sang xã): phần lớn đã khớp và ghi Đã thu tự động; còn 5 dòng chờ đối chiếu (300.000 đ) mỗi lý do một dòng — không có mã khoản (DV05, DV07), sai số tiền (DV03), sai tài khoản (DV06), khoản đã đóng rồi (DV09). Còn các dòng này thì **không khóa được kỳ** (`PERIOD_UNIDENTIFIED_QR`, bước 8).
-- Tiền mặt đã bàn giao có đủ ở các công ty; một số người đi thu còn đang giữ tiền mặt chưa bàn giao (màn Tiền mặt của công ty). Kỳ 09 chưa có phiếu quyết toán (V49 bỏ phiếu thu / phiếu chi cũ của kỳ đang thu). Mọi thao tác trên có dòng nhật ký.
+- Tiền mặt đã bàn giao có đủ ở các công ty; một số người đi thu còn đang giữ tiền mặt chưa bàn giao (màn Tiền mặt của công ty). Kỳ 09 chưa có phiếu quyết toán (V50 bỏ phiếu thu / phiếu chi cũ của kỳ đang thu). Mọi thao tác trên có dòng nhật ký.
 - Demo thu qua ngân hàng không cần tài khoản thật: đặt `SEPAY_WEBHOOK_API_KEY=demo-sepay-key` trong `.env` (khởi động lại backend), mở khoản trong app để xem nội dung chuyển khoản (`VSMT` + số khoản 6 chữ số), số tài khoản và số tiền, rồi chạy `scripts/simulate-bank-transfer.sh <nội dung CK> <số tiền> <số tài khoản>` (gọi `POST /api/payments/sepay/webhook`). App chuyển sang **Đã đóng**, công ty thấy **Đã thu**.
 
 **Kỳ cũ 09/2026** (`V22_1`): trạng thái Đang thu, hạn dân đóng **25/09/2026**, hạn quyết toán **05/10/2026** — đã qua cả hai trước ngày demo 21/10, nên lập được phiếu quyết toán ngay. Chỉ phát hành cho DV01 (phiếu `YCT-0926-01`, phạm vi công ty):
@@ -103,7 +103,7 @@ Mọi tên, SĐT, địa chỉ là dữ liệu giả ("Mẫu", đầu số `0902
 | Đã thu (10 lần, mọi khoản đã thu là thu đủ): tiền mặt 13.371.474 + chuyển khoản 17.262.258 | 30.633.732 |
 | Phí thu gom công ty được hưởng (tính theo từng khoản đã thu, cả chuyển khoản) | 13.347.262 |
 | **Phải nộp xã** = 13.371.474 − 0 (điều chỉnh) − 13.347.262 | **24.212** |
-| Đã nộp về xã (chưa có phiếu quyết toán; phiếu thu cũ `PT-CT-0926-001` bị V49 bỏ) | 0 |
+| Đã nộp về xã (chưa có phiếu quyết toán; phiếu thu cũ `PT-CT-0926-001` bị V50 bỏ) | 0 |
 | **Chênh lệch khi quyết toán** = phải nộp xã (dương: DV01 nộp xã) | **24.212** |
 
 - Hộ kịch bản `DTH-H000128` đã đóng kỳ 09 bằng tiền mặt, nên app chỉ còn khoản kỳ 10 để thanh toán ở bước 4.

@@ -225,7 +225,7 @@ class DemoSeedIT extends IntegrationTest {
         // Đã thu 609.000; V41_1 (nếu có) coi hộ đóng trước một phần DTH-H000125 là đóng đủ nên cộng thêm 30.000.
         assertThat(ledger.collectedByCompany(period)).filteredOn(c -> c.companyId() == dv01)
                 .extracting(CompanyAmount::amount).singleElement().isIn(609_000L + 29_994_732, 639_000L + 29_994_732);
-        // V49: kỳ 09 đang thu nên phiếu thu cũ bị bỏ khi đổi sang phiếu quyết toán; chưa công ty nào quyết toán.
+        // V50: kỳ 09 đang thu nên phiếu thu cũ bị bỏ khi đổi sang phiếu quyết toán; chưa công ty nào quyết toán.
         assertThat(demoDb.queryForObject("select count(*) from settlements", Integer.class)).isZero();
         // Phải nộp xã tính trên số ĐÃ THU (góp ý BA 05/10): tiền mặt đã thu − phí thu gom của toàn bộ số đã thu (cả chuyển
         // khoản). DV01 kỳ 09: tiền mặt 480.000 − phí thu gom của 639.000 đã thu (455.788) = 24.212. Cùng một con số ở truy
