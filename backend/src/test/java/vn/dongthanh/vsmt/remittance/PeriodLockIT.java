@@ -89,7 +89,7 @@ class PeriodLockIT extends IntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("LOCKED"))
                 .andExpect(jsonPath("$.lockedAt").isNotEmpty());
-        assertThat(jdbc.queryForObject("select count(*) from audit_logs where action = 'LOCK_PERIOD'", Integer.class))
+        assertThat(jdbc.queryForObject("select count(*) from audit_logs where action = 'LOCK_PERIOD' and entity_id = ?", Integer.class, fx.october.getCode()))
                 .isEqualTo(1);
 
         String officer = fx.bearer(fx.officer);
