@@ -24,14 +24,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
-import vn.dongthanh.vsmt.masterdata.domain.ActiveStatus;
 import vn.dongthanh.vsmt.masterdata.domain.AddressText;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
 import vn.dongthanh.vsmt.masterdata.domain.AreaRepository;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubject;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubjectRepository;
 import vn.dongthanh.vsmt.masterdata.domain.Street;
-import vn.dongthanh.vsmt.masterdata.domain.StreetRepository;
 import vn.dongthanh.vsmt.masterdata.domain.SubjectType;
 import vn.dongthanh.vsmt.masterdata.domain.TariffGroup;
 import vn.dongthanh.vsmt.masterdata.service.SubjectService.ContractCommand;
@@ -60,7 +58,7 @@ public class SubjectImportService {
     private final SubjectService subjects;
     private final ServiceSubjectRepository subjectRepo;
     private final AreaRepository areas;
-    private final StreetRepository streets;
+    private final StreetService streetCatalog;
     private final Clock clock;
 
     public record ImportRow(int rowNo, String type, String name, String houseNo, String street, String areaCode,
@@ -90,12 +88,13 @@ public class SubjectImportService {
                     "File còn " + preview.invalid() + " dòng lỗi, chưa nhập hồ sơ nào. Sửa file rồi tải lại.");
         }
         Map<String, Area> byCode = areaByCode();
+        StreetService.CatalogIndex catalog = streetCatalog.index();
         LocalDate today = LocalDate.now(clock);
         for (ImportRow r : preview.rows()) {
             SubjectType type = typeOf(r.type());
             Area area = byCode.get(r.areaCode().toUpperCase(Locale.ROOT));
-            Street street = catalogStreet(area, r.street());
-            SubjectCommand cmd = new SubjectCommand(type, r.name(), r.houseNo(), street != null ? street.getName() : r.street(),
+            Street street = catalog.match(r.street()).orElse(null);
+            SubjectCommand cmd = new SubjectCommand(type, r.name(), r.houseNo(), street != null ? street.getDisplayName() : r.street(),
                     area.getId(), r.phone(), r.memberCount(), null, null, null, street != null ? street.getId() : null,
                     street == null, null, null, null);
             ContractCommand contract = null;
@@ -127,7 +126,7 @@ public class SubjectImportService {
                 "Mỗi dòng là một hộ / đơn vị. Xoá dòng ví dụ trước khi tải lên. Tối đa " + MAX_ROWS + " dòng.",
                 "Loại đối tượng: Hộ gia đình, Nguồn thải nhỏ hoặc Nguồn thải lớn (để trống = Hộ gia đình).",
                 "Mã khu vực: mã khu vực đang có trong hệ thống (ví dụ KV07).",
-                "Đường / hẻm: nên ghi đúng tên trong danh mục đường của xã; tên không có trong danh mục được lưu là 'chờ xác minh'.",
+                "Đường / hẻm: ghi đúng tên trong danh mục đường của xã (hẻm ghi kèm tên đường, vd. Hẻm 19 Tô Ký; tên cũ trước khi đổi tên vẫn nhận); tên không có trong danh mục được lưu là 'chờ xác minh'.",
                 "Số người: bắt buộc với hộ gia đình; quyết định nhóm giá (≤2 người hoặc từ 3 người).",
                 "Số điện thoại: 9–15 chữ số, có thể để trống. Số nhà có thể để trống nếu nhà chưa có số.",
                 "Nguồn thải nhỏ / lớn được tạo ở trạng thái Chờ hợp đồng; cán bộ xã chọn nhóm giá sau.",
@@ -192,6 +191,7 @@ public class SubjectImportService {
 
     ImportPreview validate(List<ImportRow> parsed, CurrentUser actor) {
         Map<String, Area> byCode = areaByCode();
+        StreetService.CatalogIndex catalog = streetCatalog.index();
         Set<String> seen = new HashSet<>();
         List<ImportRow> out = new ArrayList<>();
         int valid = 0;
@@ -225,7 +225,7 @@ public class SubjectImportService {
                 errors.add("Hộ gia đình phải có số người");
             }
             if (area != null && !r.name().isEmpty() && !r.street().isEmpty()) {
-                Street street = catalogStreet(area, r.street());
+                Street street = catalog.match(r.street()).orElse(null);
                 String house = AddressText.houseKey(r.houseNo());
                 if (street != null && !house.isEmpty()) {
                     // Đường chuẩn + số nhà: trùng địa chỉ là dấu hiệu trùng hộ dù khác tên (BR-MD-08).
@@ -257,12 +257,6 @@ public class SubjectImportService {
             }
         }
         return new ImportPreview(out, valid, out.size() - valid);
-    }
-
-    /** Đường đang hoạt động trong danh mục của xã/phường chứa tổ/ấp; null nếu không khớp (lưu tên chờ xác minh). */
-    private Street catalogStreet(Area area, String name) {
-        return streets.findByDistrictIdAndNameKey(area.getDistrict().getId(), AddressText.streetKey(name))
-                .filter(s -> s.getStatus() == ActiveStatus.ACTIVE).orElse(null);
     }
 
     private Map<String, Area> areaByCode() {

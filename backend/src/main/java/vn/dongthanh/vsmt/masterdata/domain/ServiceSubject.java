@@ -116,9 +116,21 @@ public class ServiceSubject extends BaseEntity {
         this.streetPending = streetRef == null && streetPending;
         this.unitNo = unitNo;
         this.locationNote = locationNote;
-        setAddressParts(houseNo, streetRef != null ? streetRef.getName() : streetText);
+        setAddressParts(houseNo, streetRef != null ? streetRef.getDisplayName() : streetText);
         if (unitNo != null) {
             this.address = this.address + ", " + unitNo;
+        }
+    }
+
+    /** Gắn hồ sơ (địa chỉ cũ / chờ xác minh) vào đường trong danh mục, giữ số nhà và phòng/căn. */
+    public void linkStreet(Street streetRef) {
+        setStructuredAddress(houseNo, unitNo, locationNote, streetRef, null, false);
+    }
+
+    /** Đường trong danh mục đổi tên: cập nhật lại tên đường và địa chỉ ghép. */
+    public void refreshStreetName() {
+        if (streetRef != null) {
+            linkStreet(streetRef);
         }
     }
 }
