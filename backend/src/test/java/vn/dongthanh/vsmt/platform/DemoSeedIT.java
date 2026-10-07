@@ -85,6 +85,28 @@ class DemoSeedIT extends IntegrationTest {
     }
 
     @Test
+    void demoProfileSeedsStreetCatalogWithRenamesAndHouseholdsUseStreetsOfTheirHamlet() {
+        assertThat(demoDb.queryForObject("select count(*) from streets where kind = 'STREET'", Integer.class)).isGreaterThan(100);
+        assertThat(demoDb.queryForObject("select count(*) from streets where kind = 'ALLEY'", Integer.class)).isPositive();
+        // NQ 380/2025: tên mới, tên cũ vẫn giữ để tìm.
+        assertThat(demoDb.queryForList("select o.name from street_old_names o join streets s on s.id = o.street_id"
+                + " where s.name = 'Nguyễn Thị Mực'", String.class)).containsExactly("Đông Thạnh 8");
+        assertThat(demoDb.queryForObject("select count(*) from streets where name = 'Đông Thạnh 8'", Integer.class)).isZero();
+        assertThat(demoDb.queryForObject("select count(*) from streets s where s.kind = 'STREET'"
+                + " and not exists (select 1 from street_areas sa where sa.street_id = s.id)", Integer.class)).isZero();
+
+        // Hộ gắn đường đi qua đúng ấp của hộ; còn lại một ít địa chỉ cũ và hồ sơ chờ xác minh để demo.
+        assertThat(demoDb.queryForObject("select count(*) from service_subjects ss where ss.street_id is not null"
+                + " and not exists (select 1 from street_areas sa where sa.street_id = ss.street_id and sa.area_id = ss.area_id)",
+                Integer.class)).isZero();
+        assertThat(demoDb.queryForObject("select count(*) from service_subjects where street_id is not null", Integer.class))
+                .isGreaterThan(300);
+        assertThat(demoDb.queryForObject("select count(*) from service_subjects where street_pending", Integer.class)).isPositive();
+        assertThat(demoDb.queryForObject("select count(*) from service_subjects where street_id is null and street like 'đường Mẫu%'",
+                Integer.class)).isPositive();
+    }
+
+    @Test
     void demoProfileSeedsTariffQd65WithAllGroupsAndFeeTypes() {
         assertThat(demoDb.queryForList("select code || ':' || status from tariff_versions order by valid_from",
                 String.class)).containsExactly("BG-67-2025:EXPIRED", "BG-65-2026:ACTIVE");
