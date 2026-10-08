@@ -8,6 +8,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 RUN git clone --depth 1 --branch 3.47.6 https://github.com/flutter/flutter.git /flutter
 ENV PATH=/flutter/bin:$PATH
+# Builder của Render không cho chown: tar chạy bằng root phải bỏ giữ chủ sở hữu khi Flutter giải nén artifact.
+ENV TAR_OPTIONS=--no-same-owner
 RUN flutter config --no-analytics && flutter precache --web
 WORKDIR /app
 COPY mobile-flutter/pubspec.yaml mobile-flutter/pubspec.lock ./
