@@ -201,7 +201,7 @@ describe('Đối soát', () => {
   const split = { adjustment: 0, refunded: 0, previousDebt: 0, communePaid: 0, communeOwed: 0, retained: 35_200_000,
     qrTotal: 15_600_000, qrTransport: 5_200_000, qrCollection: 10_400_000, cashCollected: 37_200_000, cashTransport: 12_400_000,
     cashCollection: 24_800_000, collected: 52_800_000, payable: 2_000_000, received: 0, receiptCount: 0, remaining: 2_000_000,
-    holding: 15_600_000, entitled: 17_600_000, settled: false };
+    holding: 15_600_000, entitled: 17_600_000, settled: false, qrProcessing: 0, cashProcessing: 0 };
   const cty1 = { ...dv01, ...split, companyName: 'Cty Thu gom A' };
   // B đã nộp đủ phiếu thu: Khớp, xem được phiếu.
   const cty2 = { ...cty1, companyId: 2, companyCode: 'DV02', companyName: 'Cty Thu gom B', received: 2_000_000, receiptCount: 1, remaining: 0,
@@ -264,20 +264,21 @@ describe('Đối soát', () => {
     expect(screen.queryByRole('cell', { name: 'Cty Thu gom B' })).not.toBeInTheDocument();
   });
 
-  it('nhóm QR / tiền mặt mặc định chỉ cột Tổng; bấm Chi tiết tách Vận chuyển, Thu gom', async () => {
+  it('nhóm QR / tiền mặt mặc định chỉ cột Tổng; bấm Chi tiết tách Vận chuyển, Thu gom, Xử lý', async () => {
     setup();
 
     await screen.findByRole('cell', { name: 'Cty Thu gom A' });
-    expect(screen.queryByRole('columnheader', { name: 'Vận chuyển' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Xử lý' })).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Xem chi tiết Xã nhận qua QR' }));
+    expect(screen.getAllByRole('columnheader', { name: 'Xử lý' })).toHaveLength(1);
     expect(screen.getAllByRole('columnheader', { name: 'Vận chuyển' })).toHaveLength(1);
 
     await userEvent.click(screen.getByRole('button', { name: 'Xem chi tiết Cty thu tiền mặt' }));
-    expect(screen.getAllByRole('columnheader', { name: 'Vận chuyển' })).toHaveLength(2);
+    expect(screen.getAllByRole('columnheader', { name: 'Xử lý' })).toHaveLength(2);
 
     await userEvent.click(screen.getByRole('button', { name: 'Thu gọn Xã nhận qua QR' }));
-    expect(screen.getAllByRole('columnheader', { name: 'Vận chuyển' })).toHaveLength(1);
+    expect(screen.getAllByRole('columnheader', { name: 'Xử lý' })).toHaveLength(1);
   });
 });
 

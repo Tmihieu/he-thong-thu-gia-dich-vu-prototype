@@ -11,7 +11,7 @@ const row = {
   collected: 1_000_000, cashCollected: 0, received: 0, receiptCount: 0, remaining: -228_000, gap: 228_000, previousDebt: 0,
   overdue: false, collectionRate: 100, lowCollectionRate: false, remittedRate: 0, lowRemittedRate: false,
   progress: 'PAID_IN_FULL' as const, reconciliation: 'PENDING' as const, retained: 228_000, payable: -228_000, debtCollected: 0,
-  communePaid: 100_000, communeOwed: 128_000, qrTotal: 0, qrTransport: 0, qrCollection: 0, cashTransport: 0, cashCollection: 0, holding: 0, entitled: 0, settled: false, lastPeriodDebt: 0,
+  communePaid: 100_000, communeOwed: 128_000, qrTotal: 0, qrTransport: 0, qrCollection: 0, qrProcessing: 0, cashTransport: 0, cashCollection: 0, cashProcessing: 0, holding: 0, entitled: 0, settled: false, lastPeriodDebt: 0,
 };
 const norm = { normalizer: (s: string) => s.replace(/\s+/g, ' ').trim() };
 

@@ -69,7 +69,7 @@ const group = (bg: string, children: ColumnsType<LedgerRow>, title: ReactNode) =
 
 const money = (pick: (r: LedgerRow) => number, strong = false) => (_: unknown, r: LedgerRow) => <MoneyText value={pick(r)} strong={strong} />;
 
-/** Tiêu đề nhóm cột kèm nút nhỏ ở góc dưới phải: thu gọn về cột Tổng / mở ra Tổng, Vận chuyển, Thu gom. */
+/** Tiêu đề nhóm cột kèm nút nhỏ ở góc dưới phải: thu gọn về cột Tổng / mở ra Tổng, Vận chuyển, Thu gom, Xử lý. */
 function GroupTitle({ label, open, onToggle }: { label: string; open: boolean; onToggle: () => void }) {
   const action = `${open ? 'Thu gọn' : 'Xem chi tiết'} ${label}`;
   return (
@@ -103,7 +103,7 @@ export function ReconciliationPage() {
   const readOnly = useAuth().user?.role === 'LEADER';
   const [periodId, setPeriodId] = useState<number>();
   const [filter, setFilter] = useState<Filter>('all');
-  // Hai nhóm QR / tiền mặt mặc định chỉ hiện cột Tổng cho bảng gọn; bấm Chi tiết để tách 3 cột.
+  // Hai nhóm QR / tiền mặt mặc định chỉ hiện cột Tổng cho bảng gọn; bấm Chi tiết để tách 4 cột.
   const [qrOpen, setQrOpen] = useState(false);
   const [cashOpen, setCashOpen] = useState(false);
   const [issuingReceipt, setIssuingReceipt] = useState<LedgerRow | null>(null);
@@ -179,6 +179,7 @@ export function ReconciliationPage() {
           ? [
               { title: 'Vận chuyển', key: 'qrTransport', width: 130, render: money((r) => r.qrTransport) },
               { title: 'Thu gom', key: 'qrCollection', width: 140, render: money((r) => r.qrCollection, true) },
+              { title: 'Xử lý', key: 'qrProcessing', width: 120, render: money((r) => r.qrProcessing) },
             ]
           : []),
       ],
@@ -192,6 +193,7 @@ export function ReconciliationPage() {
           ? [
               { title: 'Vận chuyển', key: 'cashTransport', width: 140, render: money((r) => r.cashTransport, true) },
               { title: 'Thu gom', key: 'cashCollection', width: 130, render: money((r) => r.cashCollection) },
+              { title: 'Xử lý', key: 'cashProcessing', width: 120, render: money((r) => r.cashProcessing, true) },
             ]
           : []),
       ],
@@ -232,9 +234,11 @@ export function ReconciliationPage() {
             <Line label="− Đã chi cho Cty" value={sum(rows, (r) => r.communePaid)} />
           </Tile>
           <Operator>−</Operator>
-          <Tile label="Xã được hưởng · phí vận chuyển" value={entitled}>
+          <Tile label="Xã được hưởng · vận chuyển + xử lý" value={entitled}>
             <Line label="Vận chuyển trong QR" value={sum(rows, (r) => r.qrTransport)} />
             <Line label="+ Vận chuyển trong tiền mặt" value={sum(rows, (r) => r.cashTransport)} />
+            <Line label="+ Xử lý trong QR" value={sum(rows, (r) => r.qrProcessing)} />
+            <Line label="+ Xử lý trong tiền mặt" value={sum(rows, (r) => r.cashProcessing)} />
           </Tile>
           <Operator>=</Operator>
           <Tile label={diff > 0 ? 'Xã đang THỪA' : diff < 0 ? 'Xã đang THIẾU' : 'Đã cân'} value={Math.abs(diff)}>
@@ -242,8 +246,8 @@ export function ReconciliationPage() {
               {diff > 0
                 ? 'Đây là tiền thu gom của Cty mà xã đang giữ hộ, phải chi trả.'
                 : diff < 0
-                  ? 'Cty còn giữ tiền vận chuyển của xã, phải thu về.'
-                  : 'Xã giữ đúng bằng phần vận chuyển được hưởng.'}
+                  ? 'Cty còn giữ tiền vận chuyển, xử lý của xã, phải thu về.'
+                  : 'Xã giữ đúng bằng phần vận chuyển, xử lý được hưởng.'}
             </span>
           </Tile>
         </div>
