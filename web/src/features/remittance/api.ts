@@ -8,8 +8,6 @@ export type AreaProgress = components['schemas']['AreaProgressDto'];
 export type HouseholdDebt = components['schemas']['HouseholdDebtDto'];
 export type HouseholdDebtPage = components['schemas']['HouseholdDebtPageDto'];
 export type Receipt = components['schemas']['ReceiptDto'];
-export type Payout = components['schemas']['PayoutDto'];
-export type PayoutIssue = components['schemas']['PayoutIssueDto'];
 export type ReceiptIssue = components['schemas']['IssueDto'];
 
 export const remittanceKeys = {
@@ -17,8 +15,6 @@ export const remittanceKeys = {
   areaProgress: ['remittance', 'area-progress'] as const,
   householdDebts: ['remittance', 'household-debts'] as const,
   receipts: ['remittance', 'receipts'] as const,
-  payouts: ['remittance', 'payouts'] as const,
-  payoutIssues: ['remittance', 'payout-issues'] as const,
   receiptIssues: ['remittance', 'receipt-issues'] as const,
 };
 
@@ -55,23 +51,6 @@ export function useReceipts(periodId: number | undefined, companyId?: number) {
     queryKey: [...remittanceKeys.receipts, periodId, companyId],
     queryFn: () => api.get<Receipt[]>('/api/remittance/receipts', { params: { periodId, companyId } }),
     enabled: periodId !== undefined,
-  });
-}
-
-/** Phiếu chi trả công ty (xã trả lại tiền, UC-55); công ty chỉ nhận phiếu của mình (backend lọc). */
-export function usePayouts(periodId: number | undefined, companyId?: number) {
-  return useQuery({
-    queryKey: [...remittanceKeys.payouts, periodId, companyId],
-    queryFn: () => api.get<Payout[]>('/api/remittance/payouts', { params: { periodId, companyId } }),
-    enabled: periodId !== undefined,
-  });
-}
-
-/** Sai sót phiếu chi trả (UC-56, UC-57); công ty chỉ nhận sai sót trên phiếu của mình. */
-export function usePayoutIssues(status?: PayoutIssue['status']) {
-  return useQuery({
-    queryKey: [...remittanceKeys.payoutIssues, status],
-    queryFn: () => api.get<PayoutIssue[]>('/api/remittance/payout-issues', { params: { status } }),
   });
 }
 

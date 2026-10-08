@@ -1,10 +1,9 @@
-import { CheckOutlined, ExclamationCircleOutlined, MinusSquareOutlined, PlusSquareOutlined } from '@ant-design/icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, ConfigProvider, Segmented, Space, Table, Tooltip, Typography } from 'antd';
+import { CheckOutlined, MinusSquareOutlined, PlusSquareOutlined } from '@ant-design/icons';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { App, Button, ConfigProvider, Segmented, Space, Table, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { Link } from 'react-router';
 
 import { api } from '../../../api/client';
 import { brand, semantic } from '../../../app/theme';
@@ -17,9 +16,7 @@ import { ErrorBlock } from '../../../shared/StateBlock';
 import { StatusTag } from '../../../shared/StatusTag';
 import { usePeriods } from '../../masterdata/api';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
-import { type LedgerRow, type Payout, type Receipt, useCompanyLedger } from '../api';
-import { IssuePayoutForm, type IssuePayoutRequest } from '../PayoutsPage/IssuePayoutForm';
-import { PayoutPrint } from '../PayoutsPage/PayoutPrint';
+import { type LedgerRow, type Receipt, useCompanyLedger } from '../api';
 import { IssueReceiptForm, type IssueReceiptRequest } from '../ReceiptsPage/IssueReceiptForm';
 import { ReceiptPrint } from '../ReceiptsPage/ReceiptPrint';
 import { LockPeriodButton } from './LockPeriodButton';
@@ -35,27 +32,15 @@ const errorText = (e: unknown) => (e ? apiErrorText(e) : null);
 const sum = (rows: LedgerRow[], pick: (r: LedgerRow) => number) => rows.reduce((t, r) => t + pick(r), 0);
 
 /** Nền tiêu đề từng nhóm cột: đậm hơn nền ô để nhóm nổi bật. */
-const HEAD = { qr: '#a9c9f5', cash: '#f8c77e', match: '#9fdbb7' };
+const HEAD = { cash: '#f8c77e', commune: '#9fdbb7' };
 
-/** Số xã phải trả công ty hiện là số âm, công ty nộp xã là số dương. */
-const signed = (v: number) => (v < 0 ? `−${formatMoney(-v)}` : formatMoney(v));
-
-/** Kết quả bù trừ của một công ty theo số còn lại: công ty còn nộp xã, xã còn trả công ty (số âm), hoặc đã khớp. */
+/** Kết quả của một công ty theo số còn lại: công ty còn phải nộp xã, hoặc đã khớp. */
 function Result({ row }: { row: LedgerRow }) {
   if (row.remaining > 0) return <strong style={{ color: semantic.warning.fg }}>Cty nộp Xã {formatMoney(row.remaining)}</strong>;
-  if (row.communeOwed > 0) return <strong style={{ color: semantic.info.fg }}>{signed(-row.communeOwed)}</strong>;
-  const net = row.payable;
   return (
-    <>
-      <StatusTag tone="success">
-        <CheckOutlined /> Khớp
-      </StatusTag>
-      <div>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {net > 0 ? `Cty nộp Xã ${formatMoney(net)}` : net < 0 ? signed(net) : 'Hai bên bằng nhau'}
-        </Typography.Text>
-      </div>
-    </>
+    <StatusTag tone="success">
+      <CheckOutlined /> Khớp
+    </StatusTag>
   );
 }
 
@@ -91,10 +76,9 @@ function GroupTitle({ label, open, onToggle }: { label: string; open: boolean; o
 }
 
 /**
- * Đối soát xã – công ty (UC-38, mockup 07/10): tách tiền xã nhận qua QR và tiền công ty thu mặt thành vận chuyển / thu gom;
- * công ty nộp xã phần vận chuyển tiền mặt, xã trả công ty phần thu gom QR, chỉ bù trừ chênh lệch. Một kỳ có thể có nhiều phiếu
- * thu và nhiều phiếu chi (bấm Lập phiếu nhiều lần); dòng Khớp khi công ty hết phải nộp và xã hết phải trả. Số liệu do máy chủ
- * tính; trang chỉ cộng tổng kỳ. Khóa kỳ chặn khi còn giao dịch QR chưa xác định công ty.
+ * Đối soát xã – công ty (UC-38): hộ chỉ đóng tiền mặt cho người đi thu của công ty (bỏ QR của xã 08/10); công ty giữ phần
+ * thu gom, nộp xã phần vận chuyển và phí xử lý. Một kỳ có thể có nhiều phiếu thu (bấm Lập phiếu nhiều lần); dòng Khớp khi
+ * công ty hết phải nộp. Số liệu do máy chủ tính; trang chỉ cộng tổng kỳ.
  */
 export function ReconciliationPage() {
   const { message } = App.useApp();
@@ -103,21 +87,14 @@ export function ReconciliationPage() {
   const readOnly = useAuth().user?.role === 'LEADER';
   const [periodId, setPeriodId] = useState<number>();
   const [filter, setFilter] = useState<Filter>('all');
-  // Hai nhóm QR / tiền mặt mặc định chỉ hiện cột Tổng cho bảng gọn; bấm Chi tiết để tách 4 cột.
-  const [qrOpen, setQrOpen] = useState(false);
+  // Nhóm tiền mặt mặc định chỉ hiện cột Tổng cho bảng gọn; bấm Chi tiết để tách Vận chuyển, Thu gom, Xử lý.
   const [cashOpen, setCashOpen] = useState(false);
   const [issuingReceipt, setIssuingReceipt] = useState<LedgerRow | null>(null);
-  const [issuingPayout, setIssuingPayout] = useState<LedgerRow | null>(null);
   const [viewing, setViewing] = useState<LedgerRow | null>(null);
   const [printReceipt, setPrintReceipt] = useState<Receipt | null>(null);
-  const [printPayout, setPrintPayout] = useState<Payout | null>(null);
   const ledger = useCompanyLedger(periodId);
   const period = usePeriods().data?.find((p) => p.id === periodId);
   const locked = period?.status === 'LOCKED';
-  const unidentified = useQuery({
-    queryKey: ['remittance', 'unidentified-qr'],
-    queryFn: () => api.get<{ count: number; amount: number }>('/api/remittance/unidentified-qr'),
-  });
   const rows = ledger.data ?? [];
 
   const issueReceipt = useMutation({
@@ -129,38 +106,22 @@ export function ReconciliationPage() {
       setPrintReceipt(r);
     },
   });
-  const issuePayout = useMutation({
-    mutationFn: (req: IssuePayoutRequest) => api.post<Payout>('/api/remittance/payouts', req),
-    onSuccess: (p) => {
-      message.success(`Đã lập phiếu ${p.code} cho ${p.companyCode}`);
-      void queryClient.invalidateQueries({ queryKey: ['remittance'] });
-      setIssuingPayout(null);
-      setPrintPayout(p);
-    },
-  });
-
-  const holding = sum(rows, (r) => r.holding);
-  const entitled = sum(rows, (r) => r.entitled);
-  const diff = holding - entitled;
-  const qrTotal = sum(rows, (r) => r.qrTotal);
+  const payable = sum(rows, (r) => r.payable);
+  const received = sum(rows, (r) => r.received);
+  const diff = payable - received;
   const counts = { all: rows.length, open: rows.filter((r) => !r.settled).length, settled: rows.filter((r) => r.settled).length };
   const shown = rows.filter((r) => filter === 'all' || (filter === 'settled') === r.settled);
-  const qr = unidentified.data;
 
   const voucherCell = (r: LedgerRow) => {
     if (!r.settled) {
       if (readOnly || locked) return <Typography.Text type="secondary" style={{ fontSize: 12 }}>Chưa lập phiếu</Typography.Text>;
-      return r.remaining > 0 ? (
+      return (
         <Button type="primary" size="small" onClick={() => setIssuingReceipt(r)} aria-label={`Lập phiếu thu ${r.companyCode}`}>
           Lập phiếu thu
         </Button>
-      ) : (
-        <Button type="primary" size="small" onClick={() => setIssuingPayout(r)} aria-label={`Lập phiếu chi ${r.companyCode}`}>
-          Lập phiếu chi
-        </Button>
       );
     }
-    return r.receiptCount > 0 || r.communePaid > 0 ? (
+    return r.receiptCount > 0 ? (
       <Button size="small" onClick={() => setViewing(r)} aria-label={`Xem phiếu ${r.companyCode}`}>
         Xem phiếu
       </Button>
@@ -171,20 +132,6 @@ export function ReconciliationPage() {
 
   const columns: ColumnsType<LedgerRow> = [
     { title: 'Công ty', dataIndex: 'companyName', fixed: 'left', width: 200, render: (v: string) => <strong style={{ fontWeight: 600 }}>{v}</strong> },
-    group(
-      HEAD.qr,
-      [
-        { title: 'Tổng', key: 'qrTotal', width: 130, render: money((r) => r.qrTotal, !qrOpen) },
-        ...(qrOpen
-          ? [
-              { title: 'Vận chuyển', key: 'qrTransport', width: 130, render: money((r) => r.qrTransport) },
-              { title: 'Thu gom', key: 'qrCollection', width: 140, render: money((r) => r.qrCollection, true) },
-              { title: 'Xử lý', key: 'qrProcessing', width: 120, render: money((r) => r.qrProcessing) },
-            ]
-          : []),
-      ],
-      <GroupTitle label="Xã nhận qua QR" open={qrOpen} onToggle={() => setQrOpen((v) => !v)} />,
-    ),
     group(
       HEAD.cash,
       [
@@ -199,15 +146,15 @@ export function ReconciliationPage() {
       ],
       <GroupTitle label="Cty thu tiền mặt" open={cashOpen} onToggle={() => setCashOpen((v) => !v)} />,
     ),
-    { title: 'Kết quả', key: 'result', width: 170, align: 'center', onHeaderCell: centerHead(), render: (_, r) => <Result row={r} /> },
     group(
-      HEAD.match,
+      HEAD.commune,
       [
-        { title: 'Xã đang giữ', key: 'holding', width: 150, render: money((r) => r.holding, true) },
-        { title: 'Xã được hưởng', key: 'entitled', width: 150, render: money((r) => r.entitled) },
+        { title: 'Phải nộp xã', key: 'payable', width: 150, render: money((r) => r.payable, true) },
+        { title: 'Đã nộp', key: 'received', width: 150, render: money((r) => r.received) },
       ],
-      'Đối chiếu tiền xã',
+      'Cty nộp xã',
     ),
+    { title: 'Kết quả', key: 'result', width: 170, align: 'center', onHeaderCell: centerHead(), render: (_, r) => <Result row={r} /> },
     { title: 'Phiếu', key: 'voucher', width: 120, align: 'center', onHeaderCell: centerHead(), render: (_, r) => voucherCell(r) },
   ];
 
@@ -215,7 +162,7 @@ export function ReconciliationPage() {
     <ConfigProvider theme={{ token: { borderRadius: 0, borderRadiusLG: 0, borderRadiusSM: 0 }, components: { Table: { borderColor: BORDER } } }}>
       <PageHeader
         title={period ? `Đối soát ${period.label.toLowerCase()}` : 'Đối soát'}
-        description={`${rows.length} công ty thu gom · Lập phiếu thu/chi đủ số còn lại thì công ty đó chuyển sang Khớp`}
+        description={`${rows.length} công ty thu gom · Lập phiếu thu đủ số công ty còn phải nộp thì công ty đó chuyển sang Khớp`}
         extra={
           <Space wrap>
             <PeriodSelect value={periodId} onChange={setPeriodId} />
@@ -225,55 +172,25 @@ export function ReconciliationPage() {
       />
       {ledger.error && <ErrorBlock error={ledger.error} onRetry={() => void ledger.refetch()} />}
 
-      <section aria-label="Tiền xã đang giữ trong kỳ">
-        <h2 style={{ margin: '0 0 12px', padding: '10px 16px', background: brand.chrome, color: '#fff', fontSize: 18, fontWeight: 700 }}>Tiền xã đang giữ trong kỳ</h2>
+      <section aria-label="Tiền công ty nộp xã trong kỳ">
+        <h2 style={{ margin: '0 0 12px', padding: '10px 16px', background: brand.chrome, color: '#fff', fontSize: 18, fontWeight: 700 }}>Tiền công ty nộp xã trong kỳ</h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', gap: 12 }}>
-          <Tile label="Xã đang giữ" value={holding}>
-            <Line label="QR đã nhận" value={qrTotal} />
-            <Line label="+ Đã thu từ Cty" value={sum(rows, (r) => r.received)} />
-            <Line label="− Đã chi cho Cty" value={sum(rows, (r) => r.communePaid)} />
-          </Tile>
-          <Operator>−</Operator>
-          <Tile label="Xã được hưởng · vận chuyển + xử lý" value={entitled}>
-            <Line label="Vận chuyển trong QR" value={sum(rows, (r) => r.qrTransport)} />
-            <Line label="+ Vận chuyển trong tiền mặt" value={sum(rows, (r) => r.cashTransport)} />
-            <Line label="+ Xử lý trong QR" value={sum(rows, (r) => r.qrProcessing)} />
+          <Tile label="Cty phải nộp xã · vận chuyển + xử lý" value={payable}>
+            <Line label="Vận chuyển trong tiền mặt" value={sum(rows, (r) => r.cashTransport)} />
             <Line label="+ Xử lý trong tiền mặt" value={sum(rows, (r) => r.cashProcessing)} />
           </Tile>
+          <Operator>−</Operator>
+          <Tile label="Đã nộp về xã" value={received}>
+            <Line label="Theo phiếu thu đã lập" value={received} />
+          </Tile>
           <Operator>=</Operator>
-          <Tile label={diff > 0 ? 'Xã đang THỪA' : diff < 0 ? 'Xã đang THIẾU' : 'Đã cân'} value={Math.abs(diff)}>
+          <Tile label={diff > 0 ? 'Cty còn phải nộp' : 'Đã nộp đủ'} value={Math.max(diff, 0)}>
             <span style={{ fontSize: 13 }}>
-              {diff > 0
-                ? 'Đây là tiền thu gom của Cty mà xã đang giữ hộ, phải chi trả.'
-                : diff < 0
-                  ? 'Cty còn giữ tiền vận chuyển, xử lý của xã, phải thu về.'
-                  : 'Xã giữ đúng bằng phần vận chuyển, xử lý được hưởng.'}
+              {diff > 0 ? 'Công ty còn giữ tiền vận chuyển, xử lý của xã, phải thu về.' : 'Các công ty đã nộp đủ phần vận chuyển, xử lý.'}
             </span>
           </Tile>
         </div>
       </section>
-
-      {qr && qr.count > 0 && (
-        <Alert
-          type="error"
-          showIcon
-          icon={<ExclamationCircleOutlined />}
-          style={{ marginTop: 16 }}
-          message={
-            <strong>
-              Sao kê QR <MoneyText value={qrTotal + qr.amount} /> = QR của {rows.length} Cty <MoneyText value={qrTotal} /> +{' '}
-              {qr.count} giao dịch chưa xác định Cty (<MoneyText value={qr.amount} />). Cần xử lý trước khi khóa kỳ.
-            </strong>
-          }
-          action={
-            readOnly ? undefined : (
-              <Link to="/commune/transfers" style={{ fontWeight: 700 }}>
-                Xử lý →
-              </Link>
-            )
-          }
-        />
-      )}
 
       <div style={{ marginTop: 16 }}>
         <div style={{ paddingBottom: 12 }}>
@@ -312,20 +229,8 @@ export function ReconciliationPage() {
         }}
         onSubmit={(req) => issueReceipt.mutate(req)}
       />
-      <IssuePayoutForm
-        row={issuingPayout}
-        periodLabel={period?.label}
-        submitting={issuePayout.isPending}
-        error={errorText(issuePayout.error)}
-        onCancel={() => {
-          setIssuingPayout(null);
-          issuePayout.reset();
-        }}
-        onSubmit={(req) => issuePayout.mutate(req)}
-      />
       <VouchersModal row={viewing} onClose={() => setViewing(null)} />
       <ReceiptPrint receipt={printReceipt} onClose={() => setPrintReceipt(null)} />
-      <PayoutPrint payout={printPayout} onClose={() => setPrintPayout(null)} />
     </ConfigProvider>
   );
 }

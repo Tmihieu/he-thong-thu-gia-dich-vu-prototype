@@ -197,88 +197,72 @@ describe('Tiến độ thu', () => {
 });
 
 describe('Đối soát', () => {
-  // Mỗi khoản 60.000 = vận chuyển 20.000 + thu gom 40.000 (SPEC đối soát). A: 620 tiền mặt, 260 QR, chưa nộp.
-  const split = { adjustment: 0, refunded: 0, previousDebt: 0, communePaid: 0, communeOwed: 0, retained: 35_200_000,
-    qrTotal: 15_600_000, qrTransport: 5_200_000, qrCollection: 10_400_000, cashCollected: 37_200_000, cashTransport: 12_400_000,
-    cashCollection: 24_800_000, collected: 52_800_000, payable: 2_000_000, received: 0, receiptCount: 0, remaining: 2_000_000,
-    holding: 15_600_000, entitled: 17_600_000, settled: false, qrProcessing: 0, cashProcessing: 0 };
+  // Hộ chỉ đóng tiền mặt cho công ty. A: thu 37.200.000, phải nộp xã 12.400.000 (vận chuyển 10.400.000 + xử lý 2.000.000), chưa nộp.
+  const split = { adjustment: 0, refunded: 0, previousDebt: 0, communePaid: 0, communeOwed: 0, retained: 24_800_000,
+    qrTotal: 0, qrTransport: 0, qrCollection: 0, qrProcessing: 0, cashCollected: 37_200_000, cashTransport: 10_400_000,
+    cashCollection: 24_800_000, cashProcessing: 2_000_000, collected: 37_200_000, payable: 12_400_000, received: 0, receiptCount: 0,
+    remaining: 12_400_000, holding: 0, entitled: 12_400_000, settled: false };
   const cty1 = { ...dv01, ...split, companyName: 'Cty Thu gom A' };
   // B đã nộp đủ phiếu thu: Khớp, xem được phiếu.
-  const cty2 = { ...cty1, companyId: 2, companyCode: 'DV02', companyName: 'Cty Thu gom B', received: 2_000_000, receiptCount: 1, remaining: 0,
-    holding: 17_600_000, settled: true };
-  // C: 305 tiền mặt, 435 QR: xã phải trả công ty 11.300.000.
-  const cty3 = { ...cty1, companyId: 3, companyCode: 'DV03', companyName: 'Cty Thu gom C', qrTotal: 26_100_000, qrTransport: 8_700_000,
-    qrCollection: 17_400_000, cashCollected: 18_300_000, cashTransport: 6_100_000, cashCollection: 12_200_000, payable: -11_300_000,
-    remaining: -11_300_000, communeOwed: 11_300_000, holding: 26_100_000, entitled: 14_800_000 };
+  const cty2 = { ...cty1, companyId: 2, companyCode: 'DV02', companyName: 'Cty Thu gom B', received: 12_400_000, receiptCount: 1,
+    remaining: 0, holding: 12_400_000, settled: true };
 
   function setup() {
     mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
       'GET /api/masterdata/periods': () => jsonResponse(200, periods),
-      'GET /api/remittance/ledger': () => jsonResponse(200, [cty1, cty2, cty3]),
-      'GET /api/remittance/unidentified-qr': () => jsonResponse(200, { count: 3, amount: 180_000 }),
+      'GET /api/remittance/ledger': () => jsonResponse(200, [cty1, cty2]),
       'GET /api/remittance/receipts': () => jsonResponse(200, []),
-      'GET /api/remittance/payouts': () => jsonResponse(200, []),
     });
     renderApp('/commune/reconciliation');
   }
 
-  it('tổng kỳ: xã đang giữ − được hưởng = thừa; cảnh báo QR chưa xác định', async () => {
+  it('tổng kỳ: công ty phải nộp xã − đã nộp = còn phải nộp; không còn QR của xã', async () => {
     setup();
 
-    // Giữ 59.300.000 − hưởng 50.000.000 = thừa 9.300.000.
-    expect(await screen.findByText('Xã đang THỪA')).toBeInTheDocument();
+    // Phải nộp 24.800.000 − đã nộp 12.400.000 = còn 12.400.000.
+    expect(await screen.findByText('Cty còn phải nộp')).toBeInTheDocument();
     const text = () => document.body.textContent!.replace(/\s+/g, ' ');
-    await waitFor(() => expect(text()).toContain('9.300.000'));
-    expect(text()).not.toContain('Xã còn phải chi');
-    // Sao kê QR = QR của các công ty (57.300.000) + chưa xác định (180.000).
-    expect(await screen.findByText(/Sao kê QR/)).toHaveTextContent('57.480.000');
-    expect(screen.getByText(/3 giao dịch chưa xác định Cty/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Xử lý/ })).toHaveAttribute('href', '/commune/transfers');
+    await waitFor(() => expect(text()).toContain('24.800.000'));
+    expect(text()).not.toMatch(/QR/);
+    expect(screen.queryByRole('link', { name: /Xử lý/ })).not.toBeInTheDocument();
   });
 
-  it('bảng 11 cột theo nhóm QR / tiền mặt / đối chiếu; nút phiếu theo kết quả; tab lọc Chưa khớp / Đã khớp', async () => {
+  it('bảng nhóm tiền mặt / công ty nộp xã; chỉ có nút lập phiếu thu; tab lọc Chưa khớp / Đã khớp', async () => {
     setup();
 
-    expect(await screen.findByText('Xã nhận qua QR')).toBeInTheDocument();
-    expect(screen.getByText('Cty thu tiền mặt')).toBeInTheDocument();
-    expect(screen.getByText('Đối chiếu tiền xã')).toBeInTheDocument();
+    expect(await screen.findByText('Cty thu tiền mặt')).toBeInTheDocument();
+    expect(screen.getByText('Cty nộp xã')).toBeInTheDocument();
     await screen.findByRole('cell', { name: 'Cty Thu gom A' });
     const rowOf = (name: string) => screen.getByRole('cell', { name }).closest('tr')!;
     const a = rowOf('Cty Thu gom A');
-    expect(within(a).getByText('Cty nộp Xã 2.000.000 đ', norm)).toBeInTheDocument();
+    expect(within(a).getByText('Cty nộp Xã 12.400.000 đ', norm)).toBeInTheDocument();
     expect(within(a).getByRole('button', { name: 'Lập phiếu thu DV01' })).toBeInTheDocument();
     const b = rowOf('Cty Thu gom B');
     expect(within(b).getByText('Khớp')).toBeInTheDocument();
     expect(within(b).getByRole('button', { name: 'Xem phiếu DV02' })).toBeInTheDocument();
-    const c = rowOf('Cty Thu gom C');
-    // Xã phải trả công ty hiện số âm ở cột Kết quả.
-    expect(within(c).getByText('−11.300.000 đ', norm)).toBeInTheDocument();
-    expect(within(c).getByRole('button', { name: 'Lập phiếu chi DV03' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Lập phiếu chi/ })).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByText('Đã khớp 1'));
     await waitFor(() => expect(screen.queryByRole('cell', { name: 'Cty Thu gom A' })).not.toBeInTheDocument());
     expect(screen.getByRole('cell', { name: 'Cty Thu gom B' })).toBeInTheDocument();
-    await userEvent.click(screen.getByText('Chưa khớp 2'));
+    await userEvent.click(screen.getByText('Chưa khớp 1'));
     expect(await screen.findByRole('cell', { name: 'Cty Thu gom A' })).toBeInTheDocument();
     expect(screen.queryByRole('cell', { name: 'Cty Thu gom B' })).not.toBeInTheDocument();
   });
 
-  it('nhóm QR / tiền mặt mặc định chỉ cột Tổng; bấm Chi tiết tách Vận chuyển, Thu gom, Xử lý', async () => {
+  it('nhóm tiền mặt mặc định chỉ cột Tổng; bấm Chi tiết tách Vận chuyển, Thu gom, Xử lý', async () => {
     setup();
 
     await screen.findByRole('cell', { name: 'Cty Thu gom A' });
     expect(screen.queryByRole('columnheader', { name: 'Xử lý' })).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Xem chi tiết Xã nhận qua QR' }));
-    expect(screen.getAllByRole('columnheader', { name: 'Xử lý' })).toHaveLength(1);
-    expect(screen.getAllByRole('columnheader', { name: 'Vận chuyển' })).toHaveLength(1);
-
     await userEvent.click(screen.getByRole('button', { name: 'Xem chi tiết Cty thu tiền mặt' }));
-    expect(screen.getAllByRole('columnheader', { name: 'Xử lý' })).toHaveLength(2);
+    expect(screen.getByRole('columnheader', { name: 'Vận chuyển' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Xử lý' })).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Thu gọn Xã nhận qua QR' }));
-    expect(screen.getAllByRole('columnheader', { name: 'Xử lý' })).toHaveLength(1);
+    await userEvent.click(screen.getByRole('button', { name: 'Thu gọn Cty thu tiền mặt' }));
+    expect(screen.queryByRole('columnheader', { name: 'Xử lý' })).not.toBeInTheDocument();
   });
 });
 
@@ -421,58 +405,5 @@ describe('Phiếu thu công ty', () => {
     const print = screen.getByText('PHIẾU THU').closest('.ant-modal-content') as HTMLElement;
     expect(within(print).getByText('1.400.000 đ', norm)).toBeInTheDocument();
     expect(within(print).getAllByRole('button').map((b) => b.textContent)).toContain('In');
-  });
-});
-
-describe('Phiếu chi trả công ty (xã trả lại)', () => {
-  // DV02: phải nộp xã -228.000, xã đã trả 100.000, còn phải trả 128.000.
-  const dv02 = { ...dv01, companyId: 2, companyCode: 'DV02', companyName: 'Công ty Hai', collected: 1_000_000, cashCollected: 0,
-    retained: 228_000, payable: -228_000, received: 0, receiptCount: 0, remaining: -228_000, gap: 228_000, communePaid: 100_000,
-    communeOwed: 128_000, progress: 'PAID_IN_FULL', reconciliation: 'PENDING' };
-
-  it('Tiến độ thu không còn hiện xã trả lại (xem ở Đối soát)', async () => {
-    mockApi({
-      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
-      'GET /api/masterdata/periods': () => jsonResponse(200, periods),
-      'GET /api/remittance/ledger': () => jsonResponse(200, [dv02]),
-      'GET /api/remittance/area-progress': () => jsonResponse(200, []),
-    });
-    renderApp('/commune/progress');
-
-    await screen.findByText('Công ty Hai');
-    expect(screen.queryByText(/Xã trả lại công ty/)).not.toBeInTheDocument();
-  });
-
-  it('lập phiếu chi cho DV02 rồi hiện bản in có số tiền bằng chữ', async () => {
-    const fetchFn = mockApi({
-      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
-      'GET /api/masterdata/periods': () => jsonResponse(200, periods),
-      'GET /api/billing/charge-requests': () => jsonResponse(200, []),
-      'GET /api/remittance/ledger': () => jsonResponse(200, [dv01, dv02]),
-      'POST /api/remittance/payouts': () =>
-        jsonResponse(201, {
-          id: 5, code: 'PC-CT-1026-002', companyId: 2, companyCode: 'DV02', companyName: 'Công ty Hai', periodId: 10,
-          periodCode: '2026-10', periodLabel: 'Tháng 10/2026', amount: 28_000, amountInWords: 'Hai mươi tám nghìn đồng',
-          method: 'TRANSFER', payoutDate: '2026-10-20', documentRef: null, note: null, cumulativePaid: 128_000, periodOwed: 228_000, remainingAfter: 100_000,
-        }),
-    });
-    renderApp('/commune/charges');
-    await userEvent.click(await screen.findByRole('tab', { name: 'Phiếu chi trả công ty' }));
-
-    // Chỉ công ty có xã phải trả/đã trả mới hiện: DV01 (phải nộp dương) không có.
-    expect(await screen.findByRole('button', { name: 'Lập phiếu chi DV02' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Lập phiếu chi DV01' })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Lập phiếu chi DV02' }));
-    const dialog = await screen.findByRole('dialog');
-    await userEvent.clear(within(dialog).getByLabelText('Số tiền'));
-    await userEvent.type(within(dialog).getByLabelText('Số tiền'), '28000');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Lập phiếu' }));
-
-    await waitFor(() =>
-      expect(fetchFn.mock.calls.some(([url, init]) => String(url) === '/api/remittance/payouts'
-        && (init as RequestInit | undefined)?.method === 'POST')).toBe(true),
-    );
-    expect(await screen.findByText('Hai mươi tám nghìn đồng')).toBeInTheDocument();
-    expect(screen.getByText('PHIẾU CHI TRẢ')).toBeInTheDocument();
   });
 });
