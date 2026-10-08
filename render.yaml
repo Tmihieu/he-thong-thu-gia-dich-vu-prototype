@@ -2,6 +2,7 @@
 services:
   - type: pserv
     name: vsmt-demo-backend
+    autoDeployTrigger: checksPass
     runtime: docker
     region: singapore
     plan: starter
@@ -54,6 +55,7 @@ services:
   # Jmix Admin: quản trị dữ liệu danh mục, nhúng vào trang admin qua nginx tại /jmix. Cần RAM >= 512 MB.
   - type: pserv
     name: vsmt-demo-jmix
+    autoDeployTrigger: checksPass
     runtime: docker
     region: singapore
     plan: starter
@@ -87,6 +89,7 @@ services:
 
   - type: web
     name: vsmt-demo-web
+    autoDeployTrigger: checksPass
     runtime: docker
     region: singapore
     plan: starter
