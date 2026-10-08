@@ -54,12 +54,6 @@ vsmt:
   # Thư mục lưu ảnh người dân tải lên (chợ đồ cũ, rác cồng kềnh); đường dẫn tương đối tính từ thư mục chạy
   # backend. Không commit (xem .gitignore).
   upload-dir: ${UPLOAD_DIR:uploads}
-  goong:
-    # Khóa Goong chỉ đọc ở backend (gợi ý đường khi nhập hồ sơ hộ). Để trống thì tắt gợi ý Goong, danh mục nội bộ vẫn dùng được.
-    api-key: ${GOONG_API_KEY:}
-    # Chỉ gợi ý quanh xã Đông Thạnh: tâm = trung bình tọa độ 52 ấp (seed V40_1), bán kính phủ cả xã.
-    location: ${GOONG_LOCATION:10.8975,106.6315}
-    radius-km: ${GOONG_RADIUS_KM:8}
   sepay:
     # Khóa SePay gửi kèm webhook (header "Authorization: Apikey <khóa>"). Để trống thì webhook trả 503, không ghi gì.
     webhook-api-key: ${SEPAY_WEBHOOK_API_KEY:}

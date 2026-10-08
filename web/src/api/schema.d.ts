@@ -4169,11 +4169,6 @@ export interface components {
             /** Format: int32 */
             to: number | null;
         };
-        ExternalStreetDto: {
-            placeId: string;
-            name: string;
-            secondaryText: string;
-        };
         StreetRefDto: {
             /** Format: int64 */
             id: number;
@@ -4183,13 +4178,6 @@ export interface components {
         };
         SuggestDto: {
             streets: components["schemas"]["StreetRefDto"][];
-            /** @description Gợi ý tham khảo từ Goong, CHƯA có trong danh mục */
-            external: components["schemas"]["ExternalStreetDto"][];
-            /**
-             * @description OK | NOT_CONFIGURED | REJECTED | UNAVAILABLE
-             * @enum {string}
-             */
-            goongStatus: "OK" | "NOT_CONFIGURED" | "REJECTED" | "UNAVAILABLE";
         };
         PendingGroupDto: {
             /** @description Khóa nhóm, gửi lại khi gắn */

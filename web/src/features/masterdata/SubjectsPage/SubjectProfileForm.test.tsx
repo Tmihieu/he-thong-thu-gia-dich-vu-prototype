@@ -44,7 +44,7 @@ const catalog: Street[] = [
 ];
 const hue = { id: 9, displayName: 'Đường Nguyễn Huệ', kind: 'STREET' as const };
 const hueDth = { id: 10, displayName: 'Nguyễn Huệ', kind: 'STREET' as const };
-const found = (over: Partial<StreetSuggestions> = {}): StreetSuggestions => ({ streets: [hue], external: [], goongStatus: 'OK', ...over });
+const found = (over: Partial<StreetSuggestions> = {}): StreetSuggestions => ({ streets: [hue], ...over });
 const twin: DuplicateSubject = { id: 77, code: 'NB-H000077', name: 'Trần Thị Cũ', phone: '0903111222', status: 'ENDED', address: '12/5 Đường Nguyễn Huệ' };
 
 const suggest = vi.mocked(suggestStreets);
@@ -279,37 +279,6 @@ describe('SubjectProfileForm', () => {
       await new Promise((r) => setTimeout(r, 50));
       expect(screen.queryByTitle('Đường Lê Lợi')).not.toBeInTheDocument();
       expect(screen.getByTitle('Nguyễn Huệ')).toBeInTheDocument();
-    });
-
-    it('Goong hết hạn mức: báo nhẹ, vẫn chọn được đường trong danh mục', async () => {
-      suggest.mockResolvedValue(found({ goongStatus: 'REJECTED' }));
-      render(<SubjectProfileForm areas={areas} onSubmit={vi.fn()} />);
-      await searchStreet('nguyen hue');
-      expect(await screen.findByText('Gợi ý từ Goong tạm thời không dùng được; vẫn tìm được trong danh mục nội bộ.')).toBeInTheDocument();
-      expect(screen.getByTitle('Đường Nguyễn Huệ')).toBeInTheDocument();
-    });
-
-    it('chưa cấu hình khóa Goong: báo rõ, vẫn chọn được đường trong danh mục', async () => {
-      suggest.mockResolvedValue(found({ goongStatus: 'NOT_CONFIGURED' }));
-      render(<SubjectProfileForm areas={areas} onSubmit={vi.fn()} />);
-      await searchStreet('nguyen hue');
-      expect(await screen.findByText('Chưa cấu hình khóa Goong nên chỉ tìm trong danh mục nội bộ.')).toBeInTheDocument();
-      expect(screen.getByTitle('Đường Nguyễn Huệ')).toBeInTheDocument();
-    });
-
-    it('Goong chỉ là gợi ý tham khảo: chọn thì ghi nhận chờ xác minh, không gửi streetId', async () => {
-      suggest.mockResolvedValue(found({ streets: [], external: [{ placeId: 'pid1', name: 'Đường Lê Lợi', secondaryText: 'Hồ Chí Minh' }] }));
-      const onSubmit = vi.fn();
-      render(<SubjectProfileForm areas={areas} onSubmit={onSubmit} />);
-      await fillNewHousehold();
-      await searchStreet('le loi');
-      await pickOption(screen.getByRole('combobox', { name: 'Đường / hẻm' }), 'Đường Lê Lợi · Hồ Chí Minh');
-
-      expect(screen.getByText(/Đường chưa có trong danh mục/)).toBeInTheDocument();
-      await userEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ' }));
-      await waitFor(() => expect(onSubmit).toHaveBeenCalled());
-      expect(onSubmit.mock.calls[0]![0].subject).toMatchObject({ street: 'Đường Lê Lợi', streetPending: true, streetId: undefined });
-      expect(dupCheck).not.toHaveBeenCalled();
     });
 
     it('máy chủ gợi ý lỗi: báo trong ô và vẫn ghi nhận chờ xác minh bằng tay', async () => {

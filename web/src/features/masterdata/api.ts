@@ -228,7 +228,7 @@ export function useSubjects(query: SubjectQuery) {
   });
 }
 
-/** Gợi ý đường (cả tên cũ): danh mục nội bộ trước, Goong chỉ bổ sung tham khảo. {@code signal} để bỏ yêu cầu cũ khi đổi từ khóa. */
+/** Gợi ý đường (cả tên cũ): chỉ trong danh mục nội bộ. {@code signal} để bỏ yêu cầu cũ khi đổi từ khóa. */
 export function suggestStreets(q: string, signal?: AbortSignal) {
   return api.get<StreetSuggestions>('/api/masterdata/streets/suggest', { params: { q }, signal });
 }

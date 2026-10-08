@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -24,7 +23,6 @@ import vn.dongthanh.vsmt.masterdata.domain.ActiveStatus;
 import vn.dongthanh.vsmt.masterdata.domain.AddressText;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
 import vn.dongthanh.vsmt.masterdata.domain.AreaRepository;
-import vn.dongthanh.vsmt.masterdata.domain.DistrictRepository;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubject;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceSubjectRepository;
 import vn.dongthanh.vsmt.masterdata.domain.Street;
@@ -47,20 +45,11 @@ import vn.dongthanh.vsmt.platform.service.AuditService;
 public class StreetService {
 
     static final int CATALOG_LIMIT = 10;
-    static final int GOONG_LIMIT = 5;
-    /** Chỉ hỏi Goong khi danh mục nội bộ chưa đủ gợi ý, để tiết kiệm hạn mức. */
-    private static final int GOONG_WHEN_FEWER_THAN = 3;
 
     private final StreetRepository streets;
-    private final DistrictRepository districts;
     private final AreaRepository areas;
     private final ServiceSubjectRepository subjects;
-    private final GoongClient goong;
     private final AuditService audit;
-
-    public record Suggestions(List<Street> streets, List<GoongClient.Suggestion> external,
-            GoongClient.Status goongStatus) {
-    }
 
     /** Thêm/sửa đường hoặc hẻm. {@code parentId} chỉ dùng khi thêm hẻm; {@code renameNote} là văn bản đổi tên. */
     public record StreetCommand(String name, Street.Kind kind, Long parentId, Set<Long> areaIds, ActiveStatus status,
@@ -84,26 +73,15 @@ public class StreetService {
     }
 
     @Transactional(readOnly = true)
-    public Suggestions suggest(String q, CurrentUser actor) {
+    public List<Street> suggest(String q, CurrentUser actor) {
         actor.requireRole(Role.COMMUNE_OFFICER);
         String raw = q == null ? "" : q.trim();
         // %, _ là ký tự đại diện của LIKE: bỏ khỏi từ khóa thay vì cho khớp mọi thứ.
         String key = AddressText.streetKey(raw).replaceAll("[%_\\\\]", "");
         if (key.length() < 2) {
-            return new Suggestions(List.of(), List.of(), GoongClient.Status.OK);
+            return List.of();
         }
-        List<Street> found = streets.search(key, PageRequest.of(0, CATALOG_LIMIT));
-        if (raw.length() < 3 || found.size() >= GOONG_WHEN_FEWER_THAN) {
-            return new Suggestions(found, List.of(), GoongClient.Status.OK);
-        }
-        GoongClient.Result r = goong.autocomplete(raw, GOONG_LIMIT);
-        Set<String> known = found.stream().map(s -> matchKey(s.getDisplayName())).collect(Collectors.toSet());
-        // Chỉ nhận đường trong xã: địa chỉ phụ Goong phải nêu một trong các địa bàn (xã cũ đã gộp vào Đông Thạnh).
-        List<String> communes = districts.findAll().stream().map(d -> d.getName().toLowerCase(Locale.ROOT)).toList();
-        List<GoongClient.Suggestion> external = r.items().stream()
-                .filter(s -> communes.stream().anyMatch(s.secondary().toLowerCase(Locale.ROOT)::contains))
-                .filter(s -> !known.contains(matchKey(s.name()))).toList();
-        return new Suggestions(found, external, r.status());
+        return streets.search(key, PageRequest.of(0, CATALOG_LIMIT));
     }
 
     public Street create(StreetCommand cmd, CurrentUser actor) {
