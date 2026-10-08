@@ -24,19 +24,27 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('Hồ sơ hộ (cán bộ xã)', () => {
-  it('danh sách hiện nhóm giá và trạng thái; tìm kiếm gửi từ khóa lên máy chủ', async () => {
+  it('bộ lọc nằm cùng bảng, hiện tên ấp, cách tính theo nhân khẩu và chấm trạng thái', async () => {
     const fetchFn = mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
       'GET /api/masterdata/areas': () => jsonResponse(200, areas),
-      'GET /api/masterdata/subjects': () => jsonResponse(200, { items: [subject], total: 1, page: 0, size: 20 }),
+      'GET /api/masterdata/subjects': () => jsonResponse(200, {
+        items: [{ ...subject, currentContract: { ...subject.currentContract, tariffGroup: 'HH_PER_CAPITA' } }],
+        total: 1, page: 0, size: 20,
+      }),
     });
     renderApp('/commune/subjects');
 
     expect(await screen.findByRole('button', { name: 'DTH-H000128' })).toBeInTheDocument();
-    expect(screen.getByText('HGĐ ≥ 3 người')).toBeInTheDocument();
-    expect(screen.getByText('Đang cung cấp')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Ấp' })).toBeInTheDocument();
+    expect(screen.getByText('Tổ dân phố 07')).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'SĐT' })).not.toBeInTheDocument();
+    expect(screen.getByText('HGĐ theo nhân khẩu')).toBeInTheDocument();
+    expect(screen.getByText('Đơn giá/người × 4 người')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Đang cung cấp' })).toBeInTheDocument();
 
     const search = screen.getByRole('searchbox', { name: 'Tìm hồ sơ' });
+    expect(search.closest('.ant-card')).toContainElement(screen.getByRole('table'));
     fireEvent.change(search, { target: { value: '000128' } });
     fireEvent.keyDown(search, { key: 'Enter', code: 'Enter' });
     await waitFor(() =>
@@ -113,15 +121,29 @@ describe('Hồ sơ hộ (cán bộ xã)', () => {
     renderApp('/commune/subjects');
 
     await userEvent.click(await screen.findByRole('button', { name: 'DTH-H000128' }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Ngừng cung cấp dịch vụ' }));
+    const stop = await screen.findByRole('button', { name: 'Tạm ngừng cung cấp dịch vụ' });
+    expect(stop).toHaveClass('ant-btn-dangerous', 'ant-btn-primary');
+    await userEvent.click(stop);
     const modal = (await screen.findAllByRole('dialog')).at(-1)!;
     pickDate(within(modal).getByLabelText('Ngày cuối cùng còn cung cấp'), '30/09/2026');
-    await userEvent.click(within(modal).getByRole('button', { name: 'Ngừng cung cấp' }));
+    await userEvent.click(within(modal).getByRole('button', { name: 'Tạm ngừng cung cấp' }));
 
     await waitFor(() => {
       const call = fetchFn.mock.calls.find(([url]) => String(url) === '/api/masterdata/subjects/128/end');
       expect(JSON.parse(String((call![1] as RequestInit).body))).toEqual({ endDate: '2026-09-30' });
     });
+  });
+  it('hồ sơ đã tạm ngừng có nút tiếp tục cung cấp', async () => {
+    const fetchFn = mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
+      'GET /api/masterdata/areas': () => jsonResponse(200, areas),
+      'GET /api/masterdata/subjects': () => jsonResponse(200, { items: [{ ...subject, status: 'ENDED', currentContract: null }], total: 1, page: 0, size: 20 }),
+      'POST /api/masterdata/subjects/128/resume': () => jsonResponse(200, { ...subject, status: 'ACTIVE' }),
+    });
+    renderApp('/commune/subjects');
+    await userEvent.click(await screen.findByRole('button', { name: 'DTH-H000128' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Tiếp tục cung cấp dịch vụ' }));
+    await waitFor(() => expect(fetchFn.mock.calls.some(([url]) => url === '/api/masterdata/subjects/128/resume')).toBe(true));
   });
   it('nhập từ Excel: xem trước báo dòng lỗi và khóa nút nhập; file hợp lệ thì gửi xác nhận', async () => {
     const bad = { valid: 1, invalid: 1, rows: [

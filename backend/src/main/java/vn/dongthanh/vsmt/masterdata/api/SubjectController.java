@@ -180,6 +180,12 @@ public class SubjectController {
         return toDto(subjects.end(id, req.endDate(), req.reason(), actor));
     }
 
+    @Operation(summary = "Tiếp tục cung cấp dịch vụ cho hồ sơ đã tạm ngừng")
+    @PostMapping("/subjects/{id}/resume")
+    public SubjectDto resume(@PathVariable Long id, @AuthenticationPrincipal CurrentUser actor) {
+        return toDto(subjects.resume(id, actor));
+    }
+
     @Operation(summary = "Thêm hợp đồng cho đối tượng (không được chồng hiệu lực với hợp đồng khác)")
     @PostMapping("/subjects/{id}/contracts")
     @ResponseStatus(HttpStatus.CREATED)

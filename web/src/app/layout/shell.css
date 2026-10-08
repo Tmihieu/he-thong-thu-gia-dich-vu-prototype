@@ -313,6 +313,16 @@ body { font-size: 15px; line-height: 1.5; color: var(--gray-950); -webkit-font-s
 /* Cột chữ dài (nội dung chuyển khoản, ngân hàng, lý do): căn trái cả tiêu đề lẫn ô. */
 .ant-table-wrapper .ant-table-cell.cell-left { text-align: left !important; }
 
+.subjects-list-card { min-width: 0; }
+.subjects-list-card .ant-card-body { min-width: 0; overflow: hidden; }
+.subjects-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; max-width: 100%; }
+.subject-billing-method { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.3; }
+.subject-billing-method .ant-typography { font-size: 12px; }
+.subject-status-dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: middle; }
+.subject-status-dot-active { background: var(--green-600); }
+.subject-status-dot-ended { background: var(--danger-fg); }
+.subject-status-dot-pending { background: var(--gray-500); }
+
 /* Form, modal, drawer */
 .ant-modal .ant-modal-header { padding-bottom: 12px; border-bottom: 1px solid var(--gray-200); margin-bottom: 16px; }
 .ant-modal .ant-modal-footer { margin-top: 20px; }

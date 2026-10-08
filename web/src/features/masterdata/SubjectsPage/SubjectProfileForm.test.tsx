@@ -199,12 +199,13 @@ describe('SubjectProfileForm', () => {
     expect(screen.getAllByLabelText('Định mức kg/tháng')).toHaveLength(1);
   });
 
-  it('sửa hồ sơ có hợp đồng miễn: hiển thị miễn, giữ nguyên cờ miễn khi lưu', async () => {
+  it('sửa hồ sơ có hợp đồng miễn: chọn được lý do và có thể bỏ miễn', async () => {
     const onSubmit = vi.fn();
     render(<SubjectProfileForm subject={existing} areas={areas} onSubmit={onSubmit} />);
 
     expect(screen.getByText('DTH-H000128')).toBeInTheDocument();
-    expect(screen.getByText('Miễn 100% · Hộ nghèo')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Miễn giảm 100%' })).toBeChecked();
+    expect(screen.getByText('Hộ nghèo')).toBeInTheDocument();
     type('Tên chủ hộ', 'Nguyễn Văn Mới');
     await userEvent.click(screen.getByRole('button', { name: 'Lưu hồ sơ' }));
 
@@ -213,6 +214,30 @@ describe('SubjectProfileForm', () => {
     expect(submitted.subject.name).toBe('Nguyễn Văn Mới');
     expect(submitted.contractId).toBe(62);
     expect(submitted.contract).toMatchObject({ tariffGroup: 'HH_3_PLUS', validFrom: '2026-01-01', exempt: true, exemptReason: 'Hộ nghèo' });
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Miễn giảm 100%' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu hồ sơ' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(2));
+    expect(onSubmit.mock.calls[1]![0].contract).toMatchObject({ exempt: false, exemptReason: undefined });
+  });
+
+  it('tạo hộ miễn giảm: phải chọn lý do, lý do khác được gửi theo nội dung nhập', async () => {
+    const onSubmit = vi.fn();
+    render(<SubjectProfileForm areas={areas} onSubmit={onSubmit} />);
+    type('Tên chủ hộ', 'Lê Thị Mẫu');
+    await userEvent.type(screen.getByLabelText('Số thành viên'), '3');
+    await pickOption(screen.getByRole('combobox', { name: 'Ấp' }), 'KV24 · Tổ dân phố 24');
+    await pickStreet('Đường Nguyễn Huệ');
+    await pickOption(screen.getByRole('combobox', { name: 'Nhóm giá' }), 'HGĐ ≥ 3 người');
+    pickDate(screen.getByLabelText('Hiệu lực từ'), '01/10/2026');
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Miễn giảm 100%' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ' }));
+    expect(await screen.findByText('Vui lòng chọn lý do miễn giảm')).toBeInTheDocument();
+    await pickOption(screen.getByRole('combobox', { name: 'Lý do miễn giảm' }), 'Khác');
+    type('Lý do khác', '  Quyết định riêng  ');
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0]![0].contract).toMatchObject({ exempt: true, exemptReason: 'Quyết định riêng' });
   });
 
   describe('chọn đường', () => {

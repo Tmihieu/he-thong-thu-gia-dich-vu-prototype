@@ -1,5 +1,5 @@
 import { ExclamationCircleOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons';
-import { Alert, App, Button, Checkbox, DatePicker, Drawer, Form, Input, Modal, Select, Space, Table, Tooltip, Typography } from 'antd';
+import { Alert, App, Button, Card, Checkbox, DatePicker, Drawer, Form, Input, Modal, Select, Space, Table, Tooltip, Typography } from 'antd';
 import type { Dayjs } from 'dayjs';
 import { useState } from 'react';
 
@@ -8,7 +8,6 @@ import { StatusTag } from '../../../shared/StatusTag';
 import { DateText } from '../../../shared/DateText';
 import { PageHeader } from '../../../shared/PageHeader';
 import {
-  SUBJECT_STATUS_COLORS,
   SUBJECT_STATUS_LABELS,
   SUBJECT_TYPE_LABELS,
   TARIFF_GROUP_LABELS,
@@ -22,6 +21,7 @@ import {
   useAreas,
   useCreateSubject,
   useEndSubject,
+  useResumeSubject,
   useMemberHistory,
   useSubjects,
   useUpdateContract,
@@ -34,15 +34,36 @@ type Editing = { mode: 'create' } | { mode: 'edit'; subject: Subject } | null;
 
 type CurrentContract = NonNullable<Subject['currentContract']>;
 
-/** Hợp đồng trên form không khác hợp đồng đang hiệu lực (nhóm giá, hiệu lực, định mức). */
+/** Hợp đồng trên form không khác hợp đồng đang hiệu lực. */
 function sameContract(req: ContractRequest, c: CurrentContract): boolean {
   return (
     req.tariffGroup === c.tariffGroup &&
     req.validFrom === c.validFrom &&
     (req.validTo ?? null) === c.validTo &&
-    (req.quotaKg ?? null) === (c.quotaKg ?? null)
+    (req.quotaKg ?? null) === (c.quotaKg ?? null) &&
+    req.exempt === c.exempt &&
+    (req.exemptReason ?? null) === (c.exemptReason ?? null) &&
+    (req.exemptDecisionNo ?? null) === (c.exemptDecisionNo ?? null)
   );
 }
+
+function calculationMethod(subject: Subject): string {
+  const contract = subject.currentContract;
+  if (!contract) return '';
+  if (contract.tariffGroup === 'HH_PER_CAPITA') {
+    return subject.memberCount ? `Đơn giá/người × ${subject.memberCount} người` : 'Đơn giá/người × số nhân khẩu';
+  }
+  if (contract.tariffGroup === 'BY_VOLUME' || contract.tariffGroup === 'FULL_COST_BY_KG') {
+    return contract.quotaKg ? `Đơn giá/kg × ${contract.quotaKg} kg/tháng` : 'Đơn giá/kg × định mức';
+  }
+  return 'Mức thu cố định/tháng';
+}
+
+const statusDots: Record<Subject['status'], { label: string; className: string }> = {
+  ACTIVE: { label: 'Đang cung cấp', className: 'subject-status-dot-active' },
+  ENDED: { label: 'Không cung cấp', className: 'subject-status-dot-ended' },
+  PENDING: { label: 'Chờ xử lý', className: 'subject-status-dot-pending' },
+};
 
 /** Lịch sử đổi số nhân khẩu của hộ (đọc từ nhật ký thao tác). Chỉ hiện khi từng có thay đổi. */
 function MemberHistory({ subjectId }: { subjectId: number }) {
@@ -83,6 +104,7 @@ export function SubjectsPage() {
   const addContract = useAddContract();
   const updateContract = useUpdateContract();
   const endSubject = useEndSubject();
+  const resumeSubject = useResumeSubject();
 
   const [editing, setEditing] = useState<Editing>(null);
   const [importing, setImporting] = useState(false);
@@ -148,114 +170,120 @@ export function SubjectsPage() {
           </Space>
         }
       />
-      <Space wrap style={{ marginBottom: 16 }}>
-        <Input.Search
-          aria-label="Tìm hồ sơ"
-          placeholder="Mã, tên, SĐT, địa chỉ"
-          allowClear
-          style={{ width: 260 }}
-          onSearch={(q) => setQuery((prev) => ({ ...prev, q: q || undefined, page: 0 }))}
-        />
-        <Select
-          aria-label="Lọc theo tổ"
-          allowClear
-          placeholder="Tất cả tổ"
-          style={{ width: 200 }}
-          showSearch
-          optionFilterProp="label"
-          onChange={(areaId?: number) => setQuery((prev) => ({ ...prev, areaId, page: 0 }))}
-          options={(areas.data ?? []).map((a) => ({ value: a.id, label: `${a.code} · ${a.name}` }))}
-        />
-        <Select
-          aria-label="Lọc theo loại hộ"
-          allowClear
-          placeholder="Mọi loại hộ"
-          style={{ width: 180 }}
-          onChange={(subjectType?: Subject['subjectType']) => setQuery((prev) => ({ ...prev, subjectType, page: 0 }))}
-          options={Object.entries(SUBJECT_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
-        />
-        <Select
-          aria-label="Lọc theo trạng thái"
-          allowClear
-          placeholder="Mọi trạng thái"
-          style={{ width: 180 }}
-          onChange={(status?: Subject['status']) => setQuery((prev) => ({ ...prev, status, page: 0 }))}
-          options={Object.entries(SUBJECT_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
-        />
-        <Checkbox checked={unnormalizedOnly} onChange={(e) => setUnnormalizedOnly(e.target.checked)}>
-          Địa chỉ chưa chuẩn hóa ({unnormalizedCount} trên trang)
-        </Checkbox>
-      </Space>
-      <Table<Subject>
-        rowKey="id"
-        loading={subjects.isFetching}
-        dataSource={shownItems}
-        scroll={{ x: 970 }}
-        locale={{ emptyText: subjects.error ? errorTextOrNull(subjects.error) : 'Không có hồ sơ phù hợp' }}
-        pagination={{
-          current: query.page + 1,
-          pageSize: query.size,
-          total: subjects.data?.total ?? 0,
-          showSizeChanger: false,
-          showTotal: (total) => `${total} hồ sơ`,
-          onChange: (page) => setQuery((prev) => ({ ...prev, page: page - 1 })),
-        }}
-        columns={[
-          {
-            title: 'Mã',
-            dataIndex: 'code',
-            className: 'cell-nowrap',
-            width: 120,
-            fixed: 'left',
-            render: (code: string, s) => (
-              <Button type="link" style={{ padding: 0 }} onClick={() => openEditor({ mode: 'edit', subject: s })}>
-                {code}
-              </Button>
-            ),
-          },
-          { title: 'Tên', dataIndex: 'name', width: 150, ellipsis: true },
-          { title: 'Loại', dataIndex: 'subjectType', className: 'cell-nowrap', width: 110, render: (t: Subject['subjectType']) => SUBJECT_TYPE_LABELS[t] },
-          { title: 'Tổ', dataIndex: 'areaCode', className: 'cell-nowrap', width: 80 },
-          {
-            title: 'Địa chỉ',
-            dataIndex: 'address',
-            ellipsis: true,
-            width: 150,
-            render: (address: string, s) => (
-              <>
-                {address}
-                {(s.streetPending || !s.streetId) && (
-                  <Tooltip title={s.streetPending ? 'Đường đang chờ xác minh' : 'Địa chỉ chưa chuẩn hóa theo danh mục đường'}>
-                    <ExclamationCircleOutlined style={{ marginLeft: 8, color: s.streetPending ? '#8a5300' : '#7f8b99' }} aria-label="Địa chỉ cần chuẩn hóa" />
-                  </Tooltip>
-                )}
-              </>
-            ),
-          },
-          { title: 'SĐT', dataIndex: 'phone', className: 'cell-nowrap', width: 110, render: (p: string | null) => p ?? '—' },
-          {
-            title: 'Nhóm giá',
-            width: 140,
-            ellipsis: true,
-            render: (_, s) =>
-              s.currentContract ? (
-                <>
-                  {TARIFF_GROUP_LABELS[s.currentContract.tariffGroup]}{' '}
-                  {s.currentContract.exempt && <StatusTag color="purple">Miễn 100%</StatusTag>}
-                </>
-              ) : (
-                <StatusTag>Chưa đăng ký thu</StatusTag>
+      <Card className="section-card subjects-list-card">
+        <Space wrap className="subjects-filters">
+          <Input.Search
+            aria-label="Tìm hồ sơ"
+            placeholder="Mã, tên, SĐT, địa chỉ"
+            allowClear
+            style={{ width: 260 }}
+            onSearch={(q) => setQuery((prev) => ({ ...prev, q: q || undefined, page: 0 }))}
+          />
+          <Select
+            aria-label="Lọc theo ấp"
+            allowClear
+            placeholder="Tất cả ấp"
+            style={{ width: 200 }}
+            showSearch
+            optionFilterProp="label"
+            onChange={(areaId?: number) => setQuery((prev) => ({ ...prev, areaId, page: 0 }))}
+            options={(areas.data ?? []).map((a) => ({ value: a.id, label: a.name }))}
+          />
+          <Select
+            aria-label="Lọc theo loại hộ"
+            allowClear
+            placeholder="Mọi loại hộ"
+            style={{ width: 180 }}
+            onChange={(subjectType?: Subject['subjectType']) => setQuery((prev) => ({ ...prev, subjectType, page: 0 }))}
+            options={Object.entries(SUBJECT_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
+          />
+          <Select
+            aria-label="Lọc theo trạng thái"
+            allowClear
+            placeholder="Mọi trạng thái"
+            style={{ width: 180 }}
+            onChange={(status?: Subject['status']) => setQuery((prev) => ({ ...prev, status, page: 0 }))}
+            options={Object.entries(SUBJECT_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
+          />
+          <Checkbox checked={unnormalizedOnly} onChange={(e) => setUnnormalizedOnly(e.target.checked)}>
+            Địa chỉ chưa chuẩn hóa ({unnormalizedCount} trên trang)
+          </Checkbox>
+        </Space>
+        <Table<Subject>
+          rowKey="id"
+          loading={subjects.isFetching}
+          dataSource={shownItems}
+          scroll={{ x: 900 }}
+          locale={{ emptyText: subjects.error ? errorTextOrNull(subjects.error) : 'Không có hồ sơ phù hợp' }}
+          pagination={{
+            current: query.page + 1,
+            pageSize: query.size,
+            total: subjects.data?.total ?? 0,
+            showSizeChanger: false,
+            showTotal: (total) => `${total} hồ sơ`,
+            onChange: (page) => setQuery((prev) => ({ ...prev, page: page - 1 })),
+          }}
+          columns={[
+            {
+              title: 'Mã',
+              dataIndex: 'code',
+              className: 'cell-nowrap',
+              width: 120,
+              fixed: 'left',
+              render: (code: string, s) => (
+                <Button type="link" style={{ padding: 0 }} onClick={() => openEditor({ mode: 'edit', subject: s })}>
+                  {code}
+                </Button>
               ),
-          },
-          {
-            title: 'Trạng thái',
-            dataIndex: 'status',
-            width: 120,
-            className: 'cell-nowrap',
-            render: (st: Subject['status']) => <StatusTag color={SUBJECT_STATUS_COLORS[st]}>{SUBJECT_STATUS_LABELS[st]}</StatusTag>,
-          },
-        ]}
-      />
+            },
+            { title: 'Tên', dataIndex: 'name', className: 'cell-left', width: 140, ellipsis: true },
+            { title: 'Loại', dataIndex: 'subjectType', className: 'cell-nowrap', width: 100, render: (t: Subject['subjectType']) => SUBJECT_TYPE_LABELS[t] },
+            { title: 'Ấp', dataIndex: 'areaId', className: 'cell-left', width: 100, ellipsis: true, render: (areaId: number, s) => areas.data?.find((a) => a.id === areaId)?.name ?? s.areaCode },
+            {
+              title: 'Địa chỉ',
+              dataIndex: 'address',
+              className: 'cell-left',
+              ellipsis: true,
+              width: 170,
+              render: (address: string, s) => (
+                <>
+                  {address}
+                  {(s.streetPending || !s.streetId) && (
+                    <Tooltip title={s.streetPending ? 'Đường đang chờ xác minh' : 'Địa chỉ chưa chuẩn hóa theo danh mục đường'}>
+                      <ExclamationCircleOutlined style={{ marginLeft: 8, color: s.streetPending ? '#8a5300' : '#7f8b99' }} aria-label="Địa chỉ cần chuẩn hóa" />
+                    </Tooltip>
+                  )}
+                </>
+              ),
+            },
+            {
+              title: 'Nhóm giá / Cách tính',
+              width: 200,
+              className: 'cell-left',
+              render: (_, s) =>
+                s.currentContract ? (
+                  <div className="subject-billing-method">
+                    <span>{TARIFF_GROUP_LABELS[s.currentContract.tariffGroup]}</span>
+                    <Typography.Text type="secondary">{calculationMethod(s)}</Typography.Text>
+                    {s.currentContract.exempt && <StatusTag color="purple">Miễn 100%</StatusTag>}
+                  </div>
+                ) : (
+                  <StatusTag>Chưa đăng ký thu</StatusTag>
+                ),
+            },
+            {
+              title: 'Trạng thái',
+              dataIndex: 'status',
+              width: 70,
+              render: (status: Subject['status']) => (
+                <Tooltip title={statusDots[status].label}>
+                  <span role="img" aria-label={statusDots[status].label} className={`subject-status-dot ${statusDots[status].className}`} />
+                </Tooltip>
+              ),
+            },
+          ]}
+        />
+      </Card>
 
       <Drawer
         title={editing?.mode === 'edit' ? `Hồ sơ hộ · ${editing.subject.code}` : 'Thêm hồ sơ hộ'}
@@ -264,11 +292,23 @@ export function SubjectsPage() {
         width={640}
         destroyOnHidden
         extra={
-          editing?.mode === 'edit' && editing.subject.status !== 'ENDED' ? (
-            <Button danger onClick={() => setEnding(editing.subject)}>
-              Ngừng cung cấp dịch vụ
+          editing?.mode === 'edit' && (editing.subject.status === 'ENDED' ? (
+            <Button type="primary" loading={resumeSubject.isPending} onClick={() =>
+              resumeSubject.mutate(editing.subject.id, {
+                onSuccess: (s) => {
+                  message.success(`Đã tiếp tục cung cấp dịch vụ cho ${s.code}`);
+                  setEditing(null);
+                },
+                onError: (err) => setSaveError(errorTextOrNull(err)),
+              })
+            }>
+              Tiếp tục cung cấp dịch vụ
             </Button>
-          ) : null
+          ) : (
+            <Button type="primary" danger onClick={() => setEnding(editing.subject)}>
+              Tạm ngừng cung cấp dịch vụ
+            </Button>
+          ))
         }
       >
         {editing && (
@@ -287,9 +327,9 @@ export function SubjectsPage() {
       </Drawer>
 
       <Modal
-        title={ending ? `Ngừng cung cấp dịch vụ · ${ending.code}` : ''}
+        title={ending ? `Tạm ngừng cung cấp dịch vụ · ${ending.code}` : ''}
         open={ending !== null}
-        okText="Ngừng cung cấp"
+        okText="Tạm ngừng cung cấp"
         okButtonProps={{ danger: true }}
         cancelText="Hủy"
         confirmLoading={endSubject.isPending}
@@ -310,7 +350,7 @@ export function SubjectsPage() {
               { id: ending!.id, endDate: v.endDate.format('YYYY-MM-DD'), reason: v.reason?.trim() || undefined },
               {
                 onSuccess: (s) => {
-                  message.success(`Đã ngừng cung cấp dịch vụ cho ${s.code}`);
+                  message.success(`Đã tạm ngừng cung cấp dịch vụ cho ${s.code}`);
                   setEnding(null);
                   setEditing(null);
                 },

@@ -62,7 +62,7 @@ export const SUBJECT_TYPE_LABELS: Record<SubjectType, string> = {
 export const SUBJECT_STATUS_LABELS: Record<SubjectStatus, string> = {
   ACTIVE: 'Đang cung cấp',
   PENDING: 'Chờ xử lý',
-  ENDED: 'Đã chấm dứt',
+  ENDED: 'Tạm ngừng cung cấp',
 };
 
 export const SUBJECT_STATUS_COLORS: Record<SubjectStatus, string> = {

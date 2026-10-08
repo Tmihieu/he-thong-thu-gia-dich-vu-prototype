@@ -323,6 +323,10 @@ export function useEndSubject() {
   );
 }
 
+export function useResumeSubject() {
+  return useSubjectMutation((id: number) => api.post<Subject>(`/api/masterdata/subjects/${id}/resume`));
+}
+
 /** Khớp ImportPreviewDto của backend (chưa có trong schema.d.ts cho tới lần `npm run gen:api` kế tiếp). */
 export interface ImportRow {
   rowNo: number;
