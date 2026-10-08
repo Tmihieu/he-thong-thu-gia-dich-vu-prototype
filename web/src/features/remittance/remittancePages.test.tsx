@@ -264,6 +264,22 @@ describe('Đối soát', () => {
     expect(await screen.findByRole('cell', { name: 'Cty Thu gom A' })).toBeInTheDocument();
     expect(screen.queryByRole('cell', { name: 'Cty Thu gom B' })).not.toBeInTheDocument();
   });
+
+  it('nhóm QR / tiền mặt mặc định chỉ cột Tổng; bấm Chi tiết tách Vận chuyển, Thu gom', async () => {
+    setup();
+
+    await screen.findByRole('cell', { name: 'Cty Thu gom A' });
+    expect(screen.queryByRole('columnheader', { name: 'Vận chuyển' })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Xem chi tiết Xã nhận qua QR' }));
+    expect(screen.getAllByRole('columnheader', { name: 'Vận chuyển' })).toHaveLength(1);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Xem chi tiết Cty thu tiền mặt' }));
+    expect(screen.getAllByRole('columnheader', { name: 'Vận chuyển' })).toHaveLength(2);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Thu gọn Xã nhận qua QR' }));
+    expect(screen.getAllByRole('columnheader', { name: 'Vận chuyển' })).toHaveLength(1);
+  });
 });
 
 describe('Khóa kỳ', () => {
