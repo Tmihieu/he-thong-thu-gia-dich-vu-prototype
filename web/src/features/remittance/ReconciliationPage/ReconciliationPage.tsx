@@ -52,6 +52,10 @@ const group = (bg: string, children: ColumnsType<LedgerRow>, title: ReactNode) =
   children: children.map((c) => ({ ...c, align: 'right' as const, onHeaderCell: centerHead(bg) })),
 });
 
+/** Phí xử lý và vận chuyển trên toàn bộ số đã thu (tiền mặt và chuyển khoản đều vào công ty); thu gom là phần công ty giữ. */
+const processing = (r: LedgerRow) => r.qrProcessing + r.cashProcessing;
+const transport = (r: LedgerRow) => r.payable - processing(r);
+
 const money = (pick: (r: LedgerRow) => number, strong = false) => (_: unknown, r: LedgerRow) => <MoneyText value={pick(r)} strong={strong} />;
 
 /** Tiêu đề nhóm cột kèm nút nhỏ ở góc dưới phải: thu gọn về cột Tổng / mở ra Tổng, Vận chuyển, Thu gom, Xử lý. */
@@ -76,7 +80,7 @@ function GroupTitle({ label, open, onToggle }: { label: string; open: boolean; o
 }
 
 /**
- * Đối soát xã – công ty (UC-38): hộ chỉ đóng tiền mặt cho người đi thu của công ty (bỏ QR của xã 08/10); công ty giữ phần
+ * Đối soát xã – công ty (UC-38): hộ đóng tiền mặt hoặc chuyển khoản, đều vào công ty (bỏ QR của xã 08/10); công ty giữ phần
  * thu gom, nộp xã phần vận chuyển và phí xử lý. Một kỳ có thể có nhiều phiếu thu (bấm Lập phiếu nhiều lần); dòng Khớp khi
  * công ty hết phải nộp. Số liệu do máy chủ tính; trang chỉ cộng tổng kỳ.
  */
@@ -87,7 +91,7 @@ export function ReconciliationPage() {
   const readOnly = useAuth().user?.role === 'LEADER';
   const [periodId, setPeriodId] = useState<number>();
   const [filter, setFilter] = useState<Filter>('all');
-  // Nhóm tiền mặt mặc định chỉ hiện cột Tổng cho bảng gọn; bấm Chi tiết để tách Vận chuyển, Thu gom, Xử lý.
+  // Nhóm công ty đã thu mặc định chỉ hiện cột Tổng cho bảng gọn; bấm Chi tiết để tách Vận chuyển, Thu gom, Xử lý.
   const [cashOpen, setCashOpen] = useState(false);
   const [issuingReceipt, setIssuingReceipt] = useState<LedgerRow | null>(null);
   const [viewing, setViewing] = useState<LedgerRow | null>(null);
@@ -135,16 +139,16 @@ export function ReconciliationPage() {
     group(
       HEAD.cash,
       [
-        { title: 'Tổng', key: 'cashTotal', width: 130, render: money((r) => r.cashCollected, !cashOpen) },
+        { title: 'Tổng', key: 'collected', width: 130, render: money((r) => r.collected, !cashOpen) },
         ...(cashOpen
           ? [
-              { title: 'Vận chuyển', key: 'cashTransport', width: 140, render: money((r) => r.cashTransport, true) },
-              { title: 'Thu gom', key: 'cashCollection', width: 130, render: money((r) => r.cashCollection) },
-              { title: 'Xử lý', key: 'cashProcessing', width: 120, render: money((r) => r.cashProcessing, true) },
+              { title: 'Thu gom', key: 'collection', width: 130, render: money((r) => r.retained) },
+              { title: 'Vận chuyển', key: 'transport', width: 140, render: money(transport, true) },
+              { title: 'Xử lý', key: 'processing', width: 120, render: money(processing, true) },
             ]
           : []),
       ],
-      <GroupTitle label="Cty thu tiền mặt" open={cashOpen} onToggle={() => setCashOpen((v) => !v)} />,
+      <GroupTitle label="Cty đã thu" open={cashOpen} onToggle={() => setCashOpen((v) => !v)} />,
     ),
     group(
       HEAD.commune,
@@ -176,8 +180,8 @@ export function ReconciliationPage() {
         <h2 style={{ margin: '0 0 12px', padding: '10px 16px', background: brand.chrome, color: '#fff', fontSize: 18, fontWeight: 700 }}>Tiền công ty nộp xã trong kỳ</h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', gap: 12 }}>
           <Tile label="Cty phải nộp xã · vận chuyển + xử lý" value={payable}>
-            <Line label="Vận chuyển trong tiền mặt" value={sum(rows, (r) => r.cashTransport)} />
-            <Line label="+ Xử lý trong tiền mặt" value={sum(rows, (r) => r.cashProcessing)} />
+            <Line label="Vận chuyển" value={sum(rows, transport)} />
+            <Line label="+ Xử lý" value={sum(rows, processing)} />
           </Tile>
           <Operator>−</Operator>
           <Tile label="Đã nộp về xã" value={received}>

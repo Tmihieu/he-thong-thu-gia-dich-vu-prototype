@@ -163,15 +163,14 @@ public class LedgerQueries {
     }
 
     /**
-     * Phải nộp xã theo (công ty, kỳ) của các kỳ có hạn nộp trước {@code today}: tiền mặt đã thu − điều chỉnh − phần thu
-     * gom của số đã thu, cùng công thức với {@link #cashCollectedByCompany}, {@link #retainedByCompany} và
-     * {@link #writeOffAdjustmentByCompany}. Có thể âm (xã trả lại công ty).
+     * Phải nộp xã theo (công ty, kỳ) của các kỳ có hạn nộp trước {@code today}: đã thu (mọi hình thức) − điều chỉnh − phần
+     * thu gom, cùng công thức với {@link #collectedByCompany}, {@link #retainedByCompany} và
+     * {@link #writeOffAdjustmentByCompany}.
      */
     public List<CompanyPeriodAmount> payableByCompanyAndPeriodBefore(LocalDate today) {
         return jdbc.query("select x.company_id, x.period_id, sum(x.v) from ("
                 + " select c.company_id, " + PAYMENT_PERIOD + " as period_id,"
-                + " sum(case when p.method <> 'TRANSFER' then p.amount else 0 end)"
-                + " - coalesce(round(sum(p.amount) * r.collection_fee::numeric / nullif(r.monthly_total, 0)), 0) as v"
+                + " sum(p.amount) - coalesce(round(sum(p.amount) * r.collection_fee::numeric / nullif(r.monthly_total, 0)), 0) as v"
                 + " from payments p join charges c on c.id = p.charge_id" + COLLECTION_JOIN
                 + " group by c.id, c.company_id, p.ledger_period_id, c.period_id, r.collection_fee, r.monthly_total"
                 + " union all"

@@ -96,17 +96,17 @@ class CompanyLedgerServiceTest {
         assertThat(r.chargeCount()).isEqualTo(20);
         assertThat(r.collected()).isEqualTo(1_200_000);
         assertThat(r.cashCollected()).isEqualTo(1_000_000);
-        // Phải nộp xã tính trên TIỀN MẶT đã thu (chuyển khoản vào tài khoản xã, công ty không cầm), không phải phải thu.
-        assertThat(r.payable()).isEqualTo(1_000_000);
+        // Phải nộp xã tính trên TOÀN BỘ số đã thu (tiền mặt và chuyển khoản đều vào công ty), không phải phải thu.
+        assertThat(r.payable()).isEqualTo(1_200_000);
         assertThat(r.received()).isEqualTo(700_000);
         assertThat(r.receiptCount()).isEqualTo(1);
-        assertThat(r.remaining()).isEqualTo(300_000);
-        assertThat(r.gap()).isEqualTo(-300_000);
+        assertThat(r.remaining()).isEqualTo(500_000);
+        assertThat(r.gap()).isEqualTo(-500_000);
         assertThat(r.collectionRate()).isEqualTo(75.0);
         assertThat(r.lowCollectionRate()).isFalse();
         assertThat(rows.get(1).collectionRate()).isZero();
         assertThat(rows.get(1).lowCollectionRate()).isTrue(); // DV03 phải thu 800.000, chưa thu
-        assertThat(r.remittedRate()).isEqualTo(70.0);
+        assertThat(r.remittedRate()).isEqualTo(58.3);
         assertThat(r.lowRemittedRate()).isFalse();
         assertThat(rows.get(1).payable()).isZero();
         assertThat(rows.get(1).remittedRate()).isZero();
@@ -192,55 +192,27 @@ class CompanyLedgerServiceTest {
     }
 
     @Test
-    void retainedAlsoCoversBankTransfersSoPayableCanBeNegative() {
-        // Hộ chuyển khoản 1.000.000 vào tài khoản xã, công ty không thu tiền mặt nào: công ty vẫn được hưởng phí thu gom
-        // 228.000 của số đã thu, nên phải nộp xã = 0 − 228.000 = −228.000 (không cắt về 0): xã trả lại công ty.
+    void bankTransfersGoToCompanySoPayableIsEverythingCollectedMinusRetained() {
+        // Hộ chuyển khoản 1.000.000 vào tài khoản công ty, không có tiền mặt: công ty giữ phí thu gom 228.000,
+        // phải nộp xã = 1.000.000 − 228.000 = 772.000. Thu 600.000 tiền mặt + 400.000 chuyển khoản cũng ra như vậy.
         due(10L, 1L, 1_000_000, 10);
         collect(10L, 1L, 0, 1_000_000);
         retained(10L, 1L, 228_000);
-        LedgerRow r = service("2026-10-15").row(1L, 10L);
+        LedgerRow transferOnly = service("2026-10-15").row(1L, 10L);
+        assertThat(transferOnly.cashCollected()).isZero();
+        assertThat(transferOnly.payable()).isEqualTo(772_000);
 
-        assertThat(r.collected()).isEqualTo(1_000_000);
-        assertThat(r.cashCollected()).isZero();
-        assertThat(r.retained()).isEqualTo(228_000);
-        assertThat(r.payable()).isEqualTo(-228_000);
-        assertThat(r.remaining()).isEqualTo(-228_000);
-        assertThat(r.gap()).isEqualTo(228_000);
-        assertThat(r.progress()).isEqualTo(Progress.PAID_IN_FULL);
-        // Xã chưa trả lại: còn nợ công ty 228.000, đối soát chưa Khớp (UC-55).
-        assertThat(r.communePaid()).isZero();
-        assertThat(r.communeOwed()).isEqualTo(228_000);
-        assertThat(r.reconciliation()).isEqualTo(Reconciliation.PENDING);
-        assertThat(r.lowRemittedRate()).isFalse();
-        assertThat(service("2026-10-15").remaining(1L, 10L)).isEqualTo(-228_000);
-        // Xã trả 100.000 rồi 128.000: còn phải trả giảm dần, đủ thì Khớp; còn phải nộp vẫn âm.
-        when(remitted.paidBackByCompany(10L)).thenReturn(Map.of(1L, 100_000L));
-        LedgerRow part = service("2026-10-15").row(1L, 10L);
-        assertThat(part.communeOwed()).isEqualTo(128_000);
-        assertThat(part.reconciliation()).isEqualTo(Reconciliation.PENDING);
-        when(remitted.paidBackByCompany(10L)).thenReturn(Map.of(1L, 228_000L));
-        LedgerRow full = service("2026-10-15").row(1L, 10L);
-        assertThat(full.communeOwed()).isZero();
-        assertThat(full.remaining()).isEqualTo(-228_000);
-        assertThat(full.reconciliation()).isEqualTo(Reconciliation.MATCHED);
-        assertThat(service("2026-10-15").companiesWithDebt(10L)).isEmpty();
-    }
-
-    @Test
-    void mixedCashAndTransferPayableIsCashMinusRetainedOfEverythingCollected() {
-        // Thu 1.000.000: 600.000 tiền mặt + 400.000 chuyển khoản, phí thu gom của cả 1.000.000 là 228.000.
-        // Phải nộp xã = 600.000 − 228.000 = 372.000.
-        due(10L, 1L, 1_000_000, 10);
         collect(10L, 1L, 600_000, 400_000);
-        retained(10L, 1L, 228_000);
         received(10L, 1L, 300_000);
         LedgerRow r = service("2026-10-15").row(1L, 10L);
 
-        assertThat(r.payable()).isEqualTo(372_000);
-        assertThat(r.remaining()).isEqualTo(72_000);
-        assertThat(r.gap()).isEqualTo(-72_000);
-        assertThat(r.remittedRate()).isEqualTo(80.6);
+        assertThat(r.payable()).isEqualTo(772_000);
+        assertThat(r.remaining()).isEqualTo(472_000);
+        assertThat(r.gap()).isEqualTo(-472_000);
+        assertThat(r.remittedRate()).isEqualTo(38.9);
+        assertThat(r.lowRemittedRate()).isTrue();
         assertThat(r.progress()).isEqualTo(Progress.PARTIAL);
+        assertThat(r.communeOwed()).isZero();
     }
 
     @Test
@@ -377,74 +349,27 @@ class CompanyLedgerServiceTest {
         assertThat(s.companiesWithDebt(10L)).isEmpty();
     }
 
-    /** SPEC đối soát mẫu: mỗi khoản 60.000 = vận chuyển 20.000 + thu gom 40.000. Cty A: 620 tiền mặt, 260 QR. */
+    /**
+     * Nhóm cân đủ chi phí 1.054 đ/kg = thu gom 453 + vận chuyển 180 + xử lý 421; 1.000 kg tiền mặt, 1.000 kg chuyển khoản,
+     * đều vào công ty. Phải nộp xã = vận chuyển + xử lý của cả 2.000 kg; phiếu thu đủ thì Khớp.
+     */
     @Test
-    void reconciliationSplitsQrAndCashAndSettlesByReceipt() {
-        due(10L, 1L, 52_800_000, 880);
-        collect(10L, 1L, 37_200_000, 15_600_000);
-        retained(10L, 1L, 35_200_000);
-        when(queries.qrByCompany(10L)).thenReturn(List.of(new LedgerQueries.QrAmount(1L, 15_600_000, 10_400_000, 0)));
-
-        LedgerRow open = service("2026-10-15").row(1L, 10L);
-
-        assertThat(open.qrTotal()).isEqualTo(15_600_000);
-        assertThat(open.qrTransport()).isEqualTo(5_200_000);
-        assertThat(open.qrCollection()).isEqualTo(10_400_000);
-        assertThat(open.cashTransport()).isEqualTo(12_400_000);
-        assertThat(open.cashCollection()).isEqualTo(24_800_000);
-        assertThat(open.payable()).isEqualTo(2_000_000);
-        assertThat(open.entitled()).isEqualTo(17_600_000);
-        assertThat(open.holding()).isEqualTo(15_600_000);
-        assertThat(open.settled()).isFalse();
-
-        received(10L, 1L, 2_000_000);
-        LedgerRow settled = service("2026-10-15").row(1L, 10L);
-        assertThat(settled.holding()).isEqualTo(17_600_000).isEqualTo(settled.entitled());
-        assertThat(settled.settled()).isTrue();
-    }
-
-    /** Cty B: 305 tiền mặt, 435 QR: net −11.300.000, xã trả công ty; trả đủ thì holding = entitled. */
-    @Test
-    void reconciliationCommunePaysWhenQrCollectionExceedsCashTransport() {
-        due(10L, 1L, 44_400_000, 740);
-        collect(10L, 1L, 18_300_000, 26_100_000);
-        retained(10L, 1L, 29_600_000);
-        when(queries.qrByCompany(10L)).thenReturn(List.of(new LedgerQueries.QrAmount(1L, 26_100_000, 17_400_000, 0)));
-
-        LedgerRow open = service("2026-10-15").row(1L, 10L);
-        assertThat(open.payable()).isEqualTo(-11_300_000);
-        assertThat(open.cashTransport()).isEqualTo(6_100_000);
-        assertThat(open.holding() - open.entitled()).isEqualTo(11_300_000);
-        assertThat(open.settled()).isFalse();
-
-        when(remitted.paidBackByCompany(10L)).thenReturn(Map.of(1L, 11_300_000L));
-        LedgerRow paid = service("2026-10-15").row(1L, 10L);
-        assertThat(paid.holding()).isEqualTo(paid.entitled());
-        assertThat(paid.settled()).isTrue();
-    }
-
-    /** Nhóm cân đủ chi phí 1.054 đ/kg = thu gom 453 + vận chuyển 180 + xử lý 421; 1.000 kg tiền mặt, 1.000 kg QR. */
-    @Test
-    void reconciliationSplitsProcessingFeeToCommune() {
+    void payableIsTransportPlusProcessingOfEverythingCollectedAndSettlesByReceipt() {
         due(10L, 1L, 2_108_000, 2);
         collect(10L, 1L, 1_054_000, 1_054_000);
         retained(10L, 1L, 906_000);
         when(queries.processingByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 842_000, 0)));
-        when(queries.qrByCompany(10L)).thenReturn(List.of(new LedgerQueries.QrAmount(1L, 1_054_000, 453_000, 421_000)));
 
         LedgerRow open = service("2026-10-15").row(1L, 10L);
 
-        assertThat(open.qrTransport()).isEqualTo(180_000);
-        assertThat(open.qrProcessing()).isEqualTo(421_000);
-        assertThat(open.cashTransport()).isEqualTo(180_000);
-        assertThat(open.cashCollection()).isEqualTo(453_000);
-        assertThat(open.cashProcessing()).isEqualTo(421_000);
-        assertThat(open.payable()).isEqualTo(148_000);
-        assertThat(open.entitled()).isEqualTo(1_202_000);
+        assertThat(open.payable()).isEqualTo(1_202_000);
+        assertThat(open.transport()).isEqualTo(360_000);
+        assertThat(open.remaining()).isEqualTo(1_202_000);
+        assertThat(open.settled()).isFalse();
 
-        received(10L, 1L, 148_000);
+        received(10L, 1L, 1_202_000);
         LedgerRow settled = service("2026-10-15").row(1L, 10L);
-        assertThat(settled.holding()).isEqualTo(settled.entitled());
+        assertThat(settled.remaining()).isZero();
         assertThat(settled.settled()).isTrue();
     }
 

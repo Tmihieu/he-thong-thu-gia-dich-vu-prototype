@@ -40,8 +40,8 @@ import vn.dongthanh.vsmt.remittance.service.RemittedTotals.Received;
  * <li>Điều chỉnh kỳ trước (O10): khoản của kỳ đã khóa được xóa nợ, ghi nhận ở kỳ này. Đã thu đã trừ tiền hoàn ghi nhận
  * ở kỳ này (T58); cột "đã hoàn" chỉ để hiển thị.</li>
  * <li>Nợ kỳ trước (R9–R11): Σ max(0, phải nộp xã − đã nộp) các kỳ khác đã hết hạn. Quá hạn: hạn kỳ &lt; hôm nay và còn nộp.</li>
- * <li>Xã trả lại công ty (UC-55): Σ phiếu chi trả công ty của kỳ là {@code communePaid}; {@code communeOwed} = max(0, −còn phải
- * nộp − đã trả). Còn xã phải trả thì đối soát chưa Khớp.</li>
+ * <li>Bỏ QR của xã và phiếu chi trả công ty (08/10): hộ đóng tiền mặt hoặc chuyển khoản đều vào công ty, công ty nộp xã
+ * vận chuyển + xử lý. {@code communePaid}, {@code communeOwed} chỉ còn để hiển thị (nộp dư), không chặn Khớp hay khóa kỳ.</li>
  * <li>Tiến độ (R13) và đối soát (R14, chênh lệch = đã nộp − phải nộp xã) như prototype.</li>
  * <li>Cờ dưới 45% ở cấp công ty (màn tiến độ của xã) tính theo đã nộp về xã / phải nộp xã như prototype; tỷ lệ đã thu
  * và cờ của nó vẫn giữ cho màn tổng quan của công ty. Cờ 45% chưa chốt lại sau góp ý BA 05/10, để nguyên.</li>
@@ -104,9 +104,14 @@ public class CompanyLedgerService {
             return qrTransport() + cashTransport() + processing;
         }
 
-        /** Hai bên đã bù trừ xong: công ty không còn phải nộp, xã không còn phải trả (hoặc không có gì để bù trừ). */
+        /** Vận chuyển trong toàn bộ số đã thu (tiền mặt và chuyển khoản, đều vào công ty), đã trừ điều chỉnh: phải nộp xã − phí xử lý. */
+        public long transport() {
+            return payable - processing;
+        }
+
+        /** Đã khớp: công ty không còn phải nộp xã. */
         public boolean settled() {
-            return remaining <= 0 && communeOwed == 0;
+            return remaining <= 0;
         }
     }
 
@@ -189,11 +194,6 @@ public class CompanyLedgerService {
         return queries.unpaidChargeCount(periodId);
     }
 
-    /** Công ty xã còn phải trả lại &gt; 0 cho kỳ (chặn khóa kỳ, UC-39 / UC-55). */
-    public List<LedgerRow> companiesCommuneOwes(Long periodId) {
-        return ledger(periodId).stream().filter(r -> r.communeOwed() > 0).toList();
-    }
-
     public record PeriodDebt(CollectionPeriod period, long remaining) {
     }
 
@@ -232,10 +232,10 @@ public class CompanyLedgerService {
         long cashCollected = cashRow == null ? 0 : cashRow.amount();
         long received = receivedRow == null ? 0 : receivedRow.amount();
         long receiptCount = receivedRow == null ? 0 : receivedRow.receiptCount();
-        // Phải nộp xã = tiền mặt đã thu − điều chỉnh kỳ trước − phí thu gom của TOÀN BỘ số đã thu, kể cả chuyển khoản vào tài
-        // khoản xã (góp ý BA 05/10). Âm thì xã trả lại công ty phần chênh: giữ nguyên số âm, không cắt về 0.
+        // Phải nộp xã = vận chuyển + phí xử lý = toàn bộ số đã thu (tiền mặt và chuyển khoản đều vào công ty, bỏ QR của xã
+        // 08/10) − điều chỉnh kỳ trước − phí thu gom công ty giữ.
         long retained = retainedRow == null ? 0 : retainedRow.amount();
-        long payable = cashCollected - adjustment - retained;
+        long payable = collected - adjustment - retained;
         long remaining = payable - received;
         long gap = received - payable;
         // Xã còn phải trả lại công ty = số âm của còn phải nộp − tiền xã đã trả (phiếu chi trả công ty, UC-55).
@@ -255,7 +255,7 @@ public class CompanyLedgerService {
         }
 
         Reconciliation reconciliation;
-        boolean outstanding = gap < 0 || remaining > 0 || communeOwed > 0;
+        boolean outstanding = remaining > 0;
         if (previousDebt > 0 || (pastDue && outstanding)) {
             reconciliation = Reconciliation.MISMATCH;
         } else if (outstanding) {

@@ -175,30 +175,6 @@ class PeriodLockIT extends IntegrationTest {
                 .andExpect(jsonPath("$.code").value("PERIOD_HAS_DEBT"));
     }
 
-    @Test
-    void communeOwingACompanyBlocksLockingUntilItHasPaidInFull() throws Exception {
-        // DV01 có 2 hộ chuyển khoản 160.000 vào tài khoản xã, không thu tiền mặt: phí thu gom của số đã thu (114.000) vượt tiền
-        // mặt (0), phải nộp xã âm (xã trả lại công ty) nên không còn nợ xã, không chặn khóa kỳ khi đã đến hạn nộp.
-        jdbc.update("update tariff_rates set collection_fee = 57000, transport_fee = 23000 where tariff_group = 'HH_3_PLUS'");
-        collectionTransfer("DTH-H000001", "t-1");
-        collectionTransfer("DTH-H000002", "t-2");
-        clock.set(Instant.parse("2026-10-31T03:00:00Z"));
-        ledger(fx.officer, fx.october.getId())
-                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].payable").value(contains(-114_000)))
-                .andExpect(jsonPath("$[?(@.companyCode == 'DV01')].remaining").value(contains(-114_000)));
-        // Xã còn phải trả lại DV01 114.000 thì chặn khóa kỳ, nêu rõ lý do; trả đủ rồi mới khóa được (UC-39, UC-55).
-        lock(fx.officer).andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("PERIOD_COMMUNE_OWES"))
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("DV01: 114.000 đ")));
-        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/remittance/payouts")
-                        .header(org.springframework.http.HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer))
-                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
-                        .content("{\"companyId\":%d,\"periodId\":%d,\"amount\":114000,\"method\":\"TRANSFER\"}"
-                                .formatted(fx.dv01.getId(), fx.october.getId())))
-                .andExpect(status().isCreated());
-        lock(fx.officer).andExpect(status().isOk());
-    }
-
     private void collectionTransfer(String subject, String key) {
         collection.recordBankTransfer(fx.chargeId(subject), 80_000, "FT-" + key, key);
     }

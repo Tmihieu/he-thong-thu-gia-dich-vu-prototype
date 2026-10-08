@@ -87,10 +87,9 @@ class LedgerApiIT extends IntegrationTest {
     }
 
     @Test
-    void retainedAlsoCoversBankTransfersAndPayableCanBeNegative() throws Exception {
-        // Hộ DTH-H000003 (DV01) chuyển khoản 80.000 vào tài khoản xã: công ty không giữ tiền mặt nhưng vẫn được hưởng phí
-        // thu gom 57.000 của khoản đó. DV01: đã thu 160.000 (tiền mặt 80.000 + chuyển khoản 80.000), phí thu gom 114.000
-        // trên cả 160.000, phải nộp xã = 80.000 - 114.000 = -34.000: xã trả lại công ty 34.000, không cắt về 0.
+    void bankTransfersCountTowardsPayableLikeCash() throws Exception {
+        // Hộ DTH-H000003 (DV01) chuyển khoản 80.000, tiền vào công ty như tiền mặt. DV01: đã thu 160.000 (tiền mặt 80.000 +
+        // chuyển khoản 80.000), phí thu gom 114.000 công ty giữ, phải nộp xã = 160.000 − 114.000 = 46.000 (vận chuyển).
         jdbc.update("update tariff_rates set collection_fee = 57000, transport_fee = 23000 where tariff_group = 'HH_3_PLUS'");
         collection.recordBankTransfer(fx.chargeId("DTH-H000003"), 80_000, "FT001", "sepay-1");
 
@@ -98,21 +97,10 @@ class LedgerApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$[0].collected").value(160_000))
                 .andExpect(jsonPath("$[0].cashCollected").value(80_000))
                 .andExpect(jsonPath("$[0].retained").value(114_000))
-                .andExpect(jsonPath("$[0].payable").value(-34_000))
-                .andExpect(jsonPath("$[0].remaining").value(-34_000))
-                .andExpect(jsonPath("$[0].gap").value(34_000))
-                .andExpect(jsonPath("$[0].progress").value("PAID_IN_FULL"))
-                .andExpect(jsonPath("$[0].communeOwed").value(34_000))
-                .andExpect(jsonPath("$[0].reconciliation").value("PENDING"));
-        // Còn phải nộp âm thì không lập được phiếu thu nộp thêm.
-        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/remittance/receipts")
-                        .header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer))
-                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
-                        .content("{\"companyId\":%d,\"periodId\":%d,\"amount\":1000,\"method\":\"CASH\"}"
-                                .formatted(fx.dv01.getId(), fx.october.getId())))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("RECEIPT_AMOUNT_OUT_OF_RANGE"))
-                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("xã trả lại công ty 34.000 đ")));
+                .andExpect(jsonPath("$[0].payable").value(46_000))
+                .andExpect(jsonPath("$[0].remaining").value(46_000))
+                .andExpect(jsonPath("$[0].communeOwed").value(0))
+                .andExpect(jsonPath("$[0].settled").value(false));
     }
 
     @Test

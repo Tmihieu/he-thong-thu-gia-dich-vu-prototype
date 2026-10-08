@@ -57,13 +57,6 @@ public class PeriodLockService {
                     .collect(Collectors.joining("; "));
             debtReason = "còn " + debts.size() + " công ty chưa nộp đủ phải nộp xã: " + detail;
         }
-        List<LedgerRow> owed = ledger.companiesCommuneOwes(periodId);
-        String communeReason = null;
-        if (!owed.isEmpty()) {
-            String detail = owed.stream().map(r -> r.companyCode() + ": " + Money.format(r.communeOwed()))
-                    .collect(Collectors.joining("; "));
-            communeReason = "xã còn phải trả lại " + owed.size() + " công ty: " + detail;
-        }
         var qr = ledger.unidentifiedQr();
         if (qr.count() > 0) {
             throw new BusinessRuleException("PERIOD_UNIDENTIFIED_QR", "Chưa khóa được kỳ " + period.getCode() + " vì còn "
@@ -77,10 +70,9 @@ public class PeriodLockService {
             collectReason = "còn " + unpaid + " khoản hộ chưa đóng và chưa đến hạn nộp ("
                     + period.getDueDate().format(DATE) + ")";
         }
-        if (debtReason != null || communeReason != null || collectReason != null) {
-            String reason = Stream.of(debtReason, communeReason, collectReason).filter(Objects::nonNull).collect(Collectors.joining("; "));
-            throw new BusinessRuleException(debtReason != null ? "PERIOD_HAS_DEBT"
-                    : communeReason != null ? "PERIOD_COMMUNE_OWES" : "PERIOD_NOT_DUE",
+        if (debtReason != null || collectReason != null) {
+            String reason = Stream.of(debtReason, collectReason).filter(Objects::nonNull).collect(Collectors.joining("; "));
+            throw new BusinessRuleException(debtReason != null ? "PERIOD_HAS_DEBT" : "PERIOD_NOT_DUE",
                     "Chưa khóa được kỳ " + period.getCode() + " vì " + reason + ".");
         }
         return periodService.markLocked(period, actor);

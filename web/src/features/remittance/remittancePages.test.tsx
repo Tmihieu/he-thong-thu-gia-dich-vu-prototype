@@ -228,10 +228,10 @@ describe('Đối soát', () => {
     expect(screen.queryByRole('link', { name: /Xử lý/ })).not.toBeInTheDocument();
   });
 
-  it('bảng nhóm tiền mặt / công ty nộp xã; chỉ có nút lập phiếu thu; tab lọc Chưa khớp / Đã khớp', async () => {
+  it('bảng nhóm công ty đã thu / công ty nộp xã; chỉ có nút lập phiếu thu; tab lọc Chưa khớp / Đã khớp', async () => {
     setup();
 
-    expect(await screen.findByText('Cty thu tiền mặt')).toBeInTheDocument();
+    expect(await screen.findByText('Cty đã thu')).toBeInTheDocument();
     expect(screen.getByText('Cty nộp xã')).toBeInTheDocument();
     await screen.findByRole('cell', { name: 'Cty Thu gom A' });
     const rowOf = (name: string) => screen.getByRole('cell', { name }).closest('tr')!;
@@ -251,17 +251,17 @@ describe('Đối soát', () => {
     expect(screen.queryByRole('cell', { name: 'Cty Thu gom B' })).not.toBeInTheDocument();
   });
 
-  it('nhóm tiền mặt mặc định chỉ cột Tổng; bấm Chi tiết tách Vận chuyển, Thu gom, Xử lý', async () => {
+  it('nhóm công ty đã thu mặc định chỉ cột Tổng; bấm Chi tiết tách Vận chuyển, Thu gom, Xử lý', async () => {
     setup();
 
     await screen.findByRole('cell', { name: 'Cty Thu gom A' });
     expect(screen.queryByRole('columnheader', { name: 'Xử lý' })).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Xem chi tiết Cty thu tiền mặt' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Xem chi tiết Cty đã thu' }));
     expect(screen.getByRole('columnheader', { name: 'Vận chuyển' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Xử lý' })).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Thu gọn Cty thu tiền mặt' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Thu gọn Cty đã thu' }));
     expect(screen.queryByRole('columnheader', { name: 'Xử lý' })).not.toBeInTheDocument();
   });
 });
@@ -285,27 +285,6 @@ describe('Khóa kỳ', () => {
 
     expect(await screen.findByText(/còn 2 công ty chưa nộp đủ/)).toHaveTextContent('DV01: 600.000 đ; DV07: 800.000 đ');
     expect(fetchFn.mock.calls.some(([url]) => String(url) === '/api/remittance/periods/10/lock')).toBe(true);
-  });
-});
-
-describe('Khóa kỳ khi xã còn phải trả lại công ty', () => {
-  it('hiện lý do PERIOD_COMMUNE_OWES trong cảnh báo của nút Khóa kỳ', async () => {
-    mockApi({
-      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
-      'GET /api/masterdata/periods': () => jsonResponse(200, periods),
-      'GET /api/remittance/ledger': () => jsonResponse(200, [dv01]),
-      'POST /api/remittance/periods/10/lock': () =>
-        jsonResponse(422, {
-          code: 'PERIOD_COMMUNE_OWES',
-          message: 'Chưa khóa được kỳ 2026-10 vì xã còn phải trả lại 1 công ty: DV02: 128.000 đ.',
-        }),
-    });
-    renderApp('/commune/reconciliation');
-
-    await userEvent.click(await screen.findByRole('button', { name: /Khóa kỳ/ }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Khóa kỳ' }));
-
-    expect(await screen.findByText(/xã còn phải trả lại 1 công ty: DV02: 128.000 đ/)).toBeInTheDocument();
   });
 });
 
