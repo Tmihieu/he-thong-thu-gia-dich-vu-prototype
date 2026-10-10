@@ -70,7 +70,7 @@ public class CollectorWorkService {
     @Transactional(readOnly = true)
     public Page<Charge> companyCharges(Long periodId, Long areaId, ChargeStatus status, Pageable page, CurrentUser actor) {
         actor.requireRole(Role.COMPANY_MANAGER, Role.COLLECTOR);
-        return charges.search(periodId, areaId, status, null, actor.companyId(), "", page);
+        return charges.search(periodId, areaId, status, null, actor.companyId(), "", true, page);
     }
 
     /** UC-33: khoản mà một người đi thu của công ty đã thu (theo payments.collector_id), lọc theo kỳ / trạng thái. */

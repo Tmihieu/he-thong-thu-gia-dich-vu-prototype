@@ -9,6 +9,8 @@ export type IssueResult = components['schemas']['IssueResultDto'];
 export type ChargeRequestSummary = components['schemas']['ChargeRequestDto'];
 export type Charge = components['schemas']['ChargeDto'];
 export type ChargePage = components['schemas']['ChargePageDto'];
+export type ChargeDetail = components['schemas']['ChargeDetailDto'];
+export type AdjustChargeRequest = components['schemas']['AdjustChargeRequest'];
 export type FeeType = components['schemas']['FeeTypeDto'];
 export type DraftPreview = components['schemas']['DraftPreviewDto'];
 export type PublishPeriodRequest = components['schemas']['PublishPeriodRequest'];
@@ -49,6 +51,33 @@ export function useCharges(query: ChargeQuery) {
     queryFn: () => api.get<ChargePage>('/api/billing/charges', { params: { ...query } }),
     placeholderData: (prev) => prev,
   });
+}
+
+export function useChargeDetail(id: number | null) {
+  return useQuery({
+    queryKey: [...billingKeys.charges, 'detail', id],
+    queryFn: () => api.get<ChargeDetail>(`/api/billing/charges/${id}`),
+    enabled: id !== null,
+  });
+}
+
+/** Điều chỉnh số tiền hoặc hủy khoản lập sai phí (cán bộ xã), luôn kèm lý do. */
+export function useCorrectCharge(id: number) {
+  const qc = useQueryClient();
+  const onSuccess = () => {
+    void qc.invalidateQueries({ queryKey: billingKeys.charges });
+    void qc.invalidateQueries({ queryKey: billingKeys.requests });
+  };
+  return {
+    adjust: useMutation({
+      mutationFn: (body: AdjustChargeRequest) => api.post<Charge>(`/api/billing/charges/${id}/adjust`, body),
+      onSuccess,
+    }),
+    cancel: useMutation({
+      mutationFn: (reason: string) => api.post<Charge>(`/api/billing/charges/${id}/cancel`, { reason }),
+      onSuccess,
+    }),
+  };
 }
 
 export function usePreviewCharges() {

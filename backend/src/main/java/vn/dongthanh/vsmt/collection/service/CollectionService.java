@@ -259,6 +259,9 @@ public class CollectionService {
         if (charge.getStatus() == ChargeStatus.WRITTEN_OFF) {
             throw new BusinessRuleException("CHARGE_WRITTEN_OFF", "Khoản " + charge.getCode() + " đã xóa nợ, không thu.");
         }
+        if (charge.getStatus() == ChargeStatus.CANCELLED) {
+            throw new BusinessRuleException("CHARGE_CANCELLED", "Khoản " + charge.getCode() + " đã hủy, không thu.");
+        }
         return ledgerPeriod;
     }
 

@@ -76,6 +76,7 @@ export const CHARGE_STATUS_LABELS: Record<ChargeStatus, string> = {
   PAID: 'Đã thu',
   EXEMPT: 'Miễn giảm',
   WRITTEN_OFF: 'Đã xóa nợ',
+  CANCELLED: 'Đã hủy',
 };
 
 export const CHARGE_STATUS_COLORS: Record<ChargeStatus, string> = {
@@ -83,6 +84,7 @@ export const CHARGE_STATUS_COLORS: Record<ChargeStatus, string> = {
   PAID: 'green',
   EXEMPT: 'purple',
   WRITTEN_OFF: 'default',
+  CANCELLED: 'red',
 };
 
 export const CHARGE_SCOPE_LABELS: Record<ChargeScope, string> = {

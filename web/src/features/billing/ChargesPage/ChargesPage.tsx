@@ -9,6 +9,7 @@ import { CHARGE_STATUS_COLORS, CHARGE_STATUS_LABELS, PAYMENT_METHOD_LABELS, TARI
 import { MoneyText } from '../../../shared/MoneyText';
 import { useAreas, useCompanies, usePeriods } from '../../masterdata/api';
 import { type Charge, type ChargeQuery, useCharges } from '../api';
+import { ChargeDetailDrawer } from './ChargeDetailDrawer';
 
 /** Nhãn trạng thái hiển thị: "Quá hạn" tính từ hạn đóng, không lưu. */
 export function ChargeStatusTag({ charge }: { charge: Pick<Charge, 'status' | 'overdue'> }) {
@@ -16,13 +17,14 @@ export function ChargeStatusTag({ charge }: { charge: Pick<Charge, 'status' | 'o
   return <StatusTag color={CHARGE_STATUS_COLORS[charge.status]}>{CHARGE_STATUS_LABELS[charge.status]}</StatusTag>;
 }
 
-/** Danh sách khoản phải thu: lọc theo kỳ, tổ, công ty, trạng thái (nút bấm); phân trang phía máy chủ. */
+/** Danh sách khoản phải thu: lọc theo kỳ, tổ, công ty, trạng thái; phân trang phía máy chủ. Bấm dòng mở chi tiết (điều chỉnh / hủy). */
 export function ChargesPage() {
   const periods = usePeriods();
   const areas = useAreas();
   const companies = useCompanies();
   const [query, setQuery] = useState<ChargeQuery>({ page: 0, size: 50 });
   const charges = useCharges(query);
+  const [openId, setOpenId] = useState<number | null>(null);
   const periodLabel = new Map((periods.data ?? []).map((p) => [p.id, p.label]));
 
   return (
@@ -84,6 +86,7 @@ export function ChargesPage() {
         tableLayout="fixed"
         scroll={{ x: 1200 }}
         loading={charges.isFetching}
+        onRow={(c) => ({ onClick: () => setOpenId(c.id), style: { cursor: 'pointer' } })}
         dataSource={charges.data?.items ?? []}
         locale={{
           emptyText: charges.error instanceof ApiError ? charges.error.message : 'Chưa có khoản phải thu',
@@ -128,6 +131,7 @@ export function ChargesPage() {
           { title: 'Trạng thái', width: '11%', render: (_, c) => <ChargeStatusTag charge={c} /> },
         ]}
       />
+      <ChargeDetailDrawer chargeId={openId} onClose={() => setOpenId(null)} />
     </Card>
   );
 }

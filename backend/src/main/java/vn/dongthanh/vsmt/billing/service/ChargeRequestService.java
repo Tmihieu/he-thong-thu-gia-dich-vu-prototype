@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -146,9 +147,12 @@ public class ChargeRequestService {
                 plan.scopeAreas(), plan.scopeCompany(), plan.issueDate(), plan.unitPrice(),
                 cmd.note(), actor.id()));
         String suffix = "ENV".equals(plan.feeType().getCode()) ? "" : "-" + plan.feeType().getCode().substring(0, 2);
+        // Hộ có khoản đã hủy trong kỳ đã giữ mã gốc: khoản lập lại thêm đuôi -L2, -L3…
+        Set<String> taken = new HashSet<>(charges.findCodesOfSubjectsInPeriod(
+                plan.charges().stream().map(p -> p.subject().getId()).toList(), period.getId()));
         List<Charge> created = plan.charges().stream()
-                .map(p -> Charge.issue("KT-" + token + "-" + p.subject().getCode() + suffix, request, p.subject(),
-                        p.contract(), p.company(), p.amount()))
+                .map(p -> Charge.issue(freeCode("KT-" + token + "-" + p.subject().getCode() + suffix, taken), request,
+                        p.subject(), p.contract(), p.company(), p.amount()))
                 .toList();
         charges.saveAll(created);
         IssueResult result = plan.result(code);
@@ -268,7 +272,8 @@ public class ChargeRequestService {
         // Người đi thu chỉ xem khoản trong tổ được giao, qua /api/collection/my-charges.
         actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN, Role.COMPANY_MANAGER, Role.LEADER);
         Long scope = actor.role().belongsToCompany() ? actor.companyId() : companyId;
-        return charges.search(periodId, areaId, status, subjectId, scope, q == null ? "" : q.trim(), page);
+        return charges.search(periodId, areaId, status, subjectId, scope, q == null ? "" : q.trim(),
+                actor.role().belongsToCompany(), page);
     }
 
     /** Mọi khoản của một đối tượng, kỳ mới trước (app người dân; phạm vi hộ kiểm ở module citizen). */
@@ -306,6 +311,15 @@ public class ChargeRequestService {
 
     public LocalDate today() {
         return LocalDate.now(clock);
+    }
+
+    private static String freeCode(String base, Set<String> taken) {
+        String code = base;
+        for (int n = 2; taken.contains(code); n++) {
+            code = base + "-L" + n;
+        }
+        taken.add(code);
+        return code;
     }
 
     private static Map<Long, List<ServiceContract>> group(Collection<ServiceContract> all) {

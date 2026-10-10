@@ -31,6 +31,7 @@ const chargeStatusLabels = {
   'PAID': 'Đã đóng',
   'EXEMPT': 'Miễn',
   'WRITTEN_OFF': 'Đã xóa nợ',
+  'CANCELLED': 'Đã hủy',
 };
 
 const paymentMethodLabels = {

@@ -47,11 +47,12 @@ public class LedgerQueries {
 
     private final JdbcTemplate jdbc;
 
-    /** Khoản còn tính phải thu ở kỳ của nó: bỏ khoản đã xóa nợ ghi nhận ngay trong kỳ đó (T57). */
-    private static final String COUNTED = "not (c.status = 'WRITTEN_OFF' and c.written_off_period_id = c.period_id)";
+    /** Khoản còn tính phải thu ở kỳ của nó: bỏ khoản đã hủy và khoản đã xóa nợ ghi nhận ngay trong kỳ đó (T57). */
+    private static final String COUNTED = "c.status <> 'CANCELLED'"
+            + " and not (c.status = 'WRITTEN_OFF' and c.written_off_period_id = c.period_id)";
 
-    /** Khoản hộ còn phải đóng: miễn giảm và đã xóa nợ không nằm trong mẫu số "đã thu / cần thu". */
-    private static final String NEEDS_PAYMENT = "c.status not in ('EXEMPT', 'WRITTEN_OFF')";
+    /** Khoản hộ còn phải đóng: miễn giảm, đã xóa nợ và đã hủy không nằm trong mẫu số "đã thu / cần thu". */
+    private static final String NEEDS_PAYMENT = "c.status not in ('EXEMPT', 'WRITTEN_OFF', 'CANCELLED')";
 
     /** Kỳ ghi nhận của một thanh toán: hoàn tiền có kỳ riêng (T58, O10), còn lại là kỳ của khoản. */
     private static final String PAYMENT_PERIOD = "coalesce(p.ledger_period_id, c.period_id)";

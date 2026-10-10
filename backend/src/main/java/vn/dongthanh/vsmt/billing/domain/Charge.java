@@ -2,6 +2,7 @@ package vn.dongthanh.vsmt.billing.domain;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -66,21 +67,20 @@ public class Charge extends BaseEntity {
     private Company company;
 
     @Enumerated(EnumType.STRING)
-    @Column(updatable = false, length = 30)
+    /** Nhóm giá, đơn giá, định mức, nhân khẩu: chụp lúc phát hành; chỉ đổi khi cán bộ xã điều chỉnh theo biểu giá. */
+    @Column(length = 30)
     private TariffGroup tariffGroup;
 
-    @Column(nullable = false, updatable = false)
+    @Column(nullable = false)
     private long unitPrice;
 
     @Column(nullable = false, updatable = false)
     private int months;
 
     /** Định mức kg/tháng chụp lúc phát hành (nhóm theo ký); null nếu không áp dụng. Cần để tính lại tiền khi bỏ miễn giảm. */
-    @Column(updatable = false)
     private Long quotaKg;
 
     /** Số nhân khẩu chụp lúc phát hành (nhóm theo nhân khẩu); null nếu không áp dụng. */
-    @Column(updatable = false)
     private Integer memberCount;
 
     /** Chỉ đổi khi lãnh đạo từ chối miễn giảm (khoản Miễn giảm về Chưa thu, O8). */
@@ -103,6 +103,11 @@ public class Charge extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "written_off_period_id")
     private CollectionPeriod writtenOffPeriod;
+
+    /** Lý do cán bộ xã hủy khoản; chỉ có khi Đã hủy. */
+    private String cancelReason;
+
+    private OffsetDateTime cancelledAt;
 
     public static Charge issue(String code, ChargeRequest request, ServiceSubject subject, ServiceContract contract,
             Company company, ChargeAmount amount) {
@@ -173,6 +178,66 @@ public class Charge extends BaseEntity {
         }
         status = ChargeStatus.UNPAID;
         amount = Math.multiplyExact(Math.multiplyExact(unitPrice, quantity), (long) months);
+    }
+
+    /** Khoản lập sai phí còn sửa được: Chưa thu hoặc Miễn giảm (người gọi kiểm chưa có lần thu nào, kỳ chưa khóa). */
+    public boolean isCorrectable() {
+        return status == ChargeStatus.UNPAID || status == ChargeStatus.EXEMPT;
+    }
+
+    /**
+     * Cán bộ xã điều chỉnh khoản Chưa thu lập sai phí theo biểu giá của kỳ: nhóm giá, đơn giá tháng của nhóm đó và số
+     * lượng (nhân khẩu với nhóm theo nhân khẩu, định mức kg/tháng với nhóm theo ký); số tiền tính lại, giữ số tháng.
+     */
+    public void reprice(TariffGroup group, long monthlyRate, Integer members, Long kg) {
+        if (status != ChargeStatus.UNPAID) {
+            throw new BusinessRuleException("CHARGE_NOT_ADJUSTABLE",
+                    "Chỉ điều chỉnh khoản đang ở trạng thái chưa thu (" + code + ").");
+        }
+        if (tariffGroup == null) {
+            throw new BusinessRuleException("CHARGE_NOT_TARIFF",
+                    "Khoản " + code + " là phí giá cố định, không điều chỉnh theo biểu giá; hủy và lập lại nếu sai.");
+        }
+        long quantity = 1;
+        Integer newMembers = null;
+        Long newKg = null;
+        if (group == TariffGroup.HH_PER_CAPITA) {
+            if (members == null || members <= 0) {
+                throw new BusinessRuleException("MEMBER_COUNT_REQUIRED", "Nhóm theo nhân khẩu phải nhập số nhân khẩu lớn hơn 0.");
+            }
+            newMembers = members;
+            quantity = members;
+        } else if (group.isPerKg()) {
+            if (kg == null || kg <= 0) {
+                throw new BusinessRuleException("QUOTA_KG_REQUIRED", "Nhóm tính theo ký phải nhập định mức kg/tháng lớn hơn 0.");
+            }
+            newKg = kg;
+            quantity = kg;
+        }
+        if (group == tariffGroup && monthlyRate == unitPrice && Objects.equals(newMembers, memberCount)
+                && Objects.equals(newKg, quotaKg)) {
+            throw new BusinessRuleException("CHARGE_UNCHANGED", "Nhóm giá và số lượng không thay đổi so với khoản hiện tại.");
+        }
+        long newAmount = Math.multiplyExact(Math.multiplyExact(monthlyRate, quantity), (long) months);
+        if (newAmount <= 0) {
+            throw new BusinessRuleException("CHARGE_AMOUNT_INVALID", "Số tiền sau điều chỉnh phải lớn hơn 0.");
+        }
+        tariffGroup = group;
+        unitPrice = monthlyRate;
+        memberCount = newMembers;
+        quotaKg = newKg;
+        amount = newAmount;
+    }
+
+    /** Cán bộ xã hủy khoản lập sai: không còn tính phải thu, không thu được nữa. */
+    public void cancel(String reason, OffsetDateTime at) {
+        if (!isCorrectable()) {
+            throw new BusinessRuleException("CHARGE_NOT_CANCELLABLE",
+                    "Chỉ hủy khoản chưa thu hoặc miễn giảm (" + code + ").");
+        }
+        status = ChargeStatus.CANCELLED;
+        cancelReason = reason;
+        cancelledAt = at;
     }
 
     /** Quá hạn: chưa thu và đã qua hạn nộp của kỳ (không lưu, tính khi đọc). */

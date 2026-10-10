@@ -14,24 +14,25 @@ import vn.dongthanh.vsmt.masterdata.domain.PeriodStatus;
 
 public interface ChargeRepository extends JpaRepository<Charge, Long> {
 
-    /** Khoảng tháng đã lập khoản cùng loại phí, chồng với [from, to], cho các đối tượng (chặn trùng kỳ, R2). */
+    /** Khoảng tháng đã lập khoản cùng loại phí, chồng với [from, to], cho các đối tượng (chặn trùng kỳ, R2); bỏ khoản đã hủy. */
     @Query("select c.subject.id, c.coverageFrom, c.coverageTo from Charge c where c.feeType.id = :feeTypeId"
-            + " and c.subject.id in :subjectIds and c.coverageFrom <= :to and c.coverageTo >= :from")
+            + " and c.status <> 'CANCELLED' and c.subject.id in :subjectIds and c.coverageFrom <= :to and c.coverageTo >= :from")
     List<Object[]> findCoverages(Long feeTypeId, Collection<Long> subjectIds, LocalDate from, LocalDate to);
 
     @Query(value = "select c from Charge c join fetch c.subject s join fetch c.area a join fetch c.company co"
             + " join fetch c.period p join fetch c.feeType f join fetch c.chargeRequest r"
             + " where (:periodId is null or p.id = :periodId) and (:areaId is null or a.id = :areaId)"
             + " and (:status is null or c.status = :status) and (:subjectId is null or s.id = :subjectId)"
-            + " and (:companyId is null or co.id = :companyId)"
+            + " and (:companyId is null or co.id = :companyId) and (:hideCancelled = false or c.status <> 'CANCELLED')"
             + " and (:q = '' or lower(s.name) like lower(concat('%', :q, '%')) or lower(s.code) like lower(concat('%', :q, '%')))",
             countQuery = "select count(c) from Charge c where (:periodId is null or c.period.id = :periodId)"
             + " and (:areaId is null or c.area.id = :areaId) and (:status is null or c.status = :status)"
             + " and (:subjectId is null or c.subject.id = :subjectId) and (:companyId is null or c.company.id = :companyId)"
+            + " and (:hideCancelled = false or c.status <> 'CANCELLED')"
             + " and (:q = '' or lower(c.subject.name) like lower(concat('%', :q, '%'))"
             + " or lower(c.subject.code) like lower(concat('%', :q, '%')))")
     Page<Charge> search(Long periodId, Long areaId, ChargeStatus status, Long subjectId, Long companyId, String q,
-            Pageable page);
+            boolean hideCancelled, Pageable page);
 
     /** Khoản của công ty mà {@code collectorId} đã thu ít nhất một lần (không tính hoàn), theo payments.collector_id. */
     @Query(value = "select c from Charge c join fetch c.subject s join fetch c.area a join fetch c.company co"
@@ -55,8 +56,12 @@ public interface ChargeRepository extends JpaRepository<Charge, Long> {
     @Query(value = "select id from charges where id = :id for update", nativeQuery = true)
     Optional<Long> lockById(Long id);
 
+    /** Mã mọi khoản (kể cả đã hủy) của các đối tượng trong kỳ, để khoản lập lại sau khi hủy không trùng mã. */
+    @Query("select c.code from Charge c where c.subject.id in :subjectIds and c.period.id = :periodId")
+    List<String> findCodesOfSubjectsInPeriod(Collection<Long> subjectIds, Long periodId);
+
     @Query("select c from Charge c join fetch c.period p join fetch c.feeType f where c.subject.id = :subjectId"
-            + " order by p.startDate desc, f.code, c.id")
+            + " and c.status <> 'CANCELLED' order by p.startDate desc, f.code, c.id")
     List<Charge> findBySubjectIdWithPeriod(Long subjectId);
 
     /** Khoản của hợp đồng theo trạng thái, trong các kỳ chưa khóa (bỏ miễn giảm khi lãnh đạo từ chối, O8). */

@@ -1281,6 +1281,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/billing/charges/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hủy khoản lập sai (cán bộ xã), bắt buộc lý do; kỳ chưa khóa, chưa có lần thu */
+        post: operations["cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/charges/{id}/adjust": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Điều chỉnh khoản chưa thu lập sai phí theo biểu giá của kỳ (cán bộ xã): chọn lại nhóm giá, nhân khẩu / định mức kg; số tiền tính lại. Kỳ chưa khóa, chưa có lần thu */
+        post: operations["adjust"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/billing/charge-requests": {
         parameters: {
             query?: never;
@@ -2361,6 +2395,23 @@ export interface paths {
         };
         /** Khoản phải thu; công ty chỉ thấy khoản của công ty mình */
         get: operations["charges_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/charges/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chi tiết khoản: các lần thu / hoàn và lịch sử điều chỉnh, hủy */
+        get: operations["charge_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3457,7 +3508,7 @@ export interface components {
             payment: components["schemas"]["PaymentDto"];
             chargeCode: string;
             /** @enum {string} */
-            chargeStatus: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
+            chargeStatus: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF" | "CANCELLED";
             /** Format: int64 */
             paidAmount: number;
             /** Format: int64 */
@@ -3761,6 +3812,87 @@ export interface components {
         DraftPreviewDto: {
             period: components["schemas"]["PeriodDto"];
             result: components["schemas"]["IssueResultDto"];
+        };
+        CancelChargeRequest: {
+            reason: string;
+        };
+        ChargeDto: {
+            /** Format: int64 */
+            id: number;
+            /** @example KT-1026-DTH-H000128 */
+            code: string;
+            requestCode: string;
+            /** Format: int64 */
+            subjectId: number;
+            subjectCode: string;
+            subjectName: string;
+            subjectAddress: string;
+            /** Format: int64 */
+            areaId: number;
+            areaCode: string;
+            /** Format: int64 */
+            companyId: number;
+            companyCode: string;
+            /** Format: int64 */
+            periodId: number;
+            periodCode: string;
+            feeTypeCode: string;
+            /** @enum {string|null} */
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "HH_PER_CAPITA" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME" | "FULL_COST_BY_KG" | null;
+            /** Format: int64 */
+            unitPrice: number;
+            /** Format: int32 */
+            months: number;
+            /** Format: int64 */
+            amount: number;
+            /**
+             * Format: date
+             * @description Hạn nộp của kỳ (hạn duy nhất)
+             */
+            dueDate: string;
+            /** @enum {string} */
+            status: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF" | "CANCELLED";
+            /** @description Chưa thu và đã qua hạn nộp của kỳ */
+            overdue: boolean;
+            /**
+             * Format: int64
+             * @description Tổng đã hoàn của khoản (số dương); chỉ điền ở GET /api/billing/charges, nơi khác là 0
+             */
+            refunded: number;
+            /**
+             * Format: int32
+             * @description Số nhân khẩu chụp trên khoản theo nhân khẩu, không có thì số hiện tại của hộ; nguồn thải là null
+             */
+            memberCount: number | null;
+            /**
+             * Format: date-time
+             * @description Ngày giờ đóng (lần thu cuối); chỉ điền ở GET /api/billing/charges, khoản chưa thu là null
+             */
+            paidAt: string | null;
+            /**
+             * @description Hình thức đóng (tiền mặt / chuyển khoản); chỉ điền ở GET /api/billing/charges
+             * @enum {string|null}
+             */
+            paymentMethod: "CASH" | "TRANSFER" | "APP_SIMULATED" | "REFUND" | null;
+            /** @description Lý do hủy; chỉ khoản Đã hủy */
+            cancelReason: string | null;
+            /** Format: date-time */
+            cancelledAt: string | null;
+        };
+        AdjustChargeRequest: {
+            /** @enum {string} */
+            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "HH_PER_CAPITA" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME" | "FULL_COST_BY_KG";
+            /**
+             * Format: int32
+             * @description Bắt buộc với nhóm theo nhân khẩu
+             */
+            memberCount?: number;
+            /**
+             * Format: int64
+             * @description Bắt buộc với nhóm tính theo ký (kg/tháng)
+             */
+            quotaKg?: number;
+            reason: string;
         };
         IssueRequest: {
             /** Format: int64 */
@@ -4243,65 +4375,6 @@ export interface components {
             /** Format: date-time */
             resolvedAt: string | null;
         };
-        ChargeDto: {
-            /** Format: int64 */
-            id: number;
-            /** @example KT-1026-DTH-H000128 */
-            code: string;
-            requestCode: string;
-            /** Format: int64 */
-            subjectId: number;
-            subjectCode: string;
-            subjectName: string;
-            subjectAddress: string;
-            /** Format: int64 */
-            areaId: number;
-            areaCode: string;
-            /** Format: int64 */
-            companyId: number;
-            companyCode: string;
-            /** Format: int64 */
-            periodId: number;
-            periodCode: string;
-            feeTypeCode: string;
-            /** @enum {string|null} */
-            tariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "HH_PER_CAPITA" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME" | "FULL_COST_BY_KG" | null;
-            /** Format: int64 */
-            unitPrice: number;
-            /** Format: int32 */
-            months: number;
-            /** Format: int64 */
-            amount: number;
-            /**
-             * Format: date
-             * @description Hạn nộp của kỳ (hạn duy nhất)
-             */
-            dueDate: string;
-            /** @enum {string} */
-            status: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
-            /** @description Chưa thu và đã qua hạn nộp của kỳ */
-            overdue: boolean;
-            /**
-             * Format: int64
-             * @description Tổng đã hoàn của khoản (số dương); chỉ điền ở GET /api/billing/charges, nơi khác là 0
-             */
-            refunded: number;
-            /**
-             * Format: int32
-             * @description Số nhân khẩu chụp trên khoản theo nhân khẩu, không có thì số hiện tại của hộ; nguồn thải là null
-             */
-            memberCount: number | null;
-            /**
-             * Format: date-time
-             * @description Ngày giờ đóng (lần thu cuối); chỉ điền ở GET /api/billing/charges, khoản chưa thu là null
-             */
-            paidAt: string | null;
-            /**
-             * @description Hình thức đóng (tiền mặt / chuyển khoản); chỉ điền ở GET /api/billing/charges
-             * @enum {string|null}
-             */
-            paymentMethod: "CASH" | "TRANSFER" | "APP_SIMULATED" | "REFUND" | null;
-        };
         CollectorChargeDto: {
             charge: components["schemas"]["ChargeDto"];
             /** Format: int64 */
@@ -4426,7 +4499,7 @@ export interface components {
             chargeId: number;
             chargeCode: string;
             /** @enum {string} */
-            chargeStatus: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
+            chargeStatus: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF" | "CANCELLED";
             /** Format: int64 */
             chargeAmount: number;
             periodCode: string;
@@ -4576,11 +4649,80 @@ export interface components {
              */
             dueDate: string;
             /** @enum {string} */
-            status: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
+            status: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF" | "CANCELLED";
             /** @description Chưa thu và đã qua hạn nộp của kỳ */
             overdue: boolean;
             /** Format: date-time */
             paidAt: string | null;
+        };
+        ChargeAdjustmentDto: {
+            /** Format: int64 */
+            id: number;
+            /** @enum {string} */
+            type: "ADJUST" | "CANCEL";
+            /** Format: int64 */
+            oldAmount: number;
+            /** Format: int64 */
+            newAmount: number;
+            reason: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string|null} */
+            oldTariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "HH_PER_CAPITA" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME" | "FULL_COST_BY_KG" | null;
+            /** @enum {string|null} */
+            newTariffGroup: "HH_UP_TO_2" | "HH_3_PLUS" | "HH_PER_CAPITA" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME" | "FULL_COST_BY_KG" | null;
+            /**
+             * Format: int64
+             * @description Nhân khẩu hoặc kg/tháng
+             */
+            oldQuantity: number | null;
+            /** Format: int64 */
+            newQuantity: number | null;
+        };
+        ChargeDetailDto: {
+            charge: components["schemas"]["ChargeDto"];
+            feeTypeName: string;
+            periodLabel: string;
+            companyName: string;
+            areaName: string;
+            /** Format: int64 */
+            quotaKg: number | null;
+            /** Format: int64 */
+            paidAmount: number;
+            /** @description Cán bộ xã điều chỉnh / hủy được: chưa thu hoặc miễn giảm, chưa có lần thu, kỳ chưa khóa */
+            correctable: boolean;
+            /** @description Điều chỉnh theo biểu giá được: như correctable, thêm khoản Chưa thu tính theo biểu giá */
+            adjustable: boolean;
+            /** @description Mã biểu giá của kỳ */
+            tariffCode: string | null;
+            tariffRates: components["schemas"]["TariffRateOptionDto"][];
+            payments: components["schemas"]["ChargePaymentDto"][];
+            adjustments: components["schemas"]["ChargeAdjustmentDto"][];
+        };
+        ChargePaymentDto: {
+            /** Format: int64 */
+            id: number;
+            code: string;
+            /**
+             * Format: int64
+             * @description Âm với dòng hoàn tiền
+             */
+            amount: number;
+            /** @enum {string} */
+            method: "CASH" | "TRANSFER" | "APP_SIMULATED" | "REFUND";
+            /** Format: date-time */
+            paidAt: string;
+            note: string | null;
+        };
+        TariffRateOptionDto: {
+            /** @enum {string} */
+            group: "HH_UP_TO_2" | "HH_3_PLUS" | "HH_PER_CAPITA" | "SMALL_UP_TO_126" | "SMALL_126_TO_250" | "SMALL_250_TO_500" | "BY_VOLUME" | "FULL_COST_BY_KG";
+            /**
+             * Format: int64
+             * @description Đơn giá tháng (đ/hộ, đ/người hoặc đ/kg)
+             */
+            monthlyTotal: number;
+            unitLabel: string;
         };
         ChargeRequestDto: {
             /** Format: int64 */
@@ -6882,6 +7024,58 @@ export interface operations {
             };
         };
     };
+    cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelChargeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ChargeDto"];
+                };
+            };
+        };
+    };
+    adjust: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdjustChargeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ChargeDto"];
+                };
+            };
+        };
+    };
     requests: {
         parameters: {
             query?: {
@@ -7709,7 +7903,7 @@ export interface operations {
         parameters: {
             query?: {
                 periodId?: number;
-                status?: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
+                status?: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF" | "CANCELLED";
                 page?: number;
                 size?: number;
             };
@@ -7734,7 +7928,7 @@ export interface operations {
         parameters: {
             query?: {
                 periodId?: number;
-                status?: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
+                status?: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF" | "CANCELLED";
                 page?: number;
                 size?: number;
             };
@@ -7783,7 +7977,7 @@ export interface operations {
                 periodId?: number;
                 areaId?: number;
                 collectorId?: number;
-                status?: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
+                status?: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF" | "CANCELLED";
                 page?: number;
                 size?: number;
             };
@@ -8311,7 +8505,7 @@ export interface operations {
             query?: {
                 periodId?: number;
                 areaId?: number;
-                status?: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF";
+                status?: "UNPAID" | "PAID" | "EXEMPT" | "WRITTEN_OFF" | "CANCELLED";
                 subjectId?: number;
                 companyId?: number;
                 /** @description Tìm theo tên hoặc mã hộ */
@@ -8332,6 +8526,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ChargePageDto"];
+                };
+            };
+        };
+    };
+    charge_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ChargeDetailDto"];
                 };
             };
         };

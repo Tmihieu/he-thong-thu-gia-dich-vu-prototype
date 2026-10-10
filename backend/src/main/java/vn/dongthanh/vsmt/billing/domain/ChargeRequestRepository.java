@@ -18,8 +18,9 @@ public interface ChargeRequestRepository extends JpaRepository<ChargeRequest, Lo
             + " where (:periodId is null or r.period.id = :periodId) order by r.id desc")
     List<ChargeRequest> findForList(Long periodId);
 
-    /** [id phiếu, số khoản, số khoản miễn, tổng tiền] tính từ charges. */
+    /** [id phiếu, số khoản, số khoản miễn, tổng tiền] tính từ charges, bỏ khoản đã hủy. */
     @Query("select c.chargeRequest.id, count(c), sum(case when c.status = 'EXEMPT' then 1 else 0 end), sum(c.amount)"
-            + " from Charge c where c.chargeRequest.id in :requestIds group by c.chargeRequest.id")
+            + " from Charge c where c.chargeRequest.id in :requestIds and c.status <> 'CANCELLED'"
+            + " group by c.chargeRequest.id")
     List<Object[]> totalsByRequest(Collection<Long> requestIds);
 }

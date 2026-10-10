@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,20 +27,25 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.collection.domain.PaymentMethod;
 import vn.dongthanh.vsmt.billing.domain.Charge;
+import vn.dongthanh.vsmt.billing.domain.ChargeAdjustment;
 import vn.dongthanh.vsmt.billing.domain.ChargeScope;
 import vn.dongthanh.vsmt.billing.domain.ChargeStatus;
+import vn.dongthanh.vsmt.billing.service.ChargeCorrectionService;
 import vn.dongthanh.vsmt.billing.service.ChargeEligibility.SkipReason;
 import vn.dongthanh.vsmt.billing.service.ChargeRequestService;
 import vn.dongthanh.vsmt.collection.domain.PaymentRepository;
 import vn.dongthanh.vsmt.billing.service.ChargeRequestService.IssueCommand;
 import vn.dongthanh.vsmt.billing.service.ChargeRequestService.IssueResult;
 import vn.dongthanh.vsmt.billing.service.ChargeRequestService.RequestSummary;
+import vn.dongthanh.vsmt.masterdata.domain.PeriodStatus;
 import vn.dongthanh.vsmt.masterdata.domain.TariffGroup;
 import vn.dongthanh.vsmt.platform.security.CurrentUser;
 
@@ -51,6 +57,7 @@ public class BillingController {
 
     private final ChargeRequestService service;
     private final PaymentRepository payments;
+    private final ChargeCorrectionService corrections;
 
     @Operation(summary = "Xem trước phiếu yêu cầu thu: số khoản, tổng tiền, danh sách bỏ qua (không ghi CSDL)")
     @PostMapping("/charge-requests/preview")
@@ -98,6 +105,105 @@ public class BillingController {
                     p == null ? null : (OffsetDateTime) p[1], p == null ? null : (PaymentMethod) p[2]);
         }).toList(),
                 result.getTotalElements(), page, size);
+    }
+
+    @Operation(summary = "Chi tiết khoản: các lần thu / hoàn và lịch sử điều chỉnh, hủy")
+    @GetMapping("/charges/{id}")
+    public ChargeDetailDto charge(@PathVariable Long id, @AuthenticationPrincipal CurrentUser actor) {
+        return ChargeDetailDto.of(corrections.detail(id, actor), service.today());
+    }
+
+    @Operation(summary = "Điều chỉnh khoản chưa thu lập sai phí theo biểu giá của kỳ (cán bộ xã): chọn lại nhóm giá,"
+            + " nhân khẩu / định mức kg; số tiền tính lại. Kỳ chưa khóa, chưa có lần thu")
+    @PostMapping("/charges/{id}/adjust")
+    public ChargeDto adjust(@PathVariable Long id, @Valid @RequestBody AdjustChargeRequest req,
+            @AuthenticationPrincipal CurrentUser actor) {
+        return ChargeDto.of(corrections.adjust(id, req.tariffGroup(), req.memberCount(), req.quotaKg(), req.reason(),
+                actor), service.today());
+    }
+
+    @Operation(summary = "Hủy khoản lập sai (cán bộ xã), bắt buộc lý do; kỳ chưa khóa, chưa có lần thu")
+    @PostMapping("/charges/{id}/cancel")
+    public ChargeDto cancel(@PathVariable Long id, @Valid @RequestBody CancelChargeRequest req,
+            @AuthenticationPrincipal CurrentUser actor) {
+        return ChargeDto.of(corrections.cancel(id, req.reason(), actor), service.today());
+    }
+
+    public record AdjustChargeRequest(
+            @Schema(requiredMode = RequiredMode.REQUIRED) @NotNull(message = "không được để trống") TariffGroup tariffGroup,
+            @Schema(description = "Bắt buộc với nhóm theo nhân khẩu") @Positive(message = "phải lớn hơn 0") Integer memberCount,
+            @Schema(description = "Bắt buộc với nhóm tính theo ký (kg/tháng)") @Positive(message = "phải lớn hơn 0") Long quotaKg,
+            @Schema(requiredMode = RequiredMode.REQUIRED) @NotBlank(message = "không được để trống")
+            @Size(max = 2000) String reason) {
+    }
+
+    public record CancelChargeRequest(
+            @Schema(requiredMode = RequiredMode.REQUIRED) @NotBlank(message = "không được để trống")
+            @Size(max = 2000) String reason) {
+    }
+
+    public record ChargePaymentDto(
+            @Schema(requiredMode = RequiredMode.REQUIRED) Long id,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String code,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Âm với dòng hoàn tiền") long amount,
+            @Schema(requiredMode = RequiredMode.REQUIRED) PaymentMethod method,
+            @Schema(requiredMode = RequiredMode.REQUIRED) OffsetDateTime paidAt,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String note) {
+    }
+
+    public record ChargeAdjustmentDto(
+            @Schema(requiredMode = RequiredMode.REQUIRED) Long id,
+            @Schema(requiredMode = RequiredMode.REQUIRED) ChargeAdjustment.Type type,
+            @Schema(requiredMode = RequiredMode.REQUIRED) long oldAmount,
+            @Schema(requiredMode = RequiredMode.REQUIRED) long newAmount,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String reason,
+            @Schema(requiredMode = RequiredMode.REQUIRED) OffsetDateTime createdAt,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) TariffGroup oldTariffGroup,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) TariffGroup newTariffGroup,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true, description = "Nhân khẩu hoặc kg/tháng") Long oldQuantity,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) Long newQuantity) {
+    }
+
+    public record TariffRateOptionDto(
+            @Schema(requiredMode = RequiredMode.REQUIRED) TariffGroup group,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đơn giá tháng (đ/hộ, đ/người hoặc đ/kg)") long monthlyTotal,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String unitLabel) {
+    }
+
+    public record ChargeDetailDto(
+            @Schema(requiredMode = RequiredMode.REQUIRED) ChargeDto charge,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String feeTypeName,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String periodLabel,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String companyName,
+            @Schema(requiredMode = RequiredMode.REQUIRED) String areaName,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) Long quotaKg,
+            @Schema(requiredMode = RequiredMode.REQUIRED) long paidAmount,
+            @Schema(requiredMode = RequiredMode.REQUIRED,
+                    description = "Cán bộ xã điều chỉnh / hủy được: chưa thu hoặc miễn giảm, chưa có lần thu, kỳ chưa khóa")
+            boolean correctable,
+            @Schema(requiredMode = RequiredMode.REQUIRED,
+                    description = "Điều chỉnh theo biểu giá được: như correctable, thêm khoản Chưa thu tính theo biểu giá")
+            boolean adjustable,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true, description = "Mã biểu giá của kỳ") String tariffCode,
+            @Schema(requiredMode = RequiredMode.REQUIRED) List<TariffRateOptionDto> tariffRates,
+            @Schema(requiredMode = RequiredMode.REQUIRED) List<ChargePaymentDto> payments,
+            @Schema(requiredMode = RequiredMode.REQUIRED) List<ChargeAdjustmentDto> adjustments) {
+
+        static ChargeDetailDto of(ChargeCorrectionService.Detail d, LocalDate today) {
+            Charge c = d.charge();
+            long paid = d.payments().stream().mapToLong(p -> p.getAmount()).sum();
+            boolean correctable = c.isCorrectable() && d.payments().isEmpty()
+                    && c.getPeriod().getStatus() == PeriodStatus.COLLECTING;
+            return new ChargeDetailDto(ChargeDto.of(c, today), c.getFeeType().getName(), c.getPeriod().getLabel(),
+                    c.getCompany().getName(), c.getArea().getName(), c.getQuotaKg(), paid, correctable,
+                    correctable && c.getStatus() == ChargeStatus.UNPAID && !d.rates().isEmpty(), d.tariffCode(),
+                    d.rates().stream().map(r -> new TariffRateOptionDto(r.group(), r.monthlyTotal(), r.unitLabel())).toList(),
+                    d.payments().stream().map(p -> new ChargePaymentDto(p.getId(), p.getCode(), p.getAmount(),
+                            p.getMethod(), p.getPaidAt(), p.getNote())).toList(),
+                    d.adjustments().stream().map(a -> new ChargeAdjustmentDto(a.getId(), a.getType(), a.getOldAmount(),
+                            a.getNewAmount(), a.getReason(), a.getCreatedAt(), a.getOldTariffGroup(), a.getNewTariffGroup(),
+                            a.getOldQuantity(), a.getNewQuantity())).toList());
+        }
     }
 
     public record IssueRequest(
@@ -199,7 +305,10 @@ public class BillingController {
             OffsetDateTime paidAt,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true,
                     description = "Hình thức đóng (tiền mặt / chuyển khoản); chỉ điền ở GET /api/billing/charges")
-            PaymentMethod paymentMethod) {
+            PaymentMethod paymentMethod,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true, description = "Lý do hủy; chỉ khoản Đã hủy")
+            String cancelReason,
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) OffsetDateTime cancelledAt) {
 
         public static ChargeDto of(Charge c, LocalDate today) {
             return of(c, today, 0);
@@ -216,7 +325,8 @@ public class BillingController {
                     c.getArea().getCode(), c.getCompany().getId(), c.getCompany().getCode(), c.getPeriod().getId(),
                     c.getPeriod().getCode(), c.getFeeType().getCode(), c.getTariffGroup(), c.getUnitPrice(),
                     c.getMonths(), c.getAmount(), c.getPeriod().getDueDate(), c.getStatus(), c.isOverdue(today), refunded,
-                    c.getMemberCount() != null ? c.getMemberCount() : c.getSubject().getMemberCount(), paidAt, paymentMethod);
+                    c.getMemberCount() != null ? c.getMemberCount() : c.getSubject().getMemberCount(), paidAt, paymentMethod,
+                    c.getCancelReason(), c.getCancelledAt());
         }
     }
 

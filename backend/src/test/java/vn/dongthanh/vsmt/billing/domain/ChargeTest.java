@@ -45,4 +45,35 @@ class ChargeTest {
         c.revokeExemption(500);
         assertThat(c.getAmount()).isEqualTo(316_500L);
     }
+
+    @Test
+    void repricingUsesTariffRateAndQuantityOfChosenGroup() {
+        Charge c = exemptCharge(600L);
+        assertThatThrownBy(() -> c.reprice(TariffGroup.HH_3_PLUS, 50_000L, null, null)).hasMessageContaining("chưa thu");
+        c.revokeExemption(null);
+        assertThatThrownBy(() -> c.reprice(TariffGroup.BY_VOLUME, 633L, null, 600L)).hasMessageContaining("không thay đổi");
+        assertThatThrownBy(() -> c.reprice(TariffGroup.HH_PER_CAPITA, 20_000L, null, null)).hasMessageContaining("nhân khẩu");
+        assertThatThrownBy(() -> c.reprice(TariffGroup.FULL_COST_BY_KG, 900L, null, null)).hasMessageContaining("định mức");
+
+        c.reprice(TariffGroup.HH_PER_CAPITA, 20_000L, 4, null);
+        assertThat(c.getAmount()).isEqualTo(80_000L);
+        assertThat(c.getMemberCount()).isEqualTo(4);
+        assertThat(c.getQuotaKg()).isNull();
+
+        c.reprice(TariffGroup.HH_3_PLUS, 50_000L, 4, null);
+        assertThat(c.getAmount()).isEqualTo(50_000L);
+        assertThat(c.getTariffGroup()).isEqualTo(TariffGroup.HH_3_PLUS);
+        assertThat(c.getMemberCount()).isNull();
+        assertThat(c.getStatus()).isEqualTo(ChargeStatus.UNPAID);
+    }
+
+    @Test
+    void cancellingKeepsReasonAndBlocksFurtherCorrection() {
+        Charge c = exemptCharge(600L);
+        c.cancel("Lập nhầm nhóm giá", java.time.OffsetDateTime.parse("2026-10-10T08:00:00+07:00"));
+        assertThat(c.getStatus()).isEqualTo(ChargeStatus.CANCELLED);
+        assertThat(c.getCancelReason()).isEqualTo("Lập nhầm nhóm giá");
+        assertThat(c.isCorrectable()).isFalse();
+        assertThatThrownBy(() -> c.cancel("lần hai", null)).hasMessageContaining("Chỉ hủy");
+    }
 }
