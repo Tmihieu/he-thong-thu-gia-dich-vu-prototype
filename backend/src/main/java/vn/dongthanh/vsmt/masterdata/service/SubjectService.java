@@ -213,6 +213,29 @@ public class SubjectService {
         return subject;
     }
 
+    /** Tiếp tục cung cấp từ hôm nay, mở đăng ký mới để giữ nguyên khoảng thời gian đã tạm ngừng. */
+    public ServiceSubject resume(Long id, CurrentUser actor) {
+        actor.requireRole(Role.COMMUNE_OFFICER);
+        ServiceSubject subject = find(id);
+        if (subject.getStatus() != SubjectStatus.ENDED) {
+            throw new BusinessRuleException("SUBJECT_NOT_ENDED", "Hồ sơ này chưa tạm ngừng cung cấp dịch vụ.");
+        }
+        LocalDate today = LocalDate.now(clock);
+        List<ServiceContract> history = contracts.findBySubjectIdOrderByValidFromDesc(id);
+        ServiceContract previous = history.stream().filter(c -> !c.getValidFrom().isAfter(today)).findFirst()
+                .orElseThrow(() -> new BusinessRuleException("SUBJECT_CONTRACT_REQUIRED",
+                        "Cần có đăng ký thu phí trước khi tiếp tục cung cấp dịch vụ."));
+        if (!previous.covers(today)) {
+            createContract(subject, new ContractCommand(previous.getTariffGroup(), today, null, previous.isExempt(),
+                    previous.getExemptReason(), previous.getExemptDecisionNo(), previous.getNote(), previous.getQuotaKg()),
+                    actor, false);
+        }
+        Map<String, Object> before = snapshot(subject);
+        subject.setStatus(SubjectStatus.ACTIVE);
+        audit.record(actor, "RESUME_SUBJECT", SUBJECT, subject.getCode(), before, snapshot(subject));
+        return subject;
+    }
+
     public ServiceContract addContract(Long subjectId, ContractCommand cmd, CurrentUser actor) {
         actor.requireRole(Role.COMMUNE_OFFICER);
         ServiceSubject subject = find(subjectId);

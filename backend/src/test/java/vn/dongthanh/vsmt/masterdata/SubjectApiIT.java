@@ -136,6 +136,25 @@ class SubjectApiIT extends IntegrationTest {
     }
 
     @Test
+    void resumeStoppedSubjectKeepsGapAndRestoresPreviousTariffAndExemption() throws Exception {
+        long id = body(create(officer, kv07.getId(), """
+                ,"contract":{"tariffGroup":"HH_3_PLUS","validFrom":"2026-01-01", "exempt":true,
+                "exemptReason":"Hộ nghèo"}""")).get("id").asLong();
+        mvc.perform(post("/api/masterdata/subjects/" + id + "/end").header(HttpHeaders.AUTHORIZATION, officer)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"endDate\":\"2026-09-15\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("ENDED"));
+        mvc.perform(post("/api/masterdata/subjects/" + id + "/resume").header(HttpHeaders.AUTHORIZATION, officer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.currentContract.validFrom").value("2026-10-01"))
+                .andExpect(jsonPath("$.currentContract.exempt").value(true))
+                .andExpect(jsonPath("$.currentContract.exemptReason").value("Hộ nghèo"))
+                .andExpect(jsonPath("$.contracts.length()").value(2));
+        assertThat(jdbc.queryForList("select action from audit_logs where entity_id = 'DTH-H000001' order by id", String.class))
+                .contains("END_SUBJECT", "RESUME_SUBJECT");
+    }
+
+    @Test
     void upcomingContractIsCurrentSoFormEditsItInsteadOfAddingOverlap() throws Exception {
         create(officer, kv07.getId(), """
                 ,"contract":{"tariffGroup":"HH_3_PLUS","validFrom":"2099-01-01"}""")

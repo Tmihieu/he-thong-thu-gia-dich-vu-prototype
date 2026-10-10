@@ -102,6 +102,27 @@ public class LedgerQueries {
     private static final String COLLECTION_JOIN = " join collection_periods cp on cp.id = c.period_id"
             + " left join tariff_rates r on r.tariff_version_id = cp.tariff_version_id and r.tariff_group = c.tariff_group";
 
+    private static final String PAYABLE_PART = "case when r.monthly_total > 0 then c.amount - "
+            + COLLECTION_PART + " else 0 end";
+
+    public List<CompanyAmount> advancePayableByCompany(long periodId) {
+        return assessedPartByCompany(PAYABLE_PART, periodId);
+    }
+
+    public List<CompanyAmount> advanceProcessingByCompany(long periodId) {
+        return assessedPartByCompany(chargePart("processing_fee"), periodId);
+    }
+
+    private List<CompanyAmount> assessedPartByCompany(String part, long periodId) {
+        return jdbc.query("select x.company_id, sum(x.amount), 0 from ("
+                + " select c.company_id, " + part + " as amount from charges c" + COLLECTION_JOIN
+                + " where c.period_id = ? and " + COUNTED
+                + " union all select c.company_id, -(" + part + ") from charges c" + COLLECTION_JOIN
+                + " where c.written_off_period_id = ? and c.period_id <> c.written_off_period_id"
+                + ") x group by x.company_id",
+                (result, rowNumber) -> new CompanyAmount(result.getLong(1), result.getLong(2), 0), periodId, periodId);
+    }
+
     /** Σ thanh toán ròng ghi nhận ở kỳ không phải chuyển khoản (tiền mặt, trừ hoàn): tiền công ty đang giữ để nộp xã. */
     public List<CompanyAmount> cashCollectedByCompany(long periodId) {
         return jdbc.query("select c.company_id, sum(p.amount), count(*) filter (where p.amount > 0)"
@@ -163,25 +184,28 @@ public class LedgerQueries {
     }
 
     /**
-     * Phải nộp xã theo (công ty, kỳ) của các kỳ có hạn quyết toán trước {@code today}: tiền mặt đã thu − điều chỉnh − phần thu
-     * gom của số đã thu, cùng công thức với {@link #cashCollectedByCompany}, {@link #retainedByCompany} và
-     * {@link #writeOffAdjustmentByCompany}. Có thể âm (xã trả lại công ty).
+     * Phải nộp xã theo (công ty, kỳ) của các kỳ có hạn nộp trước {@code today}: đã thu (mọi hình thức) − điều chỉnh − phần
+     * thu gom, cùng công thức với {@link #collectedByCompany}, {@link #retainedByCompany} và
+     * {@link #writeOffAdjustmentByCompany}.
      */
     public List<CompanyPeriodAmount> payableByCompanyAndPeriodBefore(LocalDate today) {
         return jdbc.query("select x.company_id, x.period_id, sum(x.v) from ("
-                + " select c.company_id, " + PAYMENT_PERIOD + " as period_id,"
-                + " sum(case when p.method <> 'TRANSFER' then p.amount else 0 end)"
-                + " - coalesce(round(sum(p.amount) * r.collection_fee::numeric / nullif(r.monthly_total, 0)), 0) as v"
-                + " from payments p join charges c on c.id = p.charge_id" + COLLECTION_JOIN
-                + " group by c.id, c.company_id, p.ledger_period_id, c.period_id, r.collection_fee, r.monthly_total"
+                + " select c.company_id, c.period_id, " + PAYABLE_PART + " as v"
+                + " from charges c" + COLLECTION_JOIN + " where " + COUNTED
                 + " union all"
-                + " select c.company_id, c.written_off_period_id, -(c.amount - " + COLLECTION_PART + ") from charges c"
+                + " select c.company_id, c.written_off_period_id, -(" + PAYABLE_PART + ") from charges c"
                 + COLLECTION_JOIN
                 + " where c.written_off_period_id is not null and c.period_id <> c.written_off_period_id"
                 + ") x join collection_periods p on p.id = x.period_id"
-                // Hạn quyết toán = ngày 5 tháng sau kỳ (CollectionPeriod.getSettlementDueDate).
-                + " where p.end_date + 5 < ? group by x.company_id, x.period_id",
+                + " where p.due_date < ? group by x.company_id, x.period_id",
                 (rs, i) -> new CompanyPeriodAmount(rs.getLong(1), rs.getLong(2), rs.getLong(3)), today);
+    }
+
+    /** Số khoản Chưa thu của kỳ: kỳ "đã thu đủ mọi khoản" khi bằng 0 (UC-39). Khoản miễn, đã xóa nợ không tính. */
+    public long unpaidChargeCount(long periodId) {
+        Long n = jdbc.queryForObject("select count(*) from charges c where c.period_id = ? and c.status = 'UNPAID'",
+                Long.class, periodId);
+        return n == null ? 0 : n;
     }
 
 

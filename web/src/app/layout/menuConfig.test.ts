@@ -15,15 +15,13 @@ describe('menuConfig', () => {
       'Công ty',
       'Tiến độ thu',
       'Đối soát',
-      'Phiếu quyết toán',
-      'Chuyển khoản chờ đối chiếu',
       'Khiếu nại',
       'Chợ cộng đồng',
     ]);
     expect(labels('COMPANY_MANAGER')).toEqual(['Khu vực được giao', 'Người đi thu', 'Khiếu nại']);
     expect(labels('COLLECTOR')).toEqual(['Danh sách thu', 'Tiền mặt', 'Tài khoản']);
     expect(labels('ADMIN')).toEqual(['Tài khoản', 'Cấu hình', 'Danh mục đường', 'Nhật ký', 'Quản trị dữ liệu']);
-    expect(labels('LEADER')).toEqual(['Dashboard', 'Báo cáo tổng hợp', 'Tiến độ thu', 'Đối soát', 'Phiếu quyết toán']);
+    expect(labels('LEADER')).toEqual(['Dashboard', 'Báo cáo tổng hợp', 'Tiến độ thu', 'Đối soát']);
   });
 
   it('đường dẫn menu nằm dưới gốc của vai trò và không trùng', () => {

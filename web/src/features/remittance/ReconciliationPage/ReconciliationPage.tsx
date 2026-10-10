@@ -1,27 +1,26 @@
-import { CheckOutlined, ExclamationCircleOutlined, MinusSquareOutlined, PlusSquareOutlined } from '@ant-design/icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, App, Button, ConfigProvider, Segmented, Space, Table, Tooltip, Typography } from 'antd';
+import { CheckOutlined, MinusSquareOutlined, PlusSquareOutlined } from '@ant-design/icons';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { App, Button, ConfigProvider, Segmented, Space, Table, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import dayjs from 'dayjs';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { Link } from 'react-router';
 
 import { api } from '../../../api/client';
 import { brand, semantic } from '../../../app/theme';
 import { useAuth } from '../../../app/auth/authContext';
 import { errorText as apiErrorText } from '../../../shared/errorText';
-import { formatDate, formatMoney } from '../../../shared/format';
+import { formatMoney } from '../../../shared/format';
 import { MoneyText } from '../../../shared/MoneyText';
 import { PageHeader } from '../../../shared/PageHeader';
 import { ErrorBlock } from '../../../shared/StateBlock';
 import { StatusTag } from '../../../shared/StatusTag';
 import { usePeriods } from '../../masterdata/api';
 import { PeriodSelect } from '../../masterdata/PeriodSelect';
-import { type LedgerRow, type Settlement, useCompanyLedger, useSettlements } from '../api';
-import { type IssueSettlementRequest, SettlementForm } from '../SettlementsPage/SettlementForm';
-import { SettlementPrint } from '../SettlementsPage/SettlementPrint';
+import { type LedgerRow, type Receipt, useCompanyLedger } from '../api';
+import { IssueReceiptForm, type IssueReceiptRequest } from '../ReceiptsPage/IssueReceiptForm';
+import { ReceiptPrint } from '../ReceiptsPage/ReceiptPrint';
 import { LockPeriodButton } from './LockPeriodButton';
+import { VouchersModal } from './VouchersModal';
 
 /** Viền đậm hơn viền mặc định để bảng nhiều cột dễ đọc. */
 const BORDER = '#5b6878';
@@ -33,45 +32,15 @@ const errorText = (e: unknown) => (e ? apiErrorText(e) : null);
 const sum = (rows: LedgerRow[], pick: (r: LedgerRow) => number) => rows.reduce((t, r) => t + pick(r), 0);
 
 /** Nền tiêu đề từng nhóm cột: đậm hơn nền ô để nhóm nổi bật. */
-const HEAD = { qr: '#a9c9f5', cash: '#f8c77e', match: '#9fdbb7' };
+const HEAD = { cash: '#f8c77e', commune: '#9fdbb7' };
 
-/** Số xã phải trả công ty hiện là số âm, công ty nộp xã là số dương. */
-const signed = (v: number) => (v < 0 ? `−${formatMoney(-v)}` : formatMoney(v));
-
-/** Kết quả bù trừ của một công ty: chưa quyết toán thì công ty còn nộp xã / xã còn trả công ty (số âm), hoặc đã quyết toán. */
+/** Kết quả của một công ty theo số còn lại: công ty còn phải nộp xã, hoặc đã khớp. */
 function Result({ row }: { row: LedgerRow }) {
-  const overdue = row.progress === 'OVERDUE' && <StatusTag tone="danger">Quá hạn quyết toán</StatusTag>;
-  if (row.remaining > 0)
-    return (
-      <>
-        <strong style={{ color: semantic.warning.fg }}>Cty nộp Xã {formatMoney(row.remaining)}</strong>
-        {overdue}
-      </>
-    );
-  if (row.communeOwed > 0)
-    return (
-      <>
-        <strong style={{ color: semantic.info.fg }}>{signed(-row.communeOwed)}</strong>
-        {overdue}
-      </>
-    );
-  const net = row.payable;
+  if (row.remaining > 0) return <strong style={{ color: semantic.warning.fg }}>Cty nộp Xã {formatMoney(row.remaining)}</strong>;
   return (
-    <>
-      {overdue ||
-        (row.settled ? (
-          <StatusTag tone="success">
-            <CheckOutlined /> Đã quyết toán
-          </StatusTag>
-        ) : (
-          <StatusTag tone="neutral">Chưa quyết toán</StatusTag>
-        ))}
-      <div>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {net > 0 ? `Cty nộp Xã ${formatMoney(net)}` : net < 0 ? signed(net) : 'Hai bên bằng nhau'}
-        </Typography.Text>
-      </div>
-    </>
+    <StatusTag tone="success">
+      <CheckOutlined /> Khớp
+    </StatusTag>
   );
 }
 
@@ -82,6 +51,10 @@ const group = (bg: string, children: ColumnsType<LedgerRow>, title: ReactNode) =
   onHeaderCell: () => ({ style: { background: bg, textAlign: 'center' as const, position: 'relative' as const } }),
   children: children.map((c) => ({ ...c, align: 'right' as const, onHeaderCell: centerHead(bg) })),
 });
+
+/** Phí xử lý và vận chuyển trên toàn bộ số đã thu (tiền mặt và chuyển khoản đều vào công ty); thu gom là phần công ty giữ. */
+const processing = (r: LedgerRow) => r.qrProcessing + r.cashProcessing;
+const transport = (r: LedgerRow) => r.collected - r.adjustment - r.retained - processing(r);
 
 const money = (pick: (r: LedgerRow) => number, strong = false) => (_: unknown, r: LedgerRow) => <MoneyText value={pick(r)} strong={strong} />;
 
@@ -107,10 +80,9 @@ function GroupTitle({ label, open, onToggle }: { label: string; open: boolean; o
 }
 
 /**
- * Đối soát xã – công ty (UC-38, quyet-toan-0710): tách tiền xã nhận qua QR và tiền công ty thu mặt thành vận chuyển / thu gom;
- * công ty nộp xã phần vận chuyển tiền mặt, xã trả công ty phần thu gom QR, chỉ bù trừ chênh lệch. Mỗi công ty mỗi kỳ lập một
- * phiếu quyết toán, chỉ sau hạn dân đóng. Số liệu do máy chủ tính; trang chỉ cộng tổng kỳ. Khóa kỳ chặn khi còn công ty chưa
- * quyết toán hoặc giao dịch QR chưa xác định công ty.
+ * Đối soát xã – công ty (UC-38): hộ đóng tiền mặt hoặc chuyển khoản, đều vào công ty (bỏ QR của xã 08/10); công ty giữ phần
+ * thu gom, nộp xã phần vận chuyển và phí xử lý. Một kỳ có thể có nhiều phiếu thu (bấm Lập phiếu nhiều lần); dòng Khớp khi
+ * công ty hết phải nộp. Số liệu do máy chủ tính; trang chỉ cộng tổng kỳ.
  */
 export function ReconciliationPage() {
   const { message } = App.useApp();
@@ -119,60 +91,45 @@ export function ReconciliationPage() {
   const readOnly = useAuth().user?.role === 'LEADER';
   const [periodId, setPeriodId] = useState<number>();
   const [filter, setFilter] = useState<Filter>('all');
-  // Hai nhóm QR / tiền mặt mặc định chỉ hiện cột Tổng cho bảng gọn; bấm Chi tiết để tách 4 cột.
-  const [qrOpen, setQrOpen] = useState(false);
+  // Nhóm công ty đã thu mặc định chỉ hiện cột Tổng cho bảng gọn; bấm Chi tiết để tách Vận chuyển, Thu gom, Xử lý.
   const [cashOpen, setCashOpen] = useState(false);
-  const [issuing, setIssuing] = useState<LedgerRow | null>(null);
-  const [printing, setPrinting] = useState<Settlement | null>(null);
+  const [issuingReceipt, setIssuingReceipt] = useState<LedgerRow | null>(null);
+  const [viewing, setViewing] = useState<LedgerRow | null>(null);
+  const [printReceipt, setPrintReceipt] = useState<Receipt | null>(null);
   const ledger = useCompanyLedger(periodId);
-  const settlements = useSettlements(periodId);
   const period = usePeriods().data?.find((p) => p.id === periodId);
   const locked = period?.status === 'LOCKED';
-  // Chỉ lập phiếu quyết toán sau hạn dân đóng (máy chủ chặn SETTLEMENT_TOO_EARLY).
-  const tooEarly = !!period && !dayjs().isAfter(period.dueDate, 'day');
-  const unidentified = useQuery({
-    queryKey: ['remittance', 'unidentified-qr'],
-    queryFn: () => api.get<{ count: number; amount: number }>('/api/remittance/unidentified-qr'),
-  });
   const rows = ledger.data ?? [];
 
-  const issue = useMutation({
-    mutationFn: (req: IssueSettlementRequest) => api.post<Settlement>('/api/remittance/settlements', req),
-    onSuccess: (s) => {
-      message.success(`Đã lập phiếu ${s.code} cho ${s.companyCode}`);
+  const issueReceipt = useMutation({
+    mutationFn: (req: IssueReceiptRequest) => api.post<Receipt>('/api/remittance/receipts', req),
+    onSuccess: (r) => {
+      message.success(`Đã lập phiếu ${r.code} cho ${r.companyCode}`);
       void queryClient.invalidateQueries({ queryKey: ['remittance'] });
-      setIssuing(null);
-      setPrinting(s);
+      setIssuingReceipt(null);
+      setPrintReceipt(r);
     },
   });
-
-  const holding = sum(rows, (r) => r.holding);
-  const entitled = sum(rows, (r) => r.entitled);
-  const diff = holding - entitled;
-  const qrTotal = sum(rows, (r) => r.qrTotal);
+  const payable = sum(rows, (r) => r.payable);
+  const received = sum(rows, (r) => r.received);
+  const diff = payable - received;
   const counts = { all: rows.length, open: rows.filter((r) => !r.settled).length, settled: rows.filter((r) => r.settled).length };
   const shown = rows.filter((r) => filter === 'all' || (filter === 'settled') === r.settled);
-  const qr = unidentified.data;
 
   const voucherCell = (r: LedgerRow) => {
-    const settlement = settlements.data?.find((s) => s.id === r.settlementId);
-    if (settlement)
+    if (!r.settled) {
+      if (readOnly || locked) return <Typography.Text type="secondary" style={{ fontSize: 12 }}>Chưa lập phiếu</Typography.Text>;
       return (
-        <Button size="small" onClick={() => setPrinting(settlement)} aria-label={`Xem phiếu ${r.companyCode}`}>
-          Xem phiếu {settlement.code}
+        <Button type="primary" size="small" onClick={() => setIssuingReceipt(r)} aria-label={`Lập phiếu thu ${r.companyCode}`}>
+          Lập phiếu thu
         </Button>
       );
-    if (!r.settled) {
-      if (readOnly || locked) return <Typography.Text type="secondary" style={{ fontSize: 12 }}>Chưa quyết toán</Typography.Text>;
-      return (
-        <Tooltip title={tooEarly ? `Chỉ lập sau hạn dân đóng ${formatDate(period!.dueDate)}` : undefined}>
-          <Button type="primary" size="small" disabled={tooEarly} onClick={() => setIssuing(r)} aria-label={`Lập phiếu quyết toán ${r.companyCode}`}>
-            Lập phiếu quyết toán
-          </Button>
-        </Tooltip>
-      );
     }
-    return (
+    return r.receiptCount > 0 ? (
+      <Button size="small" onClick={() => setViewing(r)} aria-label={`Xem phiếu ${r.companyCode}`}>
+        Xem phiếu
+      </Button>
+    ) : (
       <Typography.Text type="secondary" style={{ fontSize: 12 }}>Không cần phiếu</Typography.Text>
     );
   };
@@ -180,54 +137,36 @@ export function ReconciliationPage() {
   const columns: ColumnsType<LedgerRow> = [
     { title: 'Công ty', dataIndex: 'companyName', fixed: 'left', width: 200, render: (v: string) => <strong style={{ fontWeight: 600 }}>{v}</strong> },
     group(
-      HEAD.qr,
-      [
-        { title: 'Tổng', key: 'qrTotal', width: 130, render: money((r) => r.qrTotal, !qrOpen) },
-        ...(qrOpen
-          ? [
-              { title: 'Vận chuyển', key: 'qrTransport', width: 130, render: money((r) => r.qrTransport) },
-              { title: 'Thu gom', key: 'qrCollection', width: 140, render: money((r) => r.qrCollection, true) },
-              { title: 'Xử lý', key: 'qrProcessing', width: 120, render: money((r) => r.qrProcessing) },
-            ]
-          : []),
-      ],
-      <GroupTitle label="Xã nhận qua QR" open={qrOpen} onToggle={() => setQrOpen((v) => !v)} />,
-    ),
-    group(
       HEAD.cash,
       [
-        { title: 'Tổng', key: 'cashTotal', width: 130, render: money((r) => r.cashCollected, !cashOpen) },
+        { title: 'Tổng', key: 'collected', width: 130, render: money((r) => r.collected, !cashOpen) },
         ...(cashOpen
           ? [
-              { title: 'Vận chuyển', key: 'cashTransport', width: 140, render: money((r) => r.cashTransport, true) },
-              { title: 'Thu gom', key: 'cashCollection', width: 130, render: money((r) => r.cashCollection) },
-              { title: 'Xử lý', key: 'cashProcessing', width: 120, render: money((r) => r.cashProcessing, true) },
+              { title: 'Thu gom', key: 'collection', width: 130, render: money((r) => r.retained) },
+              { title: 'Vận chuyển', key: 'transport', width: 140, render: money(transport, true) },
+              { title: 'Xử lý', key: 'processing', width: 120, render: money(processing, true) },
             ]
           : []),
       ],
-      <GroupTitle label="Cty thu tiền mặt" open={cashOpen} onToggle={() => setCashOpen((v) => !v)} />,
+      <GroupTitle label="Cty đã thu" open={cashOpen} onToggle={() => setCashOpen((v) => !v)} />,
+    ),
+    group(
+      HEAD.commune,
+      [
+        { title: 'Phải nộp xã', key: 'payable', width: 150, render: money((r) => r.payable, true) },
+        { title: 'Đã nộp', key: 'received', width: 150, render: money((r) => r.received) },
+      ],
+      'Cty nộp xã',
     ),
     { title: 'Kết quả', key: 'result', width: 170, align: 'center', onHeaderCell: centerHead(), render: (_, r) => <Result row={r} /> },
-    group(
-      HEAD.match,
-      [
-        { title: 'Xã đang giữ', key: 'holding', width: 150, render: money((r) => r.holding, true) },
-        { title: 'Xã được hưởng', key: 'entitled', width: 150, render: money((r) => r.entitled) },
-      ],
-      'Đối chiếu tiền xã',
-    ),
-    { title: 'Phiếu quyết toán', key: 'voucher', width: 170, align: 'center', onHeaderCell: centerHead(), render: (_, r) => voucherCell(r) },
+    { title: 'Phiếu', key: 'voucher', width: 120, align: 'center', onHeaderCell: centerHead(), render: (_, r) => voucherCell(r) },
   ];
 
   return (
     <ConfigProvider theme={{ token: { borderRadius: 0, borderRadiusLG: 0, borderRadiusSM: 0 }, components: { Table: { borderColor: BORDER } } }}>
       <PageHeader
         title={period ? `Đối soát ${period.label.toLowerCase()}` : 'Đối soát'}
-        description={
-          period
-            ? `${rows.length} công ty thu gom · Hạn dân đóng ${formatDate(period.dueDate)} · Hạn quyết toán ${formatDate(period.settlementDueDate)}`
-            : `${rows.length} công ty thu gom`
-        }
+        description={`${rows.length} công ty thu gom · Công ty phải nộp trước phần vận chuyển và xử lý theo khoản đã phát hành, dù chưa thu từ hộ.`}
         extra={
           <Space wrap>
             <PeriodSelect value={periodId} onChange={setPeriodId} />
@@ -237,55 +176,25 @@ export function ReconciliationPage() {
       />
       {ledger.error && <ErrorBlock error={ledger.error} onRetry={() => void ledger.refetch()} />}
 
-      <section aria-label="Tiền xã đang giữ trong kỳ">
-        <h2 style={{ margin: '0 0 12px', padding: '10px 16px', background: brand.chrome, color: '#fff', fontSize: 18, fontWeight: 700 }}>Tiền xã đang giữ trong kỳ</h2>
+      <section aria-label="Tiền công ty nộp xã trong kỳ">
+        <h2 style={{ margin: '0 0 12px', padding: '10px 16px', background: brand.chrome, color: '#fff', fontSize: 18, fontWeight: 700 }}>Tiền công ty nộp xã trong kỳ</h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', gap: 12 }}>
-          <Tile label="Xã đang giữ" value={holding}>
-            <Line label="QR đã nhận" value={qrTotal} />
-            <Line label="+ Đã thu từ Cty" value={sum(rows, (r) => r.received)} />
-            <Line label="− Đã chi cho Cty" value={sum(rows, (r) => r.communePaid)} />
+          <Tile label="Cty phải nộp xã · vận chuyển + xử lý" value={payable}>
+            <Line label="Vận chuyển" value={sum(rows, (row) => row.payableTransport ?? 0)} />
+            <Line label="+ Xử lý" value={sum(rows, (row) => row.payableProcessing ?? 0)} />
           </Tile>
           <Operator>−</Operator>
-          <Tile label="Xã được hưởng · vận chuyển + xử lý" value={entitled}>
-            <Line label="Vận chuyển trong QR" value={sum(rows, (r) => r.qrTransport)} />
-            <Line label="+ Vận chuyển trong tiền mặt" value={sum(rows, (r) => r.cashTransport)} />
-            <Line label="+ Xử lý trong QR" value={sum(rows, (r) => r.qrProcessing)} />
-            <Line label="+ Xử lý trong tiền mặt" value={sum(rows, (r) => r.cashProcessing)} />
+          <Tile label="Đã nộp về xã" value={received}>
+            <Line label="Theo phiếu thu đã lập" value={received} />
           </Tile>
           <Operator>=</Operator>
-          <Tile label={diff > 0 ? 'Xã đang THỪA' : diff < 0 ? 'Xã đang THIẾU' : 'Đã cân'} value={Math.abs(diff)}>
+          <Tile label={diff > 0 ? 'Cty còn phải nộp' : 'Đã nộp đủ'} value={Math.max(diff, 0)}>
             <span style={{ fontSize: 13 }}>
-              {diff > 0
-                ? 'Đây là tiền thu gom của Cty mà xã đang giữ hộ, phải chi trả.'
-                : diff < 0
-                  ? 'Cty còn giữ tiền vận chuyển, xử lý của xã, phải thu về.'
-                  : 'Xã giữ đúng bằng phần vận chuyển, xử lý được hưởng.'}
+              {diff > 0 ? 'Công ty phải nộp trước, không chờ thu đủ tiền từ hộ.' : 'Các công ty đã nộp đủ phần vận chuyển, xử lý.'}
             </span>
           </Tile>
         </div>
       </section>
-
-      {qr && qr.count > 0 && (
-        <Alert
-          type="error"
-          showIcon
-          icon={<ExclamationCircleOutlined />}
-          style={{ marginTop: 16 }}
-          message={
-            <strong>
-              Sao kê QR <MoneyText value={qrTotal + qr.amount} /> = QR của {rows.length} Cty <MoneyText value={qrTotal} /> +{' '}
-              {qr.count} giao dịch chưa xác định Cty (<MoneyText value={qr.amount} />). Cần xử lý trước khi khóa kỳ.
-            </strong>
-          }
-          action={
-            readOnly ? undefined : (
-              <Link to="/commune/transfers" style={{ fontWeight: 700 }}>
-                Xử lý →
-              </Link>
-            )
-          }
-        />
-      )}
 
       <div style={{ marginTop: 16 }}>
         <div style={{ paddingBottom: 12 }}>
@@ -294,8 +203,8 @@ export function ReconciliationPage() {
             onChange={setFilter}
             options={[
               { value: 'all', label: `Tất cả ${counts.all}` },
-              { value: 'open', label: `Chưa quyết toán ${counts.open}` },
-              { value: 'settled', label: `Đã quyết toán ${counts.settled}` },
+              { value: 'open', label: `Chưa khớp ${counts.open}` },
+              { value: 'settled', label: `Đã khớp ${counts.settled}` },
             ]}
           />
         </div>
@@ -313,18 +222,19 @@ export function ReconciliationPage() {
         />
       </div>
 
-      <SettlementForm
-        row={issuing}
+      <IssueReceiptForm
+        row={issuingReceipt}
         periodLabel={period?.label}
-        submitting={issue.isPending}
-        error={errorText(issue.error)}
+        submitting={issueReceipt.isPending}
+        error={errorText(issueReceipt.error)}
         onCancel={() => {
-          setIssuing(null);
-          issue.reset();
+          setIssuingReceipt(null);
+          issueReceipt.reset();
         }}
-        onSubmit={(req) => issue.mutate(req)}
+        onSubmit={(req) => issueReceipt.mutate(req)}
       />
-      <SettlementPrint settlement={printing} onClose={() => setPrinting(null)} />
+      <VouchersModal row={viewing} onClose={() => setViewing(null)} />
+      <ReceiptPrint receipt={printReceipt} onClose={() => setPrintReceipt(null)} />
     </ConfigProvider>
   );
 }

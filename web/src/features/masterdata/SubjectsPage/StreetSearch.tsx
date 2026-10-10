@@ -1,4 +1,4 @@
-import { Alert, Button, Input, Select, Spin, Typography } from 'antd';
+import { Alert, Button, Input, Select, Spin } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 
 import { type StreetSuggestions, suggestStreets } from '../api';
@@ -23,7 +23,7 @@ const isAbort = (err: unknown) => err instanceof DOMException && err.name === 'A
 
 /**
  * Ô tìm đường cả xã (đường ở ấp khác, tên cũ): gõ rồi chọn từ danh mục chuẩn (gọi backend sau {@link DEBOUNCE_MS} ms, bỏ yêu cầu và phản hồi cũ khi
- * đổi từ khóa). Kết quả Goong chỉ để tham khảo: chọn nó chỉ ghi nhận "chờ xác minh", không tự thêm đường vào danh mục.
+ * đổi từ khóa). Không có đường thì ghi nhận "chờ xác minh", không tự thêm đường vào danh mục.
  */
 export function StreetSearch({ value, onChange }: Props) {
   const [text, setText] = useState('');
@@ -95,24 +95,14 @@ export function StreetSearch({ value, onChange }: Props) {
 
   const legacy = value && !value.streetId;
   const streetOptions = (result?.streets ?? []).map((s) => ({ value: `s:${s.id}`, label: s.displayName }));
-  const external = (result?.external ?? []).map((e) => ({ value: `g:${e.placeId}`, label: `${e.name} · ${e.secondaryText}` }));
-  const options = [
-    ...streetOptions,
-    ...(external.length ? [{ label: 'Gợi ý tham khảo từ Goong · chưa có trong danh mục', options: external }] : []),
-  ];
+  const options = streetOptions;
 
   function choose(picked?: { value: string }) {
     if (!picked) return onChange?.(undefined);
-    if (picked.value.startsWith('s:')) {
-      const s = result?.streets.find((x) => `s:${x.id}` === picked.value);
-      if (s) onChange?.({ streetId: s.id, street: s.displayName, pending: false });
-    } else {
-      const e = result?.external.find((x) => `g:${x.placeId}` === picked.value);
-      if (e) onChange?.({ street: e.name, pending: true });
-    }
+    const s = result?.streets.find((x) => `s:${x.id}` === picked.value);
+    if (s) onChange?.({ streetId: s.id, street: s.displayName, pending: false });
   }
 
-  const goongDown = result?.goongStatus === 'REJECTED' || result?.goongStatus === 'UNAVAILABLE';
   const notFound = loading ? (
     <Spin size="small" />
   ) : failed ? (
@@ -148,16 +138,6 @@ export function StreetSearch({ value, onChange }: Props) {
           style={{ marginTop: 8 }}
           message={`Địa chỉ cũ chưa chuẩn hóa: "${value.street}". Chọn đường trong danh mục để chuẩn hóa, hoặc giữ nguyên.`}
         />
-      )}
-      {goongDown && (
-        <Typography.Text type="secondary" style={{ display: 'block' }}>
-          Gợi ý từ Goong tạm thời không dùng được; vẫn tìm được trong danh mục nội bộ.
-        </Typography.Text>
-      )}
-      {result?.goongStatus === 'NOT_CONFIGURED' && (
-        <Typography.Text type="secondary" style={{ display: 'block' }}>
-          Chưa cấu hình khóa Goong nên chỉ tìm trong danh mục nội bộ.
-        </Typography.Text>
       )}
       {!value?.streetId && (
         <Button type="link" style={{ padding: 0 }} onClick={() => onChange?.({ street: text.trim(), pending: true })}>

@@ -1,6 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import dayjs from 'dayjs';
 import { afterEach, beforeEach, vi } from 'vitest';
 
 import { TOKEN_KEY } from '../../app/auth/authContext';
@@ -9,20 +8,20 @@ import { jsonResponse, mockApi, renderApp } from '../../test/renderApp';
 const officer = { id: 2, username: 'canbo_xa', fullName: 'Nguyễn Thị Mẫu', role: 'COMMUNE_OFFICER', companyId: null };
 const periods = [
   { id: 10, code: '2026-10', periodType: 'MONTH', label: 'Tháng 10/2026', startDate: '2026-10-01', endDate: '2026-10-31',
-    openDate: '2026-10-01', dueDate: '2026-10-31', settlementDueDate: '2026-11-05', tariffVersionId: 1, tariffVersionCode: 'BG-65-2026', status: 'COLLECTING',
+    openDate: '2026-10-01', dueDate: '2026-10-31', tariffVersionId: 1, tariffVersionCode: 'BG-65-2026', status: 'COLLECTING',
     lockedAt: null, note: null },
   { id: 8, code: '2026-08', periodType: 'MONTH', label: 'Tháng 08/2026', startDate: '2026-08-01', endDate: '2026-08-31',
-    openDate: '2026-08-01', dueDate: '2026-08-31', settlementDueDate: '2026-09-05', tariffVersionId: 2, tariffVersionCode: 'BG-67-2025', status: 'LOCKED',
+    openDate: '2026-08-01', dueDate: '2026-08-31', tariffVersionId: 2, tariffVersionCode: 'BG-67-2025', status: 'LOCKED',
     lockedAt: '2026-09-05T03:00:00Z', note: null },
 ];
 const dv01 = {
   companyId: 1, companyCode: 'DV01', companyName: 'Công ty MTĐT Đông Thạnh', periodId: 10, due: 1_600_000, chargeCount: 20,
-  collected: 1_200_000, cashCollected: 1_200_000, received: 0, settlementId: null, settlementCode: null, remaining: 600_000, gap: -200_000, previousDebt: 0,
-  overdue: false, collectionRate: 75, lowCollectionRate: false, remittedRate: 62.5, lowRemittedRate: false, progress: 'NOT_PAID',
+  collected: 1_200_000, cashCollected: 1_200_000, received: 1_000_000, receiptCount: 1, remaining: 600_000, gap: -200_000, previousDebt: 0,
+  overdue: false, collectionRate: 75, lowCollectionRate: false, remittedRate: 62.5, lowRemittedRate: false, progress: 'PARTIAL',
   reconciliation: 'PENDING', adjustment: 0, refunded: 0, retained: 0, payable: 1_600_000, debtCollected: 0, communePaid: 0, communeOwed: 0, lastPeriodDebt: 0,
 };
 const dv07 = { ...dv01, companyId: 7, companyCode: 'DV07', companyName: 'Công ty Xanh Sài Gòn', due: 800_000, collected: 200_000,
-  received: 0, remaining: 800_000, gap: -200_000, previousDebt: 150_000, collectionRate: 25,
+  received: 0, receiptCount: 0, remaining: 800_000, gap: -200_000, previousDebt: 150_000, collectionRate: 25,
   lowCollectionRate: true, remittedRate: 0, lowRemittedRate: true, progress: 'OVERDUE', reconciliation: 'MISMATCH' };
 const areas = [
   { areaId: 7, areaCode: 'KV07', areaName: 'Tổ dân phố 07', districtCode: 'DTH', companyId: 1, companyCode: 'DV01', due: 800_000,
@@ -72,10 +71,10 @@ describe('Tiến độ thu', () => {
     const dv01Row = (await screen.findByText('Công ty MTĐT Đông Thạnh')).closest('tr')!;
     await waitFor(() => expect(within(dv01Row).getByText('8/10')).toBeInTheDocument());
     expect(within(dv01Row).getByText('75%')).toBeInTheDocument();
-    expect(within(dv01Row).queryByText('Quá hạn quyết toán')).not.toBeInTheDocument();
-    // DV07 quá hạn quyết toán (khớp nút nhắc nộp); không có tổ nên khoản đã thu là dấu gạch.
+    expect(within(dv01Row).queryByText('Quá hạn nộp')).not.toBeInTheDocument();
+    // DV07 quá hạn nộp xã (khớp nút nhắc nộp); không có tổ nên khoản đã thu là dấu gạch.
     const dv07Row = screen.getByText('Công ty Xanh Sài Gòn').closest('tr')!;
-    expect(within(dv07Row).getByText('Quá hạn quyết toán')).toBeInTheDocument();
+    expect(within(dv07Row).getByText('Quá hạn nộp')).toBeInTheDocument();
     expect(within(dv07Row).getByText('—')).toBeInTheDocument();
     expect(screen.getByText('1 tổ chưa có công ty thu: KV24')).toBeInTheDocument();
     const headers = screen.getAllByRole('columnheader').map((h) => h.textContent);
@@ -110,7 +109,7 @@ describe('Tiến độ thu', () => {
     const dv03 = { ...dv01, companyId: 3, companyCode: 'DV03', companyName: 'Công ty Ba', due: 800_000, collected: 300_000,
       debtCollected: 100_000, collectionRate: 37.5, lowCollectionRate: true };
     const dv04 = { ...dv01, companyId: 4, companyCode: 'DV04', companyName: 'Công ty Bốn', due: 0, collected: 0, cashCollected: 0,
-      payable: 0, received: 0, remaining: 0, gap: 0, collectionRate: 0, remittedRate: 0, lowRemittedRate: false,
+      payable: 0, received: 0, receiptCount: 0, remaining: 0, gap: 0, collectionRate: 0, remittedRate: 0, lowRemittedRate: false,
       progress: 'PAID_IN_FULL', reconciliation: 'MATCHED' };
     mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
@@ -198,136 +197,85 @@ describe('Tiến độ thu', () => {
 });
 
 describe('Đối soát', () => {
-  // Mỗi khoản 60.000 = vận chuyển 20.000 + thu gom 40.000 (SPEC đối soát). A: 620 tiền mặt, 260 QR, chưa nộp.
-  const split = { adjustment: 0, refunded: 0, previousDebt: 0, communePaid: 0, communeOwed: 0, retained: 35_200_000,
-    qrTotal: 15_600_000, qrTransport: 5_200_000, qrCollection: 10_400_000, cashCollected: 37_200_000, cashTransport: 12_400_000,
-    cashCollection: 24_800_000, collected: 52_800_000, payable: 2_000_000, received: 0, remaining: 2_000_000,
-    holding: 15_600_000, entitled: 17_600_000, settled: false, qrProcessing: 0, cashProcessing: 0 };
+  // Hộ chỉ đóng tiền mặt cho công ty. A: thu 37.200.000, phải nộp xã 12.400.000 (vận chuyển 10.400.000 + xử lý 2.000.000), chưa nộp.
+  const split = { adjustment: 0, refunded: 0, previousDebt: 0, communePaid: 0, communeOwed: 0, retained: 24_800_000,
+    qrTotal: 0, qrTransport: 0, qrCollection: 0, qrProcessing: 0, cashCollected: 37_200_000, cashTransport: 10_400_000,
+    cashCollection: 24_800_000, cashProcessing: 2_000_000, collected: 37_200_000, payable: 12_400_000, received: 0, receiptCount: 0,
+    remaining: 12_400_000, holding: 0, entitled: 12_400_000, settled: false };
   const cty1 = { ...dv01, ...split, companyName: 'Cty Thu gom A' };
-  // B đã quyết toán: xem được phiếu.
-  const cty2 = { ...cty1, companyId: 2, companyCode: 'DV02', companyName: 'Cty Thu gom B', received: 2_000_000, remaining: 0,
-    holding: 17_600_000, settled: true, settlementId: 50, settlementCode: 'QT-1026-002' };
-  const settlement = { id: 50, code: 'QT-1026-002', companyId: 2, companyCode: 'DV02', companyName: 'Cty Thu gom B', periodId: 10,
-    periodCode: '2026-10', periodLabel: 'Tháng 10/2026', companyOwes: 12_400_000, communeOwes: 10_400_000, amount: 2_000_000,
-    amountInWords: 'Hai triệu đồng', method: 'TRANSFER', settleDate: '2026-11-02', representativeName: 'Trần Văn Mẫu', documentRef: null, note: null };
-  // Hạn dân đóng tính theo hôm nay: đã qua thì lập được phiếu, chưa qua thì nút bị khóa.
-  const withDue = (dueDate: string) => periods.map((p) => (p.id === 10 ? { ...p, dueDate } : p));
-  const passed = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
-  // C: 305 tiền mặt, 435 QR: xã phải trả công ty 11.300.000.
-  const cty3 = { ...cty1, companyId: 3, companyCode: 'DV03', companyName: 'Cty Thu gom C', qrTotal: 26_100_000, qrTransport: 8_700_000,
-    qrCollection: 17_400_000, cashCollected: 18_300_000, cashTransport: 6_100_000, cashCollection: 12_200_000, payable: -11_300_000,
-    remaining: -11_300_000, communeOwed: 11_300_000, holding: 26_100_000, entitled: 14_800_000 };
+  // B đã nộp đủ phiếu thu: Khớp, xem được phiếu.
+  const cty2 = { ...cty1, companyId: 2, companyCode: 'DV02', companyName: 'Cty Thu gom B', received: 12_400_000, receiptCount: 1,
+    remaining: 0, holding: 12_400_000, settled: true };
 
-  function setup(dueDate = passed) {
-    const fetchFn = mockApi({
+  function setup() {
+    mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
-      'GET /api/masterdata/periods': () => jsonResponse(200, withDue(dueDate)),
-      'GET /api/remittance/ledger': () => jsonResponse(200, [cty1, cty2, cty3]),
-      'GET /api/remittance/unidentified-qr': () => jsonResponse(200, { count: 3, amount: 180_000 }),
-      'GET /api/remittance/settlements': () => jsonResponse(200, [settlement]),
-      'POST /api/remittance/settlements': () =>
-        jsonResponse(201, { ...settlement, id: 51, code: 'QT-1026-003', companyId: 1, companyCode: 'DV01', companyName: 'Cty Thu gom A' }),
+      'GET /api/masterdata/periods': () => jsonResponse(200, periods),
+      'GET /api/remittance/ledger': () => jsonResponse(200, [cty1, cty2]),
+      'GET /api/remittance/receipts': () => jsonResponse(200, []),
     });
     renderApp('/commune/reconciliation');
-    return fetchFn;
   }
 
-  it('tổng kỳ: xã đang giữ − được hưởng = thừa; cảnh báo QR chưa xác định', async () => {
+  it('tổng kỳ: công ty phải nộp xã − đã nộp = còn phải nộp; không còn QR của xã', async () => {
     setup();
 
-    // Giữ 59.300.000 − hưởng 50.000.000 = thừa 9.300.000.
-    expect(await screen.findByText('Xã đang THỪA')).toBeInTheDocument();
+    // Phải nộp 24.800.000 − đã nộp 12.400.000 = còn 12.400.000.
+    expect(await screen.findByText('Cty còn phải nộp')).toBeInTheDocument();
     const text = () => document.body.textContent!.replace(/\s+/g, ' ');
-    await waitFor(() => expect(text()).toContain('9.300.000'));
-    expect(text()).not.toContain('Xã còn phải chi');
-    // Sao kê QR = QR của các công ty (57.300.000) + chưa xác định (180.000).
-    expect(await screen.findByText(/Sao kê QR/)).toHaveTextContent('57.480.000');
-    expect(screen.getByText(/3 giao dịch chưa xác định Cty/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Xử lý/ })).toHaveAttribute('href', '/commune/transfers');
+    await waitFor(() => expect(text()).toContain('24.800.000'));
+    expect(text()).not.toMatch(/QR/);
+    expect(screen.queryByRole('link', { name: /Xử lý/ })).not.toBeInTheDocument();
   });
 
-  it('bảng 11 cột theo nhóm QR / tiền mặt / đối chiếu; nút phiếu quyết toán; tab lọc Chưa / Đã quyết toán', async () => {
+  it('bảng nhóm công ty đã thu / công ty nộp xã; chỉ có nút lập phiếu thu; tab lọc Chưa khớp / Đã khớp', async () => {
     setup();
 
-    expect(await screen.findByText('Xã nhận qua QR')).toBeInTheDocument();
-    expect(screen.getByText('Cty thu tiền mặt')).toBeInTheDocument();
-    expect(screen.getByText('Đối chiếu tiền xã')).toBeInTheDocument();
+    expect(await screen.findByText('Cty đã thu')).toBeInTheDocument();
+    expect(screen.getByText('Cty nộp xã')).toBeInTheDocument();
     await screen.findByRole('cell', { name: 'Cty Thu gom A' });
     const rowOf = (name: string) => screen.getByRole('cell', { name }).closest('tr')!;
     const a = rowOf('Cty Thu gom A');
-    expect(within(a).getByText('Cty nộp Xã 2.000.000 đ', norm)).toBeInTheDocument();
-    expect(within(a).getByRole('button', { name: 'Lập phiếu quyết toán DV01' })).toBeEnabled();
+    expect(within(a).getByText('Cty nộp Xã 12.400.000 đ', norm)).toBeInTheDocument();
+    expect(within(a).getByRole('button', { name: 'Lập phiếu thu DV01' })).toBeInTheDocument();
     const b = rowOf('Cty Thu gom B');
-    expect(within(b).getByText('Đã quyết toán')).toBeInTheDocument();
-    expect(await within(b).findByRole('button', { name: 'Xem phiếu DV02' })).toHaveTextContent('QT-1026-002');
-    const c = rowOf('Cty Thu gom C');
-    // Xã phải trả công ty hiện số âm ở cột Kết quả.
-    expect(within(c).getByText('−11.300.000 đ', norm)).toBeInTheDocument();
-    expect(within(c).getByRole('button', { name: 'Lập phiếu quyết toán DV03' })).toBeInTheDocument();
+    expect(within(b).getByText('Khớp')).toBeInTheDocument();
+    expect(within(b).getByRole('button', { name: 'Xem phiếu DV02' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Lập phiếu chi/ })).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByText('Đã quyết toán 1'));
+    await userEvent.click(screen.getByText('Đã khớp 1'));
     await waitFor(() => expect(screen.queryByRole('cell', { name: 'Cty Thu gom A' })).not.toBeInTheDocument());
     expect(screen.getByRole('cell', { name: 'Cty Thu gom B' })).toBeInTheDocument();
-    await userEvent.click(screen.getByText('Chưa quyết toán 2'));
+    await userEvent.click(screen.getByText('Chưa khớp 1'));
     expect(await screen.findByRole('cell', { name: 'Cty Thu gom A' })).toBeInTheDocument();
     expect(screen.queryByRole('cell', { name: 'Cty Thu gom B' })).not.toBeInTheDocument();
   });
 
-  it('nhóm QR / tiền mặt mặc định chỉ cột Tổng; bấm Chi tiết tách Vận chuyển, Thu gom, Xử lý', async () => {
+  it('nhóm công ty đã thu mặc định chỉ cột Tổng; bấm Chi tiết tách Vận chuyển, Thu gom, Xử lý', async () => {
     setup();
 
     await screen.findByRole('cell', { name: 'Cty Thu gom A' });
     expect(screen.queryByRole('columnheader', { name: 'Xử lý' })).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Xem chi tiết Xã nhận qua QR' }));
-    expect(screen.getAllByRole('columnheader', { name: 'Xử lý' })).toHaveLength(1);
-    expect(screen.getAllByRole('columnheader', { name: 'Vận chuyển' })).toHaveLength(1);
+    await userEvent.click(screen.getByRole('button', { name: 'Xem chi tiết Cty đã thu' }));
+    expect(screen.getByRole('columnheader', { name: 'Vận chuyển' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Xử lý' })).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Xem chi tiết Cty thu tiền mặt' }));
-    expect(screen.getAllByRole('columnheader', { name: 'Xử lý' })).toHaveLength(2);
-
-    await userEvent.click(screen.getByRole('button', { name: 'Thu gọn Xã nhận qua QR' }));
-    expect(screen.getAllByRole('columnheader', { name: 'Xử lý' })).toHaveLength(1);
-  });
-
-  it('chưa qua hạn dân đóng thì nút Lập phiếu quyết toán bị khóa; tiêu đề hiện hai hạn', async () => {
-    const due = dayjs().add(3, 'day');
-    setup(due.format('YYYY-MM-DD'));
-
-    const button = await screen.findByRole('button', { name: 'Lập phiếu quyết toán DV01' });
-    expect(button).toBeDisabled();
-    expect(screen.getByText(new RegExp(`Hạn dân đóng ${due.format('DD/MM/YYYY')} · Hạn quyết toán 05/11/2026`))).toBeInTheDocument();
-  });
-
-  it('sau hạn dân đóng: lập phiếu quyết toán, gửi máy chủ rồi hiện bản in', async () => {
-    const fetchFn = setup();
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Lập phiếu quyết toán DV01' }));
-    const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByText('Xã phải trả công ty')).toBeInTheDocument();
-    expect(within(dialog).getByText('12.400.000 đ', norm)).toBeInTheDocument();
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Lập phiếu' }));
-
-    await waitFor(() => {
-      const post = fetchFn.mock.calls.find(([url, init]) => String(url) === '/api/remittance/settlements'
-        && (init as RequestInit | undefined)?.method === 'POST');
-      expect(JSON.parse(String((post![1] as RequestInit).body))).toMatchObject({ companyId: 1, periodId: 10, method: 'TRANSFER' });
-    });
-    expect(await screen.findByText('PHIẾU QUYẾT TOÁN')).toBeInTheDocument();
-    expect(screen.getByText('Hai triệu đồng')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Thu gọn Cty đã thu' }));
+    expect(screen.queryByRole('columnheader', { name: 'Xử lý' })).not.toBeInTheDocument();
   });
 });
 
 describe('Khóa kỳ', () => {
-  it('còn công ty chưa quyết toán thì hiện lý do tiếng Việt từ máy chủ', async () => {
+  it('còn công ty nợ thì hiện lý do tiếng Việt từ máy chủ', async () => {
     const fetchFn = mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
       'GET /api/masterdata/periods': () => jsonResponse(200, periods),
       'GET /api/remittance/ledger': () => jsonResponse(200, [dv01, dv07]),
       'POST /api/remittance/periods/10/lock': () =>
         jsonResponse(422, {
-          code: 'PERIOD_NOT_SETTLED',
-          message: 'Chưa khóa được kỳ 2026-10 vì còn 2 công ty chưa quyết toán: DV01, DV07.',
+          code: 'PERIOD_HAS_DEBT',
+          message: 'Chưa khóa được kỳ 2026-10 vì còn 2 công ty chưa nộp đủ: DV01: 600.000 đ; DV07: 800.000 đ.',
         }),
     });
     renderApp('/commune/reconciliation');
@@ -335,8 +283,29 @@ describe('Khóa kỳ', () => {
     await userEvent.click(await screen.findByRole('button', { name: /Khóa kỳ/ }));
     await userEvent.click(await screen.findByRole('button', { name: 'Khóa kỳ' }));
 
-    expect(await screen.findByText(/còn 2 công ty chưa quyết toán/)).toHaveTextContent('DV01, DV07');
+    expect(await screen.findByText(/còn 2 công ty chưa nộp đủ/)).toHaveTextContent('DV01: 600.000 đ; DV07: 800.000 đ');
     expect(fetchFn.mock.calls.some(([url]) => String(url) === '/api/remittance/periods/10/lock')).toBe(true);
+  });
+});
+
+describe('Khóa kỳ chưa đến hạn', () => {
+  it('còn khoản hộ chưa đóng mà chưa đến hạn nộp thì hiện lý do PERIOD_NOT_DUE', async () => {
+    mockApi({
+      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
+      'GET /api/masterdata/periods': () => jsonResponse(200, periods),
+      'GET /api/remittance/ledger': () => jsonResponse(200, [dv01]),
+      'POST /api/remittance/periods/10/lock': () =>
+        jsonResponse(422, {
+          code: 'PERIOD_NOT_DUE',
+          message: 'Chưa khóa được kỳ 2026-10 vì còn 3 khoản hộ chưa đóng và chưa đến hạn nộp (31/10/2026).',
+        }),
+    });
+    renderApp('/commune/reconciliation');
+
+    await userEvent.click(await screen.findByRole('button', { name: /Khóa kỳ/ }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Khóa kỳ' }));
+
+    expect(await screen.findByText(/còn 3 khoản hộ chưa đóng và chưa đến hạn nộp \(31\/10\/2026\)/)).toBeInTheDocument();
   });
 });
 
@@ -382,48 +351,38 @@ describe('Nhắc nộp', () => {
   });
 });
 
-describe('Phiếu quyết toán', () => {
-  it('danh sách theo kỳ: hai số phải trả, chênh lệch kèm chiều chuyển tiền; bấm In mở bản in', async () => {
-    mockApi({
+describe('Phiếu thu công ty', () => {
+  it('lập phiếu một phần cho DV01 rồi hiện bản in có số tiền bằng chữ và lũy kế', async () => {
+    const fetchFn = mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
       'GET /api/masterdata/periods': () => jsonResponse(200, periods),
-      'GET /api/remittance/settlements': () =>
-        jsonResponse(200, [{
-          id: 5, code: 'QT-1026-001', companyId: 3, companyCode: 'DV03', companyName: 'Công ty Ba', periodId: 10, periodCode: '2026-10',
-          periodLabel: 'Tháng 10/2026', companyOwes: 6_100_000, communeOwes: 17_400_000, amount: -11_300_000,
-          amountInWords: 'Mười một triệu ba trăm nghìn đồng', method: 'CASH', settleDate: '2026-11-03', representativeName: 'Lê Thị Mẫu',
-          documentRef: null, note: null,
-        }]),
+      'GET /api/billing/charge-requests': () => jsonResponse(200, []),
+      'GET /api/remittance/ledger': () => jsonResponse(200, [dv01, dv07]),
+      'POST /api/remittance/receipts': () =>
+        jsonResponse(201, {
+          id: 31, code: 'PT-CT-1026-002', companyId: 1, companyCode: 'DV01', companyName: 'Công ty MTĐT Đông Thạnh', periodId: 10,
+          periodCode: '2026-10', periodLabel: 'Tháng 10/2026', amount: 400_000, amountInWords: 'Bốn trăm nghìn đồng',
+          method: 'TRANSFER', receiptDate: '2026-10-20', payerName: 'Trần Văn Mẫu', documentRef: 'UNC-0925', note: null,
+          status: 'RECORDED', cumulativePaid: 1_400_000, periodDue: 1_600_000, remainingAfter: 200_000,
+        }),
     });
-    renderApp('/commune/settlements');
+    renderApp('/commune/charges');
+    await userEvent.click(await screen.findByRole('tab', { name: 'Phiếu thu công ty' }));
 
-    const row = (await screen.findByText('QT-1026-001')).closest('tr')!;
-    expect(within(row).getByText('11.300.000 đ', norm)).toBeInTheDocument();
-    expect(within(row).getByText('Xã trả công ty')).toBeInTheDocument();
-    expect(within(row).getByText('Tiền mặt')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Lập phiếu/ })).not.toBeInTheDocument();
-    await userEvent.click(within(row).getByRole('button', { name: 'In QT-1026-001' }));
-    expect(await screen.findByText('PHIẾU QUYẾT TOÁN')).toBeInTheDocument();
-    expect(screen.getByText('Mười một triệu ba trăm nghìn đồng')).toBeInTheDocument();
-  });
-});
+    await userEvent.click(await screen.findByRole('button', { name: 'Lập phiếu DV01' }));
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.clear(within(dialog).getByLabelText('Số tiền'));
+    await userEvent.type(within(dialog).getByLabelText('Số tiền'), '400000');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Lập phiếu' }));
 
-describe('Xã trả lại công ty', () => {
-  // DV02: phải nộp xã -228.000, xã đã trả 100.000, còn phải trả 128.000.
-  const dv02 = { ...dv01, companyId: 2, companyCode: 'DV02', companyName: 'Công ty Hai', collected: 1_000_000, cashCollected: 0,
-    retained: 228_000, payable: -228_000, received: 0, remaining: -228_000, gap: 228_000, communePaid: 100_000,
-    communeOwed: 128_000, progress: 'PAID_IN_FULL', reconciliation: 'PENDING' };
-
-  it('Tiến độ thu không còn hiện xã trả lại (xem ở Đối soát)', async () => {
-    mockApi({
-      'GET /api/platform/auth/me': () => jsonResponse(200, officer),
-      'GET /api/masterdata/periods': () => jsonResponse(200, periods),
-      'GET /api/remittance/ledger': () => jsonResponse(200, [dv02]),
-      'GET /api/remittance/area-progress': () => jsonResponse(200, []),
-    });
-    renderApp('/commune/progress');
-
-    await screen.findByText('Công ty Hai');
-    expect(screen.queryByText(/Xã trả lại công ty/)).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(fetchFn.mock.calls.some(([url, init]) => String(url) === '/api/remittance/receipts'
+        && (init as RequestInit | undefined)?.method === 'POST')).toBe(true),
+    );
+    expect(await screen.findByText('Bốn trăm nghìn đồng')).toBeInTheDocument();
+    expect(screen.getByText('PHIẾU THU')).toBeInTheDocument();
+    const print = screen.getByText('PHIẾU THU').closest('.ant-modal-content') as HTMLElement;
+    expect(within(print).getByText('1.400.000 đ', norm)).toBeInTheDocument();
+    expect(within(print).getAllByRole('button').map((b) => b.textContent)).toContain('In');
   });
 });

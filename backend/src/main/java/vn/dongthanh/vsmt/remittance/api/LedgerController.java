@@ -152,9 +152,8 @@ public class LedgerController {
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã hoàn cho hộ, ghi nhận ở kỳ này") long refunded,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã thu của hộ gồm tiền mặt và chuyển khoản (đã trừ hoàn), ghi nhận ở kỳ này") long collected,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Trong đã thu: tiền mặt công ty giữ (đã trừ hoàn). Chuyển khoản vào tài khoản xã = đã thu − tiền mặt") long cashCollected,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã nộp về xã: chênh lệch dương của phiếu quyết toán") long received,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true, description = "Phiếu quyết toán của công ty trong kỳ") Long settlementId,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String settlementCode,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã nộp về xã") long received,
+            @Schema(requiredMode = RequiredMode.REQUIRED) long receiptCount,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Còn phải nộp = phải nộp xã − đã nộp; âm là xã trả lại công ty phần chênh")
             long remaining,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Chênh lệch = đã nộp về xã − phải nộp xã; âm là còn nộp thiếu, dương là nộp dư (xã trả lại công ty)") long gap,
@@ -168,9 +167,9 @@ public class LedgerController {
             @Schema(requiredMode = RequiredMode.REQUIRED) Progress progress,
             @Schema(requiredMode = RequiredMode.REQUIRED) Reconciliation reconciliation,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phí thu gom công ty được hưởng: tính từ biểu giá trên toàn bộ số đã thu (cả chuyển khoản), làm tròn đồng theo từng khoản") long retained,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phải nộp xã = tiền mặt đã thu − điều chỉnh kỳ trước − phí thu gom của toàn bộ số đã thu; âm thì xã trả lại công ty") long payable,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Phải nộp trước phần vận chuyển + xử lý theo khoản đã phát hành, trừ điều chỉnh xóa nợ; không phụ thuộc hộ đã đóng") long payable,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Trong đã thu: thu công nợ kỳ cũ (khoản thuộc kỳ khác đã khóa, tiền ghi vào kỳ này, đã trừ hoàn)") long debtCollected,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Xã đã trả công ty trong kỳ: chênh lệch âm của phiếu quyết toán") long communePaid,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Xã đã trả lại công ty trong kỳ (Σ phiếu chi trả công ty)") long communePaid,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Xã còn phải trả lại công ty = max(0, −còn phải nộp − đã trả)") long communeOwed,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Xã nhận qua QR: tổng (đã trừ hoàn)") long qrTotal,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Xã nhận qua QR: phần vận chuyển, xã giữ") long qrTransport,
@@ -181,15 +180,17 @@ public class LedgerController {
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Công ty thu tiền mặt: phí xử lý, công ty nộp xã cùng vận chuyển") long cashProcessing,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Xã đang giữ = QR + đã nhận từ công ty − đã chi cho công ty") long holding,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Xã được hưởng = vận chuyển + phí xử lý, trong QR và trong tiền mặt") long entitled,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã quyết toán, hoặc không có số liệu phải quyết toán") boolean settled,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Công nợ tháng trước: hộ còn chưa đóng của kỳ liền trước, tính đến hiện tại") long lastPeriodDebt) {
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Đã khớp: công ty không còn phải nộp và xã không còn phải trả") boolean settled,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Công nợ tháng trước: hộ còn chưa đóng của kỳ liền trước, tính đến hiện tại") long lastPeriodDebt,
+            @Schema(description = "Phần vận chuyển phải nộp trước theo khoản đã phát hành") long payableTransport,
+            @Schema(description = "Phần xử lý phải nộp trước theo khoản đã phát hành") long payableProcessing) {
 
         static LedgerRowDto of(LedgerRow r) {
             return new LedgerRowDto(r.companyId(), r.companyCode(), r.companyName(), r.periodId(), r.due(),
-                    r.chargeCount(), r.adjustment(), r.refunded(), r.collected(), r.cashCollected(), r.received(), r.settlementId(), r.settlementCode(), r.remaining(), r.gap(),
+                    r.chargeCount(), r.adjustment(), r.refunded(), r.collected(), r.cashCollected(), r.received(), r.receiptCount(), r.remaining(), r.gap(),
                     r.previousDebt(), r.overdue(), r.collectionRate(), r.lowCollectionRate(), r.remittedRate(),
                     r.lowRemittedRate(), r.progress(), r.reconciliation(), r.retained(), r.payable(), r.debtCollected(), r.communePaid(), r.communeOwed(),
-                    r.qrTotal(), r.qrTransport(), r.qrCollection(), r.qrProcessing(), r.cashTransport(), r.cashCollection(), r.cashProcessing(), r.holding(), r.entitled(), r.settled(), r.lastPeriodDebt());
+                    r.qrTotal(), r.qrTransport(), r.qrCollection(), r.qrProcessing(), r.cashTransport(), r.cashCollection(), r.cashProcessing(), r.holding(), r.entitled(), r.settled(), r.lastPeriodDebt(), r.payableTransport(), r.payableProcessing());
         }
     }
 }

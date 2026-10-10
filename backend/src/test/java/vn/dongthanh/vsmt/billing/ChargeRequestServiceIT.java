@@ -124,6 +124,7 @@ class ChargeRequestServiceIT extends IntegrationTest {
                 .andExpect(jsonPath("$.chargeCount").value(4))
                 .andExpect(jsonPath("$.exemptCount").value(1))
                 .andExpect(jsonPath("$.totalAmount").value(200_000))
+                .andExpect(jsonPath("$.plannedCharges.length()").value(4))
                 .andExpect(jsonPath("$.skipped[*].subjectCode", contains("DTH-H000131", "DTH-H000132")))
                 .andExpect(jsonPath("$.skipped[*].reason", contains("SUBJECT_NOT_ACTIVE", "AREA_WITHOUT_COMPANY")))
                 .andExpect(jsonPath("$.warningCount").value(1));
@@ -223,9 +224,9 @@ class ChargeRequestServiceIT extends IntegrationTest {
     }
 
     @Test
-    void lockedPeriodIs422AndOnlyCommuneOfficerMayIssue() throws Exception {
+    void lockedPeriodIs422AndCompanyCannotIssue() throws Exception {
         String body = request(october, env, "ALL", "");
-        preview(token("admin_it", Role.ADMIN, null), body).andExpect(status().isForbidden());
+        preview(token("admin_it", Role.ADMIN, null), body).andExpect(status().isOk());
         publish(token("dv01_it", Role.COMPANY_MANAGER, dv01.getId()), body).andExpect(status().isForbidden());
 
         jdbc.update("update collection_periods set status = 'LOCKED', locked_at = now() where id = ?", october.getId());

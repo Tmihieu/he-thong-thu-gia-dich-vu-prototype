@@ -58,9 +58,14 @@ public class PeriodPublishService {
      * Xem trước các khoản sẽ lập khi mở kỳ. Kỳ dự thảo lấy lại biểu giá hiệu lực tại ngày đầu kỳ (biểu giá có thể
      * vừa được ban hành sau lúc hệ thống tạo dự thảo), nên số tiền xem trước khớp với lúc mở kỳ.
      */
+<<<<<<< HEAD
+    @Transactional(readOnly = true)
+    public DraftPreview preview(Long periodId, LocalDate openDate, LocalDate companyDueDate,
+=======
     public DraftPreview preview(Long periodId, LocalDate openDate, LocalDate dueDate,
+>>>>>>> origin/main
             Scope scope, CurrentUser actor) {
-        actor.requireRole(Role.COMMUNE_OFFICER);
+        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN);
         CollectionPeriod period = periods.findByIdWithTariff(periodId).orElseThrow(PeriodPublishService::notFound);
         requireDraft(period);
         refreshTariff(period);
@@ -70,7 +75,7 @@ public class PeriodPublishService {
 
     public PublishResult publish(Long periodId, LocalDate openDate, LocalDate dueDate,
             String note, Scope scope, CurrentUser actor) {
-        actor.requireRole(Role.COMMUNE_OFFICER);
+        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN);
         // Khóa dòng kỳ: hai cán bộ cùng bấm thì người sau thấy kỳ đã mở.
         CollectionPeriod period = periods.findByIdForUpdate(periodId).orElseThrow(PeriodPublishService::notFound);
         requireDraft(period);

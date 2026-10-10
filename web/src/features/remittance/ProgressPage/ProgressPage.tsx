@@ -196,7 +196,7 @@ export function ProgressPage() {
                 <Typography.Text ellipsis={{ tooltip: `${r.companyCode} · ${r.companyName}` }} style={{ maxWidth: 160 }}>
                   {r.companyName}
                 </Typography.Text>
-                {r.progress === 'OVERDUE' && <StatusTag color="red">Quá hạn quyết toán</StatusTag>}
+                {r.progress === 'OVERDUE' && <StatusTag color="red">Quá hạn nộp</StatusTag>}
               </Space>
             ),
           },

@@ -1,11 +1,6 @@
 package vn.dongthanh.vsmt.masterdata;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -13,7 +8,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +32,6 @@ import vn.dongthanh.vsmt.masterdata.domain.District;
 import vn.dongthanh.vsmt.masterdata.domain.DistrictRepository;
 import vn.dongthanh.vsmt.masterdata.domain.Street;
 import vn.dongthanh.vsmt.masterdata.domain.StreetRepository;
-import vn.dongthanh.vsmt.masterdata.service.GoongClient;
 import vn.dongthanh.vsmt.platform.domain.Role;
 import vn.dongthanh.vsmt.platform.domain.User;
 import vn.dongthanh.vsmt.platform.domain.UserRepository;
@@ -74,9 +66,6 @@ class StreetAddressIT extends IntegrationTest {
     @jakarta.persistence.PersistenceContext
     jakarta.persistence.EntityManager em;
 
-    @MockitoBean
-    GoongClient goong;
-
     District dth;
     District nb;
     Area kv07;
@@ -96,7 +85,6 @@ class StreetAddressIT extends IntegrationTest {
         huDth.setAreaIds(java.util.Set.of(kv07.getId(), kv08.getId()));
         huDth = streets.save(huDth);
         officer = token("canbo_it", Role.COMMUNE_OFFICER, null);
-        when(goong.autocomplete(anyString(), anyInt())).thenReturn(new GoongClient.Result(GoongClient.Status.OK, List.of()));
     }
 
     // ---- gợi ý đường
@@ -126,33 +114,6 @@ class StreetAddressIT extends IntegrationTest {
     void wildcardsInQueryAreNotTreatedAsLikePatterns() throws Exception {
         mvc.perform(get("/api/masterdata/streets/suggest").param("q", "%%").header(HttpHeaders.AUTHORIZATION, officer))
                 .andExpect(jsonPath("$.streets.length()").value(0));
-    }
-
-    @Test
-    void goongOnlyAskedWhenCatalogIsThinAndItsOutageDoesNotBreakSuggest() throws Exception {
-        // Danh mục đã đủ gợi ý (≥3) thì không tốn hạn mức Goong.
-        streets.save(Street.street("Đường Huệ A"));
-        streets.save(Street.street("Đường Huệ B"));
-        mvc.perform(get("/api/masterdata/streets/suggest").param("q", "hue").header(HttpHeaders.AUTHORIZATION, officer))
-                .andExpect(jsonPath("$.streets.length()").value(3));
-        verify(goong, never()).autocomplete(anyString(), anyInt());
-
-        when(goong.autocomplete(anyString(), anyInt()))
-                .thenReturn(new GoongClient.Result(GoongClient.Status.UNAVAILABLE, List.of()));
-        mvc.perform(get("/api/masterdata/streets/suggest").param("q", "le loi").header(HttpHeaders.AUTHORIZATION, officer))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.streets.length()").value(0))
-                .andExpect(jsonPath("$.goongStatus").value("UNAVAILABLE"));
-
-        when(goong.autocomplete(anyString(), anyInt())).thenReturn(new GoongClient.Result(GoongClient.Status.OK,
-                List.of(new GoongClient.Suggestion("pid", "Đường Lê Lợi", "Đông Thạnh"),
-                        new GoongClient.Suggestion("pid2", "Đường Nguyễn Huệ", "Đông Thạnh"),
-                        new GoongClient.Suggestion("pid3", "Đường Lê Văn Khương", "Thới An, Hồ Chí Minh"))));
-        mvc.perform(get("/api/masterdata/streets/suggest").param("q", "nguyen hue").header(HttpHeaders.AUTHORIZATION, officer))
-                .andExpect(jsonPath("$.streets.length()").value(1))
-                // Đường đã có trong danh mục thì không lặp lại ở phần Goong; đường ngoài xã bị bỏ; đường lạ chỉ là tham khảo.
-                .andExpect(jsonPath("$.external.length()").value(1))
-                .andExpect(jsonPath("$.external[0].name").value("Đường Lê Lợi"));
     }
 
     @Test

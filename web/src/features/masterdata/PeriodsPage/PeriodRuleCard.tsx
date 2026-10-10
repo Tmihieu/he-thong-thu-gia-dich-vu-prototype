@@ -44,6 +44,8 @@ export function PeriodRuleCard() {
       style={{ marginBottom: 16 }}
       extra={drafts.data && drafts.data.length > 0 ? <Typography.Text type="secondary">Đang chờ mở: {drafts.data.map((d) => d.label).join(', ')}</Typography.Text> : null}
     >
+      <Alert type="info" showIcon style={{ marginBottom: 16 }}
+        message="Hệ thống kiểm tra lúc 07:30 hằng ngày và tạo kỳ dự thảo theo lịch. Quản trị xem trước các khoản, kiểm tra hạn nộp rồi xác nhận mở kỳ & phát hành; chưa xác nhận thì chưa có khoản thu." />
       <Form<FormValues>
         key={rule.data.updatedAt}
         form={form}
@@ -68,7 +70,7 @@ export function PeriodRuleCard() {
         {errorMessage(update.error) && (
           <Alert type="error" showIcon message={errorMessage(update.error)} role="alert" style={{ marginBottom: 16 }} />
         )}
-        <Form.Item label="Tự tạo kỳ" name="enabled" valuePropName="checked" extra="Tắt thì quản trị mở kỳ thủ công như trước.">
+        <Form.Item label="Tự tạo kỳ" name="enabled" valuePropName="checked" extra="Tắt thì quản trị tạo kỳ dự thảo thủ công.">
           <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
         </Form.Item>
         <Space size="large" wrap align="start">

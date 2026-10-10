@@ -1,5 +1,5 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { App, Button, Modal, Space, Table } from 'antd';
+import { App, Button, Drawer, Modal, Space, Table } from 'antd';
 import { useState } from 'react';
 
 import { errorTextOrNull } from '../../../shared/errorText';
@@ -8,6 +8,8 @@ import { DateText } from '../../../shared/DateText';
 import { PERIOD_STATUS_LABELS, PERIOD_TYPE_LABELS, STATUS_COLORS } from '../../../shared/labels';
 import { newestFirst, type Period, useDraftPeriods, useOpenPeriod, usePeriods, useTariffs } from '../api';
 import { OpenPeriodForm } from './OpenPeriodForm';
+import { PeriodRuleCard } from './PeriodRuleCard';
+import { OpenDraftPanel } from '../../billing/PeriodDraftsPage/OpenDraftPanel';
 
 /**
  * Quy tắc tự tạo kỳ, danh sách kỳ thu và mở kỳ thủ công (quản trị, §10 bước 1).
@@ -20,6 +22,7 @@ export function PeriodsPage() {
   const tariffs = useTariffs();
   const openPeriod = useOpenPeriod();
   const [formOpen, setFormOpen] = useState(false);
+  const [selected, setSelected] = useState<Period | null>(null);
 
   function closeForm() {
     setFormOpen(false);
@@ -28,7 +31,7 @@ export function PeriodsPage() {
 
   return (
     <>
-      {/* Tạm tắt tự tạo kỳ: <PeriodRuleCard /> */}
+      <PeriodRuleCard />
       <Space style={{ marginBottom: 16 }}>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setFormOpen(true)}>
           Tạo kỳ dự thảo
@@ -53,8 +56,18 @@ export function PeriodsPage() {
             dataIndex: 'status',
             render: (s: Period['status']) => <StatusTag color={STATUS_COLORS[s]}>{PERIOD_STATUS_LABELS[s]}</StatusTag>,
           },
+          {
+            title: 'Thao tác',
+            render: (_, period) => period.status === 'DRAFT' ? (
+              <Button onClick={() => setSelected(period)}>Xem trước & mở kỳ</Button>
+            ) : null,
+          },
         ]}
       />
+      <Drawer title={selected ? `Mở kỳ ${selected.label}` : 'Mở kỳ'} open={selected !== null}
+        onClose={() => setSelected(null)} width={800} destroyOnHidden>
+        {selected && <OpenDraftPanel period={selected} onClose={() => setSelected(null)} />}
+      </Drawer>
       <Modal title="Tạo kỳ dự thảo" open={formOpen} onCancel={closeForm} footer={null} destroyOnHidden>
         <OpenPeriodForm
           tariffs={tariffs.data ?? []}
@@ -64,8 +77,9 @@ export function PeriodsPage() {
           onSubmit={(req) =>
             openPeriod.mutate(req, {
               onSuccess: (p) => {
-                message.success(`Đã tạo kỳ dự thảo ${p.label}, cán bộ xã sẽ đặt ngày và mở kỳ`);
+                message.success(`Đã tạo kỳ dự thảo ${p.label}. Xem trước các khoản trước khi mở kỳ.`);
                 closeForm();
+                setSelected(p);
               },
             })
           }

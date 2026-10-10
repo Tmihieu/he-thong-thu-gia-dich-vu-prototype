@@ -88,7 +88,15 @@ public class ChargeRequestService {
     }
 
     public record IssueResult(String requestCode, int chargeCount, int exemptCount, long totalAmount,
-            int warningCount, List<SkippedLine> skipped) {
+            int warningCount, List<SkippedLine> skipped, List<PreviewCharge> plannedCharges) {
+        public IssueResult(String requestCode, int chargeCount, int exemptCount, long totalAmount,
+                int warningCount, List<SkippedLine> skipped) {
+            this(requestCode, chargeCount, exemptCount, totalAmount, warningCount, skipped, List.of());
+        }
+    }
+
+    public record PreviewCharge(Long subjectId, String subjectCode, String subjectName, String areaName,
+            String companyCode, long amount, boolean exempt) {
     }
 
     private record Planned(ServiceSubject subject, ServiceContract contract, Company company, ChargeAmount amount) {
@@ -100,7 +108,11 @@ public class ChargeRequestService {
         IssueResult result(String requestCode) {
             int exempt = (int) charges.stream().filter(p -> p.amount().exempt()).count();
             int warnings = (int) skipped.stream().filter(s -> s.reason().warning()).count();
-            return new IssueResult(requestCode, charges.size(), exempt, total, warnings, skipped);
+            List<PreviewCharge> preview = requestCode == null ? charges.stream()
+                    .map(charge -> new PreviewCharge(charge.subject().getId(), charge.subject().getCode(),
+                            charge.subject().getName(), charge.subject().getArea().getName(), charge.company().getCode(),
+                            charge.amount().amount(), charge.amount().exempt())).toList() : List.of();
+            return new IssueResult(requestCode, charges.size(), exempt, total, warnings, skipped, preview);
         }
     }
 
@@ -156,7 +168,7 @@ public class ChargeRequestService {
     }
 
     private Plan plan(IssueCommand cmd, CurrentUser actor, boolean draftPreview) {
-        actor.requireRole(Role.COMMUNE_OFFICER);
+        actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN);
         CollectionPeriod period = periods.findByIdWithTariff(cmd.periodId())
                 .orElseThrow(() -> new NotFoundException("PERIOD_NOT_FOUND", "Không tìm thấy kỳ thu."));
         if (draftPreview) {

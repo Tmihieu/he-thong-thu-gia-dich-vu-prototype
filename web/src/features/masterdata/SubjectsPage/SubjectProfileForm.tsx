@@ -40,6 +40,9 @@ interface FormValues {
   validFrom?: Dayjs | null;
   validTo?: Dayjs | null;
   quotaKg?: number | null;
+  exempt: boolean;
+  exemptReasonChoice?: string;
+  exemptReasonOther?: string;
 }
 
 const DATE_FORMAT = 'DD/MM/YYYY';
@@ -49,6 +52,7 @@ const trimmed = (s: string | undefined) => (s && s.trim() ? s.trim() : undefined
 const HOUSEHOLD_GROUPS: TariffGroup[] = ['HH_UP_TO_2', 'HH_3_PLUS', 'HH_PER_CAPITA'];
 /** Nhóm tính đ/kg × định mức kg/tháng. */
 const perKg = (g?: TariffGroup) => g === 'BY_VOLUME' || g === 'FULL_COST_BY_KG';
+const EXEMPT_REASONS = ['Hộ nghèo', 'Gia đình chính sách'];
 
 /** Nhóm giá dùng được theo loại (như SubjectType.allows ở máy chủ). */
 function groupsFor(type: SubjectType): TariffGroup[] {
@@ -84,7 +88,7 @@ interface Props {
   onOpenExisting?: (id: number) => void;
 }
 
-/** Form "Hồ sơ hộ": khối Thông tin hộ và khối Hợp đồng trên cùng một form (T16). Cờ miễn 100% chỉ hiển thị. */
+/** Form "Hồ sơ hộ": thông tin hộ và đăng ký thu phí trên cùng một form. */
 export function SubjectProfileForm({ subject, areas, submitting = false, error, onSubmit, onCancel, onOpenExisting }: Props) {
   const [form] = Form.useForm<FormValues>();
   const [checking, setChecking] = useState(false);
@@ -95,6 +99,8 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
   const type = Form.useWatch('type', form) ?? subject?.subjectType ?? 'HOUSEHOLD';
   const hasContract = Form.useWatch('hasContract', form);
   const tariffGroup = Form.useWatch('tariffGroup', form);
+  const exempt = Form.useWatch('exempt', form);
+  const exemptReasonChoice = Form.useWatch('exemptReasonChoice', form);
   const current = subject?.currentContract ?? null;
   const showContract = current !== null || hasContract;
   // Hộ gia đình đã có đăng ký theo số người: nhóm ≤2 / ≥3 do số người quyết định (máy chủ tự đổi từ kỳ sau), chỉ được
@@ -122,8 +128,14 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
         validFrom: current ? dayjs(current.validFrom) : undefined,
         validTo: current?.validTo ? dayjs(current.validTo) : undefined,
         quotaKg: current?.quotaKg,
+        exempt: current?.exempt ?? false,
+        exemptReasonChoice: current?.exemptReason
+          ? EXEMPT_REASONS.includes(current.exemptReason) ? current.exemptReason : 'Khác'
+          : undefined,
+        exemptReasonOther: current?.exemptReason && !EXEMPT_REASONS.includes(current.exemptReason)
+          ? current.exemptReason : undefined,
       }
-    : { type: 'HOUSEHOLD', hasContract: true };
+    : { type: 'HOUSEHOLD', hasContract: true, exempt: false };
 
   /** Đường chuẩn: chỉ gửi streetId; đường chờ xác minh / địa chỉ cũ: gửi tên tạm. */
   function buildSubject(v: FormValues, duplicateReason?: string): SubjectRequest {
@@ -198,10 +210,9 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
             tariffGroup: v.tariffGroup!,
             validFrom: iso(v.validFrom)!,
             validTo: iso(v.validTo),
-            // Miễn 100% không sửa trên form này: giữ nguyên giá trị của hợp đồng hiện tại.
-            exempt: current?.exempt ?? false,
-            exemptReason: current?.exemptReason ?? undefined,
-            exemptDecisionNo: current?.exemptDecisionNo ?? undefined,
+            exempt: v.exempt ?? false,
+            exemptReason: v.exempt ? trimmed(v.exemptReasonChoice === 'Khác' ? v.exemptReasonOther : v.exemptReasonChoice) : undefined,
+            exemptDecisionNo: v.exempt ? (current?.exemptDecisionNo ?? undefined) : undefined,
             quotaKg: perKg(v.tariffGroup) ? (v.quotaKg ?? undefined) : undefined,
           }
         : null;
@@ -392,13 +403,7 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
       <Divider />
       {/* Góp ý BA 03/10: xã không ký hợp đồng với hộ, nên giao diện gọi là "Đăng ký thu phí" và ẩn số hợp đồng. */}
       <Typography.Title level={5}>Đăng ký thu phí</Typography.Title>
-      {current ? (
-        current.exempt && (
-          <Typography.Paragraph>
-            <StatusTag color="purple">Miễn 100%{current.exemptReason ? ` · ${current.exemptReason}` : ''}</StatusTag>
-          </Typography.Paragraph>
-        )
-      ) : (
+      {!current && (
         <Form.Item name="hasContract" valuePropName="checked">
           <Checkbox>Đưa hộ này vào danh sách thu phí</Checkbox>
         </Form.Item>
@@ -451,6 +456,23 @@ export function SubjectProfileForm({ subject, areas, submitting = false, error, 
               <DatePicker format={DATE_FORMAT} placeholder="Không thời hạn" style={{ width: '100%' }} />
             </Form.Item>
           </Col>
+          <Col xs={24}>
+            <Form.Item name="exempt" valuePropName="checked">
+              <Checkbox>Miễn giảm 100%</Checkbox>
+            </Form.Item>
+          </Col>
+          {exempt && (
+            <Col xs={24}>
+              <Form.Item label="Lý do miễn giảm" name="exemptReasonChoice" rules={[{ required: true, message: 'Vui lòng chọn lý do miễn giảm' }]}>
+                <Select aria-label="Lý do miễn giảm" placeholder="Chọn lý do" options={[...EXEMPT_REASONS, 'Khác'].map((value) => ({ value, label: value }))} />
+              </Form.Item>
+              {exemptReasonChoice === 'Khác' && (
+                <Form.Item label="Lý do khác" name="exemptReasonOther" rules={[{ required: true, whitespace: true, message: 'Vui lòng nhập lý do miễn giảm' }]}>
+                  <Input maxLength={255} />
+                </Form.Item>
+              )}
+            </Col>
+          )}
         </Row>
       )}
       <Form.Item label="Ghi chú" name="note">

@@ -44,7 +44,7 @@ const catalog: Street[] = [
 ];
 const hue = { id: 9, displayName: 'Đường Nguyễn Huệ', kind: 'STREET' as const };
 const hueDth = { id: 10, displayName: 'Nguyễn Huệ', kind: 'STREET' as const };
-const found = (over: Partial<StreetSuggestions> = {}): StreetSuggestions => ({ streets: [hue], external: [], goongStatus: 'OK', ...over });
+const found = (over: Partial<StreetSuggestions> = {}): StreetSuggestions => ({ streets: [hue], ...over });
 const twin: DuplicateSubject = { id: 77, code: 'NB-H000077', name: 'Trần Thị Cũ', phone: '0903111222', status: 'ENDED', address: '12/5 Đường Nguyễn Huệ' };
 
 const suggest = vi.mocked(suggestStreets);
@@ -199,12 +199,13 @@ describe('SubjectProfileForm', () => {
     expect(screen.getAllByLabelText('Định mức kg/tháng')).toHaveLength(1);
   });
 
-  it('sửa hồ sơ có hợp đồng miễn: hiển thị miễn, giữ nguyên cờ miễn khi lưu', async () => {
+  it('sửa hồ sơ có hợp đồng miễn: chọn được lý do và có thể bỏ miễn', async () => {
     const onSubmit = vi.fn();
     render(<SubjectProfileForm subject={existing} areas={areas} onSubmit={onSubmit} />);
 
     expect(screen.getByText('DTH-H000128')).toBeInTheDocument();
-    expect(screen.getByText('Miễn 100% · Hộ nghèo')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Miễn giảm 100%' })).toBeChecked();
+    expect(screen.getByText('Hộ nghèo')).toBeInTheDocument();
     type('Tên chủ hộ', 'Nguyễn Văn Mới');
     await userEvent.click(screen.getByRole('button', { name: 'Lưu hồ sơ' }));
 
@@ -213,6 +214,30 @@ describe('SubjectProfileForm', () => {
     expect(submitted.subject.name).toBe('Nguyễn Văn Mới');
     expect(submitted.contractId).toBe(62);
     expect(submitted.contract).toMatchObject({ tariffGroup: 'HH_3_PLUS', validFrom: '2026-01-01', exempt: true, exemptReason: 'Hộ nghèo' });
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Miễn giảm 100%' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu hồ sơ' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(2));
+    expect(onSubmit.mock.calls[1]![0].contract).toMatchObject({ exempt: false, exemptReason: undefined });
+  });
+
+  it('tạo hộ miễn giảm: phải chọn lý do, lý do khác được gửi theo nội dung nhập', async () => {
+    const onSubmit = vi.fn();
+    render(<SubjectProfileForm areas={areas} onSubmit={onSubmit} />);
+    type('Tên chủ hộ', 'Lê Thị Mẫu');
+    await userEvent.type(screen.getByLabelText('Số thành viên'), '3');
+    await pickOption(screen.getByRole('combobox', { name: 'Ấp' }), 'KV24 · Tổ dân phố 24');
+    await pickStreet('Đường Nguyễn Huệ');
+    await pickOption(screen.getByRole('combobox', { name: 'Nhóm giá' }), 'HGĐ ≥ 3 người');
+    pickDate(screen.getByLabelText('Hiệu lực từ'), '01/10/2026');
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Miễn giảm 100%' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ' }));
+    expect(await screen.findByText('Vui lòng chọn lý do miễn giảm')).toBeInTheDocument();
+    await pickOption(screen.getByRole('combobox', { name: 'Lý do miễn giảm' }), 'Khác');
+    type('Lý do khác', '  Quyết định riêng  ');
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0]![0].contract).toMatchObject({ exempt: true, exemptReason: 'Quyết định riêng' });
   });
 
   describe('chọn đường', () => {
@@ -279,37 +304,6 @@ describe('SubjectProfileForm', () => {
       await new Promise((r) => setTimeout(r, 50));
       expect(screen.queryByTitle('Đường Lê Lợi')).not.toBeInTheDocument();
       expect(screen.getByTitle('Nguyễn Huệ')).toBeInTheDocument();
-    });
-
-    it('Goong hết hạn mức: báo nhẹ, vẫn chọn được đường trong danh mục', async () => {
-      suggest.mockResolvedValue(found({ goongStatus: 'REJECTED' }));
-      render(<SubjectProfileForm areas={areas} onSubmit={vi.fn()} />);
-      await searchStreet('nguyen hue');
-      expect(await screen.findByText('Gợi ý từ Goong tạm thời không dùng được; vẫn tìm được trong danh mục nội bộ.')).toBeInTheDocument();
-      expect(screen.getByTitle('Đường Nguyễn Huệ')).toBeInTheDocument();
-    });
-
-    it('chưa cấu hình khóa Goong: báo rõ, vẫn chọn được đường trong danh mục', async () => {
-      suggest.mockResolvedValue(found({ goongStatus: 'NOT_CONFIGURED' }));
-      render(<SubjectProfileForm areas={areas} onSubmit={vi.fn()} />);
-      await searchStreet('nguyen hue');
-      expect(await screen.findByText('Chưa cấu hình khóa Goong nên chỉ tìm trong danh mục nội bộ.')).toBeInTheDocument();
-      expect(screen.getByTitle('Đường Nguyễn Huệ')).toBeInTheDocument();
-    });
-
-    it('Goong chỉ là gợi ý tham khảo: chọn thì ghi nhận chờ xác minh, không gửi streetId', async () => {
-      suggest.mockResolvedValue(found({ streets: [], external: [{ placeId: 'pid1', name: 'Đường Lê Lợi', secondaryText: 'Hồ Chí Minh' }] }));
-      const onSubmit = vi.fn();
-      render(<SubjectProfileForm areas={areas} onSubmit={onSubmit} />);
-      await fillNewHousehold();
-      await searchStreet('le loi');
-      await pickOption(screen.getByRole('combobox', { name: 'Đường / hẻm' }), 'Đường Lê Lợi · Hồ Chí Minh');
-
-      expect(screen.getByText(/Đường chưa có trong danh mục/)).toBeInTheDocument();
-      await userEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ' }));
-      await waitFor(() => expect(onSubmit).toHaveBeenCalled());
-      expect(onSubmit.mock.calls[0]![0].subject).toMatchObject({ street: 'Đường Lê Lợi', streetPending: true, streetId: undefined });
-      expect(dupCheck).not.toHaveBeenCalled();
     });
 
     it('máy chủ gợi ý lỗi: báo trong ô và vẫn ghi nhận chờ xác minh bằng tay', async () => {

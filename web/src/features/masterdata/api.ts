@@ -228,7 +228,7 @@ export function useSubjects(query: SubjectQuery) {
   });
 }
 
-/** Gợi ý đường (cả tên cũ): danh mục nội bộ trước, Goong chỉ bổ sung tham khảo. {@code signal} để bỏ yêu cầu cũ khi đổi từ khóa. */
+/** Gợi ý đường (cả tên cũ): chỉ trong danh mục nội bộ. {@code signal} để bỏ yêu cầu cũ khi đổi từ khóa. */
 export function suggestStreets(q: string, signal?: AbortSignal) {
   return api.get<StreetSuggestions>('/api/masterdata/streets/suggest', { params: { q }, signal });
 }
@@ -321,6 +321,10 @@ export function useEndSubject() {
   return useSubjectMutation(({ id, endDate, reason }: { id: number; endDate: string; reason?: string }) =>
     api.post<Subject>(`/api/masterdata/subjects/${id}/end`, { endDate, reason }),
   );
+}
+
+export function useResumeSubject() {
+  return useSubjectMutation((id: number) => api.post<Subject>(`/api/masterdata/subjects/${id}/resume`));
 }
 
 /** Khớp ImportPreviewDto của backend (chưa có trong schema.d.ts cho tới lần `npm run gen:api` kế tiếp). */

@@ -83,6 +83,23 @@ export function PreviewSummary({ result }: { result: IssueResult }) {
           <MoneyText value={result.totalAmount} strong />
         </Descriptions.Item>
       </Descriptions>
+      {!!result.plannedCharges?.length && (
+        <Table
+          size="small"
+          rowKey="subjectId"
+          dataSource={result.plannedCharges}
+          scroll={{ x: 700 }}
+          pagination={{ pageSize: 10, showSizeChanger: false, showTotal: (total) => `${total} khoản dự kiến` }}
+          columns={[
+            { title: 'Mã hộ', dataIndex: 'subjectCode' },
+            { title: 'Đối tượng', dataIndex: 'subjectName', className: 'cell-left' },
+            { title: 'Ấp', dataIndex: 'areaName' },
+            { title: 'Công ty', dataIndex: 'companyCode' },
+            { title: 'Số tiền', render: (_, charge) => <MoneyText value={charge.amount ?? 0} /> },
+            { title: 'Miễn', render: (_, charge) => charge.exempt ? 'Miễn 100%' : '—' },
+          ]}
+        />
+      )}
       <SkippedList skipped={result.skipped} byReason={result.skippedByReason} />
     </>
   );

@@ -8,8 +8,8 @@ import { StatusTag } from '../../../shared/StatusTag';
 import { masterdataKeys, type Period, usePeriods } from '../../masterdata/api';
 
 /**
- * Khóa kỳ (cán bộ xã, G1; UC-39): máy chủ chặn và nêu lý do khi còn công ty có số liệu trong kỳ chưa có phiếu quyết toán
- * (PERIOD_NOT_SETTLED) hoặc còn QR chưa xác định công ty. Khoản hộ chưa đóng khi khóa thành công nợ của hộ.
+ * Khóa kỳ (cán bộ xã, G1; UC-39): máy chủ chặn và nêu lý do khi còn công ty chưa nộp đủ phải nộp xã (kèm danh sách công ty
+ * và số nợ) hoặc kỳ còn khoản hộ chưa đóng mà chưa đến hạn nộp. Khoản hộ chưa đóng khi khóa thành công nợ của hộ.
  * Lý do chặn hiện thông báo nổi tự ẩn (không chen vào thanh tiêu đề, không phải bấm tắt).
  */
 export function LockPeriodButton({ periodId }: { periodId: number }) {
@@ -39,7 +39,7 @@ export function LockPeriodButton({ periodId }: { periodId: number }) {
   return (
     <Popconfirm
       title={`Khóa kỳ ${period.label}?`}
-      description="Sau khi khóa không phát hành khoản hay lập phiếu quyết toán cho kỳ này được nữa. Khoản hộ chưa đóng thành công nợ của hộ: hộ nộp ở kỳ sau, tiền tính vào kỳ đang thu."
+      description="Sau khi khóa không phát hành khoản hay lập phiếu thu cho kỳ này được nữa. Khoản hộ chưa đóng thành công nợ của hộ: hộ nộp ở kỳ sau, tiền tính vào kỳ đang thu."
       okText="Khóa kỳ"
       cancelText="Hủy"
       onConfirm={() => lock.mutate()}

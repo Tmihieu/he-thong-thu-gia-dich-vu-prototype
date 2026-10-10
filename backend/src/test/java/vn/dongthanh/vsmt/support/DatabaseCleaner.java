@@ -24,5 +24,6 @@ public class DatabaseCleaner {
         }
         // Dòng quy tắc tự tạo kỳ duy nhất do migration V36 gieo; bị TRUNCATE thì IT chạy sau không tạo được kỳ.
         jdbc.update("insert into period_auto_rule (id) values (1) on conflict do nothing");
+        jdbc.update("insert into company_reminder_rule (id) values (1) on conflict do nothing");
     }
 }

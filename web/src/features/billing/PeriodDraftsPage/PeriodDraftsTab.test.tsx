@@ -8,7 +8,7 @@ import { jsonResponse, mockApi, renderApp } from '../../../test/renderApp';
 const officer = { id: 2, username: 'canbo_xa', fullName: 'Nguyễn Thị Mẫu', role: 'COMMUNE_OFFICER', companyId: null };
 const draft = {
   id: 9, code: '2026-11', periodType: 'MONTH', label: 'Tháng 11/2026', startDate: '2026-11-01', endDate: '2026-11-30',
-  openDate: '2026-11-01', dueDate: '2026-11-25', settlementDueDate: '2026-12-05', tariffVersionId: 1, tariffVersionCode: 'BG-65-2026', status: 'DRAFT',
+  openDate: '2026-11-01', dueDate: '2026-12-10', tariffVersionId: 1, tariffVersionCode: 'BG-65-2026', status: 'DRAFT',
   lockedAt: null, note: null,
 };
 const preview = {
@@ -33,8 +33,7 @@ function bodyOf(fetchFn: ReturnType<typeof mockApi>, url: string) {
 }
 
 describe('Khoản thu · kỳ chờ mở', () => {
-  // Tạm tắt: mục Kỳ chờ mở không còn hiển thị ở màn Khoản thu.
-  it.skip('liệt kê kỳ dự thảo, xem trước số khoản xác nhận rồi mở kỳ & phát hành', async () => {
+  it('liệt kê kỳ dự thảo, xem trước số khoản xác nhận rồi mở kỳ & phát hành', async () => {
     let drafts = [draft];
     const fetchFn = mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
@@ -52,15 +51,15 @@ describe('Khoản thu · kỳ chờ mở', () => {
     });
     renderApp('/commune/charges?tab=requests');
 
-    expect(await screen.findByText('Tháng 11/2026')).toBeInTheDocument();
+    expect((await screen.findAllByText('Tháng 11/2026')).length).toBeGreaterThan(0);
     await userEvent.click(screen.getByRole('button', { name: /Xem trước & mở kỳ/ }));
 
     const drawer = await screen.findByRole('dialog');
     expect(await within(drawer).findByText('211')).toBeInTheDocument();
     expect(within(drawer).getByText(/14\.394\.000/)).toBeInTheDocument();
     expect(within(drawer).getByText('Tổ chưa có công ty phụ trách: 9 hộ')).toBeInTheDocument();
-    expect(within(drawer).getByLabelText('Hạn dân đóng')).toHaveValue('25/11/2026');
-    expect(bodyOf(fetchFn, '/api/billing/periods/9/draft-preview')).toEqual({});
+    expect(within(drawer).getByLabelText('Hạn nộp')).toHaveValue('10/12/2026');
+    expect(bodyOf(fetchFn, '/api/billing/periods/9/draft-preview')).toEqual({ openDate: expect.any(String) });
 
     await userEvent.click(within(drawer).getByRole('button', { name: /Mở kỳ & phát hành 211 khoản/ }));
     await userEvent.click(await screen.findByRole('button', { name: 'Mở kỳ & phát hành' }));
@@ -86,7 +85,7 @@ describe('Khoản thu · kỳ chờ mở', () => {
     expect(screen.queryByRole('button', { name: /Xem trước & mở kỳ/ })).not.toBeInTheDocument();
   });
 
-  it.skip('mở kỳ lỗi thì hiện thông báo của máy chủ và kỳ vẫn chờ mở', async () => {
+  it('mở kỳ lỗi thì hiện thông báo của máy chủ và kỳ vẫn chờ mở', async () => {
     mockApi({
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
       'GET /api/masterdata/periods/drafts': () => jsonResponse(200, [draft]),

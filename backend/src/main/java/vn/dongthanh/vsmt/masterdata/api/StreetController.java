@@ -33,7 +33,10 @@ import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import vn.dongthanh.vsmt.masterdata.domain.ActiveStatus;
 import vn.dongthanh.vsmt.masterdata.domain.Street;
+<<<<<<< HEAD
+=======
 import vn.dongthanh.vsmt.masterdata.service.GoongClient;
+>>>>>>> origin/main
 import vn.dongthanh.vsmt.masterdata.service.StreetImportService;
 import vn.dongthanh.vsmt.masterdata.service.StreetService;
 import vn.dongthanh.vsmt.masterdata.service.StreetService.StreetCommand;
@@ -75,6 +78,11 @@ public class StreetController {
             @Schema(requiredMode = RequiredMode.REQUIRED) Long id,
             @Schema(requiredMode = RequiredMode.REQUIRED) String displayName,
             @Schema(requiredMode = RequiredMode.REQUIRED) Street.Kind kind) {
+<<<<<<< HEAD
+    }
+
+    public record SuggestDto(@Schema(requiredMode = RequiredMode.REQUIRED) List<StreetRefDto> streets) {
+=======
     }
 
     public record ExternalStreetDto(
@@ -87,6 +95,7 @@ public class StreetController {
             @Schema(requiredMode = RequiredMode.REQUIRED) List<StreetRefDto> streets,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Gợi ý tham khảo từ Goong, CHƯA có trong danh mục") List<ExternalStreetDto> external,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "OK | NOT_CONFIGURED | REJECTED | UNAVAILABLE") GoongClient.Status goongStatus) {
+>>>>>>> origin/main
     }
 
     public record CreateStreetRequest(
@@ -155,6 +164,13 @@ public class StreetController {
         return streets.catalog(actor).stream().map(StreetDto::of).toList();
     }
 
+<<<<<<< HEAD
+    @Operation(summary = "Gợi ý đường theo từ khóa (cả tên cũ): chỉ trong danh mục (cán bộ xã)")
+    @GetMapping("/suggest")
+    public SuggestDto suggest(@RequestParam String q, @AuthenticationPrincipal CurrentUser actor) {
+        return new SuggestDto(streets.suggest(q, actor).stream()
+                .map(s -> new StreetRefDto(s.getId(), s.getDisplayName(), s.getKind())).toList());
+=======
     @Operation(summary = "Gợi ý đường theo từ khóa (cả tên cũ): danh mục trước, Goong chỉ bổ sung tham khảo (cán bộ xã)")
     @GetMapping("/suggest")
     public SuggestDto suggest(@RequestParam String q, @AuthenticationPrincipal CurrentUser actor) {
@@ -162,6 +178,7 @@ public class StreetController {
         return new SuggestDto(r.streets().stream().map(s -> new StreetRefDto(s.getId(), s.getDisplayName(), s.getKind())).toList(),
                 r.external().stream().map(e -> new ExternalStreetDto(e.placeId(), e.name(), e.secondary())).toList(),
                 r.goongStatus());
+>>>>>>> origin/main
     }
 
     @Operation(summary = "Thêm đường hoặc hẻm vào danh mục (quản trị viên, có nhật ký)")

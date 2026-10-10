@@ -247,28 +247,25 @@ class DemoSeedIT extends IntegrationTest {
         // Đã thu 609.000; V41_1 (nếu có) coi hộ đóng trước một phần DTH-H000125 là đóng đủ nên cộng thêm 30.000.
         assertThat(ledger.collectedByCompany(period)).filteredOn(c -> c.companyId() == dv01)
                 .extracting(CompanyAmount::amount).singleElement().isIn(609_000L + 29_994_732, 639_000L + 29_994_732);
-        // V50: kỳ 09 đang thu nên phiếu thu cũ bị bỏ khi đổi sang phiếu quyết toán; chưa công ty nào quyết toán.
-        assertThat(demoDb.queryForObject("select count(*) from settlements", Integer.class)).isZero();
-        // Phải nộp xã tính trên số ĐÃ THU (góp ý BA 05/10): tiền mặt đã thu − phí thu gom của toàn bộ số đã thu (cả chuyển
-        // khoản). DV01 kỳ 09: tiền mặt 480.000 − phí thu gom của 639.000 đã thu (455.788) = 24.212. Cùng một con số ở truy
-        // vấn một kỳ (màn đối soát) và truy vấn các kỳ đã hết hạn (nợ kỳ trước, nhắc nộp), đúng cả lúc làm seed lẫn ngày demo.
-        // Hộ chuyển khoản vào tài khoản xã mà công ty vẫn hưởng phí thu gom nên phải nộp xã thấp hơn nhiều so với phải thu.
-        long cash = ledger.cashCollectedByCompany(period).stream().filter(c -> c.companyId() == dv01)
+        long received = demoDb.queryForObject(
+                "select sum(amount) from company_receipts where company_id = ? and period_id = ?", Long.class, dv01, period);
+        // QĐ-L16: V34_1 hạ phiếu mẫu về 200.000 đ.
+        assertThat(received).isEqualTo(200_000L);
+        // Phải nộp xã = toàn bộ số đã thu (tiền mặt và chuyển khoản đều vào công ty, 08/10) − phí thu gom công ty giữ. Cùng một
+        // con số ở truy vấn một kỳ (màn đối soát) và truy vấn các kỳ đã hết hạn (nợ kỳ trước, nhắc nộp), đúng cả lúc làm seed
+        // lẫn ngày demo.
+        long collected = ledger.collectedByCompany(period).stream().filter(c -> c.companyId() == dv01)
                 .mapToLong(CompanyAmount::amount).sum();
         long retained = ledger.retainedByCompany(period).stream().filter(c -> c.companyId() == dv01)
                 .mapToLong(CompanyAmount::amount).sum();
-        long payable = cash - retained;
-        // Nguồn thải lớn (V48_1) theo tỷ lệ kg tiền mặt : QR = 453 : 601 nên phải nộp xã không đổi.
-        assertThat(cash).isEqualTo(480_000L + 12_891_474);
-        assertThat(payable).isEqualTo(24_212L);
-        // Nợ kỳ trước / nhắc nộp chỉ tính kỳ đã qua hạn quyết toán (05/10): ngày làm seed chưa, ngày demo đã qua.
-        assertThat(ledger.payableByCompanyAndPeriodBefore(LocalDate.of(2026, 10, 5))).filteredOn(d -> d.companyId() == dv01)
-                .isEmpty();
-        assertThat(ledger.payableByCompanyAndPeriodBefore(LocalDate.of(2026, 10, 21))).filteredOn(d -> d.companyId() == dv01)
-                .containsExactly(new CompanyPeriodAmount(dv01, period, payable));
-        // Ngày demo 21/10 đã qua hạn quyết toán 05/10: DV01 chưa quyết toán, phiếu quyết toán sẽ ghi công ty nộp xã 24.212.
-        assertThat(demoDb.queryForObject("select (end_date + 5) < date '2026-10-21' from collection_periods where id = ?",
-                Boolean.class, period)).isTrue();
+        long payable = collected - retained;
+        assertThat(payable).isEqualTo(17_286_470L);
+        for (LocalDate today : List.of(LocalDate.of(2026, 9, 28), LocalDate.of(2026, 10, 21))) {
+            assertThat(ledger.payableByCompanyAndPeriodBefore(today)).filteredOn(d -> d.companyId() == dv01)
+                    .containsExactly(new CompanyPeriodAmount(dv01, period, payable));
+        }
+        // DV01 mới nộp 200.000 nên vẫn còn nợ xã kỳ cũ.
+        assertThat(payable - received).isPositive();
 
         // Khoản Đã thu đúng khi Σ thanh toán = số tiền, không thu vượt (G4); hộ kịch bản đã đóng kỳ cũ.
         assertThat(demoDb.queryForObject("""
@@ -317,6 +314,11 @@ class DemoSeedIT extends IntegrationTest {
         long fullyCollected = ledger.dueByCompany(period).stream().filter(due -> ledger.collectedByCompany(period).stream()
                 .anyMatch(c -> c.companyId() == due.companyId() && c.amount() == due.amount())).count();
         assertThat(fullyCollected).isEqualTo(2);
+        assertThat(demoDb.queryForObject("select count(*) from company_receipts where period_id = ?", Integer.class,
+                period)).isEqualTo(14);
+        assertThat(demoDb.queryForList("""
+                select co.code from companies co where not exists (select 1 from company_receipts r where r.company_id = co.id)
+                order by co.code""", String.class)).containsExactly("DV06", "DV10");
 
         // Chuyển khoản qua QR (V40_3; thanh toán TRANSFER của V22_1 ghi tay): mỗi thanh toán TRANSFER có đúng một dòng ngân hàng đã khớp, đúng tài khoản và mã khoản.
         assertThat(demoDb.queryForObject("""
