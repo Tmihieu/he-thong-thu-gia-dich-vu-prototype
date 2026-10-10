@@ -357,7 +357,7 @@ describe('SubjectProfileForm', () => {
       expect(screen.getByText('NB-H000077')).toBeInTheDocument();
       expect(screen.getByText('Trần Thị Cũ')).toBeInTheDocument();
       expect(screen.getByText('0903111222')).toBeInTheDocument();
-      expect(screen.getByText('Đã chấm dứt')).toBeInTheDocument();
+      expect(screen.getByText('Tạm ngừng cung cấp')).toBeInTheDocument();
       expect(dupCheck).toHaveBeenCalledWith({ areaId: 24, streetId: 9, houseNo: '12/5', unitNo: undefined, excludeSubjectId: undefined });
       expect(onSubmit).not.toHaveBeenCalled();
     });
