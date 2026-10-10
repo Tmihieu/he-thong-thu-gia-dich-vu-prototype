@@ -58,29 +58,25 @@ public class PeriodPublishService {
      * Xem trước các khoản sẽ lập khi mở kỳ. Kỳ dự thảo lấy lại biểu giá hiệu lực tại ngày đầu kỳ (biểu giá có thể
      * vừa được ban hành sau lúc hệ thống tạo dự thảo), nên số tiền xem trước khớp với lúc mở kỳ.
      */
-<<<<<<< HEAD
     @Transactional(readOnly = true)
     public DraftPreview preview(Long periodId, LocalDate openDate, LocalDate companyDueDate,
-=======
-    public DraftPreview preview(Long periodId, LocalDate openDate, LocalDate dueDate,
->>>>>>> origin/main
             Scope scope, CurrentUser actor) {
         actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN);
         CollectionPeriod period = periods.findByIdWithTariff(periodId).orElseThrow(PeriodPublishService::notFound);
         requireDraft(period);
         refreshTariff(period);
-        schedule(period, openDate, dueDate);
+        schedule(period, openDate, companyDueDate);
         return new DraftPreview(period, chargeRequests.previewDraft(command(period, null, scope), actor));
     }
 
-    public PublishResult publish(Long periodId, LocalDate openDate, LocalDate dueDate,
+    public PublishResult publish(Long periodId, LocalDate openDate, LocalDate companyDueDate,
             String note, Scope scope, CurrentUser actor) {
         actor.requireRole(Role.COMMUNE_OFFICER, Role.ADMIN);
         // Khóa dòng kỳ: hai cán bộ cùng bấm thì người sau thấy kỳ đã mở.
         CollectionPeriod period = periods.findByIdForUpdate(periodId).orElseThrow(PeriodPublishService::notFound);
         requireDraft(period);
         TariffVersion tariff = refreshTariff(period);
-        schedule(period, openDate, dueDate);
+        schedule(period, openDate, companyDueDate);
         IssueCommand cmd = command(period, note, scope);
 
         period.publish();
@@ -101,10 +97,10 @@ public class PeriodPublishService {
     }
 
     /** Cán bộ xã đặt ngày mở / hạn nộp (hạn duy nhất của kỳ) (trống thì giữ giá trị của dự thảo). */
-    private static void schedule(CollectionPeriod period, LocalDate openDate, LocalDate dueDate) {
-        if (openDate != null || dueDate != null) {
+    private static void schedule(CollectionPeriod period, LocalDate openDate, LocalDate companyDueDate) {
+        if (openDate != null || companyDueDate != null) {
             period.schedule(openDate != null ? openDate : period.getOpenDate(),
-                    dueDate != null ? dueDate : period.getDueDate());
+                    companyDueDate != null ? companyDueDate : period.getDueDate());
         }
     }
 

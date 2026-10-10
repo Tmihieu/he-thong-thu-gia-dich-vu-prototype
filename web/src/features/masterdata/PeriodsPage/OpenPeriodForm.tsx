@@ -78,7 +78,7 @@ export function OpenPeriodForm({ tariffs, submitting = false, error, onSubmit, o
         </Form.Item>
       </Space>
       <Typography.Paragraph type="secondary">
-        Cán bộ xã sẽ đặt ngày mở và hạn dân đóng khi mở kỳ. Hạn quyết toán là ngày 5 tháng sau kỳ.
+        Cán bộ xã sẽ đặt ngày mở và hạn công ty nộp xã khi mở kỳ.
       </Typography.Paragraph>
       <Descriptions size="small" column={1} style={{ marginBottom: 16 }}>
         <Descriptions.Item label="Biểu giá áp dụng">

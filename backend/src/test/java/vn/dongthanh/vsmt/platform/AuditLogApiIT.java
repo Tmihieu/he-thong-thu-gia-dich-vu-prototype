@@ -40,14 +40,8 @@ class AuditLogApiIT extends IntegrationTest {
     @Autowired DatabaseCleaner cleaner;
     @Autowired CollectionService collection;
     @Autowired JdbcTemplate jdbc;
-    @Autowired vn.dongthanh.vsmt.support.MutableClock clock;
 
     String admin;
-
-    @org.junit.jupiter.api.AfterEach
-    void resetClock() {
-        clock.reset();
-    }
 
     @BeforeEach
     void seed() throws Exception {
@@ -56,10 +50,9 @@ class AuditLogApiIT extends IntegrationTest {
         fx.build();
         collection.recordPayment(new PaymentCommand(fx.chargeId("DTH-H000001"), 80_000, PaymentMethod.CASH, "p-1",
                 null, null, null), fx.actor(fx.thu07));
-        clock.set(java.time.Instant.parse("2026-11-01T03:00:00Z"));
-        mvc.perform(post("/api/remittance/settlements").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer))
+        mvc.perform(post("/api/remittance/receipts").header(HttpHeaders.AUTHORIZATION, fx.bearer(fx.officer))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"companyId\":%d,\"periodId\":%d,\"method\":\"TRANSFER\"}"
+                        .content("{\"companyId\":%d,\"periodId\":%d,\"amount\":80000,\"method\":\"TRANSFER\"}"
                                 .formatted(fx.dv01.getId(), fx.october.getId())))
                 .andExpect(status().isCreated());
         admin = fx.bearer(fx.admin);
@@ -71,13 +64,13 @@ class AuditLogApiIT extends IntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(3))
                 .andExpect(jsonPath("$.items[*].action",
-                        contains("ISSUE_SETTLEMENT", "RECORD_PAYMENT", "ISSUE_CHARGE_REQUEST"))));
+                        contains("ISSUE_COMPANY_RECEIPT", "RECORD_PAYMENT", "ISSUE_CHARGE_REQUEST"))));
 
         JsonNode receipt = page.at("/items/0");
         assertThat(receipt.get("actorUsername").asText()).isEqualTo("canbo_fx");
         assertThat(receipt.get("actorRole").asText()).isEqualTo("COMMUNE_OFFICER");
-        assertThat(receipt.get("entityType").asText()).isEqualTo("Settlement");
-        assertThat(receipt.get("entityId").asText()).isEqualTo("QT-1026-001");
+        assertThat(receipt.get("entityType").asText()).isEqualTo("CompanyReceipt");
+        assertThat(receipt.get("entityId").asText()).isEqualTo("PT-CT-1026-001");
         assertThat(receipt.get("ipAddress").textValue()).isEqualTo("127.0.0.1");
         assertThat(receipt.get("beforeData").isNull()).isTrue();
         JsonNode after = json.readTree(receipt.get("afterData").asText());
@@ -102,7 +95,7 @@ class AuditLogApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$.total").value(1))
                 .andExpect(jsonPath("$.items[*].action", contains("RECORD_PAYMENT")));
         list(admin, "actorUsername=CANBO")
-                .andExpect(jsonPath("$.items[*].action", contains("ISSUE_SETTLEMENT", "ISSUE_CHARGE_REQUEST")));
+                .andExpect(jsonPath("$.items[*].action", contains("ISSUE_COMPANY_RECEIPT", "ISSUE_CHARGE_REQUEST")));
         // "_" được so như ký tự thường, không phải ký tự đại diện: "thu_7" không khớp thu07_fx.
         list(admin, "actorUsername=thu_7").andExpect(jsonPath("$.total").value(0));
     }
