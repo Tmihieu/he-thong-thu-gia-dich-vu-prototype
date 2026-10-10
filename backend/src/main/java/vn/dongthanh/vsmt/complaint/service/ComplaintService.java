@@ -57,11 +57,12 @@ public class ComplaintService {
     private final CompanyRepository companies;
     private final AreaAssignmentService assignments;
     private final NotificationService notifications;
+    private final ComplaintPhotoService photos;
     private final Clock clock;
 
     public record CreateComplaintCommand(String complainantName, String complainantPhone, Long subjectId, Long areaId,
             ComplaintChannel channel, ComplaintCategory category, String summary, String content,
-            LocalDate receivedDate) {
+            LocalDate receivedDate, List<String> photoUrls) {
     }
 
     /** Khiếu nại kèm timeline, để hiển thị chi tiết. */
@@ -89,6 +90,7 @@ public class ComplaintService {
         Area area = areas.findById(areaId)
                 .orElseThrow(() -> new NotFoundException("AREA_NOT_FOUND", "Không tìm thấy khu vực."));
 
+        List<String> attached = photos.requireOwned(cmd.photoUrls());
         String prefix = "KN-" + received.format(CODE_TOKEN) + "-";
         complaints.lockCodePrefix(prefix);
         Complaint complaint = complaints.save(Complaint.builder()
@@ -96,7 +98,7 @@ public class ComplaintService {
                 .receivedDate(received).complainantName(cmd.complainantName().trim())
                 .complainantPhone(blankToNull(cmd.complainantPhone())).subject(subject).area(area)
                 .channel(cmd.channel()).category(cmd.category()).summary(cmd.summary().trim())
-                .content(cmd.content().trim())
+                .content(cmd.content().trim()).photoUrls(ComplaintPhotoService.join(attached))
                 .build());
         String via = cmd.channel() == ComplaintChannel.PHONE ? "điện thoại" : "trực tiếp tại xã";
         addEvent(complaint, ComplaintEventType.RECEIVED, actor, OFFICER_LABEL, null, "Xã tiếp nhận qua " + via);
@@ -108,7 +110,7 @@ public class ComplaintService {
 
     /** Phản ánh người dân gửi từ app (T43): danh tính lấy từ tài khoản, hộ và khu vực lấy từ hộ gắn với tài khoản. */
     public record CitizenSubmission(Long citizenAccountId, String displayName, String phone, Long subjectId,
-            ComplaintCategory category, String content, String location) {
+            ComplaintCategory category, String content, String location, List<String> photoUrls) {
     }
 
     static final int SUMMARY_MAX = 120;
@@ -123,6 +125,7 @@ public class ComplaintService {
         LocalDate today = LocalDate.now(clock);
         String content = cmd.content().trim();
         String location = blankToNull(cmd.location());
+        List<String> attached = photos.requireOwned(cmd.photoUrls());
         String prefix = "KN-" + today.format(CODE_TOKEN) + "-";
         complaints.lockCodePrefix(prefix);
         Complaint complaint = complaints.save(Complaint.builder()
@@ -131,6 +134,7 @@ public class ComplaintService {
                 .citizenAccountId(cmd.citizenAccountId()).subject(subject).area(subject.getArea())
                 .channel(ComplaintChannel.APP).category(cmd.category()).summary(summarize(content)).content(content)
                 .location(location != null ? location : subject.getAddress())
+                .photoUrls(ComplaintPhotoService.join(attached))
                 .build());
         ComplaintEvent submitted = events.save(ComplaintEvent.byCitizen(complaint, OffsetDateTime.now(clock),
                 cmd.citizenAccountId(), cmd.displayName(), "Người dân gửi phản ánh qua ứng dụng"));
@@ -163,11 +167,21 @@ public class ComplaintService {
         return line.length() <= SUMMARY_MAX ? line : line.substring(0, SUMMARY_MAX - 3).stripTrailing() + "…";
     }
 
-    /** Chuyển công ty xử lý; để trống công ty thì lấy công ty đang phụ trách khu vực. Hạn = hôm nay + 3 ngày. */
-    public Complaint forward(Long id, Long companyId, String note, CurrentUser actor) {
+    /**
+     * Chuyển công ty xử lý; để trống công ty thì lấy công ty đang phụ trách khu vực. Hạn = hôm nay + 3 ngày.
+     * {@code areaId} khác khu vực hiện tại: xã sửa khu vực trước khi chuyển (sự việc xảy ra ở nơi khác hộ).
+     */
+    public Complaint forward(Long id, Long companyId, Long areaId, String note, CurrentUser actor) {
         actor.requireRole(Role.COMMUNE_OFFICER);
         Complaint complaint = find(id);
         LocalDate today = LocalDate.now(clock);
+        String areaChange = "";
+        if (areaId != null && !areaId.equals(complaint.getArea().getId())) {
+            Area newArea = areas.findById(areaId)
+                    .orElseThrow(() -> new NotFoundException("AREA_NOT_FOUND", "Không tìm thấy khu vực."));
+            areaChange = "Đổi khu vực " + complaint.getArea().getCode() + " → " + newArea.getCode() + ". ";
+            complaint.changeArea(newArea);
+        }
         Long target = companyId != null ? companyId
                 : assignments.companyOf(complaint.getArea().getId(), today).orElseThrow(() -> new BusinessRuleException(
                         "COMPLAINT_NO_COMPANY", "Khu vực " + complaint.getArea().getCode() + " chưa có công ty phụ trách."));
@@ -176,7 +190,7 @@ public class ComplaintService {
         LocalDate deadline = today.plusDays(FORWARD_DAYS);
         complaint.forwardTo(company, deadline);
 
-        String text = "Chuyển " + company.getName() + " xử lý, hạn " + deadline.format(VN_DATE)
+        String text = areaChange + "Chuyển " + company.getName() + " xử lý, hạn " + deadline.format(VN_DATE)
                 + (note == null || note.isBlank() ? "" : ". " + note.trim());
         addEvent(complaint, ComplaintEventType.FORWARDED, actor, OFFICER_LABEL, company.getId(), text);
         notifications.publish(NotificationCommand.toCompany(company.getId(), Role.COMPANY_MANAGER,
@@ -202,6 +216,26 @@ public class ComplaintService {
                 company.getCode() + " phản hồi khiếu nại " + complaint.getCode(), content.trim(),
                 link("commune.complaints", complaint)), actor.id());
         notifyCitizen(complaint, company.getName() + " phản hồi: " + content.trim(), actor);
+        return complaint;
+    }
+
+    /**
+     * Công ty bị chuyển nhầm (không thuộc trách nhiệm, sai khu vực…) trả lại xã kèm lý do; xã chuyển lại công ty khác.
+     * Mốc nội bộ: người dân không thấy và không nhận thông báo.
+     */
+    public Complaint returnToCommune(Long id, String reason, CurrentUser actor) {
+        actor.requireRole(Role.COMPANY_MANAGER);
+        Complaint complaint = find(id);
+        if (!complaint.isForwardedTo(actor.companyId())) {
+            throw notFound();
+        }
+        Company company = complaint.getForwardedCompany();
+        complaint.returnToCommune();
+        events.save(ComplaintEvent.byUser(complaint, ComplaintEventType.RETURNED, OffsetDateTime.now(clock), actor.id(),
+                company.getName(), company.getId(), reason.trim(), false));
+        notifications.publish(NotificationCommand.toRole(Role.COMMUNE_OFFICER, NotificationKind.COMPLAINT,
+                company.getCode() + " trả lại khiếu nại " + complaint.getCode(), reason.trim(),
+                link("commune.complaints", complaint)), actor.id());
         return complaint;
     }
 
@@ -272,7 +306,7 @@ public class ComplaintService {
         };
     }
 
-    private static Map<String, Object> link(String screen, Complaint complaint) {
+    static Map<String, Object> link(String screen, Complaint complaint) {
         Map<String, Object> link = new LinkedHashMap<>();
         link.put("screen", screen);
         link.put("params", Map.of("complaintId", complaint.getId() == null ? 0 : complaint.getId()));

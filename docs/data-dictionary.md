@@ -662,12 +662,13 @@ Không có `updated_by`, `version` (bản ghi chỉ đổi `read_at`).
 | Hạn xử lý           | `deadline`             | `date`                   | Không        | Hệ thống       | 2026-10-17                    | Demo | Ngày chuyển công ty + 3 ngày (R24–R27)                             |
 | Kết quả cuối        | `resolution`           | `text(2000)`             | Có điều kiện | Xã             | Đã bổ sung chuyến thu gom     | Demo | Bắt buộc khi `RESOLVED`; nội dung đầy đủ ở `ComplaintEvent`        |
 | Đóng lúc            | `resolved_at`          | `timestamp`              | Không        | Hệ thống       |                               | Demo |                                                                    |
-| Ảnh đính kèm        | `photo_urls`           | `text` (danh sách)       | Không        | Người dân      |                               | Thật |                                                                    |
+| Ảnh đính kèm        | `photo_urls`           | `text` (danh sách)       | Không        | Người dân / Xã |                               | Demo | URL ảnh Cloudinary, mỗi dòng một URL, tối đa 5 (BR-CMP-07) |
+| Báo quá hạn lúc     | `overdue_notified_at`  | `timestamp`              | Không        | Hệ thống       |                               | Demo | Job 08:00 báo xã và công ty một lần; xóa khi công ty trả lại xã (BR-CMP-10) |                                                                    |
 | Vị trí              | `location`             | `text(100)`              | Không        | Người dân      | 10.8712,106.6401              | Thật | App prototype có "vị trí tự động"                                  |
 
 
 **Enum `ComplaintChannel`:** `APP` Ứng dụng người dân · `PHONE` Điện thoại · `IN_PERSON` Trực tiếp tại xã
-**Enum `ComplaintCategory`:** `LATE_COLLECTION` Thu gom chậm hoặc không đúng lịch · `OVERCHARGE` Thu phí cao hơn định mức · `POLLUTION_POINT` Điểm tập kết gây ô nhiễm · `STAFF_ATTITUDE` Thái độ nhân viên thu gom · `OTHER` Vấn đề khác
+**Enum `ComplaintCategory`:** `LATE_COLLECTION` Thu gom chậm hoặc không đúng lịch · `OVERCHARGE` Thu phí cao hơn định mức · `POLLUTION_POINT` Điểm tập kết gây ô nhiễm · `STAFF_ATTITUDE` Thái độ nhân viên thu gom · `FACILITY` Cơ sở vật chất · `COLLECTION_REQUEST` Đề nghị thu gom · `PAID_NOT_RECORDED` Đã đóng nhưng chưa được ghi nhận · `OTHER` Vấn đề khác
 **Enum `ComplaintStatus`:** `NEW` Mới → `PROCESSING` Đang xử lý → `RESOLVED` Đã giải quyết
 
 ### ComplaintEvent — Mốc xử lý khiếu nại · `complaint_events` · Phần B
@@ -688,7 +689,7 @@ Timeline lưu nối tiếp, không ghi đè. Không có `updated_at`, `updated_b
 | Người dân được xem           | `visible_to_citizen` | `bool`                    | Có           | Hệ thống                 | true                                       | Thật | Demo mặc định true                    |
 
 
-**Enum `ComplaintEventType`:** `SUBMITTED` Gửi khiếu nại · `RECEIVED` Xã tiếp nhận · `FORWARDED` Chuyển công ty · `COMPANY_REPLIED` Công ty phản hồi · `CLOSED` Đã giải quyết
+**Enum `ComplaintEventType`:** `SUBMITTED` Gửi khiếu nại · `RECEIVED` Xã tiếp nhận · `FORWARDED` Chuyển công ty · `COMPANY_REPLIED` Công ty phản hồi · `RETURNED` Công ty trả lại xã (nội bộ, dân không thấy) · `CLOSED` Đã giải quyết
 
 ## 3.3 master-data (lịch)
 

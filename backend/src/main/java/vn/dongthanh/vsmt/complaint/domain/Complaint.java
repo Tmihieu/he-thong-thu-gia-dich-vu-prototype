@@ -88,6 +88,9 @@ public class Complaint extends BaseEntity {
     @Column(length = 100)
     private String location;
 
+    /** Lúc job đã báo quá hạn cho xã và công ty; {@code null} = chưa báo. Xóa khi trả lại xã để chuyển công ty khác. */
+    private OffsetDateTime overdueNotifiedAt;
+
     @Builder
     private Complaint(String code, LocalDate receivedDate, String complainantName, String complainantPhone,
             Long citizenAccountId, ServiceSubject subject, Area area, ComplaintChannel channel,
@@ -118,6 +121,31 @@ public class Complaint extends BaseEntity {
         this.forwardedCompany = company;
         this.deadline = deadline;
         this.status = ComplaintStatus.PROCESSING;
+    }
+
+    /** Xã sửa khu vực khi sự việc xảy ra ở nơi khác hộ; chỉ trước khi chuyển công ty, vì công ty mặc định theo khu vực. */
+    public void changeArea(Area newArea) {
+        requireOpen();
+        if (forwardedCompany != null) {
+            throw new BusinessRuleException("COMPLAINT_ALREADY_FORWARDED",
+                    "Khiếu nại " + code + " đã chuyển " + forwardedCompany.getName() + " xử lý, không đổi khu vực được.");
+        }
+        this.area = newArea;
+    }
+
+    /** Công ty bị chuyển nhầm trả lại xã: xã chuyển lại công ty khác; trạng thái giữ "Đang xử lý". */
+    public void returnToCommune() {
+        requireOpen();
+        if (forwardedCompany == null) {
+            throw new BusinessRuleException("COMPLAINT_NOT_FORWARDED", "Khiếu nại " + code + " chưa chuyển công ty nào.");
+        }
+        this.forwardedCompany = null;
+        this.deadline = null;
+        this.overdueNotifiedAt = null;
+    }
+
+    public void markOverdueNotified(OffsetDateTime at) {
+        this.overdueNotifiedAt = at;
     }
 
     /** Công ty được chuyển phản hồi; trạng thái vẫn "Đang xử lý" cho tới khi xã đóng. */

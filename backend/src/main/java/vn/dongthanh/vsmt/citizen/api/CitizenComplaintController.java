@@ -1,18 +1,22 @@
 package vn.dongthanh.vsmt.citizen.api;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -30,6 +34,7 @@ import vn.dongthanh.vsmt.complaint.domain.ComplaintCategory;
 import vn.dongthanh.vsmt.complaint.domain.ComplaintEvent;
 import vn.dongthanh.vsmt.complaint.domain.ComplaintEventType;
 import vn.dongthanh.vsmt.complaint.domain.ComplaintStatus;
+import vn.dongthanh.vsmt.complaint.service.ComplaintPhotoService;
 import vn.dongthanh.vsmt.complaint.service.ComplaintService;
 import vn.dongthanh.vsmt.complaint.service.ComplaintService.CitizenSubmission;
 import vn.dongthanh.vsmt.complaint.service.ComplaintService.ComplaintDetail;
@@ -44,6 +49,7 @@ public class CitizenComplaintController {
 
     private final CitizenQueryService citizens;
     private final ComplaintService complaints;
+    private final ComplaintPhotoService photos;
 
     @Operation(summary = "Gửi phản ánh (kênh APP); vị trí để trống thì lấy địa chỉ hộ")
     @PostMapping
@@ -53,8 +59,17 @@ public class CitizenComplaintController {
         CitizenAccount account = citizens.requireActive(citizen);
         ComplaintDetail detail = complaints.submitFromApp(new CitizenSubmission(account.getId(),
                 account.getDisplayName(), account.getPhone(), account.getSubject().getId(), request.category(),
-                request.content(), request.location()));
+                request.content(), request.location(), request.photoUrls()));
         return CitizenComplaintDetailDto.of(detail, complaints.today());
+    }
+
+    @Operation(summary = "Tải một ảnh JPEG/PNG/WebP (tối đa 5 MB) lên Cloudinary, nhận URL để đính kèm phản ánh")
+    @PostMapping(path = "/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public CitizenComplaintPhotoDto uploadPhoto(@AuthenticationPrincipal CurrentCitizen citizen,
+            @RequestParam("file") MultipartFile file) throws IOException {
+        citizens.requireActive(citizen);
+        return new CitizenComplaintPhotoDto(photos.upload(file));
     }
 
     @Operation(summary = "Phản ánh của hộ, mới nhất trước")
@@ -75,7 +90,12 @@ public class CitizenComplaintController {
     public record SubmitComplaintRequest(
             @NotNull(message = "không được để trống") ComplaintCategory category,
             @NotBlank(message = "không được để trống") @Size(max = 4000) String content,
-            @Schema(description = "Nơi xảy ra sự việc; để trống = địa chỉ hộ") @Size(max = 100) String location) {
+            @Schema(description = "Nơi xảy ra sự việc; để trống = địa chỉ hộ") @Size(max = 100) String location,
+            @Schema(description = "URL ảnh đã tải lên qua /api/citizen/complaints/photos") @Size(max = 5, message = "tối đa 5 ảnh")
+            List<String> photoUrls) {
+    }
+
+    public record CitizenComplaintPhotoDto(@Schema(requiredMode = RequiredMode.REQUIRED) String url) {
     }
 
     public record CitizenComplaintDto(
@@ -93,14 +113,16 @@ public class CitizenComplaintController {
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) LocalDate deadline,
             @Schema(requiredMode = RequiredMode.REQUIRED, description = "Chưa giải quyết và đã qua hạn") boolean overdue,
             @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) String resolution,
-            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) OffsetDateTime resolvedAt) {
+            @Schema(requiredMode = RequiredMode.REQUIRED, nullable = true) OffsetDateTime resolvedAt,
+            @Schema(requiredMode = RequiredMode.REQUIRED, description = "URL ảnh đính kèm (Cloudinary, công khai)")
+            List<String> photoUrls) {
 
         static CitizenComplaintDto of(Complaint c, LocalDate today) {
             var f = c.getForwardedCompany();
             return new CitizenComplaintDto(c.getId(), c.getCode(), c.getReceivedDate(), c.getCategory(), c.getSummary(),
                     c.getContent(), c.getLocation(), c.getArea().getCode(), c.getArea().getName(), c.getStatus(),
                     f == null ? null : f.getName(), c.getDeadline(), c.isOverdue(today), c.getResolution(),
-                    c.getResolvedAt());
+                    c.getResolvedAt(), ComplaintPhotoService.split(c.getPhotoUrls()));
         }
     }
 

@@ -28,7 +28,7 @@ export function useComplaint(id: number | null) {
   });
 }
 
-function useComplaintMutation<V>(fn: (v: V) => Promise<ComplaintDetail>) {
+function useComplaintMutation<V, R = ComplaintDetail>(fn: (v: V) => Promise<R>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: fn,
@@ -39,12 +39,29 @@ function useComplaintMutation<V>(fn: (v: V) => Promise<ComplaintDetail>) {
   });
 }
 
+/** Tải một ảnh lên Cloudinary qua backend, nhận URL để gắn vào khiếu nại (`photoUrls`). */
+export function useUploadComplaintPhoto() {
+  return useMutation({
+    mutationFn: (file: File) => {
+      const body = new FormData();
+      body.append('file', file);
+      return api.post<{ url: string }>('/api/complaints/photos', body);
+    },
+  });
+}
+
 export function useCreateComplaint() {
   return useComplaintMutation((body: CreateComplaintRequest) => api.post<ComplaintDetail>('/api/complaints', body));
 }
 
+export function useReturnComplaint() {
+  return useComplaintMutation(({ id, reason }: { id: number; reason: string }) =>
+    api.post<void>(`/api/complaints/${id}/return`, { reason }),
+  );
+}
+
 export function useForwardComplaint() {
-  return useComplaintMutation(({ id, ...body }: { id: number; companyId?: number; note?: string }) =>
+  return useComplaintMutation(({ id, ...body }: { id: number; companyId?: number; areaId?: number; note?: string }) =>
     api.post<ComplaintDetail>(`/api/complaints/${id}/forward`, body),
   );
 }

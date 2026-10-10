@@ -21,6 +21,7 @@ import {
   useComplaints,
   useCreateComplaint,
   useForwardComplaint,
+  useUploadComplaintPhoto,
 } from './api';
 import { ComplaintDrawer } from './ComplaintDrawer';
 import { CreateComplaintForm, TextActionForm } from './ComplaintForms';
@@ -35,10 +36,12 @@ function CommuneActions({ detail }: { detail: ComplaintDetail }) {
   const { message } = App.useApp();
   const c = detail.complaint;
   const companies = useCompanies();
-  const areaCompany = useActiveAssignments(dayjs().format('YYYY-MM-DD')).data?.find((a) => a.areaId === c.areaId);
   const forward = useForwardComplaint();
   const close = useCloseComplaint();
-  const [form] = Form.useForm<{ companyId?: number; note?: string }>();
+  const areas = useAreas();
+  const [form] = Form.useForm<{ companyId?: number; areaId?: number; note?: string }>();
+  const areaId = Form.useWatch('areaId', form) ?? c.areaId;
+  const areaCompanyOfChoice = useActiveAssignments(dayjs().format('YYYY-MM-DD')).data?.find((a) => a.areaId === areaId);
 
   return (
     <>
@@ -51,15 +54,37 @@ function CommuneActions({ detail }: { detail: ComplaintDetail }) {
             layout="vertical"
             onFinish={(v) =>
               forward.mutate(
-                { id: c.id, companyId: v.companyId, note: v.note?.trim() || undefined },
+                {
+                  id: c.id,
+                  companyId: v.companyId,
+                  areaId: v.areaId !== c.areaId ? v.areaId : undefined,
+                  note: v.note?.trim() || undefined,
+                },
                 { onSuccess: (d) => message.success(`Đã chuyển ${d.complaint.forwardedCompanyCode}, hạn ${dayjs(d.complaint.deadline).format('DD/MM/YYYY')}`) },
               )
             }
           >
+            {c.location && <Alert type="info" showIcon style={{ marginBottom: 12 }} message={`Nơi xảy ra sự việc: ${c.location}`} />}
+            <Form.Item
+              label="Khu vực"
+              name="areaId"
+              initialValue={c.areaId}
+              extra="Sửa nếu sự việc xảy ra ở khu vực khác hộ; công ty mặc định theo khu vực này"
+            >
+              <Select
+                showSearch
+                optionFilterProp="label"
+                options={(areas.data ?? []).map((a) => ({ value: a.id, label: `${a.code} · ${a.name}` }))}
+              />
+            </Form.Item>
             <Form.Item label="Công ty" name="companyId" extra="Hạn xử lý: hôm nay + 3 ngày">
               <Select
                 allowClear
-                placeholder={areaCompany ? `${areaCompany.companyCode} · phụ trách ${c.areaCode} (mặc định)` : 'Khu vực chưa có công ty'}
+                placeholder={
+                  areaCompanyOfChoice
+                    ? `${areaCompanyOfChoice.companyCode} · phụ trách ${areaCompanyOfChoice.areaCode} (mặc định)`
+                    : 'Khu vực chưa có công ty'
+                }
                 options={(companies.data ?? []).map((co) => ({ value: co.id, label: `${co.code} · ${co.name}` }))}
               />
             </Form.Item>
@@ -74,6 +99,7 @@ function CommuneActions({ detail }: { detail: ComplaintDetail }) {
       )}
       <Divider orientation="left">Đóng khiếu nại</Divider>
       <TextActionForm
+        name="close"
         label="Kết quả giải quyết"
         okText="Đóng khiếu nại"
         requiredMessage="Vui lòng ghi kết quả giải quyết"
@@ -105,6 +131,7 @@ export function CommuneComplaintsPage() {
     enabled: creating,
   });
   const create = useCreateComplaint();
+  const uploadPhoto = useUploadComplaintPhoto();
 
   const open = (id: number | null) =>
     setParams(
@@ -208,6 +235,7 @@ export function CommuneComplaintsPage() {
         subjects={(subjects.data?.items ?? []).map((s) => ({ id: s.id, code: s.code, name: s.name, areaId: s.areaId }))}
         submitting={create.isPending}
         error={errorText(create.error)}
+        onUploadPhoto={(file) => uploadPhoto.mutateAsync(file).then((r) => r.url)}
         onCancel={() => {
           setCreating(false);
           create.reset();

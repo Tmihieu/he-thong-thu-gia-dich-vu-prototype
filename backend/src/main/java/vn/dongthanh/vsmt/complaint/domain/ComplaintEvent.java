@@ -64,6 +64,12 @@ public class ComplaintEvent {
 
     public static ComplaintEvent byUser(Complaint complaint, ComplaintEventType type, OffsetDateTime at, Long userId,
             String actorLabel, Long companyId, String content) {
+        return byUser(complaint, type, at, userId, actorLabel, companyId, content, true);
+    }
+
+    /** {@code visibleToCitizen = false}: mốc nội bộ xã / công ty, không hiện trên timeline của người dân. */
+    public static ComplaintEvent byUser(Complaint complaint, ComplaintEventType type, OffsetDateTime at, Long userId,
+            String actorLabel, Long companyId, String content, boolean visibleToCitizen) {
         ComplaintEvent e = new ComplaintEvent();
         e.complaint = complaint;
         e.eventType = type;
@@ -72,7 +78,7 @@ public class ComplaintEvent {
         e.actorLabel = actorLabel;
         e.companyId = companyId;
         e.content = content;
-        e.visibleToCitizen = true;
+        e.visibleToCitizen = visibleToCitizen;
         return e;
     }
 

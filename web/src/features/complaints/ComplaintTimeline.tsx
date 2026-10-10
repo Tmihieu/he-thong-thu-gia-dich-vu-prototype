@@ -9,6 +9,7 @@ const COLORS: Record<ComplaintEvent['eventType'], string> = {
   RECEIVED: 'blue',
   FORWARDED: 'orange',
   COMPANY_REPLIED: 'purple',
+  RETURNED: 'red',
   CLOSED: 'green',
 };
 

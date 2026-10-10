@@ -32,6 +32,9 @@ import vn.dongthanh.vsmt.complaint.domain.ComplaintEventRepository;
 import vn.dongthanh.vsmt.complaint.domain.ComplaintEventType;
 import vn.dongthanh.vsmt.complaint.domain.ComplaintRepository;
 import vn.dongthanh.vsmt.complaint.domain.ComplaintStatus;
+import vn.dongthanh.vsmt.complaint.service.ComplaintOverdueService;
+import vn.dongthanh.vsmt.complaint.service.ComplaintPhotoService;
+import vn.dongthanh.vsmt.complaint.service.ComplaintPhotoStorage;
 import vn.dongthanh.vsmt.complaint.service.ComplaintService;
 import vn.dongthanh.vsmt.complaint.service.ComplaintService.CreateComplaintCommand;
 import vn.dongthanh.vsmt.masterdata.domain.Area;
@@ -52,6 +55,8 @@ import vn.dongthanh.vsmt.platform.security.CurrentUser;
 /** Viết trước (TDD) cho T36: luồng NEW → PROCESSING → RESOLVED, timeline chỉ thêm, công ty chỉ thấy khi được chuyển (G12). */
 class ComplaintServiceTest {
 
+    static final String CLOUD = "https://res.cloudinary.com/demo/image/upload/";
+
     final ComplaintRepository complaints = mock(ComplaintRepository.class);
     final ComplaintEventRepository events = mock(ComplaintEventRepository.class);
     final AreaRepository areas = mock(AreaRepository.class);
@@ -60,8 +65,9 @@ class ComplaintServiceTest {
     final AreaAssignmentService assignments = mock(AreaAssignmentService.class);
     final NotificationService notifications = mock(NotificationService.class);
     final Clock clock = Clock.fixed(Instant.parse("2026-10-14T02:40:00Z"), ZoneId.of("Asia/Ho_Chi_Minh"));
+    final ComplaintPhotoStorage storage = mock(ComplaintPhotoStorage.class);
     final ComplaintService service = new ComplaintService(complaints, events, areas, subjects, companies, assignments,
-            notifications, clock);
+            notifications, new ComplaintPhotoService(storage), clock);
 
     final CurrentUser officer = new CurrentUser(2L, "canbo_xa", Role.COMMUNE_OFFICER, null);
     final CurrentUser dv01Manager = new CurrentUser(11L, "dv01", Role.COMPANY_MANAGER, 1L);
@@ -77,6 +83,7 @@ class ComplaintServiceTest {
         ReflectionTestUtils.setField(kv07, "id", 7L);
         dv01 = Company.create("DV01", "Công ty MTĐT Đông Thạnh", "A", "0900000001", LocalDate.of(2026, 1, 1));
         ReflectionTestUtils.setField(dv01, "id", 1L);
+        when(storage.owns(any())).thenAnswer(inv -> ((String) inv.getArgument(0)).startsWith(CLOUD));
         when(areas.findById(7L)).thenReturn(Optional.of(kv07));
         when(companies.findById(1L)).thenReturn(Optional.of(dv01));
         when(assignments.companyOf(7L, LocalDate.of(2026, 10, 14))).thenReturn(Optional.of(1L));
@@ -110,6 +117,37 @@ class ComplaintServiceTest {
     }
 
     @Test
+    void officerAttachesPhotosWithoutDuplicates() {
+        String a = CLOUD + "v1/vsmt/complaints/a.jpg";
+        String b = CLOUD + "v1/vsmt/complaints/b.png";
+
+        Complaint c = service.create(command(ComplaintChannel.PHONE, List.of(a, b, a)), officer);
+
+        assertThat(c.getPhotoUrls()).isEqualTo(a + "\n" + b);
+    }
+
+    @Test
+    void complaintWithoutPhotosStoresNull() {
+        assertThat(create().getPhotoUrls()).isNull();
+    }
+
+    @Test
+    void foreignPhotoUrlIsRejectedAndNothingIsSaved() {
+        assertThatThrownBy(() -> service.create(
+                command(ComplaintChannel.PHONE, List.of("https://evil.example/x.jpg")), officer))
+                .extracting("code").isEqualTo("PHOTO_NOT_FOUND");
+        verify(complaints, never()).save(any(Complaint.class));
+    }
+
+    @Test
+    void sixPhotosAreRejected() {
+        List<String> six = java.util.stream.IntStream.range(0, 6).mapToObj(i -> CLOUD + "v1/p" + i + ".jpg").toList();
+
+        assertThatThrownBy(() -> service.create(command(ComplaintChannel.PHONE, six), officer))
+                .extracting("code").isEqualTo("PHOTO_TOO_MANY");
+    }
+
+    @Test
     void officerCannotRecordAnAppComplaint() {
         assertThatThrownBy(() -> service.create(command(ComplaintChannel.APP), officer))
                 .extracting("code").isEqualTo("COMPLAINT_CHANNEL_INVALID");
@@ -119,7 +157,7 @@ class ComplaintServiceTest {
     void forwardDefaultsToAreaCompanyWithThreeDayDeadlineAndNotifiesCompany() {
         Complaint c = create();
 
-        service.forward(c.getId(), null, null, officer);
+        service.forward(c.getId(), null, null, null, officer);
 
         assertThat(c.getStatus()).isEqualTo(ComplaintStatus.PROCESSING);
         assertThat(c.getForwardedCompany()).isSameAs(dv01);
@@ -138,15 +176,15 @@ class ComplaintServiceTest {
     @Test
     void forwardingTwiceOrWithoutCompanyIs422() {
         Complaint c = create();
-        service.forward(c.getId(), null, null, officer);
+        service.forward(c.getId(), null, null, null, officer);
 
-        assertThatThrownBy(() -> service.forward(c.getId(), 1L, null, officer))
+        assertThatThrownBy(() -> service.forward(c.getId(), 1L, null, null, officer))
                 .extracting("code").isEqualTo("COMPLAINT_ALREADY_FORWARDED");
 
         when(assignments.companyOf(7L, LocalDate.of(2026, 10, 14))).thenReturn(Optional.empty());
         Complaint other = create();
         ReflectionTestUtils.setField(other, "forwardedCompany", null);
-        assertThatThrownBy(() -> service.forward(other.getId(), null, null, officer))
+        assertThatThrownBy(() -> service.forward(other.getId(), null, null, null, officer))
                 .extracting("code").isEqualTo("COMPLAINT_NO_COMPANY");
     }
 
@@ -156,7 +194,7 @@ class ComplaintServiceTest {
 
         assertThatThrownBy(() -> service.reply(c.getId(), "Đã thu", dv01Manager))
                 .isInstanceOf(NotFoundException.class);
-        service.forward(c.getId(), null, null, officer);
+        service.forward(c.getId(), null, null, null, officer);
         assertThatThrownBy(() -> service.reply(c.getId(), "Đã thu", dv02Manager))
                 .isInstanceOf(NotFoundException.class);
 
@@ -176,7 +214,7 @@ class ComplaintServiceTest {
     @Test
     void closeRequiresResolutionAndClosedComplaintRejectsEveryStep() {
         Complaint c = create();
-        service.forward(c.getId(), null, null, officer);
+        service.forward(c.getId(), null, null, null, officer);
 
         assertThatThrownBy(() -> service.close(c.getId(), " ", officer))
                 .extracting("code").isEqualTo("COMPLAINT_RESOLUTION_REQUIRED");
@@ -207,7 +245,7 @@ class ComplaintServiceTest {
     void companyCannotCreateForwardOrClose() {
         assertThatThrownBy(() -> service.create(command(ComplaintChannel.PHONE), dv01Manager))
                 .isInstanceOf(AccessDeniedException.class);
-        assertThatThrownBy(() -> service.forward(40L, null, null, dv01Manager)).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> service.forward(40L, null, null, null, dv01Manager)).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> service.close(40L, "x", dv01Manager)).isInstanceOf(AccessDeniedException.class);
         verify(complaints, never()).save(any());
     }
@@ -215,10 +253,88 @@ class ComplaintServiceTest {
     @Test
     void overdueIsComputedFromDeadline() {
         Complaint c = create();
-        service.forward(c.getId(), null, null, officer);
+        service.forward(c.getId(), null, null, null, officer);
 
         assertThat(c.isOverdue(LocalDate.of(2026, 10, 17))).isFalse();
         assertThat(c.isOverdue(LocalDate.of(2026, 10, 18))).isTrue();
+    }
+
+    @Test
+    void forwardCanFixAreaFirstAndNotesItOnTimeline() {
+        Complaint c = create();
+        Area kv20 = Area.create("KV20", "Tổ dân phố 20", District.create("DTH", "Đông Thạnh"));
+        ReflectionTestUtils.setField(kv20, "id", 20L);
+        when(areas.findById(20L)).thenReturn(Optional.of(kv20));
+        when(assignments.companyOf(20L, LocalDate.of(2026, 10, 14))).thenReturn(Optional.of(1L));
+
+        service.forward(c.getId(), null, 20L, null, officer);
+
+        assertThat(c.getArea()).isSameAs(kv20);
+        assertThat(saved.get(1).getContent()).startsWith("Đổi khu vực KV07 → KV20. Chuyển ");
+    }
+
+    @Test
+    void areaCannotChangeOnceForwarded() {
+        Complaint c = create();
+        service.forward(c.getId(), null, null, null, officer);
+        Area kv20 = Area.create("KV20", "Tổ dân phố 20", District.create("DTH", "Đông Thạnh"));
+
+        assertThatThrownBy(() -> c.changeArea(kv20)).extracting("code").isEqualTo("COMPLAINT_ALREADY_FORWARDED");
+    }
+
+    @Test
+    void companyReturnsMisroutedComplaintAndCommuneCanForwardAgain() {
+        Complaint c = create();
+        service.forward(c.getId(), null, null, null, officer);
+
+        service.returnToCommune(c.getId(), "Không thuộc khu vực chúng tôi phụ trách", dv01Manager);
+
+        assertThat(c.getForwardedCompany()).isNull();
+        assertThat(c.getDeadline()).isNull();
+        assertThat(c.getStatus()).isEqualTo(ComplaintStatus.PROCESSING);
+        ComplaintEvent returned = saved.get(saved.size() - 1);
+        assertThat(returned.getEventType()).isEqualTo(ComplaintEventType.RETURNED);
+        assertThat(returned.isVisibleToCitizen()).isFalse();
+        ArgumentCaptor<NotificationCommand> sent = ArgumentCaptor.forClass(NotificationCommand.class);
+        verify(notifications, times(3)).publish(sent.capture(), any());
+        assertThat(sent.getAllValues().get(2).role()).isEqualTo(Role.COMMUNE_OFFICER);
+
+        service.forward(c.getId(), 1L, null, null, officer);
+        assertThat(c.getForwardedCompany()).isSameAs(dv01);
+    }
+
+    @Test
+    void onlyTheForwardedCompanyCanReturnIt() {
+        Complaint c = create();
+        service.forward(c.getId(), null, null, null, officer);
+
+        assertThatThrownBy(() -> service.returnToCommune(c.getId(), "x", dv02Manager)).isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> service.returnToCommune(c.getId(), "x", officer)).isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void cannotReturnAComplaintThatWasNeverForwarded() {
+        Complaint c = create();
+
+        assertThatThrownBy(() -> c.returnToCommune()).extracting("code").isEqualTo("COMPLAINT_NOT_FORWARDED");
+    }
+
+    @Test
+    void overdueJobNotifiesCommuneAndCompanyOnceAndMarksIt() {
+        Complaint c = create();
+        service.forward(c.getId(), null, null, null, officer);
+        ReflectionTestUtils.setField(c, "deadline", LocalDate.of(2026, 10, 13));
+        when(complaints.findOverdueNotNotified(LocalDate.of(2026, 10, 14))).thenReturn(List.of(c));
+        var job = new ComplaintOverdueService(complaints, notifications, clock);
+
+        assertThat(job.run()).isEqualTo(1);
+
+        assertThat(c.getOverdueNotifiedAt()).isNotNull();
+        ArgumentCaptor<NotificationCommand> sent = ArgumentCaptor.forClass(NotificationCommand.class);
+        verify(notifications, times(4)).publish(sent.capture(), any());
+        var last = sent.getAllValues().subList(sent.getAllValues().size() - 2, sent.getAllValues().size());
+        assertThat(last).extracting(NotificationCommand::type).containsExactly(RecipientType.ROLE, RecipientType.COMPANY);
+        assertThat(last.get(0).title()).contains(c.getCode()).contains("quá hạn");
     }
 
     private Complaint create() {
@@ -226,8 +342,12 @@ class ComplaintServiceTest {
     }
 
     private static CreateComplaintCommand command(ComplaintChannel channel) {
+        return command(channel, null);
+    }
+
+    private static CreateComplaintCommand command(ComplaintChannel channel, List<String> photoUrls) {
         return new CreateComplaintCommand("Nguyễn Văn Mẫu", "0900000128", null, 7L, channel,
                 ComplaintCategory.LATE_COLLECTION, "Tổ 7 chưa được thu gom 2 ngày", "Rác để trước nhà 2 ngày chưa ai lấy.",
-                null);
+                null, photoUrls);
     }
 }

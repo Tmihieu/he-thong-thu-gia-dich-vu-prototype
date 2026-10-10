@@ -270,8 +270,8 @@ Mục tiêu: service layer của `billing`, `collection`, `remittance` có cover
 - **Nghiệm thu:** mỗi sự kiện tạo đúng thông báo cho đúng người; công ty không thấy thông báo của công ty khác.
 
 ### 9.8 `complaints`
-- `Complaint` (mã, ngày, người gửi, đối tượng liên quan, khu vực, kênh: app / điện thoại / trực tiếp, loại, nội dung, trạng thái Mới → Đang xử lý → Đã giải quyết, công ty được chuyển, hạn xử lý) + `ComplaintEvent` (timeline: tiếp nhận, chuyển công ty, công ty phản hồi, đóng — **lưu nối tiếp, không ghi đè**).
-- Xã: ghi nhận, xử lý, chuyển công ty (hạn +3 ngày). Công ty: xem khiếu nại được chuyển hoặc thuộc khu vực mình, phản hồi. Dân: gửi từ app, xem timeline.
+- `Complaint` (mã, ngày, người gửi, đối tượng liên quan, khu vực, kênh: app / điện thoại / trực tiếp, loại, nội dung, trạng thái Mới → Đang xử lý → Đã giải quyết, công ty được chuyển, hạn xử lý) + `ComplaintEvent` (timeline: tiếp nhận, chuyển công ty, công ty phản hồi, công ty trả lại xã, đóng — **lưu nối tiếp, không ghi đè**).
+- Xã: ghi nhận, xử lý, sửa khu vực nếu sự việc ở nơi khác hộ, chuyển công ty (hạn +3 ngày). Công ty: chỉ xem khiếu nại **đã được chuyển cho mình** (G12), phản hồi hoặc trả lại xã nếu bị chuyển nhầm. Dân: gửi từ app (kèm tối đa 5 ảnh), xem timeline. Khiếu nại quá hạn được nhắc xã và công ty lúc 08:00 hằng ngày.
 - **Nghiệm thu:** một khiếu nại đi hết dân → xã → công ty → xã → dân với timeline và thông báo ở mỗi bước.
 
 ### 9.9 `citizen-app`

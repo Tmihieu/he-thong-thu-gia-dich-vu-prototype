@@ -6,6 +6,7 @@ import '../../api/client.dart';
 import '../../api/models.dart';
 import '../../shared/format.dart';
 import '../../shared/labels.dart';
+import '../../shared/photos.dart';
 import '../../shared/query.dart';
 import '../../shared/theme.dart';
 import '../../shared/ui.dart';
@@ -74,6 +75,8 @@ class _NewComplaintScreenState extends State<NewComplaintScreen> {
   String? _category;
   bool _locationEdited = false;
   bool _busy = false;
+  bool _uploading = false;
+  List<UploadedPhoto> _photos = const [];
   String? _error;
 
   @override
@@ -107,6 +110,7 @@ class _NewComplaintScreenState extends State<NewComplaintScreen> {
         category: _category!,
         content: _content.text.trim(),
         location: location.isEmpty ? null : location,
+        photoUrls: [for (final p in _photos) p.url],
       );
       refreshBus.bump(const [Topics.complaints, Topics.notifications]);
       if (mounted) context.pushReplacement('/complaints/${created.complaint.id}?fresh=1');
@@ -123,7 +127,11 @@ class _NewComplaintScreenState extends State<NewComplaintScreen> {
         body: ListenableBuilder(
           listenable: _profile,
           builder: (context, _) => PageList(
-            bottom: WideButton(label: 'Gửi phản ánh', busy: _busy, onPressed: _submit),
+            bottom: WideButton(
+              label: _uploading ? 'Đang tải ảnh…' : 'Gửi phản ánh',
+              busy: _busy,
+              onPressed: _uploading ? null : _submit,
+            ),
             children: [
               AppCard(children: [
                 const FieldLabel('Loại phản ánh *'),
@@ -153,6 +161,15 @@ class _NewComplaintScreenState extends State<NewComplaintScreen> {
                   maxLines: 10,
                   maxLength: 4000,
                   decoration: const InputDecoration(hintText: 'Thời điểm, tình trạng thực tế, số lần xảy ra…'),
+                ),
+              ]),
+              AppCard(children: [
+                const FieldLabel('Ảnh đính kèm'),
+                PhotoPicker(
+                  photos: _photos,
+                  upload: citizenApi.uploadComplaintPhoto,
+                  onChanged: (v) => setState(() => _photos = v),
+                  onUploadingChanged: (v) => setState(() => _uploading = v),
                 ),
               ]),
               Notice(
@@ -217,6 +234,7 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
                   ]),
                   Text(c.content, style: const TextStyle(height: 1.4)),
                   Muted([c.code, 'gửi ngày ${formatDate(c.receivedDate)}', ?c.location].join(' · ')),
+                  if (c.photoUrls.isNotEmpty) PhotoStrip(c.photoUrls),
                   if (c.forwardedCompanyName != null) InfoRow('Công ty xử lý', c.forwardedCompanyName),
                   if (c.deadline != null) InfoRow('Hạn xử lý', formatDate(c.deadline)),
                   if (c.resolution != null) InfoRow('Kết quả', c.resolution, bold: true),

@@ -7,6 +7,7 @@ import 'theme.dart';
 import 'ui.dart';
 
 /// Ảnh từ backend: cần header Bearer (ảnh người dân không công khai) và header bỏ cảnh báo ngrok.
+/// Ảnh ở máy chủ khác (vd. Cloudinary của phản ánh) tải không kèm header, để không lộ token cho bên thứ ba.
 class AuthImage extends StatelessWidget {
   const AuthImage(this.url, {super.key, this.fit = BoxFit.cover, this.width, this.height, this.placeholder});
 
@@ -19,7 +20,7 @@ class AuthImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Image.network(
         api.resolve(url),
-        headers: api.authHeaders,
+        headers: !url.startsWith('http') || url.startsWith(api.baseUrl) ? api.authHeaders : null,
         fit: fit,
         width: width,
         height: height,

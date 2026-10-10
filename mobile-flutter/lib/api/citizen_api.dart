@@ -39,12 +39,24 @@ class CitizenApi {
   Future<ComplaintDetail> complaint(int id) async =>
       ComplaintDetail.fromJson(await _api.get('/api/citizen/complaints/$id') as Json);
 
-  Future<ComplaintDetail> submitComplaint({required String category, required String content, String? location}) async =>
+  Future<ComplaintDetail> submitComplaint({
+    required String category,
+    required String content,
+    String? location,
+    List<String> photoUrls = const [],
+  }) async =>
       ComplaintDetail.fromJson(await _api.post('/api/citizen/complaints', {
         'category': category,
         'content': content,
         'location': ?location,
+        if (photoUrls.isNotEmpty) 'photoUrls': photoUrls,
       }) as Json);
+
+  /// Tải một ảnh phản ánh lên Cloudinary qua backend; `name` và `url` đều là URL ảnh.
+  Future<UploadedPhoto> uploadComplaintPhoto(String filePath) async {
+    final url = ((await _api.upload('/api/citizen/complaints/photos', filePath)) as Json)['url'].toString();
+    return UploadedPhoto(name: url, url: url);
+  }
 
   Future<NotificationPage> notifications({String? kind}) async => NotificationPage.fromJson(
       await _api.get('/api/citizen/notifications', params: {'kind': kind, 'size': 100}) as Json);

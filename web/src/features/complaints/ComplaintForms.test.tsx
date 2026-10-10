@@ -16,14 +16,27 @@ const subjects = [
   { id: 130, code: 'DTH-H000130', name: 'Hộ Lê Thị Mẫu', areaId: 9 },
 ];
 
-function setupCreate() {
+function setupCreate(onUploadPhoto: (file: File) => Promise<string> = () => Promise.resolve('')) {
   const onSubmit = vi.fn();
   render(
     <AntApp>
-      <CreateComplaintForm open areas={areas} subjects={subjects} onSubmit={onSubmit} onCancel={() => {}} />
+      <CreateComplaintForm open areas={areas} subjects={subjects} onUploadPhoto={onUploadPhoto} onSubmit={onSubmit}
+        onCancel={() => {}} />
     </AntApp>,
   );
   return onSubmit;
+}
+
+async function fillRequired() {
+  await userEvent.type(screen.getByLabelText('Người khiếu nại'), 'Nguyễn Văn Mẫu');
+  await pickOption(screen.getByLabelText('Hộ / đối tượng liên quan'), 'DTH-H000128 · Hộ Nguyễn Văn Mẫu');
+  await pickOption(screen.getByLabelText('Loại'), 'Thu gom chậm hoặc không đúng lịch');
+  await userEvent.type(screen.getByLabelText('Tóm tắt'), 'Tổ 7 chưa được thu gom 2 ngày');
+  await userEvent.type(screen.getByLabelText('Nội dung'), 'Rác để trước nhà.');
+}
+
+function photoInput() {
+  return document.querySelector<HTMLInputElement>('input[type="file"]')!;
 }
 
 describe('CreateComplaintForm', () => {
@@ -58,6 +71,40 @@ describe('CreateComplaintForm', () => {
         receivedDate: dayjs().format('YYYY-MM-DD'),
       }),
     );
+  });
+});
+
+describe('CreateComplaintForm: ảnh đính kèm', () => {
+  it('tải ảnh lên rồi gửi kèm photoUrls', async () => {
+    const url = 'https://res.cloudinary.com/demo/image/upload/v1/vsmt/complaints/a.jpg';
+    const upload = vi.fn().mockResolvedValue(url);
+    const onSubmit = setupCreate(upload);
+    await fillRequired();
+    const file = new File([new Uint8Array([0xff, 0xd8, 0xff])], 'a.jpg', { type: 'image/jpeg' });
+    await userEvent.upload(photoInput(), file);
+    await waitFor(() => expect(upload).toHaveBeenCalledWith(expect.objectContaining({ name: 'a.jpg' })));
+    await userEvent.click(screen.getByRole('button', { name: 'Ghi nhận' }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ photoUrls: [url] })));
+  });
+
+  it('ảnh tải lỗi thì chặn gửi và báo lý do', async () => {
+    const onSubmit = setupCreate(() => Promise.reject(new Error('lỗi')));
+    await fillRequired();
+    await userEvent.upload(photoInput(), new File([new Uint8Array([0xff, 0xd8, 0xff])], 'a.jpg', { type: 'image/jpeg' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Ghi nhận' }));
+
+    expect(await screen.findByText(/Có ảnh tải lên không thành công/)).toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('không nhận file không phải ảnh', async () => {
+    const upload = vi.fn();
+    setupCreate(upload);
+    await userEvent.upload(photoInput(), new File(['x'], 'a.pdf', { type: 'application/pdf' }), { applyAccept: false });
+
+    expect(upload).not.toHaveBeenCalled();
+    expect(await screen.findByText('Chỉ nhận ảnh JPEG, PNG hoặc WebP.')).toBeInTheDocument();
   });
 });
 

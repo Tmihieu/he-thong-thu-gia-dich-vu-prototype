@@ -54,6 +54,9 @@ vsmt:
   # Thư mục lưu ảnh người dân tải lên (chợ đồ cũ, rác cồng kềnh); đường dẫn tương đối tính từ thư mục chạy
   # backend. Không commit (xem .gitignore).
   upload-dir: ${UPLOAD_DIR:uploads}
+  cloudinary:
+    # Ảnh khiếu nại: cloudinary://<api_key>:<api_secret>@<cloud_name>. Để trống thì không tải được ảnh khiếu nại.
+    url: ${CLOUDINARY_URL:}
   sepay:
     # Khóa SePay gửi kèm webhook (header "Authorization: Apikey <khóa>"). Để trống thì webhook trả 503, không ghi gì.
     webhook-api-key: ${SEPAY_WEBHOOK_API_KEY:}

@@ -148,8 +148,13 @@ Sổ công ty–kỳ là nguồn số duy nhất cho: Tiến độ, Đối soát
 | BR-CMP-02 | Timeline lưu nối tiếp, không ghi đè | SPEC §9.8 | Chốt | |
 | BR-CMP-03 | Xã xử lý hoặc chuyển công ty (hạn +3 ngày); công ty chỉ thấy khiếu nại đã chuyển cho mình và phản hồi; chỉ xã đóng | SPEC §9.8, DD G12 | Chốt | |
 | BR-CMP-04 | Thông báo ở mỗi bước; dân xem timeline trên app. Khiếu nại xã nhập hộ (điện thoại/trực tiếp) không tự gắn tài khoản app | flows BF-03 | Chốt | |
-| BR-CMP-05 | Thêm loại "cơ sở vật chất" và "đề nghị thu gom" | 03/10 | Chốt, **chưa làm** | |
+| BR-CMP-05 | Thêm loại "cơ sở vật chất" và "đề nghị thu gom" (`FACILITY`, `COLLECTION_REQUEST`, migration V32) | 03/10 | Demo | |
 | BR-CMP-06 | Thêm loại khiếu nại "đã đóng nhưng chưa được ghi nhận" (`PAID_NOT_RECORDED`, migration V35) để hộ báo khoản đã đóng mà xã chưa ghi | 04/10 (đánh giá prototype 8.3) | Demo | |
+| BR-CMP-07 | Ảnh đính kèm: tối đa 5 ảnh JPEG/PNG/WebP, ≤ 5 MB mỗi ảnh, tải lên Cloudinary qua backend (`CLOUDINARY_URL`); chỉ nhận URL do hệ thống tải lên. Dân đính kèm khi gửi từ app, cán bộ xã khi ghi nhận | 10/10/2026 | Demo | |
+| BR-CMP-08 | Khu vực của phản ánh từ app lấy theo hộ; nếu sự việc ở nơi khác (ô "Địa điểm"), xã thấy địa điểm và **sửa khu vực trước khi chuyển công ty** (chỉ trước khi chuyển; ghi vào mốc "Chuyển công ty") | 10/10/2026 | Demo | |
+| BR-CMP-09 | Công ty bị chuyển nhầm **trả lại xã** kèm lý do (mốc `RETURNED`, nội bộ: dân không thấy và không nhận thông báo); xã chuyển lại công ty khác, hạn +3 ngày tính lại. Trạng thái giữ "Đang xử lý" | 10/10/2026 | Demo | |
+| BR-CMP-10 | Khiếu nại đã chuyển công ty và quá hạn: job 08:00 báo cán bộ xã và công ty đang giữ, mỗi khiếu nại một lần (trả lại xã rồi chuyển lại thì được nhắc lại theo hạn mới) | 10/10/2026 | Demo | |
+| BR-CMP-11 | Dân thấy mọi mốc kèm nội dung phản hồi của công ty ngay khi công ty phản hồi (không chờ xã duyệt), theo SPEC §9.8 và nghiệm thu §10 bước 6. **Cần xác nhận với xã** nếu muốn xã duyệt trước | 10/10/2026 | Chờ xác nhận | |
 
 ## 9. App người dân (`citizen-app`)
 
