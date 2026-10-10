@@ -1,7 +1,7 @@
 import { Alert, Button, DatePicker, Form, Input, InputNumber, Radio, Select, Space } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 
-import { formatMoney } from '../../../shared/format';
+import { formatDate, formatMoney } from '../../../shared/format';
 import { CHARGE_SCOPE_LABELS, type ChargeScope } from '../../../shared/labels';
 import type { Area, Company, Period } from '../../masterdata/api';
 import type { FeeType, IssueRequest } from '../api';
@@ -12,7 +12,7 @@ interface FormValues {
   scopeType: ChargeScope;
   areaIds?: number[];
   companyId?: number;
-  companyDueDate?: Dayjs | null;
+  dueDate?: Dayjs | null;
   unitPrice?: number | null;
   note?: string;
 }
@@ -26,8 +26,8 @@ interface Props {
   error?: string | null;
   /** Giá trị đã nhập lần trước (bấm "Sửa lại" ở bước xem trước) để không phải nhập lại. */
   initial?: IssueRequest | null;
-  /** {@code companyDueDate}: hạn công ty nộp xã do cán bộ xã chọn, chỉ có khi kỳ chưa bắt đầu (dự thảo). */
-  onPreview: (req: IssueRequest, companyDueDate?: string) => void;
+  /** {@code dueDate}: hạn dân đóng do cán bộ xã chọn, chỉ có khi kỳ chưa bắt đầu (dự thảo). */
+  onPreview: (req: IssueRequest, dueDate?: string) => void;
 }
 
 /** Form phiếu yêu cầu thu (§10 bước 2): kỳ, loại phí, phạm vi, hạn nộp; bước tiếp theo là Xem trước. */
@@ -50,7 +50,7 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
       companyId: v.scopeType === 'COMPANY' ? v.companyId : undefined,
       unitPrice: feeType?.pricingMode === 'FIXED' && v.unitPrice != null ? v.unitPrice : undefined,
       note: v.note?.trim() || undefined,
-    }, isDraft && v.companyDueDate ? v.companyDueDate.format('YYYY-MM-DD') : undefined);
+    }, isDraft && v.dueDate ? v.dueDate.format('YYYY-MM-DD') : undefined);
   }
 
   return (
@@ -62,10 +62,10 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
       initialValues={initial ?? { scopeType: 'ALL', feeTypeId: feeTypes.find((f) => f.code === 'ENV')?.id }}
       onValuesChange={(changed) => {
         if ('periodId' in changed) {
-          // Kỳ chưa bắt đầu: mặc định hạn nộp là ngày 25 của kỳ; cán bộ xã chọn lại được.
+          // Kỳ chưa bắt đầu: mặc định hạn dân đóng là ngày 25 tháng cuối kỳ; cán bộ xã chọn lại được.
           const p = periods.find((x) => x.id === changed.periodId);
           form.setFieldsValue({
-            companyDueDate: p ? (p.status === 'DRAFT' ? dayjs(p.endDate).date(25) : dayjs(p.dueDate)) : null,
+            dueDate: p ? (p.status === 'DRAFT' ? dayjs(p.endDate).date(25) : dayjs(p.dueDate)) : null,
           });
         }
       }}
@@ -124,16 +124,17 @@ export function ChargeRequestForm({ periods, feeTypes, areas, companies, loading
       )}
       <Space size="middle" wrap style={{ display: 'flex' }}>
         <Form.Item
-          label="Hạn nộp"
-          name="companyDueDate"
+          label="Hạn dân đóng"
+          name="dueDate"
+          extra={period ? `Hạn quyết toán ${formatDate(period.settlementDueDate)}` : undefined}
         >
           <DatePicker
-            aria-label="Hạn nộp"
+            aria-label="Hạn dân đóng"
             format="DD/MM/YYYY"
             placeholder="dd/mm/yyyy"
             allowClear={false}
             disabled={!isDraft}
-            disabledDate={(d) => (period ? d.isBefore(dayjs(period.openDate), 'day') : false)}
+            disabledDate={(d) => (period ? d.isBefore(dayjs(period.openDate), 'day') || !d.isBefore(period.settlementDueDate, 'day') : false)}
           />
         </Form.Item>
         {feeType?.pricingMode === 'FIXED' && (

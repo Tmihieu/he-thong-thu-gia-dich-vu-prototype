@@ -69,7 +69,7 @@ export function usePublishCharges() {
 }
 
 /**
- * Xem trước các khoản sẽ lập khi mở kỳ dự thảo (chỉ đọc, không ghi khoản); {@code companyDueDate} (hạn nộp duy nhất của kỳ)
+ * Xem trước các khoản sẽ lập khi mở kỳ dự thảo (chỉ đọc, không ghi khoản); {@code dueDate} (hạn dân đóng)
  * trống thì giữ hạn của dự thảo.
  */
 export type DraftPreviewParams = Omit<PublishPeriodRequest, 'note'>;

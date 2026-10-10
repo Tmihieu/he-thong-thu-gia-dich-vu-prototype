@@ -23,11 +23,12 @@ import vn.dongthanh.vsmt.collection.service.CollectionService;
 import vn.dongthanh.vsmt.collection.service.CollectionService.PaymentCommand;
 import vn.dongthanh.vsmt.platform.domain.User;
 import vn.dongthanh.vsmt.remittance.domain.ReceiptMethod;
-import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService;
-import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService.IssueReceiptCommand;
+import vn.dongthanh.vsmt.remittance.service.SettlementService;
+import vn.dongthanh.vsmt.remittance.service.SettlementService.IssueSettlementCommand;
 import vn.dongthanh.vsmt.support.CollectionFixture;
 import vn.dongthanh.vsmt.support.FixedClockConfig;
 import vn.dongthanh.vsmt.support.IntegrationTest;
+import vn.dongthanh.vsmt.support.MutableClock;
 
 /** SPEC §9.6: tiến độ (theo tổ), đối soát (sổ phía xã) và dòng công ty (sổ phía công ty) cùng một con số. */
 @Transactional
@@ -38,7 +39,13 @@ class LedgerConsistencyIT extends IntegrationTest {
     @Autowired ObjectMapper json;
     @Autowired CollectionFixture fx;
     @Autowired CollectionService collection;
-    @Autowired CompanyReceiptService receipts;
+    @Autowired SettlementService settlements;
+    @Autowired MutableClock clock;
+
+    @org.junit.jupiter.api.AfterEach
+    void resetClock() {
+        clock.reset();
+    }
 
     @BeforeEach
     void seed() {
@@ -46,8 +53,10 @@ class LedgerConsistencyIT extends IntegrationTest {
         pay("DTH-H000001", fx.thu07, "p-1");
         pay("DTH-H000003", fx.thu09, "p-2");
         pay("DTH-H000005", fx.thu12, "p-3");
-        receipts.issue(new IssueReceiptCommand(fx.dv01.getId(), fx.october.getId(), 100_000, ReceiptMethod.TRANSFER,
-                null, null, null, null), fx.actor(fx.officer));
+        // Qua hạn dân đóng 31/10: DV01 quyết toán, nộp xã 160.000 (phí thu gom của fixture bằng 0).
+        clock.set(java.time.Instant.parse("2026-11-01T03:00:00Z"));
+        settlements.issue(new IssueSettlementCommand(fx.dv01.getId(), fx.october.getId(), ReceiptMethod.TRANSFER, null,
+                null, null, null), fx.actor(fx.officer));
     }
 
     @Test
@@ -70,8 +79,8 @@ class LedgerConsistencyIT extends IntegrationTest {
             assertThat(companyView).as("dòng công ty %s", code).isEqualTo(row);
         }
         Map<String, Object> dv01 = ledgerRows.stream().filter(r -> "DV01".equals(r.get("companyCode"))).findFirst().orElseThrow();
-        assertThat(dv01).containsEntry("progress", "PARTIAL").containsEntry("reconciliation", "PENDING");
-        assertThat(num(dv01, "received")).isEqualTo(100_000);
+        assertThat(dv01).containsEntry("progress", "PAID_IN_FULL").containsEntry("reconciliation", "MATCHED");
+        assertThat(num(dv01, "received")).isEqualTo(160_000);
     }
 
     @Test

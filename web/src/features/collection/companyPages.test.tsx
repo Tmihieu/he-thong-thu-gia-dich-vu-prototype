@@ -56,9 +56,9 @@ function api() {
         chargeId: 2, chargeCode: 'KT-2', periodCode: '2026-10', subjectCode: 'DTH-H000002', subjectName: 'Hộ Bình' }]),
     'GET /api/remittance/ledger': () =>
       jsonResponse(200, [{ companyId: 1, companyCode: 'DV01', companyName: 'Công ty MTĐT Đông Thạnh', periodId: 10,
-        due: 1_600_000, chargeCount: 20, collected: 1_200_000, cashCollected: 1_200_000, received: 1_000_000, receiptCount: 1, remaining: 600_000,
+        due: 1_600_000, chargeCount: 20, collected: 1_200_000, cashCollected: 1_200_000, received: 0, settlementId: null, settlementCode: null, remaining: 600_000,
         gap: -200_000, previousDebt: 0, overdue: false, collectionRate: 75, lowCollectionRate: false, remittedRate: 62.5,
-        lowRemittedRate: false, progress: 'PARTIAL', reconciliation: 'PENDING' }]),
+        lowRemittedRate: false, progress: 'NOT_PAID', reconciliation: 'PENDING' }]),
     'GET /api/collection/cash/held': () =>
       jsonResponse(200, [
         { collectorId: 21, collectorUsername: 'thu07', collectorName: 'Nguyễn Thành Mẫu', collectedCash: 240_000,
@@ -126,7 +126,7 @@ describe('Công ty: hộ của công ty', () => {
 });
 
 describe('Công ty: tổng quan', () => {
-  it('bấm thẻ số hộ / số tiền đã thu lọc hộ đã thu; bấm thẻ đã nộp về xã mở tab phiếu thu', async () => {
+  it('bấm thẻ số hộ / số tiền đã thu lọc hộ đã thu; bấm thẻ đã nộp về xã mở tab phiếu quyết toán', async () => {
     api();
     renderApp('/company/assigned');
 
@@ -137,7 +137,7 @@ describe('Công ty: tổng quan', () => {
     expect(screen.getByRole('button', { name: 'Xem chi tiết Số tiền đã thu' })).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Xem chi tiết Số tiền đã nộp về xã' }));
-    expect(await screen.findByRole('tab', { name: 'Phiếu thu xã lập', selected: true })).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: 'Phiếu quyết toán', selected: true })).toBeInTheDocument();
   });
 
   it('vòng tiến độ lấy đúng dòng sổ công ty; nhận tiền mặt lỗi thì hiện thông báo tiếng Việt từ máy chủ', async () => {
@@ -145,7 +145,7 @@ describe('Công ty: tổng quan', () => {
     renderApp('/company/assigned');
 
     expect(await screen.findByText('75%')).toBeInTheDocument();
-    expect(screen.getByText('Nộp một phần')).toBeInTheDocument();
+    expect(screen.getByText('Chưa quyết toán')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Nhận tiền mặt Lê Văn Mẫu' })).toBeDisabled();
 
     await userEvent.click(screen.getByRole('button', { name: 'Nhận tiền mặt Nguyễn Thành Mẫu' }));

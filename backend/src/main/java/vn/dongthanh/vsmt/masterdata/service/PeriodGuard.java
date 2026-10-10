@@ -34,6 +34,33 @@ public class PeriodGuard {
     }
 
     /**
+     * Kỳ ghi nhận tiền / điều chỉnh của một khoản (BR-REM-15, 07/10). Kỳ của khoản còn mở và công ty chưa quyết toán kỳ đó:
+     * trả null, ghi vào chính kỳ. Kỳ đã khóa, hoặc công ty đã có phiếu quyết toán của kỳ: ghi vào kỳ đang thu mới nhất khác
+     * kỳ đó, số đã chốt giữ nguyên. Trạng thái đọc kèm FOR SHARE: khóa kỳ và lập phiếu quyết toán (FOR UPDATE dòng kỳ) chờ
+     * lượt ghi này, lượt ghi đến sau thấy phiếu đã lập. Kỳ dự thảo bị chặn.
+     */
+    public CollectionPeriod carryOverPeriod(CollectionPeriod own, Long companyId) {
+        String status = periods.lockStatusForShare(own.getId());
+        boolean locked = PeriodStatus.LOCKED.name().equals(status);
+        if (!locked) {
+            if (PeriodStatus.DRAFT.name().equals(status)) {
+                throw draft(own);
+            }
+            if (companyId == null || !periods.isSettled(own.getId(), companyId)) {
+                return null;
+            }
+        }
+        for (CollectionPeriod p : periods.findByStatusOrderByStartDateDesc(PeriodStatus.COLLECTING)) {
+            if (!p.getId().equals(own.getId())
+                    && PeriodStatus.COLLECTING.name().equals(periods.lockStatusForShare(p.getId()))) {
+                return p;
+            }
+        }
+        throw new BusinessRuleException("NO_COLLECTING_PERIOD", "Kỳ " + own.getCode()
+                + (locked ? " đã khóa" : " công ty đã quyết toán") + " và chưa có kỳ đang thu khác để ghi nhận.");
+    }
+
+    /**
      * Kiểm trên entity đã nạp, không khóa: cho xem trước (transaction chỉ đọc không được FOR SHARE) hoặc khi dòng kỳ
      * đã được nạp bằng FOR UPDATE.
      */
