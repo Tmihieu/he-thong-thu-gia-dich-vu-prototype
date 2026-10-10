@@ -9,12 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriod;
 import vn.dongthanh.vsmt.masterdata.domain.CollectionPeriodRepository;
 import vn.dongthanh.vsmt.masterdata.domain.PeriodAutoRule;
@@ -36,7 +34,6 @@ import vn.dongthanh.vsmt.platform.service.AuditService;
  * nào; cán bộ xã xem trước và bấm "Mở kỳ & phát hành" (PeriodPublishService). Chạy lại trong ngày không sinh trùng vì
  * kỳ đã có mã thì bỏ qua. Quản trị chỉ sửa quy tắc, không mở kỳ thay xã.
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -77,6 +74,7 @@ public class PeriodAutoService {
 
     public PeriodAutoRule updateRule(RuleCommand cmd, CurrentUser actor) {
         actor.requireRole(Role.ADMIN);
+        rules.lockRule();
         PeriodAutoRule rule = loadRule();
         Map<String, Object> before = snapshot(rule);
         rule.update(cmd.enabled(), cmd.periodType(), cmd.createDay(), cmd.remitDueDays(),
@@ -91,29 +89,11 @@ public class PeriodAutoService {
         return createDraftIfDue(actor);
     }
 
-    @Scheduled(cron = "0 30 7 * * *", zone = "Asia/Ho_Chi_Minh")
-    public void runDaily() {
-        // Tạm tắt tự tạo kỳ: quản trị tạo kỳ dự thảo bằng tay. Bỏ dòng return để bật lại lịch 7:30.
-        if (true) {
-            return;
-        }
-        try {
-            DraftRun run = createDraftIfDue(null);
-            if (run.created() != null) {
-                log.info("Tự tạo kỳ thu: {}", run.message());
-            } else {
-                log.debug("Tự tạo kỳ thu: {}", run.message());
-            }
-        } catch (RuntimeException e) {
-            // Một lần lỗi (vd. chưa có biểu giá) không được làm hỏng lịch chạy của các ngày sau.
-            log.warn("Tự tạo kỳ thu không thành công: {}", e.getMessage());
-        }
-    }
-
     /**
      * @param actor người bấm chạy tay; null khi hệ thống tự chạy (nhật ký ghi là "system")
      */
     public DraftRun createDraftIfDue(CurrentUser actor) {
+        rules.lockRule();
         PeriodAutoRule rule = loadRule();
         if (!rule.isEnabled()) {
             return new DraftRun(null, "Quy tắc tự tạo kỳ đang tắt.");
@@ -144,6 +124,7 @@ public class PeriodAutoService {
      */
     public CollectionPeriod createDraft(PeriodType type, int year, int number, CurrentUser actor) {
         actor.requireRole(Role.ADMIN);
+        rules.lockRule();
         // Dựng kỳ tạm để kiểm tra số tháng/quý, sinh mã và ngày cuối kỳ trước khi tra biểu giá.
         CollectionPeriod probe = CollectionPeriod.draft(type, year, number, LocalDate.of(year, 12, 31), null);
         if (periods.existsByCode(probe.getCode())) {
@@ -156,7 +137,7 @@ public class PeriodAutoService {
     private CollectionPeriod saveDraft(PeriodType type, int year, int number, LocalDate periodEnd, PeriodAutoRule rule,
             TariffVersion tariff, CurrentUser actor) {
         CollectionPeriod draft = periods.save(CollectionPeriod.draft(type, year, number,
-                periodEnd.withDayOfMonth(25), tariff));
+                periodEnd.plusDays(rule.getRemitDueDays()), tariff));
         Map<String, Object> after = new LinkedHashMap<>();
         after.put("code", draft.getCode());
         after.put("type", draft.getPeriodType());
@@ -175,6 +156,10 @@ public class PeriodAutoService {
                 "Hệ thống đã tạo " + draft.getLabel() + " ở dạng dự thảo. Vui lòng xem trước các khoản và bấm "
                         + "\"Mở kỳ & phát hành\" để hộ dân nhận khoản thu.",
                 Map.of("screen", "commune.periodDrafts")), null);
+        notifications.publish(NotificationCommand.toRole(Role.ADMIN, NotificationKind.INFO,
+                "Kỳ thu " + draft.getLabel() + " chờ xem trước",
+                "Kỳ dự thảo đã được tạo. Vào Cấu hình → Kỳ thu để xem trước các khoản và xác nhận mở kỳ & phát hành.",
+                Map.of("screen", "admin.periodDrafts")), null);
         return draft;
     }
 

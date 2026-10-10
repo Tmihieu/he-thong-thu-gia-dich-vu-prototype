@@ -54,7 +54,7 @@ const group = (bg: string, children: ColumnsType<LedgerRow>, title: ReactNode) =
 
 /** Phí xử lý và vận chuyển trên toàn bộ số đã thu (tiền mặt và chuyển khoản đều vào công ty); thu gom là phần công ty giữ. */
 const processing = (r: LedgerRow) => r.qrProcessing + r.cashProcessing;
-const transport = (r: LedgerRow) => r.payable - processing(r);
+const transport = (r: LedgerRow) => r.collected - r.adjustment - r.retained - processing(r);
 
 const money = (pick: (r: LedgerRow) => number, strong = false) => (_: unknown, r: LedgerRow) => <MoneyText value={pick(r)} strong={strong} />;
 
@@ -166,7 +166,7 @@ export function ReconciliationPage() {
     <ConfigProvider theme={{ token: { borderRadius: 0, borderRadiusLG: 0, borderRadiusSM: 0 }, components: { Table: { borderColor: BORDER } } }}>
       <PageHeader
         title={period ? `Đối soát ${period.label.toLowerCase()}` : 'Đối soát'}
-        description={`${rows.length} công ty thu gom · Lập phiếu thu đủ số công ty còn phải nộp thì công ty đó chuyển sang Khớp`}
+        description={`${rows.length} công ty thu gom · Công ty phải nộp trước phần vận chuyển và xử lý theo khoản đã phát hành, dù chưa thu từ hộ.`}
         extra={
           <Space wrap>
             <PeriodSelect value={periodId} onChange={setPeriodId} />
@@ -180,8 +180,8 @@ export function ReconciliationPage() {
         <h2 style={{ margin: '0 0 12px', padding: '10px 16px', background: brand.chrome, color: '#fff', fontSize: 18, fontWeight: 700 }}>Tiền công ty nộp xã trong kỳ</h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', gap: 12 }}>
           <Tile label="Cty phải nộp xã · vận chuyển + xử lý" value={payable}>
-            <Line label="Vận chuyển" value={sum(rows, transport)} />
-            <Line label="+ Xử lý" value={sum(rows, processing)} />
+            <Line label="Vận chuyển" value={sum(rows, (row) => row.payableTransport ?? 0)} />
+            <Line label="+ Xử lý" value={sum(rows, (row) => row.payableProcessing ?? 0)} />
           </Tile>
           <Operator>−</Operator>
           <Tile label="Đã nộp về xã" value={received}>
@@ -190,7 +190,7 @@ export function ReconciliationPage() {
           <Operator>=</Operator>
           <Tile label={diff > 0 ? 'Cty còn phải nộp' : 'Đã nộp đủ'} value={Math.max(diff, 0)}>
             <span style={{ fontSize: 13 }}>
-              {diff > 0 ? 'Công ty còn giữ tiền vận chuyển, xử lý của xã, phải thu về.' : 'Các công ty đã nộp đủ phần vận chuyển, xử lý.'}
+              {diff > 0 ? 'Công ty phải nộp trước, không chờ thu đủ tiền từ hộ.' : 'Các công ty đã nộp đủ phần vận chuyển, xử lý.'}
             </span>
           </Tile>
         </div>

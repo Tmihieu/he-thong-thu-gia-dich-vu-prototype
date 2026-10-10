@@ -65,7 +65,11 @@ public class CompanyLedgerService {
             long previousDebt, boolean overdue, double collectionRate, boolean lowCollectionRate, double remittedRate,
             boolean lowRemittedRate, Progress progress, Reconciliation reconciliation,
             long retained, long payable, long debtCollected, long communePaid, long communeOwed, long qrCollection, long lastPeriodDebt,
-            long qrProcessing, long processing) {
+            long qrProcessing, long processing, long payableProcessing) {
+
+        public long payableTransport() {
+            return payable - payableProcessing;
+        }
 
         /** Chuyển khoản vào tài khoản xã (đã trừ hoàn). */
         public long qrTotal() {
@@ -91,7 +95,7 @@ public class CompanyLedgerService {
          * xử lý trong tiền mặt.
          */
         public long cashTransport() {
-            return payable + qrCollection - cashProcessing();
+            return cashCollected - adjustment - cashCollection() - cashProcessing();
         }
 
         /** Tiền xã đang giữ = chuyển khoản + đã nhận từ công ty − đã chi cho công ty. */
@@ -106,7 +110,7 @@ public class CompanyLedgerService {
 
         /** Vận chuyển trong toàn bộ số đã thu (tiền mặt và chuyển khoản, đều vào công ty), đã trừ điều chỉnh: phải nộp xã − phí xử lý. */
         public long transport() {
-            return payable - processing;
+            return collected - adjustment - retained - processing;
         }
 
         /** Đã khớp: công ty không còn phải nộp xã. */
@@ -129,6 +133,8 @@ public class CompanyLedgerService {
         Map<Long, LedgerQueries.QrAmount> qr = queries.qrByCompany(periodId).stream()
                 .collect(Collectors.toMap(LedgerQueries.QrAmount::companyId, Function.identity()));
         Map<Long, CompanyAmount> processing = byCompany(queries.processingByCompany(periodId));
+        Map<Long, CompanyAmount> advancePayable = byCompany(queries.advancePayableByCompany(periodId));
+        Map<Long, CompanyAmount> advanceProcessing = byCompany(queries.advanceProcessingByCompany(periodId));
         Map<Long, Received> received = remitted.receivedByCompany(periodId);
         Map<Long, Long> paidBack = remitted.paidBackByCompany(periodId);
         Map<Long, Long> previousDebt = previousDebts(periodId, today);
@@ -141,6 +147,7 @@ public class CompanyLedgerService {
         ids.addAll(refunded.keySet());
         ids.addAll(received.keySet());
         ids.addAll(lastPeriodDebt.keySet());
+        ids.addAll(advancePayable.keySet());
         previousDebt.forEach((id, debt) -> {
             if (debt > 0) {
                 ids.add(id);
@@ -157,7 +164,9 @@ public class CompanyLedgerService {
                         retained.get(id), cash.get(id), collected.get(id), received.get(id),
                         previousDebt.getOrDefault(id, 0L), debtCollected.get(id), paidBack.getOrDefault(id, 0L),
                         qr.get(id), lastPeriodDebt.containsKey(id) ? lastPeriodDebt.get(id).amount() : 0L,
-                        processing.containsKey(id) ? processing.get(id).amount() : 0L))
+                        processing.containsKey(id) ? processing.get(id).amount() : 0L,
+                        advancePayable.containsKey(id) ? advancePayable.get(id).amount() : 0L,
+                        advanceProcessing.containsKey(id) ? advanceProcessing.get(id).amount() : 0L))
                 .sorted(Comparator.comparing(LedgerRow::companyCode))
                 .toList();
     }
@@ -169,7 +178,7 @@ public class CompanyLedgerService {
                     Company c = companies.findAllById(List.of(companyId)).stream()
                             .filter(x -> x.getId().equals(companyId)).findFirst()
                             .orElseThrow(() -> new NotFoundException("COMPANY_NOT_FOUND", "Không tìm thấy công ty."));
-                    return build(c, period(periodId), LocalDate.now(clock), null, null, null, null, null, null, null, 0L, null, 0L, null, 0L, 0L);
+                    return build(c, period(periodId), LocalDate.now(clock), null, null, null, null, null, null, null, 0L, null, 0L, null, 0L, 0L, 0L, 0L);
                 });
     }
 
@@ -221,7 +230,7 @@ public class CompanyLedgerService {
     private LedgerRow build(Company company, CollectionPeriod period, LocalDate today, CompanyAmount dueRow,
             CompanyAmount adjustmentRow, CompanyAmount refundedRow, CompanyAmount retainedRow, CompanyAmount cashRow, CompanyAmount collectedRow,
             Received receivedRow, long previousDebt, CompanyAmount debtCollectedRow, long communePaid, LedgerQueries.QrAmount qr,
-            long lastPeriodDebt, long processing) {
+            long lastPeriodDebt, long processing, long payable, long payableProcessing) {
         long qrCollection = qr == null ? 0 : qr.collection();
         long qrProcessing = qr == null ? 0 : qr.processing();
         long due = dueRow == null ? 0 : dueRow.amount();
@@ -232,10 +241,7 @@ public class CompanyLedgerService {
         long cashCollected = cashRow == null ? 0 : cashRow.amount();
         long received = receivedRow == null ? 0 : receivedRow.amount();
         long receiptCount = receivedRow == null ? 0 : receivedRow.receiptCount();
-        // Phải nộp xã = vận chuyển + phí xử lý = toàn bộ số đã thu (tiền mặt và chuyển khoản đều vào công ty, bỏ QR của xã
-        // 08/10) − điều chỉnh kỳ trước − phí thu gom công ty giữ.
         long retained = retainedRow == null ? 0 : retainedRow.amount();
-        long payable = collected - adjustment - retained;
         long remaining = payable - received;
         long gap = received - payable;
         // Xã còn phải trả lại công ty = số âm của còn phải nộp − tiền xã đã trả (phiếu chi trả công ty, UC-55).
@@ -269,7 +275,7 @@ public class CompanyLedgerService {
                 adjustment, refunded, collected, cashCollected, received, receiptCount, remaining, gap, previousDebt, overdue, percent(collected, due),
                 due > 0 && lowRate(collected, due), percent(received, payable), payable > 0 && lowRate(received, payable),
                 progress, reconciliation, retained, payable, debtCollectedRow == null ? 0 : debtCollectedRow.amount(), communePaid,
-                communeOwed, qrCollection, lastPeriodDebt, qrProcessing, processing);
+                communeOwed, qrCollection, lastPeriodDebt, qrProcessing, processing, payableProcessing);
     }
 
     /** Phần trăm làm tròn 1 chữ số để hiển thị; 0 khi phải thu 0. */

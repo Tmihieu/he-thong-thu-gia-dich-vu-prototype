@@ -2,6 +2,8 @@
 
 Chạy kịch bản SPEC §10 trên laptop bằng dữ liệu seed giả (profile `demo`). Không dùng dữ liệu thật.
 
+**Cập nhật 09/10:** xem [cấu hình tự động kỳ thu, xem trước khoản và nhắc công ty nộp trước](local-automation.md). Công ty phải nộp phần vận chuyển + xử lý theo khoản đã phát hành dù chưa thu từ hộ; các mô tả và số seed theo công thức “phải nộp tính trên đã thu” bên dưới là kịch bản cũ.
+
 **Lưu ý 06/10:** `docs/use-cases.md` đã sửa theo góp ý BA 05/10 (xem `docs/thay-doi-gop-y-0510.md`), code demo chưa đổi. Chỗ nào ghi **(chưa có trong bản demo)** là nghiệp vụ chuẩn mới, demo chạy vẫn theo hành vi cũ ghi kèm.
 
 ## Yêu cầu
@@ -9,6 +11,33 @@ Chạy kịch bản SPEC §10 trên laptop bằng dữ liệu seed giả (profil
 - Docker Desktop đang chạy; ổ chứa dữ liệu Docker còn trống vài GB cho lần build đầu (image JDK, Node, thư viện Maven và npm).
 - Flutter SDK trên laptop (app người dân ở `mobile-flutter/`, không nằm trong docker).
 - Điện thoại Android cùng mạng Wi-Fi với laptop.
+
+## Mở nhanh web local trên Windows (đã build trước đó)
+
+Mở Docker Desktop, chờ Docker sẵn sàng rồi mở PowerShell tại thư mục gốc repo. Dùng lại `.env` và dữ liệu hiện có; không cần reset database để mở lại web.
+
+```powershell
+docker compose up -d backend
+docker compose up -d --no-deps web
+docker compose ps
+docker compose logs --tail 50 backend
+```
+
+Lệnh đầu tự khởi động database và chờ database healthy. Chờ log backend có `Started VsmtApplication`, sau đó kiểm tra web và mở trình duyệt:
+
+```powershell
+(Invoke-WebRequest -Uri http://localhost:5173 -UseBasicParsing -TimeoutSec 10).StatusCode
+Start-Process http://localhost:5173
+```
+
+Kết quả kiểm tra web phải là `200`; đây chỉ là kiểm tra trang web phản hồi, chưa xác nhận API hoạt động. Đăng nhập bằng tài khoản ở mục **Tài khoản** bên dưới. Nếu `.env` đổi `WEB_PORT`, thay `5173` trong các lệnh bằng cổng đã cấu hình.
+
+**Vì sao dùng `--no-deps web`:** cấu hình hiện tại cho web phụ thuộc cả backend và `jmix-admin`. Ngày 09/10/2026, chạy `docker compose up -d` bị kẹt khi build Jmix vì file `gradlew` có xuống dòng Windows (CRLF), báo `\r: not found` / `Syntax error`. Hai lệnh trên đã mở được web local bằng image có sẵn, bỏ qua khởi động Jmix; các màn dùng Jmix không hoạt động khi dịch vụ này chưa chạy. Đây không phải cách khắc phục lỗi build Jmix.
+
+- Nếu không vào được web: xem `docker compose ps -a` và `docker compose logs --tail 100 web backend`.
+- Nếu backend báo lỗi database: kiểm tra cả `docker-compose.override.yml` nếu có; file này có thể ghi đè tên database trong `.env`. Không chạy `down -v` chỉ để mở web vì sẽ xóa dữ liệu.
+- Nếu chưa có image hoặc cần cập nhật code: build lần lượt `docker compose build backend` và `docker compose build web`, rồi chạy lại hai lệnh khởi động trên.
+- Khi muốn dừng web và API nhưng giữ dữ liệu: `docker compose stop web backend`.
 
 ## Chạy db + backend + web
 

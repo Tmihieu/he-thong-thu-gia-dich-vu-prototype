@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+    "/api/remittance/reminder-rule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get"];
+        put: operations["update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/platform/users/{id}": {
         parameters: {
             query?: never;
@@ -46,9 +62,9 @@ export interface paths {
             cookie?: never;
         };
         /** Chi tiết hồ sơ hộ */
-        get: operations["get"];
+        get: operations["get_1"];
         /** Sửa thông tin đối tượng (cán bộ xã); hợp đồng sửa qua /contracts/{id} */
-        put: operations["update"];
+        put: operations["update_1"];
         post?: never;
         delete?: never;
         options?: never;
@@ -65,7 +81,7 @@ export interface paths {
         };
         get?: never;
         /** Sửa/đổi tên (giữ tên cũ kèm văn bản), đổi ấp, ngừng dùng đường/hẻm (quản trị viên, có nhật ký) */
-        put: operations["update_1"];
+        put: operations["update_2"];
         post?: never;
         delete?: never;
         options?: never;
@@ -81,9 +97,9 @@ export interface paths {
             cookie?: never;
         };
         /** Quy tắc tự tạo kỳ thu dự thảo (quản trị) */
-        get: operations["get_1"];
+        get: operations["get_2"];
         /** Sửa quy tắc tự tạo kỳ thu: bật/tắt, chu kỳ, ngày tạo, số ngày hạn (quản trị) */
-        put: operations["update_2"];
+        put: operations["update_3"];
         post?: never;
         delete?: never;
         options?: never;
@@ -151,7 +167,7 @@ export interface paths {
             cookie?: never;
         };
         /** Xem tài khoản nhận chuyển khoản của xã (mọi vai trò nội bộ); 404 nếu chưa khai */
-        get: operations["get_2"];
+        get: operations["get_3"];
         /** Khai báo / sửa tài khoản nhận chuyển khoản của xã (quản trị viên) */
         put: operations["save"];
         post?: never;
@@ -243,6 +259,22 @@ export interface paths {
         put?: never;
         /** Gửi nhắc nộp (cán bộ xã); công ty không có nợ quá hạn → 422 */
         post: operations["create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/remittance/reminder-rule/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["run"];
         delete?: never;
         options?: never;
         head?: never;
@@ -466,7 +498,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Chạy ngay việc nhắc hộ dân nộp phí hôm nay (job tự chạy 08:00 mỗi ngày); không gửi trùng */
-        post: operations["run"];
+        post: operations["run_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -520,6 +552,23 @@ export interface paths {
         put?: never;
         /** Tạo hồ sơ hộ, kèm hợp đồng đầu tiên nếu có (cán bộ xã) */
         post: operations["create_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/masterdata/subjects/{id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tiếp tục cung cấp dịch vụ cho hồ sơ đã tạm ngừng */
+        post: operations["resume"];
         delete?: never;
         options?: never;
         head?: never;
@@ -725,7 +774,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Chạy ngay quy tắc để thử (quản trị): tạo kỳ dự thảo nếu đã tới ngày, không thì cho biết lý do */
-        post: operations["run_1"];
+        post: operations["run_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1318,6 +1367,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/remittance/reminder-rule/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["preview_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/remittance/receipts/{id}": {
         parameters: {
             query?: never;
@@ -1326,7 +1391,7 @@ export interface paths {
             cookie?: never;
         };
         /** Một phiếu thu (để in: số tiền bằng chữ, lũy kế, còn phải nộp) */
-        get: operations["get_3"];
+        get: operations["get_4"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1564,7 +1629,7 @@ export interface paths {
             cookie?: never;
         };
         /** Chi tiết kỳ thu */
-        get: operations["get_4"];
+        get: operations["get_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1819,7 +1884,7 @@ export interface paths {
             cookie?: never;
         };
         /** Chi tiết khiếu nại kèm timeline */
-        get: operations["get_5"];
+        get: operations["get_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2193,7 +2258,7 @@ export interface paths {
             cookie?: never;
         };
         /** Xem ảnh vừa tải (người tải) hoặc ảnh đã gắn (theo quyền bài) */
-        get: operations["preview_2"];
+        get: operations["preview_3"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2227,7 +2292,7 @@ export interface paths {
             cookie?: never;
         };
         /** Chi tiết phản ánh kèm timeline (của hộ khác trả 404) */
-        get: operations["get_6"];
+        get: operations["get_7"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2325,6 +2390,20 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        RuleRequest: {
+            enabled: boolean;
+            /** Format: int32 */
+            daysBeforeDue: number;
+            /** Format: int32 */
+            repeatEveryDays: number;
+        };
+        Rule: {
+            enabled?: boolean;
+            /** Format: int32 */
+            daysBeforeDue?: number;
+            /** Format: int32 */
+            repeatEveryDays?: number;
+        };
         UpdateUserRequest: {
             fullName: string;
             /** @enum {string} */
@@ -2773,6 +2852,10 @@ export interface components {
             /** @description Đã hết nợ các kỳ được nhắc */
             settled: boolean;
         };
+        RunResult: {
+            /** Format: int32 */
+            sent?: number;
+        };
         IssueReceiptRequest: {
             /** Format: int64 */
             companyId: number;
@@ -2981,10 +3064,6 @@ export interface components {
         UnreadCountDto: {
             /** Format: int64 */
             unreadCount: number;
-        };
-        RunResult: {
-            /** Format: int32 */
-            sent: number;
         };
         CreateTariffRequest: {
             /** @example BG-70-2027 */
@@ -3617,6 +3696,18 @@ export interface components {
             skippedByReason: {
                 [key: string]: number;
             };
+            plannedCharges?: components["schemas"]["PreviewCharge"][];
+        };
+        PreviewCharge: {
+            /** Format: int64 */
+            subjectId?: number;
+            subjectCode?: string;
+            subjectName?: string;
+            areaName?: string;
+            companyCode?: string;
+            /** Format: int64 */
+            amount?: number;
+            exempt?: boolean;
         };
         PublishPeriodDto: {
             period: components["schemas"]["PeriodDto"];
@@ -3730,6 +3821,20 @@ export interface components {
             dueDate: string;
             content: string;
         };
+        Target: {
+            /** Format: int64 */
+            companyId?: number;
+            companyCode?: string;
+            companyName?: string;
+            /** Format: int64 */
+            periodId?: number;
+            periodLabel?: string;
+            /** Format: date */
+            dueDate?: string;
+            /** Format: int64 */
+            remaining?: number;
+            overdue?: boolean;
+        };
         LedgerRowDto: {
             /** Format: int64 */
             companyId: number;
@@ -3812,7 +3917,7 @@ export interface components {
             retained: number;
             /**
              * Format: int64
-             * @description Phải nộp xã = vận chuyển + phí xử lý = đã thu (tiền mặt và chuyển khoản) − điều chỉnh kỳ trước − phí thu gom
+             * @description Phải nộp trước phần vận chuyển + xử lý theo khoản đã phát hành, trừ điều chỉnh xóa nợ; không phụ thuộc hộ đã đóng
              */
             payable: number;
             /**
@@ -3882,6 +3987,16 @@ export interface components {
              * @description Công nợ tháng trước: hộ còn chưa đóng của kỳ liền trước, tính đến hiện tại
              */
             lastPeriodDebt: number;
+            /**
+             * Format: int64
+             * @description Phần vận chuyển phải nộp trước theo khoản đã phát hành
+             */
+            payableTransport?: number;
+            /**
+             * Format: int64
+             * @description Phần xử lý phải nộp trước theo khoản đã phát hành
+             */
+            payableProcessing?: number;
         };
         HouseholdDebtDto: {
             /** Format: int64 */
@@ -4499,6 +4614,50 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Rule"];
+                };
+            };
+        };
+    };
+    update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Rule"];
+                };
+            };
+        };
+    };
     updateUser: {
         parameters: {
             query?: never;
@@ -4551,7 +4710,7 @@ export interface operations {
             };
         };
     };
-    get: {
+    get_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -4573,7 +4732,7 @@ export interface operations {
             };
         };
     };
-    update: {
+    update_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -4599,7 +4758,7 @@ export interface operations {
             };
         };
     };
-    update_1: {
+    update_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -4625,7 +4784,7 @@ export interface operations {
             };
         };
     };
-    get_1: {
+    get_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -4645,7 +4804,7 @@ export interface operations {
             };
         };
     };
-    update_2: {
+    update_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -4769,7 +4928,7 @@ export interface operations {
             };
         };
     };
-    get_2: {
+    get_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -4991,6 +5150,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ReminderDto"];
+                };
+            };
+        };
+    };
+    run: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RunResult"];
                 };
             };
         };
@@ -5344,7 +5523,7 @@ export interface operations {
             };
         };
     };
-    run: {
+    run_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -5473,6 +5652,28 @@ export interface operations {
         responses: {
             /** @description Created */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SubjectDto"];
+                };
+            };
+        };
+    };
+    resume: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5800,7 +6001,7 @@ export interface operations {
             };
         };
     };
-    run_1: {
+    run_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -6819,7 +7020,27 @@ export interface operations {
             };
         };
     };
-    get_3: {
+    preview_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Target"][];
+                };
+            };
+        };
+    };
+    get_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -7127,7 +7348,7 @@ export interface operations {
             };
         };
     };
-    get_4: {
+    get_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -7462,7 +7683,7 @@ export interface operations {
             };
         };
     };
-    get_5: {
+    get_6: {
         parameters: {
             query?: never;
             header?: never;
@@ -7954,7 +8175,7 @@ export interface operations {
             };
         };
     };
-    preview_2: {
+    preview_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -7999,7 +8220,7 @@ export interface operations {
             };
         };
     };
-    get_6: {
+    get_7: {
         parameters: {
             query?: never;
             header?: never;

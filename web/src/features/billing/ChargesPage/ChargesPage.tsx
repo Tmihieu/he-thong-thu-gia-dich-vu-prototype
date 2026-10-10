@@ -1,4 +1,4 @@
-import { Input, Segmented, Select, Space, Table } from 'antd';
+import { Card, Input, Select, Space, Table } from 'antd';
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
@@ -26,13 +26,13 @@ export function ChargesPage() {
   const periodLabel = new Map((periods.data ?? []).map((p) => [p.id, p.label]));
 
   return (
-    <>
-      <Space wrap size={16} style={{ marginBottom: 16 }}>
+    <Card className="section-card subjects-list-card">
+      <Space wrap className="subjects-filters">
         <Input.Search
           allowClear
           aria-label="Tìm hộ"
           placeholder="Tìm theo tên hoặc mã hộ"
-          style={{ width: 240 }}
+          style={{ width: 260 }}
           onSearch={(q) => setQuery((cur) => ({ ...cur, q: q.trim() || undefined, page: 0 }))}
         />
         <Select
@@ -44,14 +44,14 @@ export function ChargesPage() {
           options={(periods.data ?? []).map((p) => ({ value: p.id, label: p.label }))}
         />
         <Select
-          aria-label="Lọc theo tổ"
+          aria-label="Lọc theo ấp"
           allowClear
           showSearch
           optionFilterProp="label"
-          placeholder="Mọi tổ"
+          placeholder="Tất cả ấp"
           style={{ width: 200 }}
           onChange={(areaId?: number) => setQuery((q) => ({ ...q, areaId, page: 0 }))}
-          options={(areas.data ?? []).map((a) => ({ value: a.id, label: `${a.code} · ${a.name}` }))}
+          options={(areas.data ?? []).map((a) => ({ value: a.id, label: a.name }))}
         />
         <Select
           aria-label="Lọc theo công ty"
@@ -63,12 +63,14 @@ export function ChargesPage() {
           onChange={(companyId?: number) => setQuery((q) => ({ ...q, companyId, page: 0 }))}
           options={(companies.data ?? []).map((c) => ({ value: c.id, label: `${c.code} · ${c.name}` }))}
         />
-        <Segmented<Charge['status'] | 'ALL'>
+        <Select<Charge['status']>
           aria-label="Lọc theo trạng thái"
-          value={query.status ?? 'ALL'}
-          onChange={(v) => setQuery((q) => ({ ...q, status: v === 'ALL' ? undefined : v, page: 0 }))}
+          allowClear
+          placeholder="Mọi trạng thái"
+          style={{ width: 180 }}
+          value={query.status}
+          onChange={(status) => setQuery((q) => ({ ...q, status, page: 0 }))}
           options={[
-            { value: 'ALL', label: 'Tất cả' },
             ...(Object.keys(CHARGE_STATUS_LABELS) as Charge['status'][]).map((value) => ({
               value,
               label: CHARGE_STATUS_LABELS[value],
@@ -80,6 +82,7 @@ export function ChargesPage() {
         rowKey="id"
         size="middle"
         tableLayout="fixed"
+        scroll={{ x: 1200 }}
         loading={charges.isFetching}
         dataSource={charges.data?.items ?? []}
         locale={{
@@ -102,6 +105,7 @@ export function ChargesPage() {
           },
           {
             title: 'Đối tượng',
+            className: 'cell-left',
             render: (_, c) => (
               <>
                 <strong>{c.subjectName}</strong>
@@ -124,6 +128,6 @@ export function ChargesPage() {
           { title: 'Trạng thái', width: '11%', render: (_, c) => <ChargeStatusTag charge={c} /> },
         ]}
       />
-    </>
+    </Card>
   );
 }

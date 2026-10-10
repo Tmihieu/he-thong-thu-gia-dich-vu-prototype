@@ -139,7 +139,7 @@ public class ReminderService {
         String lines = debts.stream().map(d -> "- " + d.period().getLabel() + ": " + Money.format(d.remaining()))
                 .collect(Collectors.joining("\n"));
         return "Kính gửi " + company.getName() + ",\n"
-                + "Đến nay công ty còn chưa nộp đủ tiền giá dịch vụ đã thu về xã:\n" + lines + "\n"
+                + "Công ty còn phải nộp trước phần vận chuyển và xử lý về xã, không phụ thuộc đã thu từ hộ:\n" + lines + "\n"
                 + "Tổng cộng: " + Money.format(amount) + ". Đề nghị công ty nộp số còn thiếu trước ngày "
                 + VN_DATE.format(due) + ".\nUBND xã Đông Thạnh.";
     }

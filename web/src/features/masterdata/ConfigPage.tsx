@@ -6,6 +6,7 @@ import { CommuneBankAccountPage } from './CommuneBankAccountPage';
 import { LocationsSettings } from './LocationsSettings';
 import { PeriodsPage } from './PeriodsPage/PeriodsPage';
 import { TariffsPage } from './TariffsPage/TariffsPage';
+import { CompanyReminderRuleCard } from '../remittance/CompanyReminderRuleCard';
 
 /** Màn "Cấu hình" của quản trị: kỳ thu, biểu giá, công ty & địa bàn công ty phụ trách, tài khoản nhận chuyển khoản của xã. */
 export function ConfigPage() {
@@ -15,6 +16,7 @@ export function ConfigPage() {
       <Tabs
         items={[
           { key: 'periods', label: 'Kỳ thu', children: <PeriodsPage /> },
+          { key: 'reminders', label: 'Nhắc công ty nộp tiền', children: <CompanyReminderRuleCard /> },
           { key: 'tariffs', label: 'Biểu giá', children: <TariffsPage /> },
           { key: 'companies', label: 'Công ty & địa bàn', children: <CompaniesPage admin /> },
           { key: 'locations', label: 'Thiết lập địa bàn', children: <LocationsSettings /> },

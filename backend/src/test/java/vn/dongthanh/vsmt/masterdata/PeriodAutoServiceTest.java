@@ -133,8 +133,7 @@ class PeriodAutoServiceTest {
         assertThat(p.getStatus()).isEqualTo(PeriodStatus.DRAFT);
         assertThat(p.getStartDate()).isEqualTo(LocalDate.of(2026, 11, 1));
         assertThat(p.getOpenDate()).isEqualTo(LocalDate.of(2026, 11, 1));
-        // Hạn công ty nộp xã gợi ý: ngày 25 của kỳ.
-        assertThat(p.getDueDate()).isEqualTo(LocalDate.of(2026, 11, 25));
+        assertThat(p.getDueDate()).isEqualTo(LocalDate.of(2026, 12, 10));
         assertThat(p.getTariffVersion()).isSameAs(bg65);
         verify(tariffs).activeVersionOn(LocalDate.of(2026, 11, 1));
         verify(audit).recordSystem(eq("CREATE_DRAFT_PERIOD"), eq("CollectionPeriod"), eq("2026-11"), isNull(), any());
@@ -145,12 +144,15 @@ class PeriodAutoServiceTest {
         service.createDraftIfDue(null);
 
         ArgumentCaptor<NotificationCommand> cmd = ArgumentCaptor.forClass(NotificationCommand.class);
-        verify(notifications).publish(cmd.capture(), isNull());
-        assertThat(cmd.getValue().type()).isEqualTo(RecipientType.ROLE);
-        assertThat(cmd.getValue().role()).isEqualTo(Role.COMMUNE_OFFICER);
-        assertThat(cmd.getValue().kind()).isEqualTo(NotificationKind.INFO);
-        assertThat(cmd.getValue().title()).contains("Tháng 11/2026");
-        assertThat(cmd.getValue().link()).containsEntry("screen", "commune.periodDrafts");
+        verify(notifications, org.mockito.Mockito.times(2)).publish(cmd.capture(), isNull());
+        assertThat(cmd.getAllValues()).extracting(NotificationCommand::role)
+                .containsExactly(Role.COMMUNE_OFFICER, Role.ADMIN);
+        assertThat(cmd.getAllValues()).allSatisfy(notification -> {
+            assertThat(notification.type()).isEqualTo(RecipientType.ROLE);
+            assertThat(notification.kind()).isEqualTo(NotificationKind.INFO);
+            assertThat(notification.title()).contains("Tháng 11/2026");
+        });
+        assertThat(cmd.getValue().link()).containsEntry("screen", "admin.periodDrafts");
     }
 
     @Test
@@ -213,7 +215,7 @@ class PeriodAutoServiceTest {
     void dailyJobSwallowsFailuresSoTomorrowStillRuns() {
         when(rules.findById(PeriodAutoRule.ID)).thenReturn(Optional.empty());
 
-        service.runDaily();
+        new vn.dongthanh.vsmt.masterdata.service.PeriodAutoScheduler(service).runDaily();
 
         verify(periods, never()).save(any());
     }
@@ -272,10 +274,9 @@ class PeriodAutoServiceTest {
         assertThat(p.getCode()).isEqualTo("2026-Q4");
         assertThat(p.getStatus()).isEqualTo(PeriodStatus.DRAFT);
         assertThat(p.getOpenDate()).isEqualTo(LocalDate.of(2026, 10, 1));
-        // Quý: ngày 25 của tháng cuối quý.
-        assertThat(p.getDueDate()).isEqualTo(LocalDate.of(2026, 12, 25));
+        assertThat(p.getDueDate()).isEqualTo(LocalDate.of(2027, 1, 10));
         verify(audit).record(eq(admin), eq("CREATE_DRAFT_PERIOD"), eq("CollectionPeriod"), eq("2026-Q4"), isNull(), any());
-        verify(notifications).publish(any(), isNull());
+        verify(notifications, org.mockito.Mockito.times(2)).publish(any(), isNull());
     }
 
     @Test

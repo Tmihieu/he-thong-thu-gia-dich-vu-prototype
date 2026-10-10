@@ -54,11 +54,10 @@ class LedgerApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$[0].chargeCount").value(4))
                 .andExpect(jsonPath("$[0].collected").value(80_000))
                 .andExpect(jsonPath("$[0].cashCollected").value(80_000))
-                // Phải nộp xã tính trên số ĐÃ THU (tiền mặt 80.000, biểu giá thu gom 0), không phải phải thu 320.000.
-                .andExpect(jsonPath("$[0].payable").value(80_000))
+                .andExpect(jsonPath("$[0].payable").value(320_000))
                 .andExpect(jsonPath("$[0].received").value(0))
-                .andExpect(jsonPath("$[0].remaining").value(80_000))
-                .andExpect(jsonPath("$[0].gap").value(-80_000))
+                .andExpect(jsonPath("$[0].remaining").value(320_000))
+                .andExpect(jsonPath("$[0].gap").value(-320_000))
                 .andExpect(jsonPath("$[0].collectionRate").value(25.0))
                 .andExpect(jsonPath("$[0].lowCollectionRate").value(true))
                 .andExpect(jsonPath("$[0].remittedRate").value(0.0))
@@ -66,30 +65,26 @@ class LedgerApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$[0].progress").value("NOT_PAID"))
                 .andExpect(jsonPath("$[0].reconciliation").value("PENDING"))
                 .andExpect(jsonPath("$[1].due").value(160_000))
-                .andExpect(jsonPath("$[1].payable").value(0));
+                .andExpect(jsonPath("$[1].payable").value(160_000));
         ledger(fx.admin).andExpect(jsonPath("$", hasSize(2)));
     }
 
     @Test
     void companyKeepsTheCollectionPartAndRemitsOnlyTheTransportPart() throws Exception {
-        // Công ty cầm lại phần thu gom của số ĐÃ THU, chỉ nộp phần vận chuyển. Biểu giá 57.000 thu gom + 23.000 vận chuyển.
         jdbc.update("update tariff_rates set collection_fee = 57000, transport_fee = 23000 where tariff_group = 'HH_3_PLUS'");
 
         ledger(fx.officer)
                 .andExpect(jsonPath("$[0].due").value(320_000))
                 .andExpect(jsonPath("$[0].retained").value(57_000))
-                .andExpect(jsonPath("$[0].payable").value(23_000))
-                .andExpect(jsonPath("$[0].remaining").value(23_000))
-                // Đã thu 80.000 (thu gom 57.000, vận chuyển 23.000), chưa nộp: thiếu 23.000.
-                .andExpect(jsonPath("$[0].gap").value(-23_000))
+                .andExpect(jsonPath("$[0].payable").value(92_000))
+                .andExpect(jsonPath("$[0].remaining").value(92_000))
+                .andExpect(jsonPath("$[0].gap").value(-92_000))
                 .andExpect(jsonPath("$[1].retained").value(0))
-                .andExpect(jsonPath("$[1].payable").value(0));
+                .andExpect(jsonPath("$[1].payable").value(46_000));
     }
 
     @Test
-    void bankTransfersCountTowardsPayableLikeCash() throws Exception {
-        // Hộ DTH-H000003 (DV01) chuyển khoản 80.000, tiền vào công ty như tiền mặt. DV01: đã thu 160.000 (tiền mặt 80.000 +
-        // chuyển khoản 80.000), phí thu gom 114.000 công ty giữ, phải nộp xã = 160.000 − 114.000 = 46.000 (vận chuyển).
+    void bankTransfersDoNotIncreaseTheAdvancePayable() throws Exception {
         jdbc.update("update tariff_rates set collection_fee = 57000, transport_fee = 23000 where tariff_group = 'HH_3_PLUS'");
         collection.recordBankTransfer(fx.chargeId("DTH-H000003"), 80_000, "FT001", "sepay-1");
 
@@ -97,8 +92,8 @@ class LedgerApiIT extends IntegrationTest {
                 .andExpect(jsonPath("$[0].collected").value(160_000))
                 .andExpect(jsonPath("$[0].cashCollected").value(80_000))
                 .andExpect(jsonPath("$[0].retained").value(114_000))
-                .andExpect(jsonPath("$[0].payable").value(46_000))
-                .andExpect(jsonPath("$[0].remaining").value(46_000))
+                .andExpect(jsonPath("$[0].payable").value(92_000))
+                .andExpect(jsonPath("$[0].remaining").value(92_000))
                 .andExpect(jsonPath("$[0].communeOwed").value(0))
                 .andExpect(jsonPath("$[0].settled").value(false));
     }

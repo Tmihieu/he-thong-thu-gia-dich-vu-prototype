@@ -64,6 +64,12 @@ class CompanyLedgerServiceTest {
 
     void due(long periodId, long companyId, long amount, long count) {
         when(queries.dueByCompany(periodId)).thenReturn(List.of(new LedgerQueries.CompanyAmount(companyId, amount, count)));
+        advance(periodId, companyId, amount);
+    }
+
+    void advance(long periodId, long companyId, long amount) {
+        when(queries.advancePayableByCompany(periodId))
+                .thenReturn(List.of(new LedgerQueries.CompanyAmount(companyId, amount, 0)));
     }
 
     /** Đã thu của một công ty ở một kỳ: tiền mặt + chuyển khoản; trả về phần tiền mặt để nối thêm phần giữ lại. */
@@ -86,6 +92,8 @@ class CompanyLedgerServiceTest {
         when(queries.dueByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 1_600_000, 20),
                 new LedgerQueries.CompanyAmount(3L, 800_000, 10)));
         collect(10L, 1L, 1_000_000, 200_000);
+        when(queries.advancePayableByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 1_200_000, 0),
+                new LedgerQueries.CompanyAmount(3L, 400_000, 0)));
         received(10L, 1L, 700_000);
 
         List<LedgerRow> rows = service("2026-10-15").ledger(10L);
@@ -96,7 +104,6 @@ class CompanyLedgerServiceTest {
         assertThat(r.chargeCount()).isEqualTo(20);
         assertThat(r.collected()).isEqualTo(1_200_000);
         assertThat(r.cashCollected()).isEqualTo(1_000_000);
-        // Phải nộp xã tính trên TOÀN BỘ số đã thu (tiền mặt và chuyển khoản đều vào công ty), không phải phải thu.
         assertThat(r.payable()).isEqualTo(1_200_000);
         assertThat(r.received()).isEqualTo(700_000);
         assertThat(r.receiptCount()).isEqualTo(1);
@@ -108,9 +115,9 @@ class CompanyLedgerServiceTest {
         assertThat(rows.get(1).lowCollectionRate()).isTrue(); // DV03 phải thu 800.000, chưa thu
         assertThat(r.remittedRate()).isEqualTo(58.3);
         assertThat(r.lowRemittedRate()).isFalse();
-        assertThat(rows.get(1).payable()).isZero();
+        assertThat(rows.get(1).payable()).isEqualTo(400_000);
         assertThat(rows.get(1).remittedRate()).isZero();
-        assertThat(rows.get(1).lowRemittedRate()).isFalse(); // chưa thu gì thì chưa phải nộp gì
+        assertThat(rows.get(1).lowRemittedRate()).isTrue();
     }
 
     @Test
@@ -132,6 +139,7 @@ class CompanyLedgerServiceTest {
         due(10L, 1L, 100_000, 2);
         collect(10L, 1L, 100_000, 0);
         retained(10L, 1L, 100_000);
+        advance(10L, 1L, 0);
         LedgerRow r = service("2026-10-15").row(1L, 10L);
 
         assertThat(r.payable()).isZero();
@@ -151,6 +159,7 @@ class CompanyLedgerServiceTest {
         due(10L, 1L, 1_000_000, 10);
         collect(10L, 1L, 800_000, 0);
         received(10L, 1L, 359_999);
+        advance(10L, 1L, 800_000);
         LedgerRow row = service("2026-10-15").row(1L, 10L);
         assertThat(row.collectionRate()).isEqualTo(80.0);
         assertThat(row.lowCollectionRate()).isFalse();
@@ -175,6 +184,7 @@ class CompanyLedgerServiceTest {
         collect(10L, 1L, 1_000_000, 0);
         retained(10L, 1L, 100_000);
         received(10L, 1L, 900_000);
+        advance(10L, 1L, 900_000);
         LedgerRow r = service("2026-10-15").row(1L, 10L);
 
         assertThat(r.retained()).isEqualTo(100_000);
@@ -192,12 +202,13 @@ class CompanyLedgerServiceTest {
     }
 
     @Test
-    void bankTransfersGoToCompanySoPayableIsEverythingCollectedMinusRetained() {
+    void paymentMethodDoesNotChangeAdvancePayable() {
         // Hộ chuyển khoản 1.000.000 vào tài khoản công ty, không có tiền mặt: công ty giữ phí thu gom 228.000,
         // phải nộp xã = 1.000.000 − 228.000 = 772.000. Thu 600.000 tiền mặt + 400.000 chuyển khoản cũng ra như vậy.
         due(10L, 1L, 1_000_000, 10);
         collect(10L, 1L, 0, 1_000_000);
         retained(10L, 1L, 228_000);
+        advance(10L, 1L, 772_000);
         LedgerRow transferOnly = service("2026-10-15").row(1L, 10L);
         assertThat(transferOnly.cashCollected()).isZero();
         assertThat(transferOnly.payable()).isEqualTo(772_000);
@@ -216,18 +227,24 @@ class CompanyLedgerServiceTest {
     }
 
     @Test
-    void nothingCollectedMeansNothingPayableYet() {
+    void advanceIsPayableEvenBeforeCollectingAndWriteOffReducesIt() {
         due(10L, 1L, 1_000_000, 10);
+        advance(10L, 1L, 800_000);
         LedgerRow r = service("2026-10-15").row(1L, 10L);
         assertThat(r.retained()).isZero();
-        assertThat(r.payable()).isZero();
-        assertThat(r.remaining()).isZero();
+        assertThat(r.collected()).isZero();
+        assertThat(r.payable()).isEqualTo(800_000);
+        assertThat(r.remaining()).isEqualTo(800_000);
+        received(10L, 1L, 800_000);
+        assertThat(service("2026-10-15").row(1L, 10L).settled()).isTrue();
+        received(10L, 1L, 0);
 
         // Điều chỉnh kỳ trước (khoản kỳ đã khóa được xóa nợ ghi ở kỳ này) trừ vào phải nộp: tiền mặt 1.000.000, điều chỉnh
         // 200.000 trong đó thu gom 40.000 đã trừ khỏi phần giữ lại (160.000 sau khi trừ).
         collect(10L, 1L, 1_000_000, 0);
         when(queries.writeOffAdjustmentByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 200_000, 2)));
         retained(10L, 1L, 160_000);
+        advance(10L, 1L, 640_000);
         LedgerRow adjusted = service("2026-10-15").row(1L, 10L);
         assertThat(adjusted.payable()).isEqualTo(1_000_000 - 200_000 - 160_000);
         assertThat(adjusted.remaining()).isEqualTo(adjusted.payable());
@@ -358,11 +375,15 @@ class CompanyLedgerServiceTest {
         due(10L, 1L, 2_108_000, 2);
         collect(10L, 1L, 1_054_000, 1_054_000);
         retained(10L, 1L, 906_000);
+        advance(10L, 1L, 1_202_000);
+        when(queries.advanceProcessingByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 842_000, 0)));
         when(queries.processingByCompany(10L)).thenReturn(List.of(new LedgerQueries.CompanyAmount(1L, 842_000, 0)));
 
         LedgerRow open = service("2026-10-15").row(1L, 10L);
 
         assertThat(open.payable()).isEqualTo(1_202_000);
+        assertThat(open.payableTransport()).isEqualTo(360_000);
+        assertThat(open.payableProcessing()).isEqualTo(842_000);
         assertThat(open.transport()).isEqualTo(360_000);
         assertThat(open.remaining()).isEqualTo(1_202_000);
         assertThat(open.settled()).isFalse();

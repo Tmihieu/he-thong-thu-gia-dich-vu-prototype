@@ -138,21 +138,20 @@ class PeriodLockIT extends IntegrationTest {
         assertThat(jdbc.queryForObject("select ledger_period_id from payments where charge_id = ?", Long.class, debtCharge))
                 .isEqualTo(november.getId());
 
-        // Kỳ 10 (đã khóa): đã thu, phải nộp xã, đã nộp không đổi (DV07: thu 80.000, nộp 80.000).
         ledger(fx.officer, fx.october.getId())
                 .andExpect(jsonPath("$[?(@.companyCode == 'DV07')].collected").value(contains(80_000)))
-                .andExpect(jsonPath("$[?(@.companyCode == 'DV07')].payable").value(contains(80_000)))
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV07')].payable").value(contains(160_000)))
                 .andExpect(jsonPath("$[?(@.companyCode == 'DV07')].remaining").value(contains(0)));
-        // Kỳ 11 (đang thu): khoản của kỳ 10 nhưng tiền tính vào đây, DV07 phải nộp 80.000 trên số đã thu đó.
         ledger(fx.officer, november.getId())
                 .andExpect(jsonPath("$[?(@.companyCode == 'DV07')].due").value(contains(0)))
                 .andExpect(jsonPath("$[?(@.companyCode == 'DV07')].collected").value(contains(80_000)))
                 .andExpect(jsonPath("$[?(@.companyCode == 'DV07')].cashCollected").value(contains(80_000)))
-                .andExpect(jsonPath("$[?(@.companyCode == 'DV07')].payable").value(contains(80_000)))
-                .andExpect(jsonPath("$[?(@.companyCode == 'DV07')].remaining").value(contains(80_000)));
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV07')].payable").value(contains(0)))
+                .andExpect(jsonPath("$[?(@.companyCode == 'DV07')].remaining").value(contains(0)));
         post("/api/remittance/receipts", fx.bearer(fx.officer), """
                 {"companyId":%d,"periodId":%d,"amount":80000,"method":"CASH"}"""
-                .formatted(fx.dv07.getId(), november.getId())).andExpect(status().isCreated());
+                .formatted(fx.dv07.getId(), november.getId())).andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("RECEIPT_AMOUNT_OUT_OF_RANGE"));
 
         // Kỳ đã khóa vẫn chặn sửa khoản và phiếu thu cũ.
         post("/api/remittance/receipts", fx.bearer(fx.officer), """
@@ -182,7 +181,7 @@ class PeriodLockIT extends IntegrationTest {
     private void collectAllButOneAndRemit() {
         fx.collectCash("DTH-H000001", "DTH-H000002", "DTH-H000003", "DTH-H000004", "DTH-H000005");
         remit(fx.dv01.getId(), 320_000);
-        remit(fx.dv07.getId(), 80_000);
+        remit(fx.dv07.getId(), 160_000);
     }
 
     private void remit(Long companyId, long amount) {

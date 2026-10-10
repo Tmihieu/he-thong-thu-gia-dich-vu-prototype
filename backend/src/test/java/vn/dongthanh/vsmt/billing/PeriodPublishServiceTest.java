@@ -199,11 +199,19 @@ class PeriodPublishServiceTest {
     }
 
     @Test
-    void onlyCommuneOfficerMayPreviewOrPublish() {
+    void adminMayPreviewAndPublish() {
         CurrentUser admin = new CurrentUser(1L, "admin", Role.ADMIN, null);
 
-        assertThatThrownBy(() -> service.publish(77L, null, null, null, null, admin)).isInstanceOf(AccessDeniedException.class);
-        assertThatThrownBy(() -> service.preview(77L, null, null, null, admin)).isInstanceOf(AccessDeniedException.class);
+        assertThat(service.preview(77L, null, null, null, admin).result().chargeCount()).isEqualTo(120);
+        assertThat(draft.getStatus()).isEqualTo(PeriodStatus.DRAFT);
+        assertThat(service.publish(77L, null, null, null, null, admin).period().getStatus()).isEqualTo(PeriodStatus.COLLECTING);
+    }
+
+    @Test
+    void companyCannotPreviewOrPublish() {
+        CurrentUser company = new CurrentUser(3L, "company", Role.COMPANY_MANAGER, 1L);
+        assertThatThrownBy(() -> service.publish(77L, null, null, null, null, company)).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> service.preview(77L, null, null, null, company)).isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
