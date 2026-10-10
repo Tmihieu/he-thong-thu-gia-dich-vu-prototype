@@ -371,6 +371,7 @@ class Complaint {
     required this.deadline,
     required this.overdue,
     required this.resolution,
+    this.photoUrls = const [],
   });
 
   factory Complaint.fromJson(Json j) => Complaint(
@@ -386,6 +387,7 @@ class Complaint {
         deadline: _strOrNull(j['deadline']),
         overdue: j['overdue'] == true,
         resolution: _strOrNull(j['resolution']),
+        photoUrls: _strings(j['photoUrls']),
       );
 
   final int id;
@@ -400,6 +402,9 @@ class Complaint {
   final String? deadline;
   final bool overdue;
   final String? resolution;
+
+  /// Ảnh đính kèm: URL https công khai trên Cloudinary.
+  final List<String> photoUrls;
 }
 
 class ComplaintEvent {

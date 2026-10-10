@@ -17,3 +17,7 @@ if (!window.matchMedia) {
     dispatchEvent: () => false,
   });
 }
+
+// jsdom không có URL.createObjectURL; Upload của AntD dùng nó để dựng ảnh xem trước.
+URL.createObjectURL = () => 'blob:test';
+URL.revokeObjectURL = () => {};

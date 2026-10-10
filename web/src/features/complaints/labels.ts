@@ -35,5 +35,6 @@ export const COMPLAINT_EVENT_LABELS: Record<ComplaintEvent['eventType'], string>
   RECEIVED: 'Xã tiếp nhận',
   FORWARDED: 'Chuyển công ty',
   COMPANY_REPLIED: 'Công ty phản hồi',
+  RETURNED: 'Công ty trả lại xã',
   CLOSED: 'Đã giải quyết',
 };

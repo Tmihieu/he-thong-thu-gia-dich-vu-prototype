@@ -1,10 +1,15 @@
-import { Alert, Button, DatePicker, Form, Input, Modal, Radio, Select, Space } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
+import { Alert, App, Button, DatePicker, Form, Input, Modal, Radio, Select, Space, Upload, type UploadFile } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 
 import type { CreateComplaintRequest } from './api';
 import { COMPLAINT_CATEGORY_LABELS } from './labels';
 
 type Category = CreateComplaintRequest['category'];
+
+export const MAX_PHOTOS = 5;
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export interface AreaOption {
   id: number;
@@ -29,6 +34,7 @@ interface CreateValues {
   summary: string;
   content: string;
   receivedDate?: Dayjs | null;
+  photos?: UploadFile<{ url: string }>[];
 }
 
 interface CreateProps {
@@ -37,16 +43,20 @@ interface CreateProps {
   subjects: SubjectOption[];
   submitting?: boolean;
   error?: string | null;
+  /** Tải một ảnh lên, trả URL để gắn vào khiếu nại. */
+  onUploadPhoto: (file: File) => Promise<string>;
   onSubmit: (req: CreateComplaintRequest) => void;
   onCancel: () => void;
 }
 
 /** Xã ghi nhận khiếu nại nhận qua điện thoại / trực tiếp. Chọn hộ thì tự điền khu vực. */
-export function CreateComplaintForm({ open, areas, subjects, submitting, error, onSubmit, onCancel }: CreateProps) {
+export function CreateComplaintForm({ open, areas, subjects, submitting, error, onUploadPhoto, onSubmit, onCancel }: CreateProps) {
+  const { message } = App.useApp();
   const [form] = Form.useForm<CreateValues>();
   const areaId = Form.useWatch('areaId', form);
 
   function finish(v: CreateValues) {
+    const photoUrls = (v.photos ?? []).flatMap((f) => (f.status === 'done' && f.response ? [f.response.url] : []));
     onSubmit({
       complainantName: v.complainantName.trim(),
       complainantPhone: v.complainantPhone?.trim() || undefined,
@@ -57,6 +67,7 @@ export function CreateComplaintForm({ open, areas, subjects, submitting, error, 
       summary: v.summary.trim(),
       content: v.content.trim(),
       receivedDate: v.receivedDate?.format('YYYY-MM-DD'),
+      photoUrls: photoUrls.length > 0 ? photoUrls : undefined,
     });
   }
 
@@ -149,12 +160,60 @@ export function CreateComplaintForm({ open, areas, subjects, submitting, error, 
         <Form.Item label="Ngày tiếp nhận" name="receivedDate" rules={[{ required: true, message: 'Vui lòng chọn ngày tiếp nhận' }]}>
           <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} disabledDate={(d) => d.isAfter(dayjs(), 'day')} />
         </Form.Item>
+        <Form.Item
+          label="Ảnh đính kèm"
+          name="photos"
+          valuePropName="fileList"
+          getValueFromEvent={(e: { fileList: UploadFile[] }) => e.fileList}
+          extra={`Tối đa ${MAX_PHOTOS} ảnh JPEG, PNG hoặc WebP, mỗi ảnh không quá 5 MB`}
+          rules={[
+            {
+              validator: (_, files?: UploadFile[]) =>
+                files?.some((f) => f.status === 'uploading')
+                  ? Promise.reject(new Error('Vui lòng chờ ảnh tải xong'))
+                  : files?.some((f) => f.status === 'error')
+                    ? Promise.reject(new Error('Có ảnh tải lên không thành công, vui lòng xóa ảnh đó hoặc thử lại'))
+                    : Promise.resolve(),
+            },
+          ]}
+        >
+          <Upload
+            listType="picture-card"
+            accept={PHOTO_TYPES.join(',')}
+            maxCount={MAX_PHOTOS}
+            multiple
+            beforeUpload={(file) => {
+              if (!PHOTO_TYPES.includes(file.type)) {
+                void message.error('Chỉ nhận ảnh JPEG, PNG hoặc WebP.');
+                return Upload.LIST_IGNORE;
+              }
+              if (file.size > MAX_PHOTO_BYTES) {
+                void message.error('Ảnh vượt quá 5 MB.');
+                return Upload.LIST_IGNORE;
+              }
+              return true;
+            }}
+            customRequest={({ file, onSuccess, onError }) => {
+              onUploadPhoto(file as File).then(
+                (url) => onSuccess?.({ url }),
+                (err: unknown) => onError?.(err instanceof Error ? err : new Error('Tải ảnh thất bại')),
+              );
+            }}
+          >
+            <div>
+              <PlusOutlined />
+              <div style={{ marginTop: 4 }}>Thêm ảnh</div>
+            </div>
+          </Upload>
+        </Form.Item>
       </Form>
     </Modal>
   );
 }
 
 interface TextActionProps {
+  /** Tên form: id các ô nhập không trùng khi một màn có nhiều form một ô chữ. */
+  name?: string;
   label: string;
   okText: string;
   requiredMessage: string;
@@ -165,10 +224,10 @@ interface TextActionProps {
 }
 
 /** Form một ô chữ bắt buộc: công ty phản hồi, xã đóng khiếu nại. */
-export function TextActionForm({ label, okText, requiredMessage, maxLength, submitting, error, onSubmit }: TextActionProps) {
+export function TextActionForm({ name, label, okText, requiredMessage, maxLength, submitting, error, onSubmit }: TextActionProps) {
   const [form] = Form.useForm<{ text: string }>();
   return (
-    <Form form={form} layout="vertical" onFinish={(v) => onSubmit(v.text.trim())}>
+    <Form name={name} form={form} layout="vertical" onFinish={(v) => onSubmit(v.text.trim())}>
       {error && <Alert type="error" showIcon role="alert" style={{ marginBottom: 12 }} message={error} />}
       <Form.Item label={label} name="text" rules={[{ required: true, whitespace: true, message: requiredMessage }]}>
         <Input.TextArea rows={3} maxLength={maxLength} />

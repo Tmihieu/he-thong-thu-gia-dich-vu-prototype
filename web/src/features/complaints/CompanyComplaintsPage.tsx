@@ -8,7 +8,7 @@ import { PageHeader } from '../../shared/PageHeader';
 import { StatCard, StatGrid } from '../../shared/StatCard';
 import { EmptyBlock, ErrorBlock } from '../../shared/StateBlock';
 import { StatusTag } from '../../shared/StatusTag';
-import { type Complaint, type ComplaintDetail, useComplaints, useReplyComplaint } from './api';
+import { type Complaint, type ComplaintDetail, useComplaints, useReplyComplaint, useReturnComplaint } from './api';
 import { ComplaintDrawer } from './ComplaintDrawer';
 import { TextActionForm } from './ComplaintForms';
 import { COMPLAINT_STATUS_TONES, COMPLAINT_STATUS_LABELS } from './labels';
@@ -20,11 +20,13 @@ const errorText = (e: unknown) => (e ? apiErrorText(e) : null);
 function ReplyAction({ detail }: { detail: ComplaintDetail }) {
   const { message } = App.useApp();
   const reply = useReplyComplaint();
+  const returned = useReturnComplaint();
   const c = detail.complaint;
   return (
     <>
       <Divider orientation="left">Phản hồi về xã</Divider>
       <TextActionForm
+        name="reply"
         label="Kết quả xử lý của công ty"
         okText="Gửi phản hồi"
         requiredMessage="Vui lòng nhập nội dung phản hồi"
@@ -33,6 +35,19 @@ function ReplyAction({ detail }: { detail: ComplaintDetail }) {
         error={errorText(reply.error)}
         onSubmit={(content) =>
           reply.mutate({ id: c.id, content }, { onSuccess: () => message.success(`Đã gửi phản hồi ${c.code} về xã`) })
+        }
+      />
+      <Divider orientation="left">Trả lại xã</Divider>
+      <TextActionForm
+        name="return"
+        label="Lý do trả lại (chuyển nhầm công ty, không thuộc khu vực phụ trách…)"
+        okText="Trả lại xã"
+        requiredMessage="Vui lòng ghi lý do trả lại"
+        maxLength={1000}
+        submitting={returned.isPending}
+        error={errorText(returned.error)}
+        onSubmit={(reason) =>
+          returned.mutate({ id: c.id, reason }, { onSuccess: () => message.success(`Đã trả lại ${c.code} cho xã`) })
         }
       />
     </>

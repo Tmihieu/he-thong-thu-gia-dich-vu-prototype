@@ -42,6 +42,10 @@ services:
       # Để trống thì /api/payments/sepay/webhook trả 503, không nhận chuyển khoản tự động.
       - key: SEPAY_WEBHOOK_API_KEY
         sync: false
+      # Ảnh khiếu nại lưu trên Cloudinary: cloudinary://<api_key>:<api_secret>@<cloud_name>, điền tay trong Render.
+      # Để trống thì không tải được ảnh khiếu nại.
+      - key: CLOUDINARY_URL
+        sync: false
       - key: UPLOAD_DIR
         value: /app/uploads
       - key: TZ

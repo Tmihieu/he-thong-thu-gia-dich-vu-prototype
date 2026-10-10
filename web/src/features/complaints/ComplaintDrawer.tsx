@@ -1,4 +1,4 @@
-import { Descriptions, Divider, Drawer, Steps } from 'antd';
+import { Descriptions, Divider, Drawer, Image, Steps } from 'antd';
 import type { ReactNode } from 'react';
 
 import { formatDate } from '../../shared/format';
@@ -45,6 +45,7 @@ export function ComplaintDrawer({ id, onClose, actions }: Props) {
             </Descriptions.Item>
             {c.subjectCode && <Descriptions.Item label="Hộ liên quan">{`${c.subjectCode} · ${c.subjectName}`}</Descriptions.Item>}
             <Descriptions.Item label="Khu vực">{`${c.areaCode} · ${c.areaName}`}</Descriptions.Item>
+            {c.location && <Descriptions.Item label="Nơi xảy ra">{c.location}</Descriptions.Item>}
             <Descriptions.Item label="Kênh · ngày">
               {COMPLAINT_CHANNEL_LABELS[c.channel]} · {formatDate(c.receivedDate)}
             </Descriptions.Item>
@@ -53,6 +54,18 @@ export function ComplaintDrawer({ id, onClose, actions }: Props) {
             <Descriptions.Item label="Nội dung">
               <span style={{ whiteSpace: 'pre-line' }}>{c.content}</span>
             </Descriptions.Item>
+            {c.photoUrls.length > 0 && (
+              <Descriptions.Item label={`Ảnh đính kèm (${c.photoUrls.length})`}>
+                <Image.PreviewGroup>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {c.photoUrls.map((url, i) => (
+                      <Image key={url} src={url} alt={`Ảnh ${i + 1} của khiếu nại ${c.code}`} width={72} height={72}
+                        style={{ objectFit: 'cover', borderRadius: 4 }} />
+                    ))}
+                  </div>
+                </Image.PreviewGroup>
+              </Descriptions.Item>
+            )}
             {c.forwardedCompanyCode && (
               <Descriptions.Item label="Công ty xử lý">
                 {`${c.forwardedCompanyCode} · ${c.forwardedCompanyName}`} · hạn {formatDate(c.deadline)}

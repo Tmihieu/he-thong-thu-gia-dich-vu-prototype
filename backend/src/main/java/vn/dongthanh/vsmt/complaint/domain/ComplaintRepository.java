@@ -1,5 +1,6 @@
 package vn.dongthanh.vsmt.complaint.domain;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,6 +14,11 @@ public interface ComplaintRepository extends JpaRepository<Complaint, Long> {
             + " where (:status is null or c.status = :status) and (:companyId is null or f.id = :companyId)"
             + " order by c.receivedDate desc, c.id desc")
     List<Complaint> search(ComplaintStatus status, Long companyId);
+
+    /** Đã chuyển công ty, quá hạn, chưa giải quyết và chưa báo quá hạn lần nào. */
+    @Query("select c from Complaint c join fetch c.forwardedCompany where c.status <> vn.dongthanh.vsmt.complaint.domain.ComplaintStatus.RESOLVED"
+            + " and c.deadline < :today and c.overdueNotifiedAt is null order by c.deadline, c.id")
+    List<Complaint> findOverdueNotNotified(LocalDate today);
 
     @Query("select c from Complaint c join fetch c.area left join fetch c.subject left join fetch c.forwardedCompany"
             + " where c.id = :id")

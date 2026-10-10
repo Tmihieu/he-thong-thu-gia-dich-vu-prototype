@@ -939,6 +939,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/complaints/{id}/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Công ty bị chuyển nhầm trả lại xã kèm lý do; xã chuyển lại công ty khác. Không trả chi tiết: sau khi trả, khiếu nại không còn thuộc công ty đó */
+        post: operations["returnToCommune"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/complaints/{id}/reply": {
         parameters: {
             query?: never;
@@ -984,6 +1001,23 @@ export interface paths {
         put?: never;
         /** Cán bộ xã đóng khiếu nại kèm kết quả cuối */
         post: operations["close"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/complaints/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tải một ảnh JPEG/PNG/WebP (tối đa 5 MB) lên Cloudinary, nhận URL để gắn vào khiếu nại */
+        post: operations["uploadPhoto"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1207,6 +1241,23 @@ export interface paths {
         put?: never;
         /** Gửi phản ánh (kênh APP); vị trí để trống thì lấy địa chỉ hộ */
         post: operations["submit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/citizen/complaints/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tải một ảnh JPEG/PNG/WebP (tối đa 5 MB) lên Cloudinary, nhận URL để đính kèm phản ánh */
+        post: operations["uploadPhoto_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3345,6 +3396,8 @@ export interface components {
              * @description Để trống thì lấy hôm nay
              */
             receivedDate?: string;
+            /** @description URL ảnh đã tải lên qua /api/complaints/photos */
+            photoUrls?: string[];
         };
         ComplaintDetailDto: {
             complaint: components["schemas"]["ComplaintDto"];
@@ -3373,6 +3426,8 @@ export interface components {
             category: "LATE_COLLECTION" | "OVERCHARGE" | "POLLUTION_POINT" | "STAFF_ATTITUDE" | "FACILITY" | "COLLECTION_REQUEST" | "PAID_NOT_RECORDED" | "OTHER";
             summary: string;
             content: string;
+            /** @description Nơi xảy ra sự việc, người dân nhập từ app */
+            location: string | null;
             /** @enum {string} */
             status: "NEW" | "PROCESSING" | "RESOLVED";
             /** Format: int64 */
@@ -3386,16 +3441,22 @@ export interface components {
             resolution: string | null;
             /** Format: date-time */
             resolvedAt: string | null;
+            /** @description URL ảnh đính kèm (Cloudinary, công khai) */
+            photoUrls: string[];
         };
         EventDto: {
             /** Format: int64 */
             id: number;
             /** @enum {string} */
-            eventType: "SUBMITTED" | "RECEIVED" | "FORWARDED" | "COMPANY_REPLIED" | "CLOSED";
+            eventType: "SUBMITTED" | "RECEIVED" | "FORWARDED" | "COMPANY_REPLIED" | "RETURNED" | "CLOSED";
             /** Format: date-time */
             occurredAt: string;
             actorLabel: string;
             content: string;
+        };
+        ReturnRequest: {
+            /** @description Lý do trả lại, vd. không thuộc khu vực công ty phụ trách */
+            reason: string;
         };
         ReplyRequest: {
             content: string;
@@ -3406,10 +3467,18 @@ export interface components {
              * @description Để trống thì lấy công ty phụ trách khu vực
              */
             companyId?: number;
+            /**
+             * Format: int64
+             * @description Sửa khu vực của khiếu nại trước khi chuyển (sự việc xảy ra ở nơi khác hộ); để trống thì giữ nguyên
+             */
+            areaId?: number;
             note?: string;
         };
         CloseRequest: {
             resolution: string;
+        };
+        ComplaintPhotoDto: {
+            url: string;
         };
         SubjectReportRequest: {
             /** Format: int64 */
@@ -3568,6 +3637,8 @@ export interface components {
             content: string;
             /** @description Nơi xảy ra sự việc; để trống = địa chỉ hộ */
             location?: string;
+            /** @description URL ảnh đã tải lên qua /api/citizen/complaints/photos */
+            photoUrls?: string[];
         };
         CitizenComplaintDetailDto: {
             complaint: components["schemas"]["CitizenComplaintDto"];
@@ -3598,16 +3669,21 @@ export interface components {
             resolution: string | null;
             /** Format: date-time */
             resolvedAt: string | null;
+            /** @description URL ảnh đính kèm (Cloudinary, công khai) */
+            photoUrls: string[];
         };
         CitizenComplaintEventDto: {
             /** Format: int64 */
             id: number;
             /** @enum {string} */
-            eventType: "SUBMITTED" | "RECEIVED" | "FORWARDED" | "COMPANY_REPLIED" | "CLOSED";
+            eventType: "SUBMITTED" | "RECEIVED" | "FORWARDED" | "COMPANY_REPLIED" | "RETURNED" | "CLOSED";
             /** Format: date-time */
             occurredAt: string;
             actorLabel: string;
             content: string;
+        };
+        CitizenComplaintPhotoDto: {
+            url: string;
         };
         OtpVerifyRequest: {
             /** @example 0902000128 */
@@ -6352,6 +6428,30 @@ export interface operations {
             };
         };
     };
+    returnToCommune: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReturnRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     reply: {
         parameters: {
             query?: never;
@@ -6426,6 +6526,33 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ComplaintDetailDto"];
+                };
+            };
+        };
+    };
+    uploadPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ComplaintPhotoDto"];
                 };
             };
         };
@@ -6778,6 +6905,33 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CitizenComplaintDetailDto"];
+                };
+            };
+        };
+    };
+    uploadPhoto_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CitizenComplaintPhotoDto"];
                 };
             };
         };

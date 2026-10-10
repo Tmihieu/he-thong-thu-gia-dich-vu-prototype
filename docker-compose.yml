@@ -36,6 +36,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       CITIZEN_DEMO_OTP: ${CITIZEN_DEMO_OTP:-123456}
       SEPAY_WEBHOOK_API_KEY: ${SEPAY_WEBHOOK_API_KEY:-}
+      CLOUDINARY_URL: ${CLOUDINARY_URL:-}
       TZ: Asia/Ho_Chi_Minh
     ports:
       # App người dân (Flutter) gọi thẳng backend qua IP LAN của laptop.
