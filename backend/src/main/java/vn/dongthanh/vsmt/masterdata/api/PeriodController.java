@@ -82,8 +82,7 @@ public class PeriodController {
             @Schema(requiredMode = RequiredMode.REQUIRED) LocalDate startDate,
             @Schema(requiredMode = RequiredMode.REQUIRED) LocalDate endDate,
             @Schema(requiredMode = RequiredMode.REQUIRED) LocalDate openDate,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Hạn dân đóng") LocalDate dueDate,
-            @Schema(requiredMode = RequiredMode.REQUIRED, description = "Hạn quyết toán: ngày 5 tháng sau kỳ") LocalDate settlementDueDate,
+            @Schema(requiredMode = RequiredMode.REQUIRED) LocalDate dueDate,
             @Schema(requiredMode = RequiredMode.REQUIRED) Long tariffVersionId,
             @Schema(requiredMode = RequiredMode.REQUIRED, example = "BG-65-2026") String tariffVersionCode,
             @Schema(requiredMode = RequiredMode.REQUIRED) PeriodStatus status,
@@ -92,7 +91,7 @@ public class PeriodController {
 
         public static PeriodDto of(CollectionPeriod p) {
             return new PeriodDto(p.getId(), p.getCode(), p.getPeriodType(), p.getLabel(), p.getStartDate(),
-                    p.getEndDate(), p.getOpenDate(), p.getDueDate(), p.getSettlementDueDate(), p.getTariffVersion().getId(),
+                    p.getEndDate(), p.getOpenDate(), p.getDueDate(), p.getTariffVersion().getId(),
                     p.getTariffVersion().getCode(), p.getStatus(), p.getLockedAt(), p.getNote());
         }
     }

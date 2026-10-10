@@ -9,7 +9,7 @@ import { notificationPath } from './links';
 const officer = { id: 2, username: 'canbo_xa', fullName: 'Nguyễn Thị Mẫu', role: 'COMMUNE_OFFICER', companyId: null };
 
 function note(id: number, title: string, extra: Record<string, unknown> = {}) {
-  return { id, kind: 'RECEIPT', title, body: 'Nội dung ' + id, link: { screen: 'commune.complaints', params: { complaintId: 40 } },
+  return { id, kind: 'RECEIPT', title, body: 'Nội dung ' + id, link: { screen: 'remittance.receiptIssues', params: { issueId: id } },
     createdAt: '2026-10-16T02:00:00Z', readAt: null, ...extra };
 }
 
@@ -21,11 +21,11 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('notificationPath', () => {
   it('ánh xạ màn theo vai trò; màn lạ hoặc của vai trò khác thì không đi', () => {
-    expect(notificationPath('COMPANY_MANAGER', { screen: 'company.settlements', params: { settlementId: 5 } }))
-      .toBe('/company/assigned?tab=settlements');
+    expect(notificationPath('COMMUNE_OFFICER', { screen: 'remittance.receiptIssues', params: { issueId: 5 } }))
+      .toBe('/commune/charges?tab=receipt-issues');
     expect(notificationPath('COMPANY_MANAGER', { screen: 'company.complaints', params: { complaintId: 40 } }))
       .toBe('/company/complaints?id=40');
-    expect(notificationPath('COMPANY_MANAGER', { screen: 'company.receipts' })).toBe('/company/assigned?tab=settlements');
+    expect(notificationPath('COMPANY_MANAGER', { screen: 'company.receipts' })).toBe('/company/assigned?tab=receipts');
     expect(notificationPath('COMMUNE_OFFICER', { screen: 'company.receipts' })).toBeNull();
     // T53: người đi thu báo sai thông tin hộ → xã mở hồ sơ hộ, công ty mở tab hộ được giao
     expect(notificationPath('COMMUNE_OFFICER', { screen: 'commune.subjects', params: { subjectId: 7 } }))
@@ -58,21 +58,24 @@ describe('Chuông thông báo', () => {
       'GET /api/platform/auth/me': () => jsonResponse(200, officer),
       'GET /api/notifications/unread-count': () => jsonResponse(200, { unreadCount: unread }),
       'GET /api/notifications': () =>
-        jsonResponse(200, { items: [note(1, 'Khiếu nại mới KN-001'), note(2, 'Khác')], total: 2, unreadCount: unread }),
+        jsonResponse(200, { items: [note(1, 'DV01 báo sai sót phiếu thu PT-CT-1026-001'), note(2, 'Khác')], total: 2, unreadCount: unread }),
       'POST /api/notifications/1/read': () => {
         unread = 1;
         return jsonResponse(200, { ...note(1, 'x'), readAt: '2026-10-16T03:00:00Z' });
       },
+      'GET /api/billing/charge-requests': () => jsonResponse(200, []),
+      'GET /api/remittance/receipt-issues': () => jsonResponse(200, []),
     });
     const { router } = renderApp('/commune/notifications');
 
     const bell = await screen.findByRole('button', { name: 'Thông báo, 2 chưa đọc' });
     await userEvent.click(bell);
     const popover = (await screen.findByText('Xem tất cả thông báo')).closest('.ant-popover') as HTMLElement;
-    await userEvent.click(within(popover).getByText('Khiếu nại mới KN-001'));
+    await userEvent.click(within(popover).getByText('DV01 báo sai sót phiếu thu PT-CT-1026-001'));
 
-    await waitFor(() => expect(router.state.location.pathname).toBe('/commune/complaints'));
-    expect(router.state.location.search).toBe('?id=40');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/commune/charges'));
+    expect(router.state.location.search).toBe('?tab=receipt-issues');
+    expect(await screen.findByRole('tab', { name: 'Sai sót phiếu thu', selected: true })).toBeInTheDocument();
     expect(fetchFn.mock.calls.some(([url, init]) => String(url) === '/api/notifications/1/read'
       && (init as RequestInit | undefined)?.method === 'POST')).toBe(true);
     expect(await screen.findByRole('button', { name: 'Thông báo, 1 chưa đọc' })).toBeInTheDocument();

@@ -46,10 +46,9 @@ export function PeriodsPage() {
         columns={[
           { title: 'Kỳ', dataIndex: 'label', render: (label: string, p) => <span title={p.code}>{label}</span> },
           { title: 'Loại', dataIndex: 'periodType', render: (t: Period['periodType']) => PERIOD_TYPE_LABELS[t] },
-          // Kỳ dự thảo chưa có ngày mở / hạn dân đóng: cán bộ xã đặt khi mở kỳ.
+          // Kỳ dự thảo chưa có ngày mở / hạn nộp: cán bộ xã đặt khi mở kỳ.
           { title: 'Ngày mở', dataIndex: 'openDate', render: (d: string, p) => (p.status === 'DRAFT' ? null : <DateText value={d} />) },
-          { title: 'Hạn dân đóng', dataIndex: 'dueDate', render: (d: string, p) => (p.status === 'DRAFT' ? null : <DateText value={d} />) },
-          { title: 'Hạn quyết toán', dataIndex: 'settlementDueDate', render: (d: string) => <DateText value={d} /> },
+          { title: 'Hạn công ty nộp', dataIndex: 'dueDate', render: (d: string, p) => (p.status === 'DRAFT' ? null : <DateText value={d} />) },
           { title: 'Biểu giá', dataIndex: 'tariffVersionCode' },
           {
             title: 'Trạng thái',

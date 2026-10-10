@@ -12,8 +12,10 @@ export type ChargeStatus = Schemas['ChargeDto']['status'];
 export type ChargeScope = Schemas['IssueRequest']['scopeType'];
 export type LedgerProgress = Schemas['LedgerRowDto']['progress'];
 export type LedgerReconciliation = Schemas['LedgerRowDto']['reconciliation'];
-export type ReceiptMethod = NonNullable<Schemas['SettlementDto']['method']>;
+export type ReceiptMethod = Schemas['ReceiptDto']['method'];
 export type PaymentMethod = Schemas['PaymentDto']['method'];
+export type ReceiptIssueType = Schemas['IssueDto']['issueType'];
+export type ReceiptIssueStatus = Schemas['IssueDto']['status'];
 export type CompanyType = NonNullable<Schemas['CompanyDto']['orgType']>;
 
 /** Nhãn tiếng Việt cho enum của backend (SPEC §6: enum lưu chuỗi, nhãn ở frontend). */
@@ -89,25 +91,27 @@ export const CHARGE_SCOPE_LABELS: Record<ChargeScope, string> = {
   COMPANY: 'Theo công ty',
 };
 
-/** Tiến độ quyết toán công ty – xã (R13). */
+/** Tiến độ nộp tiền (R13). */
 export const PROGRESS_LABELS: Record<LedgerProgress, string> = {
   NO_COMPANY: 'Chưa có công ty',
-  PAID_IN_FULL: 'Đã quyết toán',
-  OVERDUE: 'Quá hạn quyết toán',
-  NOT_PAID: 'Chưa quyết toán',
+  PAID_IN_FULL: 'Đã nộp đủ',
+  OVERDUE: 'Quá hạn nộp',
+  PARTIAL: 'Nộp một phần',
+  NOT_PAID: 'Chưa nộp',
 };
 
 export const PROGRESS_COLORS: Record<LedgerProgress, string> = {
   NO_COMPANY: 'red',
   PAID_IN_FULL: 'green',
   OVERDUE: 'red',
+  PARTIAL: 'orange',
   NOT_PAID: 'default',
 };
 
 /** Đối soát (R14). */
 export const RECONCILIATION_LABELS: Record<LedgerReconciliation, string> = {
-  MATCHED: 'Đã quyết toán',
-  PENDING: 'Chưa quyết toán',
+  MATCHED: 'Khớp',
+  PENDING: 'Đang nộp',
   MISMATCH: 'Lệch',
 };
 
@@ -122,16 +126,30 @@ export const RECEIPT_METHOD_LABELS: Record<ReceiptMethod, string> = {
   TRANSFER: 'Chuyển khoản',
 };
 
-/** Chiều chuyển tiền theo chênh lệch phiếu quyết toán (công ty phải nộp − xã phải trả). */
-export const settlementDirection = (amount: number) =>
-  amount > 0 ? 'Công ty nộp xã' : amount < 0 ? 'Xã trả công ty' : 'Không chuyển tiền';
-
 /** Hình thức một lần hộ thanh toán. */
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   CASH: 'Tiền mặt',
   TRANSFER: 'Chuyển khoản',
   APP_SIMULATED: 'App người dân (mô phỏng)',
   REFUND: 'Hoàn tiền',
+};
+
+/** Loại sai sót phiếu thu công ty báo (R28). */
+export const RECEIPT_ISSUE_TYPE_LABELS: Record<ReceiptIssueType, string> = {
+  WRONG_AMOUNT: 'Sai số tiền',
+  WRONG_PERIOD: 'Sai kỳ thu',
+  WRONG_DOCUMENT: 'Sai chứng từ',
+  NOT_OURS: 'Không phải khoản nộp của công ty',
+};
+
+export const RECEIPT_ISSUE_STATUS_LABELS: Record<ReceiptIssueStatus, string> = {
+  PENDING: 'Chờ xã kiểm tra',
+  RESOLVED: 'Đã xử lý',
+};
+
+export const RECEIPT_ISSUE_STATUS_COLORS: Record<ReceiptIssueStatus, string> = {
+  PENDING: 'orange',
+  RESOLVED: 'green',
 };
 
 /** Màu Tag của AntD theo trạng thái. */
