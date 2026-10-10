@@ -10,12 +10,12 @@ import { ChargeRequestForm } from './ChargeRequestForm';
 const periods: Period[] = [
   {
     id: 5, code: '2026-10', periodType: 'MONTH', label: 'Tháng 10/2026', startDate: '2026-10-01', endDate: '2026-10-31',
-    openDate: '2026-10-01', dueDate: '2026-10-31', tariffVersionId: 1, tariffVersionCode: 'BG-65-2026', status: 'COLLECTING',
+    openDate: '2026-10-01', dueDate: '2026-10-31', settlementDueDate: '2026-11-05', tariffVersionId: 1, tariffVersionCode: 'BG-65-2026', status: 'COLLECTING',
     lockedAt: null, note: null,
   },
   {
     id: 4, code: '2026-08', periodType: 'MONTH', label: 'Tháng 08/2026', startDate: '2026-08-01', endDate: '2026-08-31',
-    openDate: '2026-08-01', dueDate: '2026-08-31', tariffVersionId: 2, tariffVersionCode: 'BG-67-2025', status: 'LOCKED',
+    openDate: '2026-08-01', dueDate: '2026-08-31', settlementDueDate: '2026-09-05', tariffVersionId: 2, tariffVersionCode: 'BG-67-2025', status: 'LOCKED',
     lockedAt: '2026-09-05T10:00:00Z', note: null,
   },
 ];

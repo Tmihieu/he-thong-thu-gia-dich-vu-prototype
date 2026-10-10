@@ -29,6 +29,11 @@ public interface CollectionPeriodRepository extends JpaRepository<CollectionPeri
     @Query(value = "select status from collection_periods where id = :id for share", nativeQuery = true)
     String lockStatusForShare(Long id);
 
+    /** Công ty đã có phiếu quyết toán của kỳ: sổ của công ty ở kỳ đó đã chốt (07/10). */
+    @Query(value = "select exists(select 1 from settlements where period_id = :periodId and company_id = :companyId)",
+            nativeQuery = true)
+    boolean isSettled(Long periodId, Long companyId);
+
     @Query("select p from CollectionPeriod p join fetch p.tariffVersion where p.id = :id")
     Optional<CollectionPeriod> findByIdWithTariff(Long id);
 

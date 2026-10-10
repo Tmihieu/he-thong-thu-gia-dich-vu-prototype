@@ -26,6 +26,7 @@ import vn.dongthanh.vsmt.masterdata.domain.PeriodStatus;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceContract;
 import vn.dongthanh.vsmt.masterdata.domain.ServiceContractRepository;
 import vn.dongthanh.vsmt.masterdata.service.ContractExemptedEvent;
+import vn.dongthanh.vsmt.masterdata.service.PeriodGuard;
 import vn.dongthanh.vsmt.notification.domain.NotificationKind;
 import vn.dongthanh.vsmt.notification.service.NotificationService;
 import vn.dongthanh.vsmt.notification.service.NotificationService.NotificationCommand;
@@ -53,6 +54,7 @@ public class ApprovalService {
     private final ChargeRepository charges;
     private final ServiceContractRepository contracts;
     private final CollectionPeriodRepository periods;
+    private final PeriodGuard periodGuard;
     private final CollectionService collection;
     private final NotificationService notifications;
     private final AuditService audit;
@@ -204,21 +206,13 @@ public class ApprovalService {
     }
 
     /**
-     * Kỳ ghi nhận: kỳ của khoản nếu chưa khóa, ngược lại kỳ đang thu mới nhất. Đọc trạng thái kèm FOR SHARE (như
-     * PeriodGuard) để khóa kỳ song song phải chờ.
+     * Kỳ ghi nhận: kỳ của khoản nếu chưa khóa và công ty chưa quyết toán, ngược lại kỳ đang thu mới nhất khác kỳ đó
+     * ({@link PeriodGuard#carryOverPeriod}).
      */
     private CollectionPeriod ledgerPeriodFor(Charge charge) {
-        CollectionPeriod own = charge.getPeriod();
-        if (!PeriodStatus.LOCKED.name().equals(periods.lockStatusForShare(own.getId()))) {
-            return own;
-        }
-        for (CollectionPeriod p : periods.findByStatusOrderByStartDateDesc(PeriodStatus.COLLECTING)) {
-            if (PeriodStatus.COLLECTING.name().equals(periods.lockStatusForShare(p.getId()))) {
-                return p;
-            }
-        }
-        throw new BusinessRuleException("NO_COLLECTING_PERIOD",
-                "Kỳ " + own.getCode() + " đã khóa và chưa có kỳ đang thu để ghi nhận điều chỉnh.");
+        CollectionPeriod carry = periodGuard.carryOverPeriod(charge.getPeriod(),
+                charge.getCompany() == null ? null : charge.getCompany().getId());
+        return carry != null ? carry : charge.getPeriod();
     }
 
     /** BR-GEN-03: audit hoàn / xóa nợ ghi cả trạng thái và số đã thu ròng của khoản trước và sau, không chỉ đề nghị. */

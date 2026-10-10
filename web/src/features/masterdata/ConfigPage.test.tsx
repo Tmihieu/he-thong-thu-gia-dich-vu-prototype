@@ -197,7 +197,7 @@ describe('Cấu hình · soạn và ban hành biểu giá', () => {
 // Tạm tắt tự tạo kỳ (PeriodRuleCard không hiển thị).
 describe.skip('Cấu hình · tự tạo kỳ thu', () => {
   const rule = {
-    enabled: false, periodType: 'MONTH', createDay: 25, remitDueDays: 10,
+    enabled: false, periodType: 'MONTH', createDay: 25,
     updatedAt: '2026-10-01T00:00:00+07:00',
   };
 
@@ -228,7 +228,7 @@ describe.skip('Cấu hình · tự tạo kỳ thu', () => {
     await waitFor(() => {
       const put = fetchFn.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === 'PUT');
       expect(JSON.parse(String((put![1] as RequestInit).body))).toEqual({
-        enabled: true, periodType: 'MONTH', createDay: 1, remitDueDays: 10,
+        enabled: true, periodType: 'MONTH', createDay: 1,
       });
     });
     expect(await screen.findByText('Đã lưu quy tắc tự tạo kỳ')).toBeInTheDocument();

@@ -14,7 +14,7 @@ const periods = [
 ];
 const row = (companyId: number, code: string, extra: Record<string, unknown> = {}) => ({
   companyId, companyCode: code, companyName: `Công ty ${code}`, periodId: 10, due: 1_000_000, chargeCount: 10, adjustment: 0,
-  refunded: 0, collected: 1_000_000, cashCollected: 1_000_000, received: 900_000, receiptCount: 1, remaining: 0, gap: 0, previousDebt: 0, overdue: false,
+  refunded: 0, collected: 1_000_000, cashCollected: 1_000_000, received: 900_000, settlementId: 1, settlementCode: 'QT-1026-001', remaining: 0, gap: 0, previousDebt: 0, overdue: false,
   collectionRate: 100, lowCollectionRate: false, remittedRate: 100, lowRemittedRate: false, progress: 'PAID_IN_FULL',
   reconciliation: 'MATCHED', retained: 100_000, payable: 900_000, ...extra,
 });

@@ -38,7 +38,7 @@ public class PeriodOpeningController {
     @PostMapping("/{id}/draft-preview")
     public DraftPreviewDto preview(@PathVariable Long id, @Valid @RequestBody DraftPreviewRequest req,
             @AuthenticationPrincipal CurrentUser actor) {
-        DraftPreview p = service.preview(id, req.openDate(), req.companyDueDate(),
+        DraftPreview p = service.preview(id, req.openDate(), req.dueDate(),
                 scope(req.feeTypeId(), req.scopeType(), req.areaIds(), req.companyId(), req.unitPrice()), actor);
         return new DraftPreviewDto(PeriodDto.of(p.period()), IssueResultDto.of(p.result()));
     }
@@ -47,14 +47,14 @@ public class PeriodOpeningController {
     @PostMapping("/{id}/publish")
     public PublishPeriodDto publish(@PathVariable Long id, @Valid @RequestBody PublishPeriodRequest req,
             @AuthenticationPrincipal CurrentUser actor) {
-        PublishResult r = service.publish(id, req.openDate(), req.companyDueDate(), req.note(),
+        PublishResult r = service.publish(id, req.openDate(), req.dueDate(), req.note(),
                 scope(req.feeTypeId(), req.scopeType(), req.areaIds(), req.companyId(), req.unitPrice()), actor);
         return new PublishPeriodDto(PeriodDto.of(r.period()), IssueResultDto.of(r.result()));
     }
 
     public record DraftPreviewRequest(
             @Schema(description = "Ngày mở kỳ; trống thì giữ ngày của dự thảo (đầu kỳ)") LocalDate openDate,
-            @Schema(description = "Hạn nộp (hạn duy nhất của kỳ); trống thì giữ hạn của dự thảo") LocalDate companyDueDate,
+            @Schema(description = "Hạn dân đóng; trống thì giữ hạn của dự thảo (ngày 25 tháng cuối kỳ)") LocalDate dueDate,
             @Schema(description = "Loại phí; trống thì phí vệ sinh môi trường") Long feeTypeId,
             @Schema(description = "Phạm vi; trống thì toàn xã") ChargeScope scopeType,
             @Schema(description = "Bắt buộc khi scopeType = AREAS") List<Long> areaIds,
@@ -64,7 +64,7 @@ public class PeriodOpeningController {
 
     public record PublishPeriodRequest(
             @Schema(description = "Ngày mở kỳ; trống thì giữ ngày của dự thảo (đầu kỳ)") LocalDate openDate,
-            @Schema(description = "Hạn nộp (hạn duy nhất của kỳ); trống thì giữ hạn của dự thảo") LocalDate companyDueDate,
+            @Schema(description = "Hạn dân đóng; trống thì giữ hạn của dự thảo (ngày 25 tháng cuối kỳ)") LocalDate dueDate,
             @Schema(description = "Loại phí; trống thì phí vệ sinh môi trường") Long feeTypeId,
             @Schema(description = "Phạm vi; trống thì toàn xã") ChargeScope scopeType,
             @Schema(description = "Bắt buộc khi scopeType = AREAS") List<Long> areaIds,
