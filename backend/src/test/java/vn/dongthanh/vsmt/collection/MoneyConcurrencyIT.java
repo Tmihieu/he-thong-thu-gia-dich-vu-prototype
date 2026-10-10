@@ -41,8 +41,8 @@ import vn.dongthanh.vsmt.masterdata.domain.FeeType;
 import vn.dongthanh.vsmt.masterdata.domain.FeeTypeRepository;
 import vn.dongthanh.vsmt.masterdata.domain.PricingMode;
 import vn.dongthanh.vsmt.remittance.domain.ReceiptMethod;
-import vn.dongthanh.vsmt.remittance.service.SettlementService;
-import vn.dongthanh.vsmt.remittance.service.SettlementService.IssueSettlementCommand;
+import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService;
+import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService.IssueReceiptCommand;
 import vn.dongthanh.vsmt.remittance.service.PeriodLockService;
 import vn.dongthanh.vsmt.support.CollectionFixture;
 import vn.dongthanh.vsmt.support.DatabaseCleaner;
@@ -66,7 +66,7 @@ class MoneyConcurrencyIT extends IntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired ObjectMapper json;
     @Autowired PeriodLockService periodLock;
-    @Autowired SettlementService settlements;
+    @Autowired CompanyReceiptService receipts;
     @Autowired ChargeRequestService chargeRequests;
     @Autowired CollectionService collection;
     @Autowired CashService cash;
@@ -129,9 +129,9 @@ class MoneyConcurrencyIT extends IntegrationTest {
 
     @Test
     void writesWaitingForThePeriodLockAreRejectedOnceTheLockCommits() throws Exception {
-        // 5 hộ đã đóng, qua hạn dân đóng (31/10) và mọi công ty đã quyết toán; hộ DTH-H000001 còn nợ nên khóa kỳ được.
-        clock.set(Instant.parse("2026-11-01T03:00:00Z"));
+        // 5 hộ đã đóng và công ty đã nộp đủ phần đã thu; hộ DTH-H000001 còn nợ, nhưng đã đến hạn nộp nên khóa kỳ được.
         collectAllButFirstAndRemit();
+        clock.set(Instant.parse("2026-10-31T03:00:00Z"));
 
         List<MockHttpServletResponse> waited = whileHeldOpen(
                 () -> periodLock.lock(fx.october.getId(), fx.actor(fx.officer)),
@@ -149,20 +149,19 @@ class MoneyConcurrencyIT extends IntegrationTest {
     }
 
     @Test
-    void lockWaitsForAnInFlightChargeRequest() throws Exception {
-        // Mọi hộ đã đóng, mọi công ty đã quyết toán: khóa được. Phát hành thêm 6 khoản phụ phí đang chạy giữ dòng kỳ (FOR
-        // SHARE): khóa phải chờ lượt phát hành commit rồi mới khóa; 6 khoản mới thành công nợ của hộ.
+    void lockWaitsForAnInFlightChargeRequestAndThenSeesItsUnpaidCharges() throws Exception {
+        // Mọi hộ đã đóng, mọi công ty đã nộp đủ, chưa đến hạn nộp: khóa được. Nhưng phát hành thêm 6 khoản phụ phí đang chạy:
+        // khóa phải chờ rồi thấy 6 khoản chưa đóng khi chưa đến hạn nộp nên bị chặn.
         tx.executeWithoutResult(s -> fx.collectAllCash());
-        clock.set(Instant.parse("2026-11-01T03:00:00Z"));
-        remit();
+        remit(320_000, 160_000);
 
         List<MockHttpServletResponse> waited = whileHeldOpen(
                 () -> chargeRequests.publish(new IssueCommand(fx.october.getId(), extra.getId(), ChargeScope.ALL, null,
                         null, null, null), fx.actor(fx.officer)),
                 () -> post("/api/remittance/periods/" + fx.october.getId() + "/lock", officer, "{}"));
 
-        assertThat(waited.get(0).getStatus()).isEqualTo(200);
-        assertThat(periodStatus()).isEqualTo("LOCKED");
+        assertRejected(waited.get(0), "PERIOD_NOT_DUE");
+        assertThat(periodStatus()).isEqualTo("COLLECTING");
         assertThat(jdbc.queryForObject("select count(*) from charges", Integer.class)).isEqualTo(12);
     }
 
@@ -202,19 +201,18 @@ class MoneyConcurrencyIT extends IntegrationTest {
         }
     }
 
-    /** Thu đủ tiền mặt 5 hộ (trừ DTH-H000001) rồi hai công ty quyết toán: DV01 nộp 240.000, DV07 160.000. */
+    /** Thu đủ tiền mặt 5 hộ (trừ DTH-H000001) rồi công ty nộp đủ phải nộp xã: DV01 240.000, DV07 160.000. */
     private void collectAllButFirstAndRemit() {
         tx.executeWithoutResult(s -> fx.collectCash("DTH-H000002", "DTH-H000003", "DTH-H000004", "DTH-H000005", "DTH-H000006"));
-        remit();
+        remit(240_000, 160_000);
     }
 
-    /** Hai công ty quyết toán kỳ 10 (cần đồng hồ đã qua hạn dân đóng). */
-    private void remit() {
+    private void remit(long dv01, long dv07) {
         tx.executeWithoutResult(s -> {
-            for (Long company : List.of(fx.dv01.getId(), fx.dv07.getId())) {
-                settlements.issue(new IssueSettlementCommand(company, fx.october.getId(), ReceiptMethod.TRANSFER, null,
-                        null, null, null), fx.actor(fx.officer));
-            }
+            receipts.issue(new IssueReceiptCommand(fx.dv01.getId(), fx.october.getId(), dv01,
+                    ReceiptMethod.TRANSFER, null, null, null, null), fx.actor(fx.officer));
+            receipts.issue(new IssueReceiptCommand(fx.dv07.getId(), fx.october.getId(), dv07,
+                    ReceiptMethod.TRANSFER, null, null, null, null), fx.actor(fx.officer));
         });
     }
 

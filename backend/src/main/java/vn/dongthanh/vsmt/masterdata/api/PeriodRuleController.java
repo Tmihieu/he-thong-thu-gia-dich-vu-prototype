@@ -41,10 +41,11 @@ public class PeriodRuleController {
         return PeriodRuleDto.of(service.rule(actor));
     }
 
-    @Operation(summary = "Sửa quy tắc tự tạo kỳ thu: bật/tắt, chu kỳ, ngày tạo (quản trị)")
+    @Operation(summary = "Sửa quy tắc tự tạo kỳ thu: bật/tắt, chu kỳ, ngày tạo, số ngày hạn (quản trị)")
     @PutMapping
     public PeriodRuleDto update(@Valid @RequestBody PeriodRuleRequest req, @AuthenticationPrincipal CurrentUser actor) {
-        return PeriodRuleDto.of(service.updateRule(new RuleCommand(req.enabled(), req.periodType(), req.createDay()), actor));
+        return PeriodRuleDto.of(service.updateRule(new RuleCommand(req.enabled(), req.periodType(), req.createDay(),
+                req.remitDueDays()), actor));
     }
 
     @Operation(summary = "Chạy ngay quy tắc để thử (quản trị): tạo kỳ dự thảo nếu đã tới ngày, không thì cho biết lý do")
@@ -59,17 +60,22 @@ public class PeriodRuleController {
             @Schema(requiredMode = RequiredMode.REQUIRED) @NotNull(message = "không được để trống") PeriodType periodType,
             @Schema(requiredMode = RequiredMode.REQUIRED, example = "25",
                     description = "Từ ngày này trong tháng thì tạo kỳ kế tiếp (kỳ quý: tháng cuối quý)")
-            @Min(1) @Max(28) int createDay) {
+            @Min(1) @Max(28) int createDay,
+            @Schema(requiredMode = RequiredMode.REQUIRED, example = "10",
+                    description = "Hạn công ty nộp xã = ngày cuối kỳ + số ngày này")
+            @Min(0) @Max(365) int remitDueDays) {
     }
 
     public record PeriodRuleDto(
             @Schema(requiredMode = RequiredMode.REQUIRED) boolean enabled,
             @Schema(requiredMode = RequiredMode.REQUIRED) PeriodType periodType,
             @Schema(requiredMode = RequiredMode.REQUIRED) int createDay,
+            @Schema(requiredMode = RequiredMode.REQUIRED) int remitDueDays,
             @Schema(requiredMode = RequiredMode.REQUIRED) OffsetDateTime updatedAt) {
 
         static PeriodRuleDto of(PeriodAutoRule r) {
-            return new PeriodRuleDto(r.isEnabled(), r.getPeriodType(), r.getCreateDay(), r.getUpdatedAt());
+            return new PeriodRuleDto(r.isEnabled(), r.getPeriodType(), r.getCreateDay(),
+                    r.getRemitDueDays(), r.getUpdatedAt());
         }
     }
 
