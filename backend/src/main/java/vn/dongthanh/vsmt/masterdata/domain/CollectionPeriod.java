@@ -3,6 +3,7 @@ package vn.dongthanh.vsmt.masterdata.domain;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -69,6 +70,7 @@ public class CollectionPeriod extends BaseEntity {
     /**
      * @param number tháng 1–12 với {@link PeriodType#MONTH}, quý 1–4 với {@link PeriodType#QUARTER}
      * @param openDate null thì lấy ngày đầu kỳ
+     * @param dueDate hạn dân đóng; null thì ngày 25 tháng cuối kỳ (07/10)
      */
     public static CollectionPeriod open(PeriodType type, int year, int number, LocalDate openDate, LocalDate dueDate,
             TariffVersion tariffVersion) {
@@ -90,11 +92,9 @@ public class CollectionPeriod extends BaseEntity {
             p.endDate = first.plusMonths(2).atEndOfMonth();
         }
         p.openDate = openDate != null ? openDate : p.startDate;
-        if (dueDate.isBefore(p.openDate)) {
-            throw new BusinessRuleException("PERIOD_DUE_BEFORE_OPEN",
-                    "Hạn công ty nộp xã không được trước ngày mở kỳ.");
-        }
-        p.dueDate = dueDate;
+        LocalDate due = dueDate != null ? dueDate : p.endDate.withDayOfMonth(25);
+        p.requireDueBetween(p.openDate, due);
+        p.dueDate = due;
         p.tariffVersion = tariffVersion;
         p.status = PeriodStatus.COLLECTING;
         return p;
@@ -114,16 +114,33 @@ public class CollectionPeriod extends BaseEntity {
         status = PeriodStatus.COLLECTING;
     }
 
-    /** Cán bộ xã đặt ngày mở và hạn công ty nộp xã cho kỳ dự thảo trước khi mở. */
+    /** Cán bộ xã đặt ngày mở và hạn dân đóng cho kỳ dự thảo trước khi mở. */
     public void schedule(LocalDate open, LocalDate due) {
         if (status != PeriodStatus.DRAFT) {
             throw new BusinessRuleException("PERIOD_SCHEDULE_LOCKED", "Kỳ " + code + " đã mở, không đổi ngày được.");
         }
-        if (due.isBefore(open)) {
-            throw new BusinessRuleException("PERIOD_DUE_BEFORE_OPEN", "Hạn công ty nộp xã không được trước ngày mở kỳ.");
-        }
+        requireDueBetween(open, due);
         openDate = open;
         dueDate = due;
+    }
+
+    /**
+     * Hạn quyết toán (07/10): ngày 5 tháng sau kỳ, cố định, không lùi khi rơi vào ngày nghỉ; công ty đến quyết toán với xã
+     * trước hạn này để xã kịp nộp Sở NN&amp;MT trước ngày 10 (QĐ 65/2026 Đ8.10e).
+     */
+    // ponytail: tính ra, không lưu cột; thêm cột settlement_due_date khi xã cần sửa theo từng kỳ.
+    public LocalDate getSettlementDueDate() {
+        return endDate.plusDays(1).withDayOfMonth(5);
+    }
+
+    private void requireDueBetween(LocalDate open, LocalDate due) {
+        if (due.isBefore(open)) {
+            throw new BusinessRuleException("PERIOD_DUE_BEFORE_OPEN", "Hạn dân đóng không được trước ngày mở kỳ.");
+        }
+        if (!due.isBefore(getSettlementDueDate())) {
+            throw new BusinessRuleException("PERIOD_DUE_AFTER_SETTLEMENT", "Hạn dân đóng phải trước hạn quyết toán ("
+                    + getSettlementDueDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + ").");
+        }
     }
 
     /** Biểu giá có thể đổi sau khi dự thảo được tạo; kỳ dự thảo lấy lại biểu giá hiệu lực tại ngày đầu kỳ. */
@@ -134,7 +151,7 @@ public class CollectionPeriod extends BaseEntity {
         tariffVersion = version;
     }
 
-    /** Cán bộ xã khóa kỳ (G1): chỉ từ Đang thu; sau khóa không phát hành, ghi thu, lập phiếu thu cho kỳ. */
+    /** Cán bộ xã khóa kỳ (G1): chỉ từ Đang thu; sau khóa không phát hành, ghi thu, lập phiếu quyết toán cho kỳ. */
     public void lock(OffsetDateTime at, Long by) {
         requireStatus(PeriodStatus.COLLECTING, PeriodStatus.LOCKED);
         status = PeriodStatus.LOCKED;

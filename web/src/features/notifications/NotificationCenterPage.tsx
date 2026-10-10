@@ -37,7 +37,7 @@ export function NotificationCenterPage() {
     <>
       <PageHeader
         title="Thông báo"
-        description="Nhắc nộp, khiếu nại, phiếu thu và giao dịch liên quan đến bạn; bấm Mở để đi tới màn xử lý."
+        description="Nhắc nộp, khiếu nại, phiếu quyết toán và giao dịch liên quan đến bạn; bấm Mở để đi tới màn xử lý."
         extra={
           <Button onClick={() => markAll.mutate()} loading={markAll.isPending} disabled={(list.data?.unreadCount ?? 0) === 0}>
             Đánh dấu tất cả đã đọc

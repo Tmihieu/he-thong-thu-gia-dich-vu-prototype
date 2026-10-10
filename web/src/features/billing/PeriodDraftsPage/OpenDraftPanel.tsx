@@ -3,6 +3,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 import { useState } from 'react';
 
 import { ApiError } from '../../../api/client';
+import { DateText } from '../../../shared/DateText';
 import { MoneyText } from '../../../shared/MoneyText';
 import type { Period } from '../../masterdata/api';
 import { type DraftScope, type PublishPeriodResult, useDraftPreview, usePublishPeriod } from '../api';
@@ -19,19 +20,19 @@ function errorMessage(err: unknown): string | null {
 interface Props {
   period: Period;
   /** Hạn đã chọn ở bước lập phiếu (ISO), dùng làm giá trị đầu. */
-  initial?: { companyDueDate?: string };
+  initial?: { dueDate?: string };
   /** Phạm vi đã chọn ở bước lập phiếu; trống thì toàn xã. */
   scope?: DraftScope;
   onClose: () => void;
 }
 
-/** Xem trước khoản của một kỳ dự thảo, chọn hạn nộp rồi "Mở kỳ & phát hành" trong một bước. */
+/** Xem trước khoản của một kỳ dự thảo, chọn hạn dân đóng rồi "Mở kỳ & phát hành" trong một bước. */
 export function OpenDraftPanel({ period, initial, scope, onClose }: Props) {
-  const [duePicked, setDuePicked] = useState<Dayjs | null>(initial?.companyDueDate ? dayjs(initial.companyDueDate) : null);
+  const [duePicked, setDuePicked] = useState<Dayjs | null>(initial?.dueDate ? dayjs(initial.dueDate) : null);
   const [done, setDone] = useState<PublishPeriodResult | null>(null);
   // Kỳ mở ngay khi cán bộ xã bấm: ngày mở là hôm nay.
   const openDate = dayjs();
-  const schedule = { ...scope, openDate: openDate.format(ISO), companyDueDate: duePicked?.format(ISO) };
+  const schedule = { ...scope, openDate: openDate.format(ISO), dueDate: duePicked?.format(ISO) };
   const preview = useDraftPreview(period.id, schedule);
   const publish = usePublishPeriod();
 
@@ -64,7 +65,8 @@ export function OpenDraftPanel({ period, initial, scope, onClose }: Props) {
   }
 
   const { result } = preview.data;
-  const companyDue = duePicked ?? dayjs(preview.data.period.dueDate);
+  const due = duePicked ?? dayjs(preview.data.period.dueDate);
+  const settlementDue = preview.data.period.settlementDueDate;
   const publishing = publish.isPending;
 
   function submit() {
@@ -81,16 +83,19 @@ export function OpenDraftPanel({ period, initial, scope, onClose }: Props) {
       )}
       <Descriptions column={{ xs: 1, md: 2 }} size="small" style={{ marginBottom: 16 }}>
         <Descriptions.Item label="Biểu giá áp dụng">{preview.data.period.tariffVersionCode}</Descriptions.Item>
+        <Descriptions.Item label="Hạn quyết toán">
+          <DateText value={settlementDue} />
+        </Descriptions.Item>
       </Descriptions>
       <Form layout="vertical" requiredMark={false} disabled={publishing}>
         <Space size="middle" wrap align="start">
-          <Form.Item label="Hạn nộp">
+          <Form.Item label="Hạn dân đóng">
             <DatePicker
-              aria-label="Hạn nộp"
+              aria-label="Hạn dân đóng"
               format={DATE_FORMAT}
               allowClear={false}
-              value={companyDue}
-              disabledDate={(d) => d.isBefore(openDate, 'day')}
+              value={due}
+              disabledDate={(d) => d.isBefore(openDate, 'day') || !d.isBefore(settlementDue, 'day')}
               onChange={(d) => setDuePicked(d)}
             />
           </Form.Item>

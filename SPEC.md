@@ -13,14 +13,14 @@ Dựng lại prototype HTML/JS v3.1 thành ứng dụng demo có backend và cơ
 
 | Vai trò | Kênh | Việc chính |
 |---|---|---|
-| Cán bộ xã (gộp kế toán) | Web desktop | Đối tượng & hợp đồng, kỳ thu, phiếu yêu cầu thu, khu vực & phân công công ty, lập phiếu thu khi công ty nộp tiền, nhắc nộp, báo cáo tiến độ, đối soát, khóa kỳ, khiếu nại |
-| Công ty môi trường | Web desktop | Hộ được giao, phân tổ cho người đi thu, nhận tiền mặt từ người đi thu, xem phiếu thu xã lập và báo sai sót, xử lý khiếu nại, nhận/báo phí rác cồng kềnh |
+| Cán bộ xã (gộp kế toán) | Web desktop | Đối tượng & hợp đồng, kỳ thu, phiếu yêu cầu thu, khu vực & phân công công ty, lập phiếu quyết toán với công ty, nhắc nộp, báo cáo tiến độ, đối soát, khóa kỳ, khiếu nại |
+| Công ty môi trường | Web desktop | Hộ được giao, phân tổ cho người đi thu, nhận tiền mặt từ người đi thu, xem phiếu quyết toán xã lập, xử lý khiếu nại, nhận/báo phí rác cồng kềnh |
 | Người đi thu | Web giao diện mobile | Danh sách hộ của tổ được giao, ghi nhận hộ đã đóng (tiền mặt / chuyển khoản), tiền mặt đang giữ, báo sai thông tin hộ |
 | Lãnh đạo (thêm 29/09/2026, §9.10) | Web desktop | Dashboard điều hành (thu / nợ / tỷ lệ nộp theo công ty và địa bàn, cảnh báo), xem + xuất báo cáo tổng hợp, duyệt / từ chối miễn giảm – hoàn – xóa nợ. Chỉ giám sát: không chốt kỳ, không cấu hình, không phân quyền |
 | Quản trị | Web desktop | Tài khoản & vai trò, địa bàn, biểu giá, mở kỳ thu (ai mở kỳ: xem G1), nhật ký. **Khóa kỳ do cán bộ xã** (quyết định 23/09) |
 | Người dân | App Flutter (cài qua store) | Thông tin hộ, khoản phải đóng, chuyển khoản **VietQR**, xác nhận thanh toán, lịch thu gom, khiếu nại, chợ đồ cũ, thông báo |
 
-**Luồng tiền đã chốt (tạm):** hộ → công ty (người đi thu hoặc app dân) → công ty nộp **toàn bộ** tiền đã thu về xã → xã lập phiếu thu cho công ty → xã đối soát `phải thu / công ty đã thu / đã nộp về xã` → xã khóa kỳ.
+**Luồng tiền đã chốt (tạm):** hộ → công ty (người đi thu hoặc app dân) → công ty nộp **toàn bộ** tiền đã thu về xã → sau hạn dân đóng xã lập phiếu quyết toán với công ty (07/10, BR-REM-18) → xã đối soát `phải thu / công ty đã thu / đã nộp về xã` → xã khóa kỳ.
 
 **Không làm trong 4 tuần:** ~~vai trò Lãnh đạo; miễn giảm / hoàn / xóa nợ~~ (29/09/2026 người dùng đưa vào, làm sau T53, xem §9.10); thanh toán thật, VietQR, sao kê ngân hàng; HĐĐT; KBNN; import Excel thật; triển khai production.
 
@@ -35,7 +35,7 @@ Dựng lại prototype HTML/JS v3.1 thành ứng dụng demo có backend và cơ
 | `master-data` | Địa bàn, khu vực/tổ, công ty, phân công khu vực có hiệu lực, đối tượng + hợp đồng, biểu giá theo phiên bản, loại phí, kỳ thu tháng/quý, lịch thu gom | platform |
 | `billing` | Phiếu yêu cầu thu → sinh khoản phải thu từng hộ–kỳ–loại phí | master-data |
 | `collection` | Công ty phân tổ cho người đi thu; ghi nhận hộ đã đóng; bàn giao tiền mặt; ghi chuyển khoản VietQR khi ngân hàng báo về | billing |
-| `remittance` | Phiếu thu xã lập khi công ty nộp, báo sai sót phiếu thu, nhắc nộp, báo cáo tiến độ, đối soát, khóa kỳ | collection |
+| `remittance` | Phiếu quyết toán xã lập với công ty, nhắc nộp, báo cáo tiến độ, đối soát, khóa kỳ | collection |
 | `notifications` | Thông báo theo vai trò / công ty / người dùng / người dân; đã đọc | platform |
 | `complaints` | Khiếu nại liên thông: dân/xã ghi nhận → xã xử lý hoặc chuyển công ty → công ty phản hồi → xã đóng; timeline | master-data, notifications |
 | `citizen-app` | App Flutter + API cho người dân; chợ đồ cũ | billing, collection, complaints, notifications |
@@ -182,9 +182,9 @@ export function useCompanyLedger(periodId: string) {
 
 | Mức | Công cụ | Phạm vi bắt buộc |
 |---|---|---|
-| Unit (backend) | JUnit 5 | Mọi công thức tiền và quy tắc chặn: tính số tiền khoản (tháng/quý, miễn), chống sinh trùng khoản theo kỳ chồng lấn, phiếu thu ≤ còn phải nộp, chặn khóa kỳ khi còn nợ, trạng thái đối soát, tiền mặt người thu đang giữ |
+| Unit (backend) | JUnit 5 | Mọi công thức tiền và quy tắc chặn: tính số tiền khoản (tháng/quý, miễn), chống sinh trùng khoản theo kỳ chồng lấn, phiếu quyết toán (mỗi công ty mỗi kỳ một phiếu, chỉ sau hạn dân đóng), chặn khóa kỳ khi còn công ty chưa quyết toán, trạng thái đối soát, tiền mặt người thu đang giữ |
 | Integration (backend) | Spring Boot Test + Testcontainers | Repository/Flyway chạy thật trên PostgreSQL; API chính mỗi module; **kiểm tra phạm vi**: công ty A gọi dữ liệu công ty B → 403/404; người đi thu gọi hộ ngoài tổ → 403/404 |
-| Component (web) | Vitest + Testing Library | Form có validation (phiếu YCT, phiếu thu, phân công), hiển thị tiền/ngày |
+| Component (web) | Vitest + Testing Library | Form có validation (phiếu YCT, phiếu quyết toán, phân công), hiển thị tiền/ngày |
 | Demo E2E | Kịch bản thủ công ở §10 (có thể tự động bằng Playwright sau) | Chạy trước mỗi mốc demo |
 
 Mục tiêu: service layer của `billing`, `collection`, `remittance` có coverage dòng ≥ 80%. Viết test trước cho quy tắc tiền (TDD theo `/agent-skills:test`).
@@ -238,7 +238,7 @@ Mục tiêu: service layer của `billing`, `collection`, `remittance` có cover
 - `AreaAssignment` (khu vực, công ty, từ ngày, đến ngày, ghi chú): **mỗi khu vực tối đa 1 công ty trong cùng khoảng hiệu lực; đổi công ty tạo bản ghi mới và giữ lịch sử**. UI: **popup phân công đơn giản** (chọn công ty + ngày bắt đầu; có thể chọn nhiều tổ), backend tự đóng phân công cũ.
 - `ServiceSubject` (đối tượng: hộ gia đình / nguồn thải nhỏ / nguồn thải lớn — lớn từ 9.000 kg/tháng, Điều 58 NĐ 08/2022; chủ nhà trọ lập hồ sơ nguồn thải; tên, địa chỉ, SĐT, khu vực, trạng thái) và `ServiceContract` (số hợp đồng, nhóm giá, định mức kg/tháng cho nhóm cân, từ ngày, đến ngày, miễn 100% + lý do; đổi nhóm giá áp từ kỳ sau). **Hai bảng riêng, hiển thị gộp trên một form hồ sơ hộ**; mỗi đối tượng tối đa 1 hợp đồng hiệu lực tại một thời điểm.
 - `TariffVersion` (căn cứ pháp lý, hiệu lực, trạng thái) + `TariffRate` (nhóm giá, thu gom, vận chuyển, xử lý, tổng; 8 nhóm giá theo QĐ 65/2026, Đông Thạnh nhóm 2, tạm bỏ VAT; phí xử lý chỉ nhóm đăng ký cân). Biểu giá có ô "thu hộ gia đình theo nhân khẩu": toàn xã hoặc chọn địa bàn. **Giá tính tiền lấy từ phiên bản biểu giá đang hiệu lực của kỳ** (mặc định QĐ 65/2026/QĐ-UBND); số tiền được chụp lại vào khoản khi sinh.
-- `FeeType` (vệ sinh môi trường, rác cồng kềnh, phụ phí), `CollectionPeriod` (tháng hoặc quý, ngày mở, hạn nộp, phiên bản biểu giá, trạng thái Đã mở → Đang thu → Đã khóa).
+- `FeeType` (vệ sinh môi trường, rác cồng kềnh, phụ phí), `CollectionPeriod` (tháng hoặc quý, ngày mở, hạn dân đóng (mặc định ngày 25 tháng cuối kỳ; hạn quyết toán = ngày 5 tháng sau kỳ, tính ra), phiên bản biểu giá, trạng thái Đã mở → Đang thu → Đã khóa).
 - `CollectionSchedule` (khu vực, thứ, khung giờ, loại rác) cho màn lịch thu gom của dân.
 - **Nghiệm thu:** CRUD đối tượng + hợp đồng; phân công chồng lấn bị chặn; đổi công ty giữ lịch sử và báo cáo kỳ cũ vẫn tính cho công ty cũ; mở kỳ tháng/quý.
 
@@ -257,15 +257,14 @@ Mục tiêu: service layer của `billing`, `collection`, `remittance` có cover
 - **Nghiệm thu:** người đi thu chỉ thấy hộ trong tổ được giao; ghi nhận trùng (gửi 2 lần) không tạo 2 thanh toán; tiền mặt đang giữ đúng sau bàn giao.
 
 ### 9.6 `remittance`
-- `CompanyReceipt` (phiếu thu xã lập khi công ty nộp: công ty, kỳ, số tiền, hình thức, ngày, người nộp, số chứng từ, ghi chú; mã `PT-CT-MMYY-nnn`); 1 phiếu 1 kỳ, nhiều lần nộp; 0 < số tiền ≤ còn phải nộp. In phiếu có số tiền bằng chữ.
-- `ReceiptIssue` (báo sai sót phiếu thu: loại, số đúng, mô tả, trạng thái Chờ xã kiểm tra / Đã xử lý) — **thêm màn xử lý cho xã** (prototype thiếu).
-- `PaymentReminder` (nhắc nộp: công ty, các kỳ, số tiền, hạn, nội dung) — chỉ công ty có nợ quá hạn.
-- Báo cáo tiến độ, đối soát (chênh lệch = đã nộp − công ty đã thu; Khớp / Đang nộp / Lệch), nợ kỳ trước — theo công thức R6–R14 của prototype, **nhưng phải thu tính theo công ty được phân công tại kỳ phát sinh**.
-- Khóa kỳ: chặn khi còn công ty nợ; sau khóa không sửa khoản/thanh toán/phiếu thu của kỳ.
+- `Settlement` (phiếu quyết toán, thay `CompanyReceipt` / `ReceiptIssue` từ 07/10, V49: công ty, kỳ, công ty phải nộp xã, xã phải trả công ty, chênh lệch, hình thức, ngày quyết toán, người đại diện, số chứng từ, ghi chú; mã `QT-MMYY-nnn`); mỗi công ty mỗi kỳ một phiếu, số tiền hệ thống tính, chỉ lập sau hạn dân đóng, không sửa / hủy / báo sai sót. In phiếu có số tiền bằng chữ. Chi tiết: `docs/quyet-toan-0710.md`, BR-REM-18.
+- `PaymentReminder` (nhắc nộp: công ty, các kỳ, số tiền, hạn, nội dung) — chỉ công ty có nợ của kỳ đã qua hạn quyết toán.
+- Báo cáo tiến độ, đối soát (chênh lệch = đã nộp − phải nộp xã; trạng thái theo phiếu quyết toán, BR-REM-07), nợ kỳ trước — theo công thức R6–R14 của prototype, **nhưng phải thu tính theo công ty được phân công tại kỳ phát sinh**.
+- Khóa kỳ: chặn khi còn giao dịch QR chưa xác định công ty hoặc còn công ty chưa quyết toán (BR-REM-08); sau khóa không sửa khoản/thanh toán/phiếu quyết toán của kỳ.
 - **Nghiệm thu:** số liệu tiến độ = đối soát = màn công ty cho cùng kỳ; khóa kỳ bị chặn đúng; phiếu vượt số còn nộp bị từ chối.
 
 ### 9.7 `notifications`
-- `Notification` (người nhận: vai trò / công ty / người dùng / người dân; loại: nhắc nộp, khiếu nại, phiếu thu, thông tin, giao dịch; tiêu đề, nội dung, liên kết, thời gian, đã đọc).
+- `Notification` (người nhận: vai trò / công ty / người dùng / người dân; loại: nhắc nộp, khiếu nại, phiếu quyết toán, thông tin, giao dịch; tiêu đề, nội dung, liên kết, thời gian, đã đọc).
 - Các sự kiện phát thông báo theo bảng trong prototype-inventory §2. Web: chuông + trung tâm thông báo; mobile: tab Thông báo (lấy bằng polling, không push thật).
 - **Nghiệm thu:** mỗi sự kiện tạo đúng thông báo cho đúng người; công ty không thấy thông báo của công ty khác.
 
@@ -283,10 +282,10 @@ Mục tiêu: service layer của `billing`, `collection`, `remittance` có cover
 
 ### 9.10 `leadership` — vai trò Lãnh đạo (thêm 29/09/2026, làm sau T53)
 
-**Lãnh đạo chủ yếu giám sát.** Việc xử lý (phân công, lập phiếu yêu cầu thu, lập phiếu thu, khóa kỳ) vẫn do cán bộ xã làm.
+**Lãnh đạo chủ yếu giám sát.** Việc xử lý (phân công, lập phiếu yêu cầu thu, lập phiếu quyết toán, khóa kỳ) vẫn do cán bộ xã làm.
 
 - **Khi vào thấy:** dashboard điều hành (thu / nợ / tỷ lệ nộp theo công ty và theo tổ), báo cáo tổng hợp, hàng chờ duyệt các đề nghị về tiền.
-- **Được:** xem toàn hệ thống (chỉ đọc mọi màn nghiệp vụ của xã: hộ & hợp đồng, kỳ, phiếu YCT, tiến độ, đối soát, phiếu thu, khiếu nại); xuất báo cáo; Duyệt / Từ chối đề nghị miễn giảm – hoàn – xóa nợ.
+- **Được:** xem toàn hệ thống (chỉ đọc mọi màn nghiệp vụ của xã: hộ & hợp đồng, kỳ, phiếu YCT, tiến độ, đối soát, phiếu quyết toán, khiếu nại); xuất báo cáo; Duyệt / Từ chối đề nghị miễn giảm – hoàn – xóa nợ.
 - **Không được:** chốt / khóa kỳ (bỏ theo người dùng 29/09/2026, khóa kỳ vẫn là cán bộ xã); cấu hình, tài khoản, phân quyền; sửa dữ liệu nghiệp vụ trực tiếp. **Không làm "hủy hóa đơn"** (HĐĐT ngoài phạm vi).
 - **Báo cáo:** lãnh đạo **chỉ xem + xuất**, không có bước xác nhận / ký báo cáo (người dùng chốt 29/09/2026).
 - **Cảnh báo trên dashboard** (dùng cờ đã có, không thêm ngưỡng mới): công ty nộp chậm / còn nợ kỳ trước (cờ quá hạn + nợ kỳ trước của sổ công ty–kỳ); tỷ lệ thu thấp (`lowCollectionRate`); số đề nghị chờ duyệt.
@@ -310,7 +309,7 @@ Mục tiêu: service layer của `billing`, `collection`, `remittance` có cover
 2. Cán bộ xã phân công một tổ chưa có công ty bằng popup; tạo phiếu yêu cầu thu toàn xã → xem trước → phát hành.
 3. Công ty DV01 phân tổ cho người đi thu; người đi thu (điện thoại) ghi nhận 2 hộ tiền mặt; bàn giao tiền mặt cho công ty.
 4. Người dân hộ DTH-H000128 quét mã VietQR trên app và chuyển khoản → ngân hàng báo về, công ty thấy "Đã thu".
-5. Xã lập phiếu thu khi DV01 nộp một phần; báo cáo tiến độ và đối soát hiển thị "Đang nộp"; xã nhắc nộp → DV01 nhận thông báo; DV01 báo sai sót phiếu thu → xã xử lý.
+5. Xã nhắc nộp → DV01 nhận thông báo; sau hạn dân đóng xã lập phiếu quyết toán cho DV01 → tiến độ và đối soát hiển thị "Đã quyết toán"; DV01 xem phiếu của mình.
 6. Người dân gửi khiếu nại → xã chuyển DV01 → DV01 phản hồi → xã đóng → dân thấy timeline và thông báo.
 7. Người dân đăng ký rác cồng kềnh → DV01 báo phí; đăng một bài chợ đồ cũ.
 8. Xã thử khóa kỳ khi còn nợ → bị chặn với lý do rõ ràng.

@@ -120,7 +120,7 @@ export function CompanyOverviewPage() {
   const [periodId, setPeriodId] = useState<number>();
   const [receiving, setReceiving] = useState<CashHeld | null>(null);
   const [chip, setChip] = useState<WorkChip>('ALL');
-  const [, setTab] = useTabParam(['overview', 'receipts'], 'overview');
+  const [, setTab] = useTabParam(['overview', 'settlements'], 'overview');
   const showPaidHouseholds = () => {
     setChip('PAID');
     document.getElementById('company-households')?.scrollIntoView?.({ behavior: 'smooth' });
@@ -208,12 +208,12 @@ export function CompanyOverviewPage() {
             percent={cappedRate(row?.remittedRate ?? 0)}
             hasData={!!row}
             label="Số tiền đã nộp về xã"
-            onOpen={() => setTab('receipts')}
+            onOpen={() => setTab('settlements')}
             value={<MoneyText value={row?.received ?? 0} />}
             note={
               row ? (
                 <Space size={4} wrap>
-                  <span>{row.receiptCount} phiếu thu</span>
+                  {row.settlementCode && <span>{row.settlementCode}</span>}
                   <StatusTag tone={PROGRESS_TONES[row.progress]}>{PROGRESS_LABELS[row.progress]}</StatusTag>
                 </Space>
               ) : (
