@@ -7,16 +7,23 @@ type Key = 'due' | 'collected' | 'retained' | 'payable' | 'received' | 'remainin
 const STATS: Record<Key, [string, keyof typeof semantic]> = {
   due: ['Phải thu', 'neutral'],
   collected: ['Đã thu', 'info'],
-  retained: ['Phí thu gom công ty hưởng', 'neutral'],
-  payable: ['Phải nộp xã', 'info'],
+  retained: ['Số tiền công ty giữ lại', 'neutral'],
+  payable: ['Số tiền phải nộp xã', 'info'],
   received: ['Đã nộp về xã', 'success'],
   remaining: ['Còn phải nộp', 'warning'],
-  previousDebt: ['Nợ kỳ trước', 'danger'],
+  previousDebt: ['Nợ tồn đọng', 'danger'],
 };
 const DEFAULT_KEYS: Key[] = ['retained', 'payable', 'received', 'remaining'];
 
-/** Hàng thẻ tổng của các dòng sổ công ty–kỳ (cộng thẳng số backend trả; công ty chỉ nhận dòng của mình). */
-export function LedgerStats({ rows, show = DEFAULT_KEYS }: { rows: LedgerRow[]; show?: Key[] }) {
+export function LedgerStats({
+  rows,
+  show = DEFAULT_KEYS,
+  labels,
+}: {
+  rows: LedgerRow[];
+  show?: Key[];
+  labels?: Partial<Record<Key, string>>;
+}) {
   return (
     <StatGrid>
       {show.map((key) => {
@@ -24,7 +31,7 @@ export function LedgerStats({ rows, show = DEFAULT_KEYS }: { rows: LedgerRow[]; 
         return (
           <StatCard
             key={key}
-            label={STATS[key][0]}
+            label={labels?.[key] ?? STATS[key][0]}
             tone={key === 'previousDebt' && total === 0 ? 'neutral' : STATS[key][1]}
             value={<MoneyText value={total} />}
           />

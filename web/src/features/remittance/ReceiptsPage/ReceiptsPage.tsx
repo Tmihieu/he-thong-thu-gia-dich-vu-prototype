@@ -77,7 +77,15 @@ export function ReceiptsPage() {
         {locked && <StatusTag tone="neutral">Kỳ đã khóa, không lập thêm phiếu</StatusTag>}
       </Space>
       {ledger.error && <ErrorBlock error={ledger.error} onRetry={() => void ledger.refetch()} />}
-      <LedgerStats rows={ledger.data ?? []} />
+      <LedgerStats
+        rows={ledger.data ?? []}
+        show={['payable', 'received', 'remaining']}
+        labels={{
+          payable: 'Tổng số tiền cần thu',
+          received: 'Xã đã nhận',
+          remaining: 'Còn thiếu',
+        }}
+      />
       <Table<LedgerRow>
         rowKey="companyId"
         loading={ledger.isLoading}
@@ -105,7 +113,7 @@ export function ReceiptsPage() {
           },
           { title: 'Đã thu của hộ', dataIndex: 'collected', align: 'right', render: (v: number) => <MoneyText value={v} /> },
           {
-            title: 'Đã nộp về xã',
+            title: 'Xã đã nhận',
             align: 'right',
             render: (_, r) => (
               <Space direction="vertical" size={0}>
@@ -116,7 +124,7 @@ export function ReceiptsPage() {
               </Space>
             ),
           },
-          { title: 'Còn phải nộp', dataIndex: 'remaining', align: 'right', render: (v: number, r) => <RemainingText value={v} paid={r.communePaid} strong /> },
+          { title: 'Còn thiếu', dataIndex: 'remaining', align: 'right', render: (v: number, r) => <RemainingText value={v} paid={r.communePaid} strong /> },
           {
             title: 'Tiến độ',
             dataIndex: 'progress',
