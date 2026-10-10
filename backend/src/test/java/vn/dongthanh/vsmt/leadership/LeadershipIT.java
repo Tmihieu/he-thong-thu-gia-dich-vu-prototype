@@ -37,8 +37,8 @@ import vn.dongthanh.vsmt.platform.domain.Role;
 import vn.dongthanh.vsmt.platform.domain.User;
 import vn.dongthanh.vsmt.platform.domain.UserRepository;
 import vn.dongthanh.vsmt.remittance.domain.ReceiptMethod;
-import vn.dongthanh.vsmt.remittance.service.SettlementService;
-import vn.dongthanh.vsmt.remittance.service.SettlementService.IssueSettlementCommand;
+import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService;
+import vn.dongthanh.vsmt.remittance.service.CompanyReceiptService.IssueReceiptCommand;
 import vn.dongthanh.vsmt.support.CollectionFixture;
 import vn.dongthanh.vsmt.support.FixedClockConfig;
 import vn.dongthanh.vsmt.support.IntegrationTest;
@@ -58,7 +58,7 @@ class LeadershipIT extends IntegrationTest {
     @Autowired MutableClock clock;
     @Autowired UserRepository users;
     @Autowired CollectionPeriodRepository periods;
-    @Autowired SettlementService settlements;
+    @Autowired CompanyReceiptService receipts;
     @Autowired ChargeRequestService chargeRequests;
     @Autowired SubjectService subjects;
 
@@ -90,7 +90,7 @@ class LeadershipIT extends IntegrationTest {
                 .andExpect(status().isOk());
 
         send("/api/remittance/periods/" + fx.october.getId() + "/lock", lead, "{}").andExpect(status().isForbidden());
-        send("/api/remittance/settlements", lead, "{\"companyId\":1,\"periodId\":1}").andExpect(status().isForbidden());
+        send("/api/remittance/receipts", lead, "{}").andExpect(status().isForbidden());
         send("/api/masterdata/subjects", lead, "{}").andExpect(status().isForbidden());
         send("/api/leadership/approvals", lead, writeOff(fx.chargeId("DTH-H000001"))).andExpect(status().isForbidden());
         mvc.perform(put("/api/masterdata/subjects/1").header(HttpHeaders.AUTHORIZATION, lead)
@@ -176,15 +176,12 @@ class LeadershipIT extends IntegrationTest {
 
     @Test
     void writeOffOfALockedPeriodGoesToTheCollectingPeriodAsAdjustment() throws Exception {
-        // Kỳ 10: DV01 thu tiền mặt 1 hộ (80.000); qua hạn dân đóng (31/10) hai công ty quyết toán nên khóa được dù còn hộ
-        // chưa đóng.
+        // Kỳ 10: DV01 thu tiền mặt 1 hộ (80.000) và nộp đủ; đến hạn nộp (31/10) nên khóa được dù còn hộ chưa đóng.
         long paidOctober = fx.chargeId("DTH-H000001");
         fx.collectCash("DTH-H000001");
-        clock.set(java.time.Instant.parse("2026-11-01T03:00:00Z"));
-        for (Long company : java.util.List.of(fx.dv01.getId(), fx.dv07.getId())) {
-            settlements.issue(new IssueSettlementCommand(company, fx.october.getId(), ReceiptMethod.TRANSFER, null, null,
-                    null, null), fx.actor(fx.officer));
-        }
+        receipts.issue(new IssueReceiptCommand(fx.dv01.getId(), fx.october.getId(), 80_000, ReceiptMethod.TRANSFER,
+                null, null, null, null), fx.actor(fx.officer));
+        clock.set(java.time.Instant.parse("2026-10-31T03:00:00Z"));
         send("/api/remittance/periods/" + fx.october.getId() + "/lock", officer, "{}").andExpect(status().isOk());
         CollectionPeriod november = periods.save(CollectionPeriod.open(PeriodType.MONTH, 2026, 11, null,
                 LocalDate.of(2026, 11, 30), fx.october.getTariffVersion()));

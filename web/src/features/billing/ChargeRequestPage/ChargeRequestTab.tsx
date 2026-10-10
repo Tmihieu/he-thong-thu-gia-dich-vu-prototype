@@ -22,7 +22,7 @@ import {
 import { ChargeRequestForm } from './ChargeRequestForm';
 import { PreviewPanel, SkippedList } from './PreviewPanel';
 
-type Step = { kind: 'form' } | { kind: 'start'; period: Period; req: IssueRequest; dueDate?: string } | { kind: 'preview'; req: IssueRequest; result: IssueResult } | { kind: 'done'; result: IssueResult };
+type Step = { kind: 'form' } | { kind: 'start'; period: Period; req: IssueRequest; companyDueDate?: string } | { kind: 'preview'; req: IssueRequest; result: IssueResult } | { kind: 'done'; result: IssueResult };
 
 /** Phiếu YCT: danh sách phiếu đã phát hành; lập phiếu mới trong ngăn kéo theo bước form → xem trước → phát hành. */
 export function ChargeRequestTab() {
@@ -93,12 +93,12 @@ export function ChargeRequestTab() {
             loading={preview.isPending}
             error={errorTextOrNull(preview.error)}
             initial={draft}
-            onPreview={(req, dueDate) => {
+            onPreview={(req, companyDueDate) => {
               setDraft(req);
               // Kỳ do quản trị tạo, chưa bắt đầu: cán bộ xã đặt ngày, xem trước và bắt đầu kỳ (kèm phát hành phiếu theo phạm vi đã chọn).
               const toStart = drafts.data?.find((d) => d.id === req.periodId);
               if (toStart) {
-                setStep({ kind: 'start', period: toStart, req, dueDate });
+                setStep({ kind: 'start', period: toStart, req, companyDueDate });
                 return;
               }
               preview.mutate(req, { onSuccess: (result) => setStep({ kind: 'preview', req, result }) });
@@ -112,7 +112,7 @@ export function ChargeRequestTab() {
             </Button>
             <OpenDraftPanel
               period={step.period}
-              initial={{ dueDate: step.dueDate }}
+              initial={{ companyDueDate: step.companyDueDate }}
               scope={{
                 feeTypeId: step.req.feeTypeId,
                 scopeType: step.req.scopeType,

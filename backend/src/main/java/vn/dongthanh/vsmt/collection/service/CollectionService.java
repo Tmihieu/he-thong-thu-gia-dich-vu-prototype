@@ -45,8 +45,7 @@ import vn.dongthanh.vsmt.platform.service.AuditService;
  * Người đi thu ghi cho mọi khoản của công ty; quản lý công ty ghi thay cho hộ của công ty mình (phải chọn
  * người đi thu đang giữ tiền). Gửi lại cùng {@code clientRequestId} trả kết quả cũ (sau khi kiểm phạm vi). Khoản miễn hoặc đã xóa
  * nợ thì không ghi được. Khoản Chưa thu của kỳ đã khóa là công nợ của hộ (góp ý BA 05/10): vẫn thu được, tiền ghi vào kỳ
- * đang thu ({@code ledger_period_id}), số kỳ đã khóa giữ nguyên; chưa có kỳ đang thu thì không ghi được. Công ty đã quyết
- * toán kỳ của khoản thì cũng vậy (07/10, {@link PeriodGuard#carryOverPeriod}).
+ * đang thu ({@code ledger_period_id}), số kỳ đã khóa giữ nguyên; chưa có kỳ đang thu thì không ghi được.
  */
 @Service
 @RequiredArgsConstructor
@@ -250,8 +249,7 @@ public class CollectionService {
 
     /** Kiểm khoản còn thu được; trả kỳ ghi nhận tiền: null = kỳ của khoản, khác null = kỳ đang thu (công nợ hộ). */
     private CollectionPeriod requireCollectable(Charge charge) {
-        CollectionPeriod ledgerPeriod = periodGuard.carryOverPeriod(charge.getPeriod(),
-                charge.getCompany() == null ? null : charge.getCompany().getId());
+        CollectionPeriod ledgerPeriod = ledgerPeriodFor(charge.getPeriod());
         if (charge.getStatus() == ChargeStatus.EXEMPT) {
             throw new BusinessRuleException("CHARGE_EXEMPT", "Khoản " + charge.getCode() + " được miễn, không thu.");
         }
@@ -262,6 +260,25 @@ public class CollectionService {
             throw new BusinessRuleException("CHARGE_WRITTEN_OFF", "Khoản " + charge.getCode() + " đã xóa nợ, không thu.");
         }
         return ledgerPeriod;
+    }
+
+    /**
+     * Kỳ của khoản còn mở thì ghi vào chính kỳ đó (trả null, như {@link PeriodGuard}). Kỳ đã khóa: khoản chưa đóng là công
+     * nợ của hộ, ghi vào kỳ đang thu mới nhất; trạng thái đọc kèm FOR SHARE để khóa kỳ song song phải chờ. Kỳ dự thảo
+     * vẫn bị chặn.
+     */
+    private CollectionPeriod ledgerPeriodFor(CollectionPeriod own) {
+        if (!PeriodStatus.LOCKED.name().equals(periods.lockStatusForShare(own.getId()))) {
+            periodGuard.requireOpen(own);
+            return null;
+        }
+        for (CollectionPeriod p : periods.findByStatusOrderByStartDateDesc(PeriodStatus.COLLECTING)) {
+            if (PeriodStatus.COLLECTING.name().equals(periods.lockStatusForShare(p.getId()))) {
+                return p;
+            }
+        }
+        throw new BusinessRuleException("NO_COLLECTING_PERIOD", "Kỳ " + own.getCode()
+                + " đã khóa và chưa có kỳ đang thu để ghi nhận tiền công nợ của hộ.");
     }
 
     /** Báo hộ khi người thu ghi tiền: hộ thấy ngay khoản đã được ghi nhận Đã đóng. */

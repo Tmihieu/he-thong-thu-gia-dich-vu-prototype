@@ -39,21 +39,30 @@ public class PeriodAutoRule {
     @Column(nullable = false)
     private int createDay;
 
+    /** Hạn công ty nộp xã = ngày cuối kỳ + số ngày này. */
+    @Column(nullable = false)
+    private int remitDueDays;
+
     @Column(nullable = false)
     private OffsetDateTime updatedAt;
 
     private Long updatedBy;
 
-    public void update(boolean enabled, PeriodType periodType, int createDay, OffsetDateTime at, Long by) {
+    public void update(boolean enabled, PeriodType periodType, int createDay,
+            int remitDueDays, OffsetDateTime at, Long by) {
         if (periodType == null) {
             throw new BusinessRuleException("PERIOD_RULE_INVALID", "Phải chọn chu kỳ kỳ thu (tháng hoặc quý).");
         }
         if (createDay < 1 || createDay > 28) {
             throw new BusinessRuleException("PERIOD_RULE_INVALID", "Ngày tạo kỳ phải từ 1 đến 28.");
         }
+        if (remitDueDays < 0) {
+            throw new BusinessRuleException("PERIOD_RULE_INVALID", "Số ngày công ty nộp xã không được âm.");
+        }
         this.enabled = enabled;
         this.periodType = periodType;
         this.createDay = createDay;
+        this.remitDueDays = remitDueDays;
         this.updatedAt = at;
         this.updatedBy = by;
     }

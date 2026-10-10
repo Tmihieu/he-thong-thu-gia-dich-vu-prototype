@@ -24,7 +24,7 @@ class CollectionPeriodDraftTest {
             LocalDate.of(2027, 6, 30), TariffStatus.ACTIVE);
 
     CollectionPeriod draft() {
-        return CollectionPeriod.draft(PeriodType.MONTH, 2026, 11, LocalDate.of(2026, 11, 25), bg65);
+        return CollectionPeriod.draft(PeriodType.MONTH, 2026, 11, LocalDate.of(2026, 12, 10), bg65);
     }
 
     @Test
@@ -80,26 +80,8 @@ class CollectionPeriodDraftTest {
 
     @Test
     void manualOpenStillGoesStraightToCollecting() {
-        CollectionPeriod p = CollectionPeriod.open(PeriodType.MONTH, 2026, 11, null, LocalDate.of(2026, 11, 25), bg65);
+        CollectionPeriod p = CollectionPeriod.open(PeriodType.MONTH, 2026, 11, null, LocalDate.of(2026, 12, 10), bg65);
 
         assertThat(p.getStatus()).isEqualTo(PeriodStatus.COLLECTING);
-    }
-
-    @Test
-    void householdDueDefaultsToThe25thAndMustBeBeforeTheSettlementDue() {
-        // Kỳ tháng 11: hạn dân đóng mặc định 25/11, hạn quyết toán 05/12; kỳ quý 4: 25/12 và 05/01 năm sau.
-        CollectionPeriod nov = CollectionPeriod.draft(PeriodType.MONTH, 2026, 11, null, bg65);
-        assertThat(nov.getDueDate()).isEqualTo(LocalDate.of(2026, 11, 25));
-        assertThat(nov.getSettlementDueDate()).isEqualTo(LocalDate.of(2026, 12, 5));
-        CollectionPeriod q4 = CollectionPeriod.draft(PeriodType.QUARTER, 2026, 4, null, bg65);
-        assertThat(q4.getDueDate()).isEqualTo(LocalDate.of(2026, 12, 25));
-        assertThat(q4.getSettlementDueDate()).isEqualTo(LocalDate.of(2027, 1, 5));
-
-        assertThat(CollectionPeriod.open(PeriodType.MONTH, 2026, 11, null, LocalDate.of(2026, 12, 4), bg65).getDueDate())
-                .isEqualTo(LocalDate.of(2026, 12, 4));
-        assertThatThrownBy(() -> CollectionPeriod.open(PeriodType.MONTH, 2026, 11, null, LocalDate.of(2026, 12, 5), bg65))
-                .extracting("code").isEqualTo("PERIOD_DUE_AFTER_SETTLEMENT");
-        assertThatThrownBy(() -> nov.schedule(LocalDate.of(2026, 11, 1), LocalDate.of(2026, 12, 6)))
-                .hasMessage("Hạn dân đóng phải trước hạn quyết toán (05/12/2026).");
     }
 }

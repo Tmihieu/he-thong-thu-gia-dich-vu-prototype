@@ -12,8 +12,8 @@ const periods = [
 ];
 const ledgerRow = (companyId: number, code: string, extra: Record<string, unknown> = {}) => ({
   companyId, companyCode: code, companyName: `Công ty ${code}`, periodId: 10, due: 1_000_000, chargeCount: 10, adjustment: 0,
-  refunded: 0, collected: 600_000, cashCollected: 600_000, received: 0, settlementId: null, settlementCode: null, remaining: 600_000, gap: -200_000, previousDebt: 0,
-  overdue: false, collectionRate: 60, lowCollectionRate: false, remittedRate: 40, lowRemittedRate: true, progress: 'NOT_PAID',
+  refunded: 0, collected: 600_000, cashCollected: 600_000, received: 400_000, receiptCount: 1, remaining: 600_000, gap: -200_000, previousDebt: 0,
+  overdue: false, collectionRate: 60, lowCollectionRate: false, remittedRate: 40, lowRemittedRate: true, progress: 'PARTIAL',
   reconciliation: 'PENDING', retained: 0, payable: 1_000_000, ...extra,
 });
 const approval = {
